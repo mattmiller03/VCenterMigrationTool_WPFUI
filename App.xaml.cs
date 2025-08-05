@@ -1,94 +1,82 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿// In App.xaml.cs
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Windows;
+using System; // <-- ADD THIS LINE
 using System.IO;
-using System.Windows.Threading; // Required for the exception handler
+using System.Windows;
+using System.Windows.Threading;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using VCenterMigrationTool.ViewModels;
 using VCenterMigrationTool.Views.Pages;
 using VCenterMigrationTool.Views.Windows;
-using VCenterMigrationTool.Helpers;
+using Wpf.Ui.Abstractions;
 using Wpf.Ui;
-using Wpf.Ui.DependencyInjection; // The fix for the first error
-
+using Wpf.Ui.DependencyInjection; // <-- ADD THIS LINE
+using Wpf.Ui.Converters;
 
 namespace VCenterMigrationTool;
 
 public partial class App : Application
 {
-    private static readonly IHost _host = Host.CreateDefaultBuilder()
-        .ConfigureAppConfiguration(c =>
-        {
-            var basePath =
-                Path.GetDirectoryName(AppContext.BaseDirectory)
-                ?? throw new DirectoryNotFoundException(
-                    "Unable to find the base directory of the application."
-                );
-            _ = c.SetBasePath(basePath);
-        })
+    private static readonly IHost _host = Host
+        .CreateDefaultBuilder()
+        .ConfigureAppConfiguration(c => c.SetBasePath(AppContext.BaseDirectory))
         .ConfigureServices((context, services) =>
         {
-            _ = services.AddNavigationViewPageProvider();
-
             // App Host
-            _ = services.AddHostedService<ApplicationHostService>();
-            // Theme manipulation
-            _ = services.AddSingleton<IThemeService, ThemeService>();
-            // TaskBar manipulation
-            _ = services.AddSingleton<ITaskBarService, TaskBarService>();
+            services.AddHostedService<ApplicationHostService>();
 
-            // Service containing navigation, same as INavigationWindow... but without window
-            _ = services.AddSingleton<INavigationService, NavigationService>();
+            // Page resolver service
+            services.AddNavigationViewPageProvider();
+
+            // Theme manipulation
+            services.AddSingleton<IThemeService, ThemeService>();
+
+            // TaskBar manipulation
+            services.AddSingleton<ITaskBarService, TaskBarService>();
+
+            // Service containing navigation
+            services.AddSingleton<INavigationService, NavigationService>();
+            services.AddSingleton<ConnectionProfileService>();
 
             // Main window with navigation
-            _ = services.AddSingleton<INavigationWindow, Views.Windows.MainWindow>();
-            _ = services.AddSingleton<ViewModels.MainWindowViewModel>();
+            services.AddSingleton<INavigationWindow, MainWindow>();
+            services.AddSingleton<MainWindowViewModel>();
+
+            // Your custom PowerShell service
+            services.AddSingleton<PowerShellService>();
+
             // Views and ViewModels
-            _ = services.AddSingleton<Views.Pages.DashboardPage>();
-            _ = services.AddSingleton<ViewModels.DashboardViewModel>();
-            _ = services.AddSingleton<Views.Pages.ConnectionPage>();
-            _ = services.AddSingleton<ViewModels.ConnectionViewModel>();
-            _ = services.AddSingleton<Views.Pages.SettingsPage>();
-            _ = services.AddSingleton<ViewModels.SettingsViewModel>();
+            services.AddSingleton<DashboardPage>();
+            services.AddSingleton<DashboardViewModel>();
+            services.AddSingleton<SettingsPage>();
+            services.AddSingleton<SettingsViewModel>();
 
             // Configuration
-            _ = services.Configure<AppConfig>(context.Configuration.GetSection(nameof(AppConfig)));
+            services.Configure<AppConfig>(context.Configuration.GetSection(nameof(AppConfig)));
+        })
+        .Build();
 
-        }).Build();
-
-    /// <summary>
-    /// Gets services.
-    /// </summary>
-    public static IServiceProvider Services
+    public static T? GetService<T>() where T : class
     {
-        get { return _host.Services; }
+        return _host.Services.GetService(typeof(T)) as T;
     }
 
-    /// <summary>
-    /// Occurs when the application is loading.
-    /// </summary>
     private async void OnStartup(object sender, StartupEventArgs e)
     {
         await _host.StartAsync();
     }
 
-    /// <summary>
-    /// Occurs when the application is closing.
-    /// </summary>
     private async void OnExit(object sender, ExitEventArgs e)
     {
         await _host.StopAsync();
-
         _host.Dispose();
     }
 
-    /// <summary>
-    /// Occurs when an exception is thrown by an application but not handled.
-    /// </summary>
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        // For more info see https://docs.microsoft.com/en-us/dotnet/api/system.windows.application.dispatcherunhandledexception?view=windowsdesktop-6.0
+        // You can add logging or other error handling here.
     }
 }

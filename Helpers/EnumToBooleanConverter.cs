@@ -1,39 +1,33 @@
-﻿// This Source Code Form is subject to the terms of the MIT License.
-// If a copy of the MIT was not distributed with this file, You can obtain one at https://opensource.org/licenses/MIT.
-// Copyright (C) Leszek Pomianowski and WPF UI Contributors.
-// All Rights Reserved.
+// In Helpers/EnumToBooleanConverter.cs
 
+using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace VCenterMigrationTool.Helpers;
-
-public class EnumToBooleanConverter : IValueConverter
+namespace VCenterMigrationTool.Helpers
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    /// <summary>
+    /// A converter that checks if an enum value matches a specified parameter.
+    /// </summary>
+    public class EnumToBooleanConverter : IValueConverter
     {
-        if (parameter is not string enumString)
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new ArgumentException("ExceptionEnumToBooleanConverterParameterMustBeAnEnumName");
+            if (value == null || parameter == null)
+                return false;
+
+            string enumValue = value.ToString()!;
+            string targetValue = parameter.ToString()!;
+
+            return enumValue.Equals(targetValue, StringComparison.OrdinalIgnoreCase);
         }
 
-        if (!Enum.IsDefined(typeof(Wpf.Ui.Appearance.ApplicationTheme), value))
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new ArgumentException("ExceptionEnumToBooleanConverterValueMustBeAnEnum");
+            if (value is false)
+                return null!; // Or some default value
+
+            return parameter;
         }
-
-        var enumValue = Enum.Parse(typeof(Wpf.Ui.Appearance.ApplicationTheme), enumString);
-
-        return enumValue.Equals(value);
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        if (parameter is not string enumString)
-        {
-            throw new ArgumentException("ExceptionEnumToBooleanConverterParameterMustBeAnEnumName");
-        }
-
-        return Enum.Parse(typeof(Wpf.Ui.Appearance.ApplicationTheme), enumString);
     }
 }

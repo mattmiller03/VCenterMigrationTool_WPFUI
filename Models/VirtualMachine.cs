@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System.Text.Json.Serialization;
 
-// In Models/VirtualMachine.cs
 namespace VCenterMigrationTool.Models;
 
-public class VirtualMachine
+public partial class VirtualMachine : ObservableObject
 {
-    public string Name { get; set; }
-    public string PowerState { get; set; }
-    public string EsxiHost { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string PowerState { get; set; } = string.Empty;
+    public string EsxiHost { get; set; } = string.Empty;
     public bool IsSelected { get; set; }
 }

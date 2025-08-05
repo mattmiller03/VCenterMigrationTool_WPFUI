@@ -12,10 +12,8 @@
                 <ui:ThemesDictionary Theme="Dark" />
                 <ui:ControlsDictionary />
             </ResourceDictionary.MergedDictionaries>
-
             <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
-            <helpers:BoolToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-
+            <helpers:BoolToStringConverter x:Key="BoolToStringConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

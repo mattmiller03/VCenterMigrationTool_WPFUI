@@ -7,44 +7,57 @@ using System.Threading.Tasks;
 using System.Windows;
 using VCenterMigrationTool.Views.Pages;
 using VCenterMigrationTool.Views.Windows;
-using VCenterMigrationTool.Helpers;
 using Wpf.Ui;
-using Wpf.Ui.Controls; // <-- CHANGE/ADD this namespace for INavigationWindow
+using Wpf.Ui.Abstractions;
 
 namespace VCenterMigrationTool.Services;
 
-public class ApplicationHostService(IServiceProvider serviceProvider) : IHostedService
+/// <summary>
+/// Manages the application lifecycle, including showing the main window.
+/// </summary>
+public class ApplicationHostService : IHostedService
 {
-    private INavigationWindow? _navigationWindow; // Use INavigationWindow from Wpf.Ui.Controls
+    private readonly IServiceProvider _serviceProvider;
+    private INavigationWindow? _navigationWindow;
 
+    public ApplicationHostService(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    /// <summary>
+    /// Triggered when the application host is ready to start the service.
+    /// </summary>
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        await HandleActivationAsync();
+    }
 
     /// <summary>
     /// Triggered when the application host is performing a graceful shutdown.
     /// </summary>
-    /// <param name="cancellationToken">Indicates that the shutdown process should no longer be graceful.</param>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         await Task.CompletedTask;
     }
 
     /// <summary>
-    /// Triggered when the application host starts.
+    /// Creates and shows the main window, then navigates to the initial page.
     /// </summary>
-    /// <param name="cancellationToken">Indicates that the shutdown process should no longer be graceful.</param>
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        await HandleActivationAsync();
-    }
     private async Task HandleActivationAsync()
     {
         await Task.CompletedTask;
 
         if (!Application.Current.Windows.OfType<MainWindow>().Any())
         {
-            _navigationWindow = (serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow)!;
+            // Get the main window from the service provider
+            _navigationWindow = (_serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow)!;
+
+            // Show the window
             _navigationWindow!.ShowWindow();
-            _ = _navigationWindow.Navigate(typeof(Views.Pages.ConnectionPage));
+
+            // Navigate to the initial page
+            _navigationWindow.Navigate(typeof(DashboardPage));
         }
-        await Task.CompletedTask;
     }
 }

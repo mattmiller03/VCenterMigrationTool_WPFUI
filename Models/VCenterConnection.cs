@@ -1,15 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// In Models/VCenterConnection.cs
+using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
 
-// In Models/VCenterConnection.cs
 namespace VCenterMigrationTool.Models;
 
-public class VCenterConnection
+public partial class VCenterConnection : ObservableObject
 {
-    public string Name { get; set; } // e.g., "Production", "DMZ"
-    public string ServerAddress { get; set; }
-    public string Username { get; set; }
+    [ObservableProperty]
+    private string _name = string.Empty;
+
+    [ObservableProperty]
+    private string _serverAddress = string.Empty;
+
+    [ObservableProperty]
+    private string _username = string.Empty;
+
+    // This will hold the encrypted password for storing in the JSON file.
+    public string? ProtectedPassword { get; set; }
+
+    // This property is for UI binding and will not be saved in the JSON file.
+    [JsonIgnore]
+    public bool ShouldSavePassword { get; set; } = false;
 }

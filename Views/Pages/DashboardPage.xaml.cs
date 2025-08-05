@@ -1,9 +1,11 @@
-﻿// In Views/Pages/DashboardPage.xaml.cs
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using VCenterMigrationTool.ViewModels;
 
 namespace VCenterMigrationTool.Views.Pages
 {
+    /// <summary>
+    /// Interaction logic for DashboardPage.xaml
+    /// </summary>
     public partial class DashboardPage : Page
     {
         public DashboardViewModel ViewModel { get; }
@@ -13,7 +15,6 @@ namespace VCenterMigrationTool.Views.Pages
             ViewModel = viewModel;
             DataContext = this;
 
-            // This error will be resolved once the XAML is fixed.
             InitializeComponent();
         }
     }

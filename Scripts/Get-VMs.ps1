@@ -13,7 +13,7 @@ param(
 
 # Your connection logic would go here
 # Connect-VIServer -Server $VCenterServer -User $User -Password $Password -Force | Out-Null
-Write-Information "Getting list of VMs from $VCenterServer..."
+Write-Information "Getting list of VMs from $($VCenterServer)..."
 
 # Get VMs, select the properties we want, and convert the collection to JSON
 # This will be the script's final output, which C# will capture.

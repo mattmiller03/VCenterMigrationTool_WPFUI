@@ -1,57 +1,38 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>applicationIcon.ico</ApplicationIcon>
-    <UseWPF>true</UseWPF>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<ApplicationIcon>Assets\applicationIcon-256.ico</ApplicationIcon>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Resource Include="Assets\applicationIcon-1024.png" />
-    <Resource Include="Assets\applicationIcon-256.png" />
-    <Content Include="Scripts\Export-vCenterConfig.ps1" />
-    <Content Include="applicationIcon.ico" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Assets\applicationIcon-256.ico" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="System.Management.Automation" Version="7.4.11" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0 " />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="System.Formats.Asn1" Version="9.0.8" />
+		<PackageReference Include="System.Management.Automation" Version="7.4.1" />
+		<PackageReference Include="System.Text.Json" Version="9.0.8" />
+		<PackageReference Include="WPF-UI" Version="4.0.3" />
+		<PackageReference Include="WPF-UI.DependencyInjection" Version="4.0.3" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Remove="Assets\applicationIcon-1024.png" />
-    <None Remove="Assets\applicationIcon-256.png" />
-    <None Remove="Scripts\Export-vCenterConfig.ps1" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Update="Scripts\*.ps1">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\wpfui-4.0.3\src\Wpf.Ui.Abstractions\Wpf.Ui.Abstractions.csproj" />
-    <ProjectReference Include="..\wpfui-4.0.3\src\Wpf.Ui.DependencyInjection\Wpf.Ui.DependencyInjection.csproj" />
-    <ProjectReference Include="..\wpfui-4.0.3\src\Wpf.Ui.ToastNotifications\Wpf.Ui.ToastNotifications.csproj" />
-    <ProjectReference Include="..\wpfui-4.0.3\src\Wpf.Ui.Tray\Wpf.Ui.Tray.csproj" />
-    <ProjectReference Include="..\wpfui-4.0.3\src\Wpf.Ui\Wpf.Ui.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Scripts\*.ps1">
+	<ItemGroup>
+	  <None Update="appsettings.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
-    <Using Include="CommunityToolkit.Mvvm.Input" />
-    <Using Include="Microsoft.Extensions.Hosting" />
-    <Using Include="System.Windows" />
-  </ItemGroup>
+	  </None>
+	</ItemGroup>
 
 </Project>

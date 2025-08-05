@@ -1,40 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// In ViewModels/ViewModel.cs
+
+using CommunityToolkit.Mvvm.ComponentModel;
 using System.Threading.Tasks;
 using Wpf.Ui.Abstractions.Controls;
+using Wpf.Ui.Controls;
 
 namespace VCenterMigrationTool.ViewModels
 {
-    public abstract class ViewModel : ObservableObject, INavigationAware
+    /// <summary>
+    /// A base class for ViewModels that need to be aware of navigation events.
+    /// </summary>
+    public abstract partial class ViewModel : ObservableObject, INavigationAware
     {
-        /// <inheritdoc />
-        public virtual Task OnNavigatedToAsync()
+        /// <summary>
+        /// This method is called when the page is navigated to.
+        /// </summary>
+        public virtual async Task OnNavigatedToAsync()
         {
-            OnNavigatedTo();
-
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
 
         /// <summary>
-        /// Handles the event that is fired after the component is navigated to.
+        /// This method is called when the page is navigated away from.
         /// </summary>
-        // ReSharper disable once MemberCanBeProtected.Global
-        public virtual void OnNavigatedTo() { }
-
-        /// <inheritdoc />
-        public virtual Task OnNavigatedFromAsync()
+        public virtual async Task OnNavigatedFromAsync()
         {
-            OnNavigatedFrom();
-
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
-
-        /// <summary>
-        /// Handles the event that is fired before the component is navigated from.
-        /// </summary>
-        // ReSharper disable once MemberCanBeProtected.Global
-        public virtual void OnNavigatedFrom() { }
     }
 }

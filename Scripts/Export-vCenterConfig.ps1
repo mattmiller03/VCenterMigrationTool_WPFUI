@@ -15,7 +15,7 @@ param(
 )
 
 # Use Write-Information for progress updates that will show in the UI
-Write-Information "Attempting to connect to $VCenterServer..."
+Write-Information "Attempting to connect to $($VCenterServer)..."
 
 # Example: Exporting vDS configuration
 # NOTE: This assumes you have the PowerCLI module installed where this app runs.
@@ -24,13 +24,13 @@ Write-Information "Attempting to connect to $VCenterServer..."
 try {
     # Connect to vCenter (add your connection logic here)
     # Connect-VIServer -Server $VCenterServer -User $User -Password $Password
-    Write-Information "Successfully connected to $VCenterServer."
+    Write-Information "Successfully connected to $($VCenterServer)."
 
     if (-not (Test-Path -Path $ExportPath)) {
         New-Item -Path $ExportPath -ItemType Directory | Out-Null
     }
     
-    Write-Information "Exporting vDS configurations to $ExportPath..."
+    Write-Information "Exporting vDS configurations to $($ExportPath)..."
     # Get-VDSwitch | Export-Vds -FolderPath $ExportPath -Confirm:$false
     
     Write-Information "Export complete!"

@@ -1,9 +1,8 @@
-﻿// In ViewModels/DashboardViewModel.cs
-
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Controls;
@@ -13,6 +12,7 @@ namespace VCenterMigrationTool.ViewModels;
 public partial class DashboardViewModel : ObservableObject, INavigationAware
 {
     private readonly PowerShellService _powerShellService;
+    private readonly ConnectionProfileService _profileService;
 
     [ObservableProperty]
     private bool _isBusy = false;
@@ -20,50 +20,67 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private string _scriptOutput = "Script output will be displayed here...";
 
-    public DashboardViewModel(PowerShellService powerShellService)
+    public ObservableCollection<VCenterConnection> Profiles { get; }
+
+    [ObservableProperty]
+    private VCenterConnection? _selectedSourceProfile;
+
+    [ObservableProperty]
+    private VCenterConnection? _selectedTargetProfile;
+
+    [ObservableProperty]
+    private string _sourceConnectionStatus = "Not Connected";
+
+    [ObservableProperty]
+    private string _targetConnectionStatus = "Not Connected";
+
+    public DashboardViewModel(PowerShellService powerShellService, ConnectionProfileService profileService)
     {
         _powerShellService = powerShellService;
+        _profileService = profileService;
+        Profiles = _profileService.Profiles;
+    }
+
+    [RelayCommand]
+    private async Task OnConnectSource()
+    {
+        if (SelectedSourceProfile is null)
+        {
+            SourceConnectionStatus = "Please select a profile.";
+            return;
+        }
+        SourceConnectionStatus = $"Connecting to {SelectedSourceProfile.ServerAddress}...";
+        await Task.Delay(1500); // Simulate connection
+        SourceConnectionStatus = $"Connected to {SelectedSourceProfile.ServerAddress}";
+    }
+
+    [RelayCommand]
+    private async Task OnConnectTarget()
+    {
+        if (SelectedTargetProfile is null)
+        {
+            TargetConnectionStatus = "Please select a profile.";
+            return;
+        }
+        TargetConnectionStatus = $"Connecting to {SelectedTargetProfile.ServerAddress}...";
+        await Task.Delay(1500); // Simulate connection
+        TargetConnectionStatus = $"Connected to {SelectedTargetProfile.ServerAddress}";
     }
 
     [RelayCommand]
     private async Task OnExportConfiguration()
     {
-        IsBusy = true;
-        ScriptOutput = "Starting configuration export...\n";
-
-        // IMPORTANT: For now, connection details are hardcoded.
-        // We will implement a shared service to get these details later.
-        var scriptParams = new Dictionary<string, object>
-        {
-            { "VCenterServer", "vcenter-prod.domain.local" },
-            { "User", "your-user" },
-            { "Password", "your-password" }, // This needs to be handled securely!
-            { "ExportPath", "C:\\vCenter-Export" }
-        };
-
-        // Make sure you have this script in a 'Scripts' folder in your project
-        string scriptPath = ".\\Scripts\\Export-vCenterConfig.ps1";
-        ScriptOutput += await _powerShellService.RunScriptAsync(scriptPath, scriptParams);
-
-        IsBusy = false;
+        // This command's logic can be filled in later
+        await Task.CompletedTask;
     }
 
     [RelayCommand]
     private void OnImportConfiguration()
     {
-        IsBusy = true;
-        ScriptOutput = "Import feature is not yet implemented.";
-        // You would follow a similar pattern to the export command here.
-        IsBusy = false;
+        // This command's logic can be filled in later
     }
 
-    public async Task OnNavigatedToAsync()
-    {
-        await Task.CompletedTask;
-    }
+    public async Task OnNavigatedToAsync() => await Task.CompletedTask;
 
-    public async Task OnNavigatedFromAsync()
-    {
-        await Task.CompletedTask;
-    }
+    public async Task OnNavigatedFromAsync() => await Task.CompletedTask;
 }
