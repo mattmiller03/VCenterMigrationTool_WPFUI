@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Options;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
@@ -9,6 +11,7 @@ using Wpf.Ui.Abstractions;
 using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
+using Microsoft.Extensions.Options;
 
 namespace VCenterMigrationTool.ViewModels
 {
@@ -16,12 +19,10 @@ namespace VCenterMigrationTool.ViewModels
     {
         private readonly IThemeService _themeService;
         private readonly ConnectionProfileService _profileService;
+        private readonly PowerShellService _powerShellService;
 
         [ObservableProperty]
         private ApplicationTheme _currentTheme;
-
-        [ObservableProperty]
-        private bool _isEditing = false;
 
         [ObservableProperty]
         private ObservableCollection<VCenterConnection> _profiles;
@@ -42,16 +43,70 @@ namespace VCenterMigrationTool.ViewModels
         private bool _shouldSavePassword;
 
         [ObservableProperty]
+        private bool _isEditing;
+
+        private readonly IOptions<AppConfig> _appConfig;
+
+        // --- New Properties for General Settings ---
+        [ObservableProperty]
+        private string _powerShellVersion = "Checking...";
+
+        [ObservableProperty]
+        private bool _isPowerCliInstalled;
+
+        [ObservableProperty]
+        private string _logPath = string.Empty;
+
+        [ObservableProperty]
+        private string _exportPath = string.Empty;
+
+        [ObservableProperty]
         private string _connectionStatus = "Ready to test connection.";
 
-        public SettingsViewModel(IThemeService themeService, ConnectionProfileService profileService)
+        public SettingsViewModel(
+            IThemeService themeService,
+            ConnectionProfileService profileService,
+            PowerShellService powerShellService, 
+            IOptions<AppConfig> appConfig
+        )
         {
             _themeService = themeService;
             _profileService = profileService;
+            _powerShellService = powerShellService;
             _currentTheme = _themeService.GetTheme();
             _profiles = _profileService.Profiles;
+            _appConfig = appConfig;
+
+            // Load settings from the config file
+            _logPath = _appConfig.Value.LogPath ?? "Logs";
+            _exportPath = _appConfig.Value.ExportPath ?? "Exports";
+        }
+        [RelayCommand]
+        private async Task OnCheckPrerequisites()
+        {
+            // This will call a new PowerShell script
+            PowerShellVersion = "Checking...";
+            IsPowerCliInstalled = false;
+            await Task.Delay(1000); // Simulate script run
+            PowerShellVersion = "7.4.1";
+            IsPowerCliInstalled = true;
         }
 
+        [RelayCommand]
+        private async Task OnInstallPowerCli()
+        {
+            // This will call a script to install the module
+            await Task.CompletedTask;
+        }
+
+        [RelayCommand]
+        private void OnSaveChanges()
+        {
+            // This will save the new path settings
+            // In a real app, you'd write these values back to appsettings.json
+            _appConfig.Value.LogPath = LogPath;
+            _appConfig.Value.ExportPath = ExportPath;
+        }
         [RelayCommand]
         private void OnChangeTheme(string parameter)
         {
@@ -60,66 +115,17 @@ namespace VCenterMigrationTool.ViewModels
                 "theme_light" => ApplicationTheme.Light,
                 _ => ApplicationTheme.Dark
             };
-
             if (_themeService.GetTheme() == newTheme)
                 return;
-
             _themeService.SetTheme(newTheme);
             CurrentTheme = newTheme;
         }
-        [RelayCommand]
-        private void OnStartEdit(VCenterConnection? profile)
-        {
-            if (profile is null) return;
 
-            // When editing starts, copy the selected profile's data into the entry fields
-            // and set the IsEditing flag to true.
-            SelectedProfileForEditing = profile;
-            NewProfileName = profile.Name;
-            NewProfileServer = profile.ServerAddress;
-            NewProfileUsername = profile.Username;
-            // We don't load the password for editing, for security.
-
-            IsEditing = true;
-        }
-
-        [RelayCommand]
-        private void OnUpdateProfile()
-        {
-            if (SelectedProfileForEditing is null) return;
-
-            // Copy the updated values from the entry fields back to the selected profile.
-            SelectedProfileForEditing.Name = NewProfileName;
-            SelectedProfileForEditing.ServerAddress = NewProfileServer;
-            SelectedProfileForEditing.Username = NewProfileUsername;
-
-            // Tell the service to save the updated profiles to the file.
-            _profileService.UpdateProfile();
-
-            // Clear the entry fields and exit editing mode.
-            NewProfileName = string.Empty;
-            NewProfileServer = string.Empty;
-            NewProfileUsername = string.Empty;
-            IsEditing = false;
-            SelectedProfileForEditing = null;
-        }
-
-        [RelayCommand]
-        private void OnCancelEdit()
-        {
-            // Clear the entry fields and exit editing mode without saving.
-            NewProfileName = string.Empty;
-            NewProfileServer = string.Empty;
-            NewProfileUsername = string.Empty;
-            IsEditing = false;
-            SelectedProfileForEditing = null;
-        }
         [RelayCommand]
         private void OnAddProfile(PasswordBox? passwordBox)
         {
             if (string.IsNullOrWhiteSpace(NewProfileName) || string.IsNullOrWhiteSpace(NewProfileServer))
                 return;
-
             var newProfile = new VCenterConnection
             {
                 Name = NewProfileName,
@@ -127,17 +133,10 @@ namespace VCenterMigrationTool.ViewModels
                 Username = NewProfileUsername,
                 ShouldSavePassword = ShouldSavePassword
             };
-
             _profileService.ProtectPassword(newProfile, passwordBox?.Password);
             _profileService.AddProfile(newProfile);
-
-            NewProfileName = string.Empty;
-            NewProfileServer = string.Empty;
-            NewProfileUsername = string.Empty;
-            ShouldSavePassword = false;
-
-            if (passwordBox != null)
-                passwordBox.Clear();
+            OnCancelEdit(); // Clear fields after adding
+            passwordBox?.Clear();
         }
 
         [RelayCommand]
@@ -147,22 +146,85 @@ namespace VCenterMigrationTool.ViewModels
             _profileService.RemoveProfile(profile);
         }
 
+
+
         [RelayCommand]
-        private async Task OnTestConnection(VCenterConnection? profile)
+        private void OnStartEdit(VCenterConnection? profile)
         {
-            if (profile is null)
+            if (profile is null) return;
+            SelectedProfileForEditing = profile;
+            NewProfileName = profile.Name;
+            NewProfileServer = profile.ServerAddress;
+            NewProfileUsername = profile.Username;
+            IsEditing = true;
+        }
+
+        [RelayCommand]
+        private async Task OnTestSelectedProfile()
+        {
+            if (SelectedProfileForEditing is null)
             {
                 ConnectionStatus = "Please select a profile to test.";
                 return;
             }
 
-            ConnectionStatus = $"Testing connection to {profile.ServerAddress}...";
-            await Task.Delay(1500); // Simulate connection test
-            ConnectionStatus = "Connection successful!";
+            // Decrypt the password for the selected profile
+            string? password = _profileService.UnprotectPassword(SelectedProfileForEditing);
+            if (string.IsNullOrEmpty(password))
+            {
+                ConnectionStatus = "Password not saved for this profile.";
+                return;
+            }
+
+            ConnectionStatus = $"Testing connection to {SelectedProfileForEditing.ServerAddress}...";
+
+            var scriptParams = new Dictionary<string, object>
+            {
+                { "VCenterServer", SelectedProfileForEditing.ServerAddress },
+                { "Username", SelectedProfileForEditing.Username },
+                { "Password", password }
+            };
+
+            string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
+
+            if (result.Trim() == "Success")
+            {
+                ConnectionStatus = "Connection successful!";
+            }
+            else
+            {
+                ConnectionStatus = $"Failed: {result.Replace("Failure:", "").Trim()}";
+            }
+        }
+        [RelayCommand]
+        private void OnUpdateProfile()
+        {
+            if (SelectedProfileForEditing is null) return;
+            SelectedProfileForEditing.Name = NewProfileName;
+            SelectedProfileForEditing.ServerAddress = NewProfileServer;
+            SelectedProfileForEditing.Username = NewProfileUsername;
+            _profileService.UpdateProfile();
+            OnCancelEdit();
+        }
+
+        [RelayCommand]
+        private void OnCancelEdit()
+        {
+            NewProfileName = string.Empty;
+            NewProfileServer = string.Empty;
+            NewProfileUsername = string.Empty;
+            ShouldSavePassword = false;
+            IsEditing = false;
+            SelectedProfileForEditing = null;
+        }
+
+        [RelayCommand]
+        private void OnPrepareNewProfile()
+        {
+            OnCancelEdit();
         }
 
         public async Task OnNavigatedToAsync() => await Task.CompletedTask;
-
         public async Task OnNavigatedFromAsync() => await Task.CompletedTask;
     }
 }

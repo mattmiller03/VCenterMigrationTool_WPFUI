@@ -22,6 +22,8 @@ namespace VCenterMigrationTool.Models
         public string? AppRepositoryUrl { get; set; }
         public string? AppWebsiteUrl { get; set; }
         public string? AppSupportUrl { get; set; }
+        public string? LogPath { get; set; } // <-- ADD THIS
+        public string? ExportPath { get; set; } // <-- ADD THIS
 
     }
 }

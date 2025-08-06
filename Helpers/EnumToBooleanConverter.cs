@@ -1,33 +1,29 @@
-// In Helpers/EnumToBooleanConverter.cs
-
 using System;
 using System.Globalization;
+using System.Windows;
 using System.Windows.Data;
 
-namespace VCenterMigrationTool.Helpers
+namespace VCenterMigrationTool.Helpers;
+
+public class EnumToBooleanConverter : IValueConverter
 {
-    /// <summary>
-    /// A converter that checks if an enum value matches a specified parameter.
-    /// </summary>
-    public class EnumToBooleanConverter : IValueConverter
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value == null || parameter == null)
-                return false;
+        if (value is null || parameter is null)
+            return false;
 
-            string enumValue = value.ToString()!;
-            string targetValue = parameter.ToString()!;
+        string enumValue = value.ToString()!;
+        string targetValue = parameter.ToString()!;
 
-            return enumValue.Equals(targetValue, StringComparison.OrdinalIgnoreCase);
-        }
+        return enumValue.Equals(targetValue, StringComparison.OrdinalIgnoreCase);
+    }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is false)
-                return null!; // Or some default value
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is false || parameter is null)
+            return DependencyProperty.UnsetValue;
 
-            return parameter;
-        }
+        // Convert the string parameter back to an enum value of the correct type
+        return Enum.Parse(targetType, parameter.ToString()!);
     }
 }

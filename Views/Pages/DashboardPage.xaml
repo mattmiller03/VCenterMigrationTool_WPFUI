@@ -34,10 +34,9 @@
                     <TextBlock Text="Source vCenter" FontWeight="Medium" />
                     <Grid Margin="0,10,0,10">
                         <ComboBox
-                            x:Name="SourceComboBox"
                             ItemsSource="{Binding ViewModel.Profiles}"
                             SelectedItem="{Binding ViewModel.SelectedSourceProfile}"
-                            DisplayMemberPath="Name" />
+                            DisplayMemberPath="Name" Margin="-48,0,0,0" />
                         <TextBlock
                             IsHitTestVisible="False"
                             Text="Select a source profile"
@@ -45,7 +44,7 @@
                             HorizontalAlignment="Left"
                             Margin="12,0,0,0"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            Visibility="{Binding ElementName=SourceComboBox, Path=SelectedItem, Converter={StaticResource NullToVisibilityConverter}}" />
+                            Visibility="{Binding ViewModel.SelectedSourceProfile, Converter={StaticResource NullToVisibilityConverter}}" />
                     </Grid>
                     <TextBlock Text="{Binding ViewModel.SourceConnectionStatus}" Margin="0,0,0,10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <ui:Button Content="Connect" Appearance="Primary" Command="{Binding ViewModel.ConnectSourceCommand}" />
@@ -57,10 +56,9 @@
                     <TextBlock Text="Target vCenter" FontWeight="Medium" />
                     <Grid Margin="0,10,0,10">
                         <ComboBox
-                            x:Name="TargetComboBox"
                             ItemsSource="{Binding ViewModel.Profiles}"
                             SelectedItem="{Binding ViewModel.SelectedTargetProfile}"
-                            DisplayMemberPath="Name" />
+                            DisplayMemberPath="Name" Margin="-47,0,0,0" />
                         <TextBlock
                             IsHitTestVisible="False"
                             Text="Select a target profile"
@@ -68,7 +66,7 @@
                             HorizontalAlignment="Left"
                             Margin="12,0,0,0"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            Visibility="{Binding ElementName=TargetComboBox, Path=SelectedItem, Converter={StaticResource NullToVisibilityConverter}}" />
+                            Visibility="{Binding ViewModel.SelectedTargetProfile, Converter={StaticResource NullToVisibilityConverter}}" />
                     </Grid>
                     <TextBlock Text="{Binding ViewModel.TargetConnectionStatus}" Margin="0,0,0,10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <ui:Button Content="Connect" Command="{Binding ViewModel.ConnectTargetCommand}" />

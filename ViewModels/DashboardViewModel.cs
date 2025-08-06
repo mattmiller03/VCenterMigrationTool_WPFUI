@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
@@ -49,9 +50,38 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             SourceConnectionStatus = "Please select a profile.";
             return;
         }
+
+        // Decrypt the password for the selected profile
+        string? password = _profileService.UnprotectPassword(SelectedSourceProfile);
+        if (string.IsNullOrEmpty(password))
+        {
+            // This part is a placeholder. In the future, we can pop up a dialog to ask for the password.
+            SourceConnectionStatus = "Password not saved for this profile.";
+            return;
+        }
+
         SourceConnectionStatus = $"Connecting to {SelectedSourceProfile.ServerAddress}...";
-        await Task.Delay(1500); // Simulate connection
-        SourceConnectionStatus = $"Connected to {SelectedSourceProfile.ServerAddress}";
+        IsBusy = true;
+
+        var scriptParams = new Dictionary<string, object>
+        {
+            { "VCenterServer", SelectedSourceProfile.ServerAddress },
+            { "Username", SelectedSourceProfile.Username },
+            { "Password", password }
+        };
+
+        string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
+
+        if (result.Trim() == "Success")
+        {
+            SourceConnectionStatus = $"Connected to {SelectedSourceProfile.ServerAddress}";
+        }
+        else
+        {
+            SourceConnectionStatus = $"Failed to connect: {result.Replace("Failure:", "").Trim()}";
+        }
+
+        IsBusy = false;
     }
 
     [RelayCommand]
@@ -62,10 +92,38 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             TargetConnectionStatus = "Please select a profile.";
             return;
         }
+
+        string? password = _profileService.UnprotectPassword(SelectedTargetProfile);
+        if (string.IsNullOrEmpty(password))
+        {
+            TargetConnectionStatus = "Password not saved for this profile.";
+            return;
+        }
+
         TargetConnectionStatus = $"Connecting to {SelectedTargetProfile.ServerAddress}...";
-        await Task.Delay(1500); // Simulate connection
-        TargetConnectionStatus = $"Connected to {SelectedTargetProfile.ServerAddress}";
+        IsBusy = true;
+
+        var scriptParams = new Dictionary<string, object>
+        {
+            { "VCenterServer", SelectedTargetProfile.ServerAddress },
+            { "Username", SelectedTargetProfile.Username },
+            { "Password", password }
+        };
+
+        string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
+
+        if (result.Trim() == "Success")
+        {
+            TargetConnectionStatus = $"Connected to {SelectedTargetProfile.ServerAddress}";
+        }
+        else
+        {
+            TargetConnectionStatus = $"Failed to connect: {result.Replace("Failure:", "").Trim()}";
+        }
+
+        IsBusy = false;
     }
+
 
     [RelayCommand]
     private async Task OnExportConfiguration()

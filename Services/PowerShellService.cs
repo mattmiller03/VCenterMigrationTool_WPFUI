@@ -1,4 +1,5 @@
 ﻿// In Services/PowerShellService.cs
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,6 +17,13 @@ namespace VCenterMigrationTool.Services;
 /// </summary>
 public class PowerShellService
 {
+    private readonly ILogger<PowerShellService> _logger;
+
+    // The logger is now injected through the constructor
+    public PowerShellService(ILogger<PowerShellService> logger)
+    {
+        _logger = logger;
+    }
     /// <summary>
     /// Runs a script and returns its console output streams as a single string.
     /// </summary>
@@ -26,6 +34,7 @@ public class PowerShellService
 
         if (!File.Exists(fullScriptPath))
         {
+            _logger.LogError("Script not found at path: {ScriptPath}", fullScriptPath);
             return $"ERROR: Script not found at {fullScriptPath}";
         }
 
@@ -36,10 +45,19 @@ public class PowerShellService
             ps.AddScript(File.ReadAllText(fullScriptPath));
             ps.AddParameters(parameters);
 
-            // Capture all output streams for logging
+            // Capture streams for the UI output
             ps.Streams.Information.DataAdded += (_, args) => output.AppendLine(ps.Streams.Information[args.Index].MessageData.ToString());
             ps.Streams.Warning.DataAdded += (_, args) => output.AppendLine($"WARNING: {ps.Streams.Warning[args.Index].Message}");
-            ps.Streams.Error.DataAdded += (_, args) => output.AppendLine($"ERROR: {ps.Streams.Error[args.Index].Exception}");
+
+            // Capture the full error record for detailed logging
+            ps.Streams.Error.DataAdded += (_, args) =>
+            {
+                var errorRecord = ps.Streams.Error[args.Index];
+                // Log the FULL, untruncated error
+                _logger.LogError("PowerShell Stream Error: {ErrorDetails}", errorRecord.ToString());
+                // Provide a shorter, cleaner message for the UI
+                output.AppendLine($"ERROR: {errorRecord.Exception.Message}");
+            };
 
             try
             {
@@ -47,6 +65,7 @@ public class PowerShellService
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "A fatal error occurred while invoking PowerShell script {ScriptPath}", scriptPath);
                 output.AppendLine($"FATAL SCRIPT ERROR: {ex.Message}");
             }
         });

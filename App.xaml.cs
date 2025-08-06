@@ -15,6 +15,8 @@ using Wpf.Ui.Abstractions;
 using Wpf.Ui;
 using Wpf.Ui.DependencyInjection; // <-- ADD THIS LINE
 using Wpf.Ui.Converters;
+using Serilog;
+using Microsoft.Extensions.Logging;
 
 namespace VCenterMigrationTool;
 
@@ -23,7 +25,17 @@ public partial class App : Application
     private static readonly IHost _host = Host
         .CreateDefaultBuilder()
         .ConfigureAppConfiguration(c => c.SetBasePath(AppContext.BaseDirectory))
-        .ConfigureServices((context, services) =>
+        // Add this UseSerilog configuration block
+        .UseSerilog((context, services, configuration) => configuration
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext()
+            .WriteTo.Debug()
+            .WriteTo.File(
+                path: "Logs/log-.txt",
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+            )
+        ).ConfigureServices((context, services) =>
         {
             // App Host
             services.AddHostedService<ApplicationHostService>();

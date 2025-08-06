@@ -14,6 +14,7 @@
             </ResourceDictionary.MergedDictionaries>
             <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
             <helpers:BoolToStringConverter x:Key="BoolToStringConverter" />
+            <helpers:NullToBoolConverter x:Key="NullToBoolConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -12,8 +12,6 @@ public class BoolToStringConverter : IValueConverter
         if (value is not bool isEditing)
             return string.Empty;
 
-        // This converter is used to switch the title text
-        // FallbackValue in the XAML provides the default text
         return isEditing ? "Edit Profile" : "Add New Profile";
     }
 
