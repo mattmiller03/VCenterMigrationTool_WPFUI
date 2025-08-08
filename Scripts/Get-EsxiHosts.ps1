@@ -7,7 +7,19 @@ param(
 
 # Connect-VIServer...
 
-# Get all ESXi hosts and their relevant properties
-Get-VMHost | Select-Object @{N='Name';E={$_.Name}}, @{N='Cluster';E={$_.Parent.Name}}, @{N='Status';E={$_.ConnectionState}} | ConvertTo-Json
+# Get all clusters and for each cluster, get its hosts
+$topology = Get-Cluster | ForEach-Object {
+    $cluster = $_
+    [PSCustomObject]@{
+        Name  = $cluster.Name
+        Hosts = $cluster | Get-VMHost | ForEach-Object {
+            [PSCustomObject]@{
+                Name = $_.Name
+            }
+        }
+    }
+}
+
+$topology | ConvertTo-Json -Depth 3
 
 # Disconnect-VIServer...

@@ -32,8 +32,9 @@ public partial class MainWindowViewModel : ObservableObject
         {
             new NavigationViewItem("Dashboard", SymbolRegular.Home24, typeof(DashboardPage)),
             new NavigationViewItem("vCenter Migration", SymbolRegular.ArrowSwap24, typeof(VCenterMigrationPage)),
-            new NavigationViewItem("ESXi Host Migration", SymbolRegular.Server24, typeof(DashboardPage)),
-            new NavigationViewItem("VM Migration", SymbolRegular.Desktop24, typeof(DashboardPage))
+            new NavigationViewItem("ESXi Host Migration", SymbolRegular.Server24, typeof(HostMigrationPage)),
+            new NavigationViewItem("Network Migration", SymbolRegular.NetworkCheck24, typeof(NetworkMigrationPage)),
+            new NavigationViewItem("VM Migration", SymbolRegular.Desktop24, typeof(VmMigrationPage))
         };
 
         _footerMenuItems = new()

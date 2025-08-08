@@ -1,5 +1,4 @@
-﻿// In ViewModels/HostMigrationViewModel.cs
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,7 +19,7 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _logOutput = "Migration log will be displayed here...";
 
-    [ObservableProperty] private ObservableCollection<EsxiHost> _sourceHosts = new();
+    [ObservableProperty] private ObservableCollection<ClusterNode> _sourceTopology = new();
     [ObservableProperty] private ObservableCollection<ClusterInfo> _targetClusters = new();
     [ObservableProperty] private ClusterInfo? _selectedTargetCluster;
 
@@ -34,16 +33,16 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
     private async Task LoadData()
     {
         IsBusy = true;
-        LogOutput = "Loading hosts from source and clusters from target...";
+        LogOutput = "Loading source topology and target clusters...";
 
-        // In a real app, you would get the selected source/target profiles from a shared service
-        // For now, we'll use placeholder profiles from our list
+        // In a real app, you would get the selected source/target profiles from the Dashboard
         var sourceProfile = _profileService.Profiles.FirstOrDefault();
         var targetProfile = _profileService.Profiles.LastOrDefault();
 
         if (sourceProfile != null)
         {
-            SourceHosts = await _powerShellService.RunScriptAndGetObjectsAsync<EsxiHost>(".\\Scripts\\Get-EsxiHosts.ps1", new Dictionary<string, object>());
+            // This script needs to return a hierarchical JSON object
+            SourceTopology = await _powerShellService.RunScriptAndGetObjectsAsync<ClusterNode>(".\\Scripts\\Get-EsxiHosts.ps1", new Dictionary<string, object>());
         }
 
         if (targetProfile != null)
@@ -51,14 +50,19 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
             TargetClusters = await _powerShellService.RunScriptAndGetObjectsAsync<ClusterInfo>(".\\Scripts\\Get-Clusters.ps1", new Dictionary<string, object>());
         }
 
-        LogOutput = $"Loaded {SourceHosts.Count} hosts and {TargetClusters.Count} target clusters.";
+        LogOutput = $"Loaded {SourceTopology.Count} source clusters and {TargetClusters.Count} target clusters.";
         IsBusy = false;
     }
 
     [RelayCommand]
     private async Task OnMigrateHosts()
     {
-        var selectedHosts = SourceHosts.Where(h => h.IsSelected).ToList();
+        // Find all hosts that have IsSelected = true across all clusters
+        var selectedHosts = SourceTopology
+            .SelectMany(cluster => cluster.Hosts)
+            .Where(host => host.IsSelected)
+            .ToList();
+
         if (!selectedHosts.Any() || SelectedTargetCluster is null)
         {
             LogOutput += "\nPlease select at least one host and a target cluster.";
@@ -70,9 +74,8 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
 
         foreach (var host in selectedHosts)
         {
-            // This is where you would call the Move-EsxiHost.ps1 script
             LogOutput += $"Simulating migration of host '{host.Name}' to cluster '{SelectedTargetCluster.Name}'...\n";
-            await Task.Delay(2000);
+            await Task.Delay(2000); // Simulate PowerShell script work
             LogOutput += $"Migration of '{host.Name}' complete.\n";
         }
 
@@ -82,7 +85,7 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
 
     public async Task OnNavigatedToAsync()
     {
-        if (!SourceHosts.Any())
+        if (!SourceTopology.Any())
         {
             await LoadData();
         }

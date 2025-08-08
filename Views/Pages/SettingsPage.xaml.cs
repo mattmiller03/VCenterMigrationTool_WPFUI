@@ -13,7 +13,7 @@ namespace VCenterMigrationTool.Views.Pages
         {
             ViewModel = viewModel;
             // Change the DataContext to be the ViewModel directly
-            DataContext = ViewModel;
+            DataContext = this;
 
             InitializeComponent();
         }

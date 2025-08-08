@@ -11,7 +11,7 @@
     Title="VCenterMigrationPage"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}">
-    
+
     <Grid Margin="42">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -20,7 +20,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" FontSize="24" FontWeight="Medium" Text="vCenter Object Migration" />
-        <TextBlock Grid.Row="1" Margin="0,5,0,0" Text="Select the vCenter-level objects to export from the source and import to the target." Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+        <TextBlock Grid.Row="1" Margin="0,5,0,0" Text="Select objects to migrate and monitor the progress." Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
 
         <Grid Grid.Row="2" Margin="0,20,0,0">
             <Grid.ColumnDefinitions>
@@ -35,10 +35,9 @@
                     <CheckBox IsChecked="{Binding ViewModel.MigrateRolesAndPermissions}" Content="Roles and Permissions" Margin="0,10,0,10"/>
                     <CheckBox IsChecked="{Binding ViewModel.MigrateVmFolders}" Content="VM and Template Folders" Margin="0,0,0,10"/>
                     <CheckBox IsChecked="{Binding ViewModel.MigrateTagsAndCategories}" Content="Tags and Categories" Margin="0,0,0,20"/>
-                    
+
                     <TextBlock Text="Cluster-Specific Options" FontSize="16" FontWeight="Medium" />
                     <TextBlock Text="Select a cluster to see its resources." Margin="0,5,0,10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-
                     <Grid>
                         <ComboBox
                             x:Name="ClusterComboBox"
@@ -71,19 +70,52 @@
                         Content="Start Migration" 
                         Command="{Binding ViewModel.StartMigrationCommand}"
                         Appearance="Primary"
+                        Icon="Play24"
                         IsEnabled="{Binding ViewModel.IsBusy, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
-                    
-                    <ui:ProgressRing Margin="0,10,0,0" IsIndeterminate="True" Visibility="{Binding ViewModel.IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
                 </StackPanel>
             </ScrollViewer>
 
-            <ui:TextBox
-                Grid.Column="2"
-                Text="{Binding ViewModel.LogOutput, Mode=OneWay}"
-                IsReadOnly="True"
-                AcceptsReturn="True"
-                VerticalScrollBarVisibility="Auto"
-                FontFamily="Consolas"/>
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <GroupBox Grid.Row="0" Header="Migration Progress">
+                    <DataGrid 
+                        ItemsSource="{Binding ViewModel.MigrationTasks}"
+                        AutoGenerateColumns="False"
+                        IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Object" Binding="{Binding ObjectName}" Width="*"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                            <DataGridTemplateColumn Header="Progress" Width="120">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ProgressBar Value="{Binding Progress}" Maximum="100" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </GroupBox>
+
+                <GroupBox Grid.Row="1" Header="Overall Progress" Margin="0,10,0,0">
+                    <StackPanel>
+                        <TextBlock Text="{Binding ViewModel.CurrentTaskText}" FontWeight="Medium"/>
+                        <Grid Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ProgressBar Grid.Column="0" Value="{Binding ViewModel.OverallProgress}" Maximum="100" />
+                            <TextBlock Grid.Column="1" Text="{Binding ViewModel.OverallProgress, StringFormat={}{0}%}" Margin="10,0,0,0"/>
+                        </Grid>
+                        <ui:ProgressRing Margin="0,5,0,0" IsIndeterminate="True" Visibility="{Binding ViewModel.IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
         </Grid>
     </Grid>
 </Page>

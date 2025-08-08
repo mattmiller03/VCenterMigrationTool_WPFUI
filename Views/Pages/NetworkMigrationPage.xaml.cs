@@ -4,13 +4,13 @@ using VCenterMigrationTool.ViewModels;
 namespace VCenterMigrationTool.Views.Pages
 {
     /// <summary>
-    /// Interaction logic for HostMigrationPage.xaml
+    /// Interaction logic for NetworkMigrationPage.xaml
     /// </summary>
-    public partial class HostMigrationPage : Page
+    public partial class NetworkMigrationPage : Page
     {
-        public HostMigrationViewModel ViewModel { get; }
+        public NetworkMigrationViewModel ViewModel { get; }
 
-        public HostMigrationPage(HostMigrationViewModel viewModel)
+        public NetworkMigrationPage(NetworkMigrationViewModel viewModel)
         {
             ViewModel = viewModel;
             DataContext = this;

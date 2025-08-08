@@ -69,6 +69,12 @@ public partial class App : Application
             services.AddSingleton<DashboardViewModel>();
             services.AddSingleton<VCenterMigrationPage>();
             services.AddSingleton<VCenterMigrationViewModel>();
+            services.AddSingleton<HostMigrationPage>();
+            services.AddSingleton<HostMigrationViewModel>();
+            services.AddSingleton<VmMigrationPage>();
+            services.AddSingleton<VmMigrationViewModel>();
+            services.AddSingleton<NetworkMigrationPage>();
+            services.AddSingleton<NetworkMigrationViewModel>();
             services.AddSingleton<SettingsPage>();
             services.AddSingleton<SettingsViewModel>();
 

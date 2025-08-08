@@ -30,20 +30,39 @@
             </Grid.ColumnDefinitions>
 
             <GroupBox Grid.Column="0" Header="Select Hosts to Migrate (from Source vCenter)">
-                <ListView ItemsSource="{Binding ViewModel.SourceHosts}">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding Name}" />
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                <TreeView ItemsSource="{Binding ViewModel.SourceTopology}">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Hosts}">
+                            <TextBlock Text="{Binding Name}" FontWeight="Medium" />
+                            <HierarchicalDataTemplate.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Name}" Margin="5,0,0,0" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </HierarchicalDataTemplate.ItemTemplate>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
             </GroupBox>
 
             <GroupBox Grid.Column="2" Header="Select Target Cluster (in Target vCenter)">
-                <ComboBox 
-                    ItemsSource="{Binding ViewModel.TargetClusters}" 
-                    SelectedItem="{Binding ViewModel.SelectedTargetCluster}"
-                    DisplayMemberPath="Name"></ComboBox>
+                <Grid>
+                    <ComboBox
+                        x:Name="TargetClusterComboBox"
+                        ItemsSource="{Binding ViewModel.TargetClusters}" 
+                        SelectedItem="{Binding ViewModel.SelectedTargetCluster}"
+                        DisplayMemberPath="Name"/>
+                    <TextBlock
+                        IsHitTestVisible="False"
+                        Text="Select a target cluster"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Left"
+                        Margin="12,0,0,0"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Visibility="{Binding ElementName=TargetClusterComboBox, Path=SelectedItem, Converter={StaticResource NullToVisibilityConverter}}"/>
+                </Grid>
             </GroupBox>
         </Grid>
 
