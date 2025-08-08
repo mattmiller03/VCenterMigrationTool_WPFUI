@@ -15,6 +15,11 @@
             <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
             <helpers:BoolToStringConverter x:Key="BoolToStringConverter" />
             <helpers:NullToBoolConverter x:Key="NullToBoolConverter" />
+            <helpers:BoolToSymbolConverter x:Key="BoolToSymbolConverter" />
+            <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <helpers:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter" />
+            <helpers:EnumToIconConverter x:Key="EnumToIconConverter" />
+            <helpers:BoolToParameterConverter x:Key="BoolToParameterConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

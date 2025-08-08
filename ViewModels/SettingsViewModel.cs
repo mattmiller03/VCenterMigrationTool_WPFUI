@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Options;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
@@ -11,7 +12,6 @@ using Wpf.Ui.Abstractions;
 using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
-using Microsoft.Extensions.Options;
 
 namespace VCenterMigrationTool.ViewModels
 {
@@ -81,17 +81,30 @@ namespace VCenterMigrationTool.ViewModels
             _logPath = _appConfig.Value.LogPath ?? "Logs";
             _exportPath = _appConfig.Value.ExportPath ?? "Exports";
         }
+
         [RelayCommand]
         private async Task OnCheckPrerequisites()
         {
-            // This will call a new PowerShell script
             PowerShellVersion = "Checking...";
             IsPowerCliInstalled = false;
-            await Task.Delay(1000); // Simulate script run
-            PowerShellVersion = "7.4.1";
-            IsPowerCliInstalled = true;
-        }
 
+            // Run our new script and expect a PrerequisitesResult object back
+            var results = await _powerShellService.RunScriptAndGetObjectsAsync<PrerequisitesResult>(
+                ".\\Scripts\\Get-Prerequisites.ps1",
+                new Dictionary<string, object>() // No parameters needed for this script
+            );
+
+            var result = results.FirstOrDefault();
+            if (result != null)
+            {
+                PowerShellVersion = result.PowerShellVersion;
+                IsPowerCliInstalled = result.IsPowerCliInstalled;
+            }
+            else
+            {
+                PowerShellVersion = "Failed to get version";
+            }
+        }
         [RelayCommand]
         private async Task OnInstallPowerCli()
         {

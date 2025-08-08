@@ -11,6 +11,17 @@
 
 	<ItemGroup>
 		<None Remove="Assets\applicationIcon-256.ico" />
+		<None Remove="Scripts\Get-ClusterItems.ps1" />
+		<None Remove="Scripts\Get-Clusters.ps1" />
+		<None Remove="Scripts\Get-Prerequisites.ps1" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="Scripts\Get-ClusterItems.ps1" />
+	  <Content Include="Scripts\Get-Clusters.ps1" />
+	  <Content Include="Scripts\Get-Prerequisites.ps1">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
 	</ItemGroup>
 
 	<ItemGroup>

@@ -31,6 +31,7 @@ public partial class MainWindowViewModel : ObservableObject
         _menuItems = new()
         {
             new NavigationViewItem("Dashboard", SymbolRegular.Home24, typeof(DashboardPage)),
+            new NavigationViewItem("vCenter Migration", SymbolRegular.ArrowSwap24, typeof(VCenterMigrationPage)),
             new NavigationViewItem("ESXi Host Migration", SymbolRegular.Server24, typeof(DashboardPage)),
             new NavigationViewItem("VM Migration", SymbolRegular.Desktop24, typeof(DashboardPage))
         };

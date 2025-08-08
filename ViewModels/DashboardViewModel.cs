@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
@@ -14,9 +15,6 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 {
     private readonly PowerShellService _powerShellService;
     private readonly ConnectionProfileService _profileService;
-
-    [ObservableProperty]
-    private bool _isBusy = false;
 
     [ObservableProperty]
     private string _scriptOutput = "Script output will be displayed here...";
@@ -35,6 +33,15 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private string _targetConnectionStatus = "Not Connected";
 
+    [ObservableProperty]
+    private bool _isJobRunning;
+
+    [ObservableProperty]
+    private string _currentJobText = "No active jobs.";
+
+    [ObservableProperty]
+    private int _jobProgress;
+
     public DashboardViewModel(PowerShellService powerShellService, ConnectionProfileService profileService)
     {
         _powerShellService = powerShellService;
@@ -51,17 +58,15 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             return;
         }
 
-        // Decrypt the password for the selected profile
         string? password = _profileService.UnprotectPassword(SelectedSourceProfile);
         if (string.IsNullOrEmpty(password))
         {
-            // This part is a placeholder. In the future, we can pop up a dialog to ask for the password.
             SourceConnectionStatus = "Password not saved for this profile.";
             return;
         }
 
         SourceConnectionStatus = $"Connecting to {SelectedSourceProfile.ServerAddress}...";
-        IsBusy = true;
+        IsJobRunning = true;
 
         var scriptParams = new Dictionary<string, object>
         {
@@ -81,7 +86,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             SourceConnectionStatus = $"Failed to connect: {result.Replace("Failure:", "").Trim()}";
         }
 
-        IsBusy = false;
+        IsJobRunning = false;
     }
 
     [RelayCommand]
@@ -101,7 +106,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         }
 
         TargetConnectionStatus = $"Connecting to {SelectedTargetProfile.ServerAddress}...";
-        IsBusy = true;
+        IsJobRunning = true;
 
         var scriptParams = new Dictionary<string, object>
         {
@@ -121,24 +126,31 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             TargetConnectionStatus = $"Failed to connect: {result.Replace("Failure:", "").Trim()}";
         }
 
-        IsBusy = false;
-    }
-
-
-    [RelayCommand]
-    private async Task OnExportConfiguration()
-    {
-        // This command's logic can be filled in later
-        await Task.CompletedTask;
+        IsJobRunning = false;
     }
 
     [RelayCommand]
-    private void OnImportConfiguration()
+    private async Task OnRunTestJob()
     {
-        // This command's logic can be filled in later
+        if (IsJobRunning)
+            return;
+
+        IsJobRunning = true;
+        JobProgress = 0;
+        ScriptOutput = string.Empty;
+
+        for (int i = 0; i <= 100; i++)
+        {
+            CurrentJobText = $"Exporting configuration... Step {i}/100";
+            JobProgress = i;
+            ScriptOutput += $"Performing task {i}...\n";
+            await Task.Delay(50); // Simulate work
+        }
+
+        CurrentJobText = "Test job completed.";
+        IsJobRunning = false;
     }
 
     public async Task OnNavigatedToAsync() => await Task.CompletedTask;
-
     public async Task OnNavigatedFromAsync() => await Task.CompletedTask;
 }

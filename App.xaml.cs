@@ -2,8 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System; // <-- ADD THIS LINE
-using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using VCenterMigrationTool.Models;
@@ -18,6 +16,11 @@ using Wpf.Ui.Converters;
 using Serilog;
 using Microsoft.Extensions.Logging;
 
+using System;
+using System.IO;
+
+
+
 namespace VCenterMigrationTool;
 
 public partial class App : Application
@@ -25,17 +28,18 @@ public partial class App : Application
     private static readonly IHost _host = Host
         .CreateDefaultBuilder()
         .ConfigureAppConfiguration(c => c.SetBasePath(AppContext.BaseDirectory))
-        // Add this UseSerilog configuration block
+        // This UseSerilog block is the crucial part that was missing
         .UseSerilog((context, services, configuration) => configuration
             .ReadFrom.Services(services)
             .Enrich.FromLogContext()
-            .WriteTo.Debug()
-            .WriteTo.File(
+            .WriteTo.Debug() // Also writes to the Visual Studio Debug window
+            .WriteTo.File(  // Writes to a file in the bin\Debug\Logs folder
                 path: "Logs/log-.txt",
-                rollingInterval: RollingInterval.Day,
+                rollingInterval: RollingInterval.Day, // Creates a new log file each day
                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
             )
-        ).ConfigureServices((context, services) =>
+        )
+        .ConfigureServices((context, services) =>
         {
             // App Host
             services.AddHostedService<ApplicationHostService>();
@@ -63,6 +67,8 @@ public partial class App : Application
             // Views and ViewModels
             services.AddSingleton<DashboardPage>();
             services.AddSingleton<DashboardViewModel>();
+            services.AddSingleton<VCenterMigrationPage>();
+            services.AddSingleton<VCenterMigrationViewModel>();
             services.AddSingleton<SettingsPage>();
             services.AddSingleton<SettingsViewModel>();
 
@@ -89,6 +95,14 @@ public partial class App : Application
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        // You can add logging or other error handling here.
+        // Log the unhandled exception using Serilog
+        Log.Error(e.Exception, "An unhandled exception occurred: {Message}", e.Exception.Message);
+
+        // Show a user-friendly message
+        MessageBox.Show("An unexpected error occurred. Please check the logs for more details.", "Application Error",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+
+        // Prevent the application from crashing
+        e.Handled = true;
     }
 }

@@ -1,0 +1,89 @@
+﻿<Page
+    x:Class="VCenterMigrationTool.Views.Pages.VCenterMigrationPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance viewmodels:VCenterMigrationViewModel, IsDesignTimeCreatable=False}"
+    Title="VCenterMigrationPage"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+    
+    <Grid Margin="42">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" FontSize="24" FontWeight="Medium" Text="vCenter Object Migration" />
+        <TextBlock Grid.Row="1" Margin="0,5,0,0" Text="Select the vCenter-level objects to export from the source and import to the target." Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+
+        <Grid Grid.Row="2" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="350" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="Standard Options" FontSize="16" FontWeight="Medium" />
+                    <CheckBox IsChecked="{Binding ViewModel.MigrateRolesAndPermissions}" Content="Roles and Permissions" Margin="0,10,0,10"/>
+                    <CheckBox IsChecked="{Binding ViewModel.MigrateVmFolders}" Content="VM and Template Folders" Margin="0,0,0,10"/>
+                    <CheckBox IsChecked="{Binding ViewModel.MigrateTagsAndCategories}" Content="Tags and Categories" Margin="0,0,0,20"/>
+                    
+                    <TextBlock Text="Cluster-Specific Options" FontSize="16" FontWeight="Medium" />
+                    <TextBlock Text="Select a cluster to see its resources." Margin="0,5,0,10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+
+                    <Grid>
+                        <ComboBox
+                            x:Name="ClusterComboBox"
+                            ItemsSource="{Binding ViewModel.Clusters}"
+                            SelectedItem="{Binding ViewModel.SelectedCluster}"
+                            DisplayMemberPath="Name"/>
+                        <TextBlock
+                            IsHitTestVisible="False"
+                            Text="Select a source cluster"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Margin="12,0,0,0"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Visibility="{Binding ElementName=ClusterComboBox, Path=SelectedItem, Converter={StaticResource NullToVisibilityConverter}}"/>
+                    </Grid>
+
+                    <ListView Margin="0,10,0,20" ItemsSource="{Binding ViewModel.ClusterItems}" MaxHeight="200">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox IsChecked="{Binding IsSelected}"/>
+                                    <TextBlock Text="{Binding Name}" Margin="5,0,0,0"/>
+                                    <TextBlock Text="{Binding Type, StringFormat='({0})'}" Margin="5,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <ui:Button 
+                        Content="Start Migration" 
+                        Command="{Binding ViewModel.StartMigrationCommand}"
+                        Appearance="Primary"
+                        IsEnabled="{Binding ViewModel.IsBusy, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
+                    
+                    <ui:ProgressRing Margin="0,10,0,0" IsIndeterminate="True" Visibility="{Binding ViewModel.IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <ui:TextBox
+                Grid.Column="2"
+                Text="{Binding ViewModel.LogOutput, Mode=OneWay}"
+                IsReadOnly="True"
+                AcceptsReturn="True"
+                VerticalScrollBarVisibility="Auto"
+                FontFamily="Consolas"/>
+        </Grid>
+    </Grid>
+</Page>

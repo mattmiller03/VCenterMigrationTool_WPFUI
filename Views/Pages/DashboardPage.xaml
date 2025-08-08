@@ -36,7 +36,7 @@
                         <ComboBox
                             ItemsSource="{Binding ViewModel.Profiles}"
                             SelectedItem="{Binding ViewModel.SelectedSourceProfile}"
-                            DisplayMemberPath="Name" Margin="-48,0,0,0" />
+                            DisplayMemberPath="Name" />
                         <TextBlock
                             IsHitTestVisible="False"
                             Text="Select a source profile"
@@ -58,7 +58,7 @@
                         <ComboBox
                             ItemsSource="{Binding ViewModel.Profiles}"
                             SelectedItem="{Binding ViewModel.SelectedTargetProfile}"
-                            DisplayMemberPath="Name" Margin="-47,0,0,0" />
+                            DisplayMemberPath="Name" />
                         <TextBlock
                             IsHitTestVisible="False"
                             Text="Select a target profile"
@@ -74,30 +74,34 @@
             </ui:CardControl>
         </Grid>
 
-        <TextBlock Grid.Row="2" Margin="0,20,0,0" FontSize="20" FontWeight="Medium" Text="Export / Import vCenter Configuration" />
+        <ui:CardControl Grid.Row="2" Margin="0,20,0,0">
+            <StackPanel>
+                <TextBlock FontSize="16" FontWeight="Medium" Text="Current Job Status" />
+                <TextBlock Margin="0,5,0,10" Text="{Binding ViewModel.CurrentJobText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
 
-        <Grid Grid.Row="3">
+                <Grid Visibility="{Binding ViewModel.IsJobRunning, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ProgressBar Grid.Column="0" Value="{Binding ViewModel.JobProgress}" Maximum="100" />
+                    <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{Binding ViewModel.JobProgress, StringFormat={}{0}%}" />
+                </Grid>
+
+                <ui:Button Margin="0,10,0,0" Content="Run Test Job" Command="{Binding ViewModel.RunTestJobCommand}" IsEnabled="{Binding ViewModel.IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
+            </StackPanel>
+        </ui:CardControl>
+
+        <Grid Grid.Row="3" Margin="0,20,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,10,0,10">
-                <ui:Button
-                    Content="Export vDS &amp; Permissions"
-                    Appearance="Primary"
-                    Icon="ArrowUpload24"
-                    Command="{Binding ViewModel.ExportConfigurationCommand}"/>
-                <ui:Button
-                    Content="Import vDS &amp; Permissions"
-                    Appearance="Secondary"
-                    Icon="ArrowDownload24"
-                    Command="{Binding ViewModel.ImportConfigurationCommand}"
-                    Margin="10,0,0,0"/>
-                <ui:ProgressRing Margin="10,0,0,0" IsIndeterminate="True" Visibility="{Binding ViewModel.IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
-            </StackPanel>
-
+            <TextBlock Grid.Row="0" Text="Detailed Log Output" FontWeight="Medium"/>
             <ui:TextBox
                 Grid.Row="1"
+                Margin="0,10,0,0"
                 Text="{Binding ViewModel.ScriptOutput, Mode=OneWay}"
                 IsReadOnly="True"
                 AcceptsReturn="True"
