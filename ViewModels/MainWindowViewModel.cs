@@ -1,50 +1,94 @@
-﻿// In ViewModels/MainWindowViewModel.cs
-
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Options;
 using System.Collections.ObjectModel;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Views.Pages;
+using Wpf.Ui;
 using Wpf.Ui.Controls;
 
 namespace VCenterMigrationTool.ViewModels;
 
-public partial class MainWindowViewModel : ObservableObject
+public partial class MainWindowViewModel : ViewModel
 {
+    private bool _isInitialized = false;
+    
+    
     [ObservableProperty]
     private string _applicationTitle = string.Empty;
 
-    [ObservableProperty]
-    private ObservableCollection<object> _menuItems;
+    [ObservableProperty] 
+    private ObservableCollection<object> _navigationItems = [];
 
     [ObservableProperty]
-    private ObservableCollection<object> _footerMenuItems;
+    private ObservableCollection<object> _navigationFooter = [];
 
     [ObservableProperty]
-    private ObservableCollection<MenuItem> _trayMenuItems;
+    private ObservableCollection<MenuItem> _trayMenuItems = [];
 
-    public MainWindowViewModel(IOptions<AppConfig> appConfig)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Style",
+        "IDE0060:Remove unused parameter",
+        Justification = "Demo"
+    )]
+    public MainWindowViewModel(INavigationService navigationService)
     {
-        // Set the title from the configuration file
-        ApplicationTitle = appConfig.Value.ApplicationTitle ?? "vCenter Migration Tool";
-
-        _menuItems = new()
+        if (!_isInitialized)
         {
-            new NavigationViewItem("Dashboard", SymbolRegular.Home24, typeof(DashboardPage)),
-            new NavigationViewItem("vCenter Migration", SymbolRegular.ArrowSwap24, typeof(VCenterMigrationPage)),
-            new NavigationViewItem("ESXi Host Migration", SymbolRegular.Server24, typeof(HostMigrationPage)),
-            new NavigationViewItem("Network Migration", SymbolRegular.NetworkCheck24, typeof(NetworkMigrationPage)),
-            new NavigationViewItem("VM Migration", SymbolRegular.Desktop24, typeof(VmMigrationPage))
-        };
+            InitializeViewModel();
+        }
+    }
+    private void InitializeViewModel()
+    {
+        ApplicationTitle = "vCenter Migration Tool";
+        NavigationItems =
+        [
+            
+            new NavigationViewItem()
+            {
+                Content = "Dashboard",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 }, 
+                TargetPageType = typeof(Views.Pages.DashboardPage),
+            },
+            new NavigationViewItem()
+            {
+                Content = "vCenter Migration",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.ArrowSwap24 },
+                TargetPageType = typeof(Views.Pages.VCenterMigrationPage),
+            },
+            new NavigationViewItem()
+            {
+                Content = "ESXi Host Migration",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Server24 },
+                TargetPageType = typeof(Views.Pages.HostMigrationPage),
+                
+            },
+            new NavigationViewItem()
+            {
+                Content = "Network Migration",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.NetworkCheck24 },
+                TargetPageType = typeof(Views.Pages.NetworkMigrationPage),
+            },            
+            new NavigationViewItem()
+                {
+                    Content = "VM Migration",
+                    Icon = new SymbolIcon {Symbol = SymbolRegular.Desktop24 },
+                    TargetPageType = typeof(Views.Pages.VmMigrationPage),
+                    
+                },
+        ];
 
-        _footerMenuItems = new()
-        {
-            new NavigationViewItem("Settings", SymbolRegular.Settings24, typeof(SettingsPage))
-        };
+        NavigationFooter =
+        [
+            new NavigationViewItem()
+            {
+                Content = "Settings",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
+                TargetPageType = typeof(Views.Pages.SettingsPage),
+            },
+        ];
 
-        _trayMenuItems = new()
-        {
-            new MenuItem { Header = "Home", Tag = "tray_home" }
-        };
+        TrayMenuItems = [new() { Header = "Dashboard", Tag = "tray_home" }];
+
+        _isInitialized = true;
     }
 }

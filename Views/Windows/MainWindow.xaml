@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:tray="http://schemas.lepo.co/wpfui/2022/xaml/tray"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
     mc:Ignorable="d"
@@ -15,12 +16,37 @@
     WindowCornerPreference="Round"
     WindowStartupLocation="CenterScreen">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
         <ui:NavigationView
             x:Name="RootNavigation"
-            MenuItemsSource="{Binding MenuItems, Mode=OneWay}"
-            FooterMenuItemsSource="{Binding FooterMenuItems, Mode=OneWay}"
-            IsPaneOpen="True">  </ui:NavigationView>
-            
-            <ui:TitleBar Grid.Row="0" Title="{Binding ApplicationTitle}" />
+            Grid.Row="1"
+            MenuItemsSource="{Binding NavigationItems, Mode=OneWay}"
+            FooterMenuItemsSource="{Binding NavigationFooter, Mode=OneWay}"
+            IsBackButtonVisible="Visible"
+            IsPaneOpen="True">  
+        <ui:NavigationView.Header>
+            <ui:BreadcrumbBar
+                Margin="42,32,0,0"
+                FontSize="28"
+                FontWeight="DemiBold" />
+        </ui:NavigationView.Header>
+        </ui:NavigationView>
+        <ui:TitleBar 
+            Grid.Row="0" 
+            Title="{Binding ApplicationTitle}"
+            Icon="pack://application:,,,/Assets/applicationIcon-256.png" />
+        <tray:NotifyIcon
+            Grid.Row="0"
+            FocusOnLeftClick="True"
+            Icon="pack://application:,,,/Assets/applicationIcon-256.png"
+            MenuOnRightClick="True"
+            TooltipText="{Binding ApplicationTitle}">
+            <tray:NotifyIcon.Menu>
+                <ContextMenu ItemsSource="{Binding ViewModel.TrayMenuItems, Mode=OneWay}" />
+            </tray:NotifyIcon.Menu>
+        </tray:NotifyIcon>
     </Grid>
 </ui:FluentWindow>

@@ -1,6 +1,4 @@
-﻿// In Views/Windows/MainWindow.xaml.cs
-
-using System;
+﻿using System;
 using System.Windows;
 using VCenterMigrationTool.ViewModels;
 using Wpf.Ui;
@@ -10,6 +8,9 @@ using Wpf.Ui.Controls;
 
 namespace VCenterMigrationTool.Views.Windows
 {
+    /// <summary>
+    /// Interaction logic for the main application window.
+    /// </summary>
     public partial class MainWindow : INavigationWindow
     {
         public MainWindowViewModel ViewModel { get; }
@@ -21,10 +22,12 @@ namespace VCenterMigrationTool.Views.Windows
         )
         {
             ViewModel = viewModel;
-            DataContext = ViewModel; // <-- THIS IS THE FIX. Set DataContext to the ViewModel directly.
+            DataContext = ViewModel;
 
             SystemThemeWatcher.Watch(this);
+
             InitializeComponent();
+
             navigationService.SetNavigationControl(RootNavigation);
             SetPageService(pageProvider);
         }
@@ -32,10 +35,15 @@ namespace VCenterMigrationTool.Views.Windows
         #region INavigationWindow methods
 
         public INavigationView GetNavigation() => RootNavigation;
+
         public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
+
         public void SetPageService(INavigationViewPageProvider pageProvider) => RootNavigation.SetPageProviderService(pageProvider);
+
         public void ShowWindow() => Show();
+
         public void CloseWindow() => Close();
+
         public void SetServiceProvider(IServiceProvider serviceProvider) { }
 
         #endregion
@@ -43,6 +51,7 @@ namespace VCenterMigrationTool.Views.Windows
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
+
             Application.Current.Shutdown();
         }
     }
