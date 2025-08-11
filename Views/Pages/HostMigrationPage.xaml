@@ -50,7 +50,6 @@
             <GroupBox Grid.Column="2" Header="Select Target Cluster (in Target vCenter)">
                 <Grid>
                     <ComboBox
-                        x:Name="TargetClusterComboBox"
                         ItemsSource="{Binding ViewModel.TargetClusters}" 
                         SelectedItem="{Binding ViewModel.SelectedTargetCluster}"
                         DisplayMemberPath="Name"/>
@@ -61,7 +60,7 @@
                         HorizontalAlignment="Left"
                         Margin="12,0,0,0"
                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                        Visibility="{Binding ElementName=TargetClusterComboBox, Path=SelectedItem, Converter={StaticResource NullToVisibilityConverter}}"/>
+                        Visibility="{Binding ViewModel.SelectedTargetCluster, Converter={StaticResource NullToVisibilityConverter}}"/>
                 </Grid>
             </GroupBox>
         </Grid>

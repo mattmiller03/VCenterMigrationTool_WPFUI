@@ -40,7 +40,6 @@
                     <TextBlock Text="Select a cluster to see its resources." Margin="0,5,0,10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <Grid>
                         <ComboBox
-                            x:Name="ClusterComboBox"
                             ItemsSource="{Binding ViewModel.Clusters}"
                             SelectedItem="{Binding ViewModel.SelectedCluster}"
                             DisplayMemberPath="Name"/>
@@ -51,7 +50,7 @@
                             HorizontalAlignment="Left"
                             Margin="12,0,0,0"
                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            Visibility="{Binding ElementName=ClusterComboBox, Path=SelectedItem, Converter={StaticResource NullToVisibilityConverter}}"/>
+                            Visibility="{Binding ViewModel.SelectedCluster, Converter={StaticResource NullToVisibilityConverter}}"/>
                     </Grid>
 
                     <ListView Margin="0,10,0,20" ItemsSource="{Binding ViewModel.ClusterItems}" MaxHeight="200">

@@ -29,14 +29,14 @@
                                 <StackPanel Orientation="Horizontal">
                                     <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding Name}" Margin="5,0,0,0"/>
-                                    <TextBlock Text="{Binding Type, StringFormat='({0})'}" Margin="5,0,0,0}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock Text="{Binding Type, StringFormat='({0})'}" Margin="5,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 </StackPanel>
                                 <HierarchicalDataTemplate.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Margin="20,0,0,0">
                                             <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
                                             <TextBlock Text="{Binding Name}" Margin="5,0,0,0"/>
-                                            <TextBlock Text="{Binding VlanId, StringFormat='- VLAN {0}'}" Margin="5,0,0,0}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding VlanId, StringFormat='- VLAN {0}'}" Margin="5,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </HierarchicalDataTemplate.ItemTemplate>
