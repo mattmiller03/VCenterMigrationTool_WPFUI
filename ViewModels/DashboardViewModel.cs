@@ -15,6 +15,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 {
     private readonly PowerShellService _powerShellService;
     private readonly ConnectionProfileService _profileService;
+    private readonly CredentialService _credentialService; // Add this
 
     [ObservableProperty]
     private string _scriptOutput = "Script output will be displayed here...";
@@ -42,10 +43,15 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private int _jobProgress;
 
-    public DashboardViewModel(PowerShellService powerShellService, ConnectionProfileService profileService)
+    // Update constructor to inject CredentialService
+    public DashboardViewModel(
+        PowerShellService powerShellService, 
+        ConnectionProfileService profileService,
+        CredentialService credentialService) // Add this parameter
     {
         _powerShellService = powerShellService;
         _profileService = profileService;
+        _credentialService = credentialService; // Add this
         Profiles = _profileService.Profiles;
     }
 
@@ -58,7 +64,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             return;
         }
 
-        string? password = _profileService.UnprotectPassword(SelectedSourceProfile);
+        // Fix: Use CredentialService instead of non-existent method
+        string? password = _credentialService.GetPassword(SelectedSourceProfile);
         if (string.IsNullOrEmpty(password))
         {
             SourceConnectionStatus = "Password not saved for this profile.";
@@ -98,7 +105,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             return;
         }
 
-        string? password = _profileService.UnprotectPassword(SelectedTargetProfile);
+        // Fix: Use CredentialService instead of non-existent method
+        string? password = _credentialService.GetPassword(SelectedTargetProfile);
         if (string.IsNullOrEmpty(password))
         {
             TargetConnectionStatus = "Password not saved for this profile.";
