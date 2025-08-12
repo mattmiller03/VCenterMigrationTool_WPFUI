@@ -11,7 +11,7 @@ using VCenterMigrationTool.Views.Pages;
 using VCenterMigrationTool.Views.Windows;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui;
-using Wpf.Ui.DependencyInjection; // <-- ADD THIS LINE
+using Wpf.Ui.DependencyInjection;
 using Wpf.Ui.Converters;
 using Serilog;
 using Microsoft.Extensions.Logging;
@@ -56,7 +56,10 @@ public partial class App : Application
             // Service containing navigation
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<ConnectionProfileService>();
-
+            
+            // Add the missing CredentialService registration
+            services.AddSingleton<CredentialService>();
+            
             // Main window with navigation
             services.AddSingleton<INavigationWindow, MainWindow>();
             services.AddSingleton<MainWindowViewModel>();

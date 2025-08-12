@@ -181,7 +181,7 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="PowerShell Version:" FontWeight="Medium" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="{Binding PowerShellVersion}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ViewModel.PowerShellVersion}" Margin="10,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -189,22 +189,22 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="PowerCLI Installed:" FontWeight="Medium" VerticalAlignment="Center"/>
-                            <ui:SymbolIcon Grid.Column="1" Symbol="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToSymbolConverter}}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            <ui:SymbolIcon Grid.Column="1" Symbol="{Binding ViewModel.IsPowerCliInstalled, Converter={StaticResource BoolToSymbolConverter}}" Margin="10,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
 
                         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                            <ui:Button Content="Check Now" Command="{Binding CheckPrerequisitesCommand}" />
-                            <ui:Button Content="Install PowerCLI" Margin="10,0,0,0" Command="{Binding InstallPowerCliCommand}" IsEnabled="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
+                            <ui:Button Content="Check Now" Command="{Binding ViewModel.CheckPrerequisitesCommand}" />
+                            <ui:Button Content="Install PowerCLI" Margin="10,0,0,0" Command="{Binding ViewModel.InstallPowerCliCommand}" IsEnabled="{Binding .ViewModel.IsPowerCliInstalled, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
                         </StackPanel>
 
                         <TextBlock Margin="0,30,0,0" FontSize="20" FontWeight="Medium" Text="File Paths" />
                         <TextBlock Margin="0,12,0,0" Text="Log File Location" />
-                        <ui:TextBox Margin="0,5,0,0" Text="{Binding LogPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <ui:TextBox Margin="0,5,0,0" Text="{Binding ViewModel.LogPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
                         <TextBlock Margin="0,12,0,0" Text="Export/Backup Location" />
-                        <ui:TextBox Margin="0,5,0,0" Text="{Binding ExportPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <ui:TextBox Margin="0,5,0,0" Text="{Binding ViewModel.ExportPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
-                        <ui:Button Content="Save Changes" Appearance="Primary" Margin="0,20,0,0" Command="{Binding SaveChangesCommand}" />
+                        <ui:Button Content="Save Changes" Appearance="Primary" Margin="0,20,0,0" Command="{Binding ViewModel.SaveChangesCommand}" />
 
                     </StackPanel>
                 </ScrollViewer>

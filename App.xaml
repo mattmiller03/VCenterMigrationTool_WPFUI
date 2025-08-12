@@ -12,6 +12,10 @@
                 <ui:ThemesDictionary Theme="Dark" />
                 <ui:ControlsDictionary />
             </ResourceDictionary.MergedDictionaries>
+            <!-- Custom color overrides for dark theme -->
+            <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#00BFFF" />
+            <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#87CEEB" />
+
             <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
             <helpers:BoolToStringConverter x:Key="BoolToStringConverter" />
             <helpers:NullToBoolConverter x:Key="NullToBoolConverter" />
