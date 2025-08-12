@@ -37,7 +37,7 @@
                             ItemsSource="{Binding ViewModel.Profiles}"
                             SelectedItem="{Binding ViewModel.SelectedSourceProfile}"
                             DisplayMemberPath="Name" />
-                        <TextBlock
+                        <TextBlock x:Name="CB_SourceVC_textbox"
                             IsHitTestVisible="False"
                             Text="Select a source profile"
                             VerticalAlignment="Center"

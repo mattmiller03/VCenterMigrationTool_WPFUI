@@ -12,6 +12,7 @@ using Wpf.Ui.Abstractions;
 using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
+using Meziantou.Framework.Win32;
 
 namespace VCenterMigrationTool.ViewModels
 {
@@ -20,64 +21,54 @@ namespace VCenterMigrationTool.ViewModels
         private readonly IThemeService _themeService;
         private readonly ConnectionProfileService _profileService;
         private readonly PowerShellService _powerShellService;
+        private readonly CredentialService _credentialService;
+        private readonly IOptions<AppConfig> _appConfig;
 
         [ObservableProperty]
         private ApplicationTheme _currentTheme;
-
         [ObservableProperty]
         private ObservableCollection<VCenterConnection> _profiles;
-
         [ObservableProperty]
         private VCenterConnection? _selectedProfileForEditing;
-
         [ObservableProperty]
         private string _newProfileName = string.Empty;
-
         [ObservableProperty]
         private string _newProfileServer = string.Empty;
-
         [ObservableProperty]
         private string _newProfileUsername = string.Empty;
-
+        [ObservableProperty]
+        private bool _isBusy;
         [ObservableProperty]
         private bool _shouldSavePassword;
-
         [ObservableProperty]
         private bool _isEditing;
-
-        private readonly IOptions<AppConfig> _appConfig;
-
-        // --- New Properties for General Settings ---
-        [ObservableProperty]
-        private string _powerShellVersion = "Checking...";
-
-        [ObservableProperty]
-        private bool _isPowerCliInstalled;
-
-        [ObservableProperty]
-        private string _logPath = string.Empty;
-
-        [ObservableProperty]
-        private string _exportPath = string.Empty;
-
         [ObservableProperty]
         private string _connectionStatus = "Ready to test connection.";
+        [ObservableProperty]
+        private string _powerShellVersion = "Checking...";
+        [ObservableProperty]
+        private bool _isPowerCliInstalled;
+        [ObservableProperty]
+        private string _logPath = string.Empty;
+        [ObservableProperty]
+        private string _exportPath = string.Empty;
 
         public SettingsViewModel(
             IThemeService themeService,
             ConnectionProfileService profileService,
-            PowerShellService powerShellService, 
+            PowerShellService powerShellService,
+            CredentialService credentialService,
             IOptions<AppConfig> appConfig
         )
         {
             _themeService = themeService;
             _profileService = profileService;
             _powerShellService = powerShellService;
-            _currentTheme = _themeService.GetTheme();
-            _profiles = _profileService.Profiles;
+            _credentialService = credentialService;
             _appConfig = appConfig;
 
-            // Load settings from the config file
+            _currentTheme = _themeService.GetTheme();
+            _profiles = _profileService.Profiles;
             _logPath = _appConfig.Value.LogPath ?? "Logs";
             _exportPath = _appConfig.Value.ExportPath ?? "Exports";
         }
@@ -108,15 +99,22 @@ namespace VCenterMigrationTool.ViewModels
         [RelayCommand]
         private async Task OnInstallPowerCli()
         {
-            // This will call a script to install the module
-            await Task.CompletedTask;
+            ConnectionStatus = "Installing VMware.PowerCLI module... This may take a few minutes.";
+            IsBusy = true;
+
+            string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Install-PowerCli.ps1", new Dictionary<string, object>());
+
+            ConnectionStatus = result; // Display the success or failure message from the script
+            IsBusy = false;
+
+            // After attempting installation, re-run the prerequisite check to update the status icon
+            await OnCheckPrerequisites();
         }
 
         [RelayCommand]
         private void OnSaveChanges()
         {
             // This will save the new path settings
-            // In a real app, you'd write these values back to appsettings.json
             _appConfig.Value.LogPath = LogPath;
             _appConfig.Value.ExportPath = ExportPath;
         }
@@ -137,8 +135,11 @@ namespace VCenterMigrationTool.ViewModels
         [RelayCommand]
         private void OnAddProfile(PasswordBox? passwordBox)
         {
+            // 1. Validate that essential fields are not empty
             if (string.IsNullOrWhiteSpace(NewProfileName) || string.IsNullOrWhiteSpace(NewProfileServer))
                 return;
+
+            // 2. Create a new profile object from the UI fields
             var newProfile = new VCenterConnection
             {
                 Name = NewProfileName,
@@ -146,9 +147,19 @@ namespace VCenterMigrationTool.ViewModels
                 Username = NewProfileUsername,
                 ShouldSavePassword = ShouldSavePassword
             };
-            _profileService.ProtectPassword(newProfile, passwordBox?.Password);
+
+            // 3. Use the CredentialService to securely save the password to the Windows Credential Manager
+            _credentialService.SavePassword(newProfile, passwordBox?.Password ?? string.Empty);
+
+            // 4. Add the profile to the main collection (this also saves the profiles.json file)
             _profileService.AddProfile(newProfile);
-            OnCancelEdit(); // Clear fields after adding
+
+            // 5. Clear the UI fields, ready for the next entry
+            NewProfileName = string.Empty;
+            NewProfileServer = string.Empty;
+            NewProfileUsername = string.Empty;
+            ShouldSavePassword = false;
+
             passwordBox?.Clear();
         }
 
@@ -175,22 +186,26 @@ namespace VCenterMigrationTool.ViewModels
         [RelayCommand]
         private async Task OnTestSelectedProfile()
         {
+            // 1. Check if a profile is actually selected in the list
             if (SelectedProfileForEditing is null)
             {
-                ConnectionStatus = "Please select a profile to test.";
+                ConnectionStatus = "Please select a profile from the list to test.";
                 return;
             }
-
-            // Decrypt the password for the selected profile
-            string? password = _profileService.UnprotectPassword(SelectedProfileForEditing);
+            IsBusy = true; // <-- Set IsBusy
+            // 2. Use the CredentialService to get the saved password for the selected profile
+            string? password = _credentialService.GetPassword(SelectedProfileForEditing);
             if (string.IsNullOrEmpty(password))
             {
-                ConnectionStatus = "Password not saved for this profile.";
+                ConnectionStatus = "Password not saved for this profile. Cannot test.";
                 return;
             }
 
+            // 3. Update the UI to show that a test is in progress
             ConnectionStatus = $"Testing connection to {SelectedProfileForEditing.ServerAddress}...";
+            IsBusy = true;
 
+            // 4. Prepare the parameters for the PowerShell script
             var scriptParams = new Dictionary<string, object>
             {
                 { "VCenterServer", SelectedProfileForEditing.ServerAddress },
@@ -198,8 +213,10 @@ namespace VCenterMigrationTool.ViewModels
                 { "Password", password }
             };
 
+            // 5. Execute the script and get the result
             string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
 
+            // 6. Update the UI with the final result
             if (result.Trim() == "Success")
             {
                 ConnectionStatus = "Connection successful!";
@@ -208,7 +225,10 @@ namespace VCenterMigrationTool.ViewModels
             {
                 ConnectionStatus = $"Failed: {result.Replace("Failure:", "").Trim()}";
             }
+
+            IsBusy = false;
         }
+
         [RelayCommand]
         private void OnUpdateProfile()
         {
@@ -237,7 +257,11 @@ namespace VCenterMigrationTool.ViewModels
             OnCancelEdit();
         }
 
-        public async Task OnNavigatedToAsync() => await Task.CompletedTask;
+        public async Task OnNavigatedToAsync()
+        {
+            // Automatically check prerequisites when the page is loaded
+            await OnCheckPrerequisites();
+        }
         public async Task OnNavigatedFromAsync() => await Task.CompletedTask;
     }
 }

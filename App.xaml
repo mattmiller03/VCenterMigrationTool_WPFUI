@@ -20,6 +20,7 @@
             <helpers:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter" />
             <helpers:EnumToIconConverter x:Key="EnumToIconConverter" />
             <helpers:BoolToParameterConverter x:Key="BoolToParameterConverter" />
+            <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

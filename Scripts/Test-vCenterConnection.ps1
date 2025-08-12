@@ -1,6 +1,4 @@
-﻿# In Scripts/Test-vCenterConnection.ps1
-
-param(
+﻿param(
     [Parameter(Mandatory = $true)]
     [string]$VCenterServer,
 
