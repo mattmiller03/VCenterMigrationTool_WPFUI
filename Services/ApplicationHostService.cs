@@ -8,7 +8,6 @@ using System.Windows;
 using VCenterMigrationTool.Views.Pages;
 using VCenterMigrationTool.Views.Windows;
 using Wpf.Ui;
-using Wpf.Ui.Abstractions;
 
 namespace VCenterMigrationTool.Services;
 

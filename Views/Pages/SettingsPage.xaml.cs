@@ -1,6 +1,6 @@
-﻿
-// In Views/Pages/SettingsPage.xaml.cs
+﻿using System.Windows;
 using System.Windows.Controls;
+using VCenterMigrationTool.Models;
 using VCenterMigrationTool.ViewModels;
 
 namespace VCenterMigrationTool.Views.Pages
@@ -9,13 +9,22 @@ namespace VCenterMigrationTool.Views.Pages
     {
         public SettingsViewModel ViewModel { get; }
 
-        public SettingsPage(SettingsViewModel viewModel)
+        public SettingsPage (SettingsViewModel viewModel)
         {
             ViewModel = viewModel;
-            // Change the DataContext to be the ViewModel directly
-            DataContext = this;
-
+            DataContext = viewModel;
             InitializeComponent();
+        }
+
+        private void TreeViewItem_Selected (object sender, RoutedEventArgs e)
+        {
+            // This event handler ensures the ViewModel's SelectedCategory is always in sync
+            // with what the user clicks in the TreeView.
+            if (e.OriginalSource is TreeViewItem { DataContext: SettingsCategory selectedCategory })
+            {
+                ViewModel.SelectedCategory = selectedCategory;
+            }
+            e.Handled = true; // Prevents the event from bubbling up and causing side effects
         }
     }
 }

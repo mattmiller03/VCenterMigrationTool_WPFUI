@@ -2,20 +2,22 @@
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+using System.Security;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using Wpf.Ui.Abstractions.Controls;
-using Wpf.Ui.Controls;
 
 namespace VCenterMigrationTool.ViewModels;
 
 public partial class DashboardViewModel : ObservableObject, INavigationAware
-{
+    {
     private readonly PowerShellService _powerShellService;
     private readonly ConnectionProfileService _profileService;
-    private readonly CredentialService _credentialService; // Add this
+    private readonly CredentialService _credentialService;
+    private readonly SharedConnectionService _sharedConnectionService;
+    private readonly ConfigurationService _configurationService;
+    private readonly IDialogService _dialogService;
 
     [ObservableProperty]
     private string _scriptOutput = "Script output will be displayed here...";
@@ -43,122 +45,206 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private int _jobProgress;
 
-    // Update constructor to inject CredentialService
-    public DashboardViewModel(
-        PowerShellService powerShellService, 
+    public DashboardViewModel (
+        PowerShellService powerShellService,
         ConnectionProfileService profileService,
-        CredentialService credentialService) // Add this parameter
-    {
+        CredentialService credentialService,
+        SharedConnectionService sharedConnectionService,
+        ConfigurationService configurationService,
+        IDialogService dialogService)
+        {
         _powerShellService = powerShellService;
         _profileService = profileService;
-        _credentialService = credentialService; // Add this
+        _credentialService = credentialService;
+        _sharedConnectionService = sharedConnectionService;
+        _configurationService = configurationService;
+        _dialogService = dialogService;
+
         Profiles = _profileService.Profiles;
-    }
+        }
+
+    public async Task OnNavigatedToAsync ()
+        {
+        await Task.CompletedTask;
+        }
+
+    public async Task OnNavigatedFromAsync ()
+        {
+        await Task.CompletedTask;
+        }
 
     [RelayCommand]
-    private async Task OnConnectSource()
-    {
-        if (SelectedSourceProfile is null)
+    private async Task OnConnectSource ()
         {
-            SourceConnectionStatus = "Please select a profile.";
-            return;
-        }
+        if (SelectedSourceProfile is null) return;
 
-        // Fix: Use CredentialService instead of non-existent method
+        IsJobRunning = true;
+        SourceConnectionStatus = $"Connecting to {SelectedSourceProfile.ServerAddress}...";
+        ScriptOutput = string.Empty;
+
         string? password = _credentialService.GetPassword(SelectedSourceProfile);
+        SecureString securePassword = new(); // Create an empty SecureString
+
         if (string.IsNullOrEmpty(password))
         {
-            SourceConnectionStatus = "Password not saved for this profile.";
-            return;
-        }
+            // --- FIX: Handle the string return from the dialog service ---
+            var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
+                "Password Required",
+                $"Enter password for {SelectedSourceProfile.Username}@{SelectedSourceProfile.ServerAddress}:"
+            );
 
-        SourceConnectionStatus = $"Connecting to {SelectedSourceProfile.ServerAddress}...";
-        IsJobRunning = true;
+            if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
+            {
+                SourceConnectionStatus = "Connection cancelled.";
+                IsJobRunning = false;
+                return;
+            }
+            // Convert the prompted password string to a SecureString
+            foreach (char c in promptedPassword)
+            {
+                securePassword.AppendChar(c);
+            }
+        }
+        else
+        {
+            // Convert the saved password string to a SecureString
+            foreach (char c in password)
+            {
+                securePassword.AppendChar(c);
+            }
+        }
+        securePassword.MakeReadOnly(); // Make it read-only for security
 
         var scriptParams = new Dictionary<string, object>
         {
             { "VCenterServer", SelectedSourceProfile.ServerAddress },
             { "Username", SelectedSourceProfile.Username },
-            { "Password", password }
+            { "Password", securePassword }
         };
 
         string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
 
         if (result.Trim() == "Success")
-        {
+            {
             SourceConnectionStatus = $"Connected to {SelectedSourceProfile.ServerAddress}";
+            _sharedConnectionService.SourceConnection = SelectedSourceProfile;
+            }
+        else
+            {
+            SourceConnectionStatus = $"Failed: {result.Replace("Failure:", "").Trim()}";
+            _sharedConnectionService.SourceConnection = null;
+            }
+        ScriptOutput = result;
+        IsJobRunning = false;
+        }
+
+    [RelayCommand]
+    private async Task OnConnectTarget ()
+        {
+        if (SelectedTargetProfile is null) return;
+
+        IsJobRunning = true;
+        TargetConnectionStatus = $"Connecting to {SelectedTargetProfile.ServerAddress}...";
+        ScriptOutput = string.Empty;
+
+        string? password = _credentialService.GetPassword(SelectedTargetProfile);
+
+        SecureString securePassword = new(); // Create an empty SecureString
+
+        if (string.IsNullOrEmpty(password))
+        {
+            // --- FIX: Handle the string return from the dialog service ---
+            var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
+                "Password Required",
+                $"Enter password for {SelectedTargetProfile.Username}@{SelectedTargetProfile.ServerAddress}:"
+            );
+
+            if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
+            {
+                TargetConnectionStatus = "Connection cancelled.";
+                IsJobRunning = false;
+                return;
+            }
+            // Convert the prompted password string to a SecureString
+            foreach (char c in promptedPassword)
+            {
+                securePassword.AppendChar(c);
+            }
         }
         else
         {
-            SourceConnectionStatus = $"Failed to connect: {result.Replace("Failure:", "").Trim()}";
+            // Convert the saved password string to a SecureString
+            foreach (char c in password)
+            {
+                securePassword.AppendChar(c);
+            }
         }
-
-        IsJobRunning = false;
-    }
-
-    [RelayCommand]
-    private async Task OnConnectTarget()
-    {
-        if (SelectedTargetProfile is null)
-        {
-            TargetConnectionStatus = "Please select a profile.";
-            return;
-        }
-
-        // Fix: Use CredentialService instead of non-existent method
-        string? password = _credentialService.GetPassword(SelectedTargetProfile);
-        if (string.IsNullOrEmpty(password))
-        {
-            TargetConnectionStatus = "Password not saved for this profile.";
-            return;
-        }
-
-        TargetConnectionStatus = $"Connecting to {SelectedTargetProfile.ServerAddress}...";
-        IsJobRunning = true;
+        securePassword.MakeReadOnly(); // Make it read-only for security
 
         var scriptParams = new Dictionary<string, object>
         {
             { "VCenterServer", SelectedTargetProfile.ServerAddress },
             { "Username", SelectedTargetProfile.Username },
-            { "Password", password }
+            { "Password", securePassword }
         };
 
         string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
 
         if (result.Trim() == "Success")
-        {
+            {
             TargetConnectionStatus = $"Connected to {SelectedTargetProfile.ServerAddress}";
-        }
+            _sharedConnectionService.TargetConnection = SelectedTargetProfile;
+            }
         else
-        {
-            TargetConnectionStatus = $"Failed to connect: {result.Replace("Failure:", "").Trim()}";
-        }
-
+            {
+            TargetConnectionStatus = $"Failed: {result.Replace("Failure:", "").Trim()}";
+            _sharedConnectionService.TargetConnection = null;
+            }
+        ScriptOutput = result;
         IsJobRunning = false;
-    }
+        }
 
     [RelayCommand]
-    private async Task OnRunTestJob()
-    {
-        if (IsJobRunning)
+    private async Task OnRunTestJob ()
+        {
+        if (IsJobRunning) return;
+
+        var source = _sharedConnectionService.SourceConnection;
+        if (source is null)
+            {
+            ScriptOutput = "Error: Please connect to a source vCenter first.";
             return;
+            }
 
         IsJobRunning = true;
         JobProgress = 0;
+        CurrentJobText = $"Running Export-vCenterConfig.ps1 on {source.ServerAddress}...";
         ScriptOutput = string.Empty;
 
-        for (int i = 0; i <= 100; i++)
+        string? password = _credentialService.GetPassword(source);
+        if (string.IsNullOrEmpty(password))
+            {
+            ScriptOutput = "Error: Could not retrieve password for the active connection.";
+            IsJobRunning = false;
+            return;
+            }
+
+        string exportPath = _configurationService.GetConfiguration().ExportPath!;
+
+        var scriptParams = new Dictionary<string, object>
         {
-            CurrentJobText = $"Exporting configuration... Step {i}/100";
-            JobProgress = i;
-            ScriptOutput += $"Performing task {i}...\n";
-            await Task.Delay(50); // Simulate work
-        }
+            { "VCenterServer", source.ServerAddress },
+            { "User", source.Username },
+            // --- FIX: Add the '!' operator here ---
+            { "Password", password! },
+            { "ExportPath", exportPath }
+        };
 
+        var result = await _powerShellService.RunScriptAsync(".\\Scripts\\Export-vCenterConfig.ps1", scriptParams);
+
+        ScriptOutput = result;
         CurrentJobText = "Test job completed.";
+        JobProgress = 100;
         IsJobRunning = false;
+        }
     }
-
-    public async Task OnNavigatedToAsync() => await Task.CompletedTask;
-    public async Task OnNavigatedFromAsync() => await Task.CompletedTask;
-}

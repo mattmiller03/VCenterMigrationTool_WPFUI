@@ -6,11 +6,17 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
+    xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance viewmodels:DashboardViewModel, IsDesignTimeCreatable=False}"
     Title="DashboardPage"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+
+    <Page.Resources>
+        <helpers:BoolToParameterConverter x:Key="BoolToParameterConverter" />
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+    </Page.Resources>
 
     <Grid Margin="42">
         <Grid.RowDefinitions>
@@ -32,64 +38,57 @@
             <ui:CardControl Grid.Column="0">
                 <StackPanel>
                     <TextBlock Text="Source vCenter" FontWeight="Medium" />
-                    <Grid Margin="0,10,0,10">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0">
                         <ComboBox
-                            ItemsSource="{Binding ViewModel.Profiles}"
-                            SelectedItem="{Binding ViewModel.SelectedSourceProfile}"
-                            DisplayMemberPath="Name" />
-                        <TextBlock x:Name="CB_SourceVC_textbox"
-                            IsHitTestVisible="False"
-                            Text="Select a source profile"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Left"
-                            Margin="12,0,0,0"
-                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            Visibility="{Binding ViewModel.SelectedSourceProfile, Converter={StaticResource NullToVisibilityConverter}}" />
-                    </Grid>
-                    <TextBlock Text="{Binding ViewModel.SourceConnectionStatus}" Margin="0,0,0,10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    <ui:Button Content="Connect" Appearance="Primary" Command="{Binding ViewModel.ConnectSourceCommand}" />
+                            MinWidth="200"
+                            ItemsSource="{Binding Profiles}"
+                            SelectedItem="{Binding SelectedSourceProfile}"
+                            DisplayMemberPath="Name"
+                            IsEnabled="{Binding IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
+                        <ui:Button
+                            Margin="10,0,0,0"
+                            Content="Connect"
+                            Command="{Binding ConnectSourceCommand}"
+                            IsEnabled="{Binding IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
+                    </StackPanel>
+                    <TextBlock Margin="0,10,0,0" Text="{Binding SourceConnectionStatus}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 </StackPanel>
             </ui:CardControl>
 
             <ui:CardControl Grid.Column="2">
                 <StackPanel>
                     <TextBlock Text="Target vCenter" FontWeight="Medium" />
-                    <Grid Margin="0,10,0,10">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0">
                         <ComboBox
-                            ItemsSource="{Binding ViewModel.Profiles}"
-                            SelectedItem="{Binding ViewModel.SelectedTargetProfile}"
-                            DisplayMemberPath="Name" />
-                        <TextBlock
-                            IsHitTestVisible="False"
-                            Text="Select a target profile"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Left"
-                            Margin="12,0,0,0"
-                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            Visibility="{Binding ViewModel.SelectedTargetProfile, Converter={StaticResource NullToVisibilityConverter}}" />
-                    </Grid>
-                    <TextBlock Text="{Binding ViewModel.TargetConnectionStatus}" Margin="0,0,0,10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    <ui:Button Content="Connect" Command="{Binding ViewModel.ConnectTargetCommand}" />
+                            MinWidth="200"
+                            ItemsSource="{Binding Profiles}"
+                            SelectedItem="{Binding SelectedTargetProfile}"
+                            DisplayMemberPath="Name"
+                            IsEnabled="{Binding IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
+                        <ui:Button
+                            Margin="10,0,0,0"
+                            Content="Connect"
+                            Command="{Binding ConnectTargetCommand}"
+                            IsEnabled="{Binding IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
+                    </StackPanel>
+                    <TextBlock Margin="0,10,0,0" Text="{Binding TargetConnectionStatus}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 </StackPanel>
             </ui:CardControl>
         </Grid>
 
         <ui:CardControl Grid.Row="2" Margin="0,20,0,0">
             <StackPanel>
-                <TextBlock FontSize="16" FontWeight="Medium" Text="Current Job Status" />
-                <TextBlock Margin="0,5,0,10" Text="{Binding ViewModel.CurrentJobText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-
-                <Grid Visibility="{Binding ViewModel.IsJobRunning, Converter={StaticResource BoolToVisibilityConverter}}">
+                <TextBlock Text="Current Job Status" FontWeight="Medium" />
+                <TextBlock Margin="0,5,0,0" Text="{Binding CurrentJobText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Grid Margin="0,10,0,0" Visibility="{Binding IsJobRunning, Converter={StaticResource BoolToVisibilityConverter}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-
-                    <ProgressBar Grid.Column="0" Value="{Binding ViewModel.JobProgress}" Maximum="100" />
-                    <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{Binding ViewModel.JobProgress, StringFormat={}{0}%}" />
+                    <ProgressBar Grid.Column="0" Value="{Binding JobProgress}" Maximum="100" />
+                    <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{Binding JobProgress, StringFormat={}{0}%}" />
                 </Grid>
-
-                <ui:Button Margin="0,10,0,0" Content="Run Test Job" Command="{Binding ViewModel.RunTestJobCommand}" IsEnabled="{Binding ViewModel.IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
+                <ui:Button Margin="0,10,0,0" Content="Run Test Job" Command="{Binding RunTestJobCommand}" IsEnabled="{Binding IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
             </StackPanel>
         </ui:CardControl>
 
@@ -102,7 +101,7 @@
             <ui:TextBox
                 Grid.Row="1"
                 Margin="0,10,0,0"
-                Text="{Binding ViewModel.ScriptOutput, Mode=OneWay}"
+                Text="{Binding ScriptOutput, Mode=OneWay}"
                 IsReadOnly="True"
                 AcceptsReturn="True"
                 VerticalScrollBarVisibility="Auto"

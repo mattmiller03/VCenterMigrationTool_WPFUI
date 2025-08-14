@@ -3,17 +3,15 @@ using VCenterMigrationTool.ViewModels;
 
 namespace VCenterMigrationTool.Views.Pages
 {
-    /// <summary>
-    /// Interaction logic for VmMigrationPage.xaml
-    /// </summary>
     public partial class VmMigrationPage : Page
     {
         public VmMigrationViewModel ViewModel { get; }
 
-        public VmMigrationPage(VmMigrationViewModel viewModel)
+        public VmMigrationPage (VmMigrationViewModel viewModel)
         {
             ViewModel = viewModel;
-            DataContext = this;
+            // FIX: Set the DataContext directly to the ViewModel
+            DataContext = viewModel;
 
             InitializeComponent();
         }

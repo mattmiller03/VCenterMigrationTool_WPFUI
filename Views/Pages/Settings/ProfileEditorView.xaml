@@ -1,0 +1,31 @@
+﻿<UserControl x:Class="VCenterMigrationTool.Views.Pages.Settings.ProfileEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels.Settings"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=viewmodels:ProfileEditorViewModel, IsDesignTimeCreatable=False}">
+    <StackPanel>
+        <TextBlock FontWeight="Medium" Text="{Binding FormTitle}" />
+        <ui:TextBox Margin="0,10,0,0" PlaceholderText="Profile Name" Text="{Binding ProfileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <ui:TextBox Margin="0,10,0,0" PlaceholderText="Server Address" Text="{Binding ServerAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <ui:TextBox Margin="0,10,0,0" PlaceholderText="Username" Text="{Binding Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <StackPanel Margin="0,10,0,0">
+            <TextBlock Margin="0,0,0,5" Text="Password" />
+            <ui:PasswordBox Password="{Binding PasswordInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" RevealButtonEnabled="True"/>
+            <CheckBox Margin="0,10,0,0" Content="Save Password (encrypted)" IsChecked="{Binding ShouldSavePassword, Mode=TwoWay}" />
+        </StackPanel>
+        <Separator Margin="0,10,0,10"/>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ui:Button Grid.Column="0" Command="{Binding SaveProfileCommand}" Content="Save Profile" Appearance="Primary" />
+            <ui:Button Grid.Column="2" Command="{Binding CancelCommand}" Content="Cancel" />
+        </Grid>
+    </StackPanel>
+</UserControl>

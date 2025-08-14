@@ -1,4 +1,4 @@
-﻿// In Helpers/BoolToSymbolConverter.cs
+﻿    // In Helpers/BoolToSymbolConverter.cs
 using System;
 using System.Globalization;
 using System.Windows.Data;

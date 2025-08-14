@@ -13,8 +13,8 @@ namespace VCenterMigrationTool.Views.Pages
         public DashboardPage(DashboardViewModel viewModel)
         {
             ViewModel = viewModel;
-            DataContext = this;
-
+            // FIX: DataContext is the ViewModel
+            DataContext = viewModel;
             InitializeComponent();
         }
     }

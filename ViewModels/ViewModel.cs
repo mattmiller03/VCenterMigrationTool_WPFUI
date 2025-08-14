@@ -3,7 +3,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Threading.Tasks;
 using Wpf.Ui.Abstractions.Controls;
-using Wpf.Ui.Controls;
 
 namespace VCenterMigrationTool.ViewModels
 {

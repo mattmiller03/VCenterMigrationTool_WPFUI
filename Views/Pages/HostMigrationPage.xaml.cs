@@ -13,9 +13,9 @@ namespace VCenterMigrationTool.Views.Pages
         public HostMigrationPage(HostMigrationViewModel viewModel)
         {
             ViewModel = viewModel;
-            DataContext = this;
-
+            // FIX: DataContext is the ViewModel
+            DataContext = viewModel;
             InitializeComponent();
         }
-    }
+        }
 }

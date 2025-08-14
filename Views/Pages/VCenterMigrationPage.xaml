@@ -6,12 +6,17 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
+    xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance viewmodels:VCenterMigrationViewModel, IsDesignTimeCreatable=False}"
     Title="VCenterMigrationPage"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
+    <Page.Resources>
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <helpers:BoolToParameterConverter x:Key="BoolToParameterConverter" />
+    </Page.Resources>
     <Grid Margin="42">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

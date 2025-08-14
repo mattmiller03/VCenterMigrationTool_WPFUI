@@ -44,8 +44,12 @@ public class CredentialService
     {
         var targetName = GetTargetName(profile);
 
-        // Use the new library to delete the credential
-        CredentialManager.DeleteCredential(targetName);
+        // Check if credential exists before attempting to delete
+        var existingCredential = CredentialManager.ReadCredential(targetName);
+        if (existingCredential != null)
+        {
+            CredentialManager.DeleteCredential(targetName);
+        }
     }
 
     // This helper method remains the same

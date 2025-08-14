@@ -1,136 +1,245 @@
-﻿// In Services/PowerShellService.cs
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.PowerShell;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Management.Automation;
+using System.Management.Automation.Runspaces;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace VCenterMigrationTool.Services;
 
-/// <summary>
-/// A service to execute PowerShell scripts and process their output.
-/// </summary>
 public class PowerShellService
-{
+    {
     private readonly ILogger<PowerShellService> _logger;
+    private readonly InitialSessionState _initialSessionState;
 
-    // The logger is now injected through the constructor
-    public PowerShellService(ILogger<PowerShellService> logger)
-    {
+    public PowerShellService (ILogger<PowerShellService> logger)
+        {
         _logger = logger;
-    }
-    /// <summary>
-    /// Runs a script and returns its console output streams as a single string.
-    /// </summary>
-    public async Task<string> RunScriptAsync(string scriptPath, Dictionary<string, object> parameters)
-    {
+        _initialSessionState = InitialSessionState.CreateDefault2();
+        _initialSessionState.ExecutionPolicy = ExecutionPolicy.Unrestricted;
+        }
+
+    public async Task<string> RunScriptAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
+        {
         var output = new StringBuilder();
         string fullScriptPath = Path.GetFullPath(scriptPath);
 
+        _logger.LogDebug("Starting PowerShell script execution: {ScriptPath}", fullScriptPath);
+        _logger.LogDebug("Script parameters: {@Parameters}", parameters);
+
         if (!File.Exists(fullScriptPath))
-        {
+            {
             _logger.LogError("Script not found at path: {ScriptPath}", fullScriptPath);
             return $"ERROR: Script not found at {fullScriptPath}";
-        }
+            }
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         await Task.Run(() =>
         {
-            using PowerShell ps = PowerShell.Create();
+            using PowerShell ps = PowerShell.Create(_initialSessionState);
 
-            ps.AddScript(File.ReadAllText(fullScriptPath));
-            ps.AddParameters(parameters);
+            try
+                {
+                var scriptContent = File.ReadAllText(fullScriptPath);
+                ps.AddScript(scriptContent);
+                ps.AddParameters(parameters);
+                if (!string.IsNullOrEmpty(logPath))
+                    {
+                    ps.AddParameter("LogPath", logPath);
+                    }
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Failed to read script file: {ScriptPath}", fullScriptPath);
+                output.AppendLine($"ERROR: Failed to read script file: {ex.Message}");
+                return;
+                }
 
-            // Capture streams for the UI output
-            ps.Streams.Information.DataAdded += (_, args) => output.AppendLine(ps.Streams.Information[args.Index].MessageData.ToString());
-            ps.Streams.Warning.DataAdded += (_, args) => output.AppendLine($"WARNING: {ps.Streams.Warning[args.Index].Message}");
+            // --- Full Implementation of Stream Handlers ---
 
-            // Capture the full error record for detailed logging
-            ps.Streams.Error.DataAdded += (_, args) =>
+            ps.Streams.Information.DataAdded += (sender, args) =>
             {
-                var errorRecord = ps.Streams.Error[args.Index];
-                // Log the FULL, untruncated error
-                _logger.LogError("PowerShell Stream Error: {ErrorDetails}", errorRecord.ToString());
-                // Provide a shorter, cleaner message for the UI
-                output.AppendLine($"ERROR: {errorRecord.Exception.Message}");
+                if (sender is PSDataCollection<InformationRecord> stream)
+                    {
+                    var message = stream[args.Index].MessageData.ToString();
+                    _logger.LogInformation("PS Info: {Message}", message);
+                    output.AppendLine(message);
+                    }
+            };
+
+            ps.Streams.Warning.DataAdded += (sender, args) =>
+            {
+                if (sender is PSDataCollection<WarningRecord> stream)
+                    {
+                    var warning = stream[args.Index].Message;
+                    _logger.LogWarning("PS Warning: {Warning}", warning);
+                    output.AppendLine($"WARNING: {warning}");
+                    }
+            };
+
+            ps.Streams.Verbose.DataAdded += (sender, args) =>
+            {
+                if (sender is PSDataCollection<VerboseRecord> stream)
+                    {
+                    var verbose = stream[args.Index].Message;
+                    _logger.LogDebug("PS Verbose: {Verbose}", verbose);
+                    output.AppendLine($"VERBOSE: {verbose}");
+                    }
+            };
+
+            ps.Streams.Debug.DataAdded += (sender, args) =>
+            {
+                if (sender is PSDataCollection<DebugRecord> stream)
+                    {
+                    var debug = stream[args.Index].Message;
+                    _logger.LogDebug("PS Debug: {Debug}", debug);
+                    output.AppendLine($"DEBUG: {debug}");
+                    }
+            };
+
+            ps.Streams.Error.DataAdded += (sender, args) =>
+            {
+                if (sender is PSDataCollection<ErrorRecord> stream)
+                    {
+                    var errorRecord = stream[args.Index];
+                    _logger.LogError("PS Error: {ErrorDetails}", errorRecord.ToString());
+                    output.AppendLine($"ERROR: {errorRecord.Exception?.Message}");
+                    }
             };
 
             try
-            {
-                ps.Invoke();
-            }
+                {
+                _logger.LogDebug("Invoking PowerShell script...");
+                var results = ps.Invoke();
+                _logger.LogDebug("Script execution completed. Result count: {ResultCount}", results?.Count ?? 0);
+
+                if (results is not null && results.Count > 0)
+                    {
+                    foreach (var result in results)
+                        {
+                        output.AppendLine(result?.BaseObject?.ToString() ?? "<null>");
+                        }
+                    }
+                }
             catch (Exception ex)
-            {
+                {
                 _logger.LogError(ex, "A fatal error occurred while invoking PowerShell script {ScriptPath}", scriptPath);
                 output.AppendLine($"FATAL SCRIPT ERROR: {ex.Message}");
-            }
+                }
         });
 
+        stopwatch.Stop();
+        _logger.LogDebug("PowerShell script execution completed in {ElapsedMs}ms: {ScriptPath}", stopwatch.ElapsedMilliseconds, fullScriptPath);
         return output.ToString();
-    }
+        }
 
-    /// <summary>
-    /// Runs a script that outputs a JSON string and safely deserializes it into a collection of C# objects.
-    /// </summary>
-    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsAsync<T>(string scriptPath, Dictionary<string, object> parameters)
-    {
+    public async Task<T?> RunScriptAndGetObjectAsync<T> (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
+        {
         string jsonOutput = string.Empty;
         string fullScriptPath = Path.GetFullPath(scriptPath);
 
         if (!File.Exists(fullScriptPath))
-        {
-            // If the script doesn't exist, return an empty collection immediately.
-            return new ObservableCollection<T>();
-        }
+            {
+            _logger.LogError("Script not found at path: {ScriptPath}", fullScriptPath);
+            return default;
+            }
 
         await Task.Run(() =>
         {
-            using PowerShell ps = PowerShell.Create();
-
-            ps.AddScript(File.ReadAllText(fullScriptPath));
-            ps.AddParameters(parameters);
-
-            // Execute the script and get the results
-            var results = ps.Invoke();
-
-            if (ps.HadErrors)
-            {
-                // If the script had errors, log them and stop.
-                foreach (var error in ps.Streams.Error)
+            using PowerShell ps = PowerShell.Create(_initialSessionState);
+            try
                 {
-                    Console.WriteLine($"PowerShell Error: {error}");
-                }
-                return;
-            }
+                ps.AddScript(File.ReadAllText(fullScriptPath));
+                ps.AddParameters(parameters);
+                if (!string.IsNullOrEmpty(logPath))
+                    {
+                    ps.AddParameter("LogPath", logPath);
+                    }
 
-            // The last object in the pipeline should be our JSON string.
-            // Safely get it to avoid errors.
-            jsonOutput = results.LastOrDefault()?.BaseObject.ToString() ?? string.Empty;
+                var results = ps.Invoke();
+
+                if (results is not null && !ps.HadErrors)
+                    {
+                    jsonOutput = results.LastOrDefault()?.BaseObject?.ToString() ?? string.Empty;
+                    }
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Exception during PowerShell script execution: {ScriptPath}", scriptPath);
+                }
         });
 
-        // If we didn't get any JSON output, return an empty collection.
         if (string.IsNullOrWhiteSpace(jsonOutput))
-        {
-            return new ObservableCollection<T>();
-        }
-
+            {
+            return default;
+            }
         try
-        {
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            // Attempt to deserialize. If it fails or returns null, the catch block or the null-coalescing operator will handle it.
-            var items = JsonSerializer.Deserialize<ObservableCollection<T>>(jsonOutput, options);
-
-            return items ?? new ObservableCollection<T>();
-        }
+            {
+            return JsonSerializer.Deserialize<T>(jsonOutput, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
         catch (JsonException ex)
+            {
+            _logger.LogError(ex, "JSON Deserialization Error for script {ScriptPath}", scriptPath);
+            return default;
+            }
+        }
+
+    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsAsync<T> (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
         {
-            // If the JSON is malformed, log the error and return an empty collection.
-            Console.WriteLine($"JSON Deserialization Error: {ex.Message}");
+        string jsonOutput = string.Empty;
+        string fullScriptPath = Path.GetFullPath(scriptPath);
+
+        if (!File.Exists(fullScriptPath))
+            {
+            _logger.LogError("Script not found at path: {ScriptPath}", fullScriptPath);
             return new ObservableCollection<T>();
+            }
+
+        await Task.Run(() =>
+        {
+            using PowerShell ps = PowerShell.Create(_initialSessionState);
+            try
+                {
+                ps.AddScript(File.ReadAllText(fullScriptPath));
+                ps.AddParameters(parameters);
+                if (!string.IsNullOrEmpty(logPath))
+                    {
+                    ps.AddParameter("LogPath", logPath);
+                    }
+
+                var results = ps.Invoke();
+
+                if (results is not null && !ps.HadErrors)
+                    {
+                    jsonOutput = results.LastOrDefault()?.BaseObject?.ToString() ?? string.Empty;
+                    }
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Exception during PowerShell script execution: {ScriptPath}", scriptPath);
+                }
+        });
+
+        if (string.IsNullOrWhiteSpace(jsonOutput))
+            {
+            return new ObservableCollection<T>();
+            }
+        try
+            {
+            var items = JsonSerializer.Deserialize<ObservableCollection<T>>(jsonOutput, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            return items ?? new ObservableCollection<T>();
+            }
+        catch (JsonException ex)
+            {
+            _logger.LogError(ex, "JSON Deserialization Error for script {ScriptPath}", scriptPath);
+            return new ObservableCollection<T>();
+            }
         }
     }
-}

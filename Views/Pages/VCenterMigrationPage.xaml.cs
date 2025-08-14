@@ -13,8 +13,8 @@ namespace VCenterMigrationTool.Views.Pages
         public VCenterMigrationPage(VCenterMigrationViewModel viewModel)
         {
             ViewModel = viewModel;
-            DataContext = this;
-
+            // FIX: DataContext is the ViewModel
+            DataContext = viewModel;
             InitializeComponent();
         }
     }

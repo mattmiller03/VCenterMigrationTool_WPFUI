@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using VCenterMigrationTool.Services;
 using VCenterMigrationTool.ViewModels;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
@@ -15,21 +16,16 @@ namespace VCenterMigrationTool.Views.Windows
     {
         public MainWindowViewModel ViewModel { get; }
 
-        public MainWindow(
-            MainWindowViewModel viewModel,
-            INavigationService navigationService,
-            INavigationViewPageProvider pageProvider
-        )
+        public MainWindow (MainWindowViewModel viewModel, INavigationService navigationService, IPageService pageService)
         {
             ViewModel = viewModel;
-            DataContext = ViewModel;
+            // FIX: DataContext is the ViewModel
+            DataContext = viewModel;
 
             SystemThemeWatcher.Watch(this);
-
             InitializeComponent();
 
             navigationService.SetNavigationControl(RootNavigation);
-            SetPageService(pageProvider);
         }
 
         #region INavigationWindow methods

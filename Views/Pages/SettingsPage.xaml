@@ -3,10 +3,13 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:models="clr-namespace:VCenterMigrationTool.Models"
     xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
+    xmlns:settingsViewModels="clr-namespace:VCenterMigrationTool.ViewModels.Settings"
+    xmlns:settingsViews="clr-namespace:VCenterMigrationTool.Views.Pages.Settings"
+    x:Name="SettingsPageRoot"
     Title="SettingsPage"
     d:DataContext="{d:DesignInstance viewmodels:SettingsViewModel, IsDesignTimeCreatable=False}"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
@@ -14,201 +17,53 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-        <Style x:Key="AddModeVisibility" TargetType="FrameworkElement">
-            <Setter Property="Visibility" Value="Visible"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.IsEditing}" Value="True">
-                    <Setter Property="Visibility" Value="Collapsed"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="EditModeVisibility" TargetType="FrameworkElement">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ViewModel.IsEditing}" Value="True">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+
+        <DataTemplate DataType="{x:Type settingsViewModels:AppearanceSettingsViewModel}">
+            <settingsViews:AppearanceSettingsView />
+        </DataTemplate>
+
     </Page.Resources>
 
-    <StackPanel Margin="42">
-        <TextBlock FontSize="24" FontWeight="Medium" Text="Settings" />
+    <Grid Margin="42">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-        <ui:TabView Margin="0,20,0,0" Background="{DynamicResource ApplicationBackgroundBrush}">
-            <ui:TabViewItem>
-                <ui:TabViewItem.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <ui:SymbolIcon Symbol="PaintBrush24" Margin="0,0,5,0" />
-                        <TextBlock Text="Appearance"/>
-                    </StackPanel>
-                </ui:TabViewItem.Header>
-                <ScrollViewer Margin="20" VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <TextBlock FontSize="20" FontWeight="Medium" Text="Personalization" />
-                        <TextBlock Margin="0,12,0,0" Text="Theme" />
-                        <RadioButton
-                            Command="{Binding ViewModel.ChangeThemeCommand}"
-                            CommandParameter="theme_light"
-                            Content="Light"
-                            IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light}"
-                            Margin="0,8,0,0" />
-                        <RadioButton
-                            Command="{Binding ViewModel.ChangeThemeCommand}"
-                            CommandParameter="theme_dark"
-                            Content="Dark"
-                            IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark}"
-                            Margin="0,8,0,0" />
-                    </StackPanel>
-                </ScrollViewer>
-            </ui:TabViewItem>
+        <TextBlock Grid.Row="0" FontSize="24" FontWeight="Medium" Text="Settings" />
 
-            <ui:TabViewItem>
-                <ui:TabViewItem.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <ui:SymbolIcon Symbol="PlugConnected24" Margin="0,0,5,0" />
-                        <TextBlock Text="Connection Profiles"/>
-                    </StackPanel>
-                </ui:TabViewItem.Header>
-                <ScrollViewer Margin="20" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="20" />
-                            <ColumnDefinition Width="300" />
-                        </Grid.ColumnDefinitions>
+        <Grid Grid.Row="1" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="Manage saved vCenter server connection profiles." />
-                            <ListView
-                                ItemsSource="{Binding ViewModel.Profiles}"
-                                SelectedItem="{Binding ViewModel.SelectedProfileForEditing, Mode=TwoWay}"
-                                MaxHeight="190">
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="{x:Type ListViewItem}">
-                                        <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType={x:Type Page}}}" />
-                                        <Setter Property="ContextMenu">
-                                            <Setter.Value>
-                                                <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
-                                                    <MenuItem Command="{Binding ViewModel.StartEditCommand}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Header="Edit" />
-                                                    <MenuItem Command="{Binding ViewModel.RemoveProfileCommand}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Header="Delete" />
-                                                </ContextMenu>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </ListView.ItemContainerStyle>
-                                <ListView.View>
-                                    <GridView>
-                                        <GridViewColumn DisplayMemberBinding="{Binding Name}" Header="Name" Width="150" />
-                                        <GridViewColumn DisplayMemberBinding="{Binding ServerAddress}" Header="Server Address" />
-                                    </GridView>
-                                </ListView.View>
-                            </ListView>
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                <ui:Button Command="{Binding ViewModel.PrepareNewProfileCommand}" ToolTip="Add new profile">
-                                    <ui:Button.Icon>
-                                        <ui:SymbolIcon Symbol="Add24" />
-                                    </ui:Button.Icon>
-                                </ui:Button>
-                                <ui:Button Command="{Binding ViewModel.StartEditCommand}" CommandParameter="{Binding ViewModel.SelectedProfileForEditing}" ToolTip="Edit selected profile" Margin="10,0,0,0" IsEnabled="{Binding ViewModel.SelectedProfileForEditing, Converter={StaticResource NullToBoolConverter}}">
-                                    <ui:Button.Icon>
-                                        <ui:SymbolIcon Symbol="Settings24" />
-                                    </ui:Button.Icon>
-                                </ui:Button>
-                                <ui:Button Command="{Binding ViewModel.RemoveProfileCommand}" CommandParameter="{Binding ViewModel.SelectedProfileForEditing}" ToolTip="Remove selected profile" Appearance="Danger" Margin="10,0,0,0" IsEnabled="{Binding ViewModel.SelectedProfileForEditing, Converter={StaticResource NullToBoolConverter}}">
-                                    <ui:Button.Icon>
-                                        <ui:SymbolIcon Symbol="Subtract24" />
-                                    </ui:Button.Icon>
-                                </ui:Button>
-                            </StackPanel>
-                            <Separator Margin="0,15,0,15"/>
-                            <TextBlock Text="Test Selected Profile" FontWeight="Medium"/>
-                            <ui:Button
-                                Margin="0,10,0,0"
-                                Content="Test Connection"
-                                Icon="PlugConnected24"
-                                Command="{Binding ViewModel.TestSelectedProfileCommand}"
-                                IsEnabled="{Binding ViewModel.SelectedProfileForEditing, Converter={StaticResource NullToBoolConverter}}"/>
-                            <TextBlock Margin="0,5,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding ViewModel.ConnectionStatus}"/>
-                        </StackPanel>
+            <Border Grid.Column="0" CornerRadius="8" Background="{DynamicResource ControlFillColorDefaultBrush}">
+                <TreeView 
+                    ItemsSource="{Binding SettingsCategories}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="5">
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                            <EventSetter Event="Selected" Handler="TreeViewItem_Selected" />
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate DataType="{x:Type models:SettingsCategory}" ItemsSource="{Binding SubCategories}">
+                            <TextBlock Text="{Binding Name}" Padding="5" />
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </Border>
 
-                        <StackPanel Grid.Column="2">
-                            <TextBlock FontWeight="Medium" Text="{Binding ViewModel.IsEditing, Converter={StaticResource BoolToStringConverter}}" />
-                            <ui:TextBox Margin="0,10,0,0" PlaceholderText="Profile Name" Text="{Binding ViewModel.NewProfileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                            <ui:TextBox Margin="0,10,0,0" PlaceholderText="Server Address" Text="{Binding ViewModel.NewProfileServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                            <ui:TextBox Margin="0,10,0,0" PlaceholderText="Username" Text="{Binding ViewModel.NewProfileUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                            <StackPanel Style="{StaticResource AddModeVisibility}">
-                                <TextBlock Margin="0,10,0,5" Text="Password" />
-                                <ui:PasswordBox x:Name="NewProfilePasswordBox" />
-                                <CheckBox Margin="0,10,0,0" Content="Save Password (encrypted)" IsChecked="{Binding ViewModel.ShouldSavePassword, Mode=TwoWay}" />
-                            </StackPanel>
-                            <Separator Margin="0,10,0,10"/>
-                            <ui:Button
-                                Command="{Binding ViewModel.AddProfileCommand}"
-                                CommandParameter="{Binding ElementName=NewProfilePasswordBox}"
-                                Content="Save Profile"
-                                Appearance="Primary"
-                                Style="{StaticResource AddModeVisibility}" />
-                            <Grid Style="{StaticResource EditModeVisibility}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="10" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <ui:Button Grid.Column="0" Command="{Binding ViewModel.UpdateProfileCommand}" Content="Update" Appearance="Primary" />
-                                <ui:Button Grid.Column="2" Command="{Binding ViewModel.CancelEditCommand}" Content="Cancel" />
-                            </Grid>
-                        </StackPanel>
-                    </Grid>
-                </ScrollViewer>
-            </ui:TabViewItem>
-
-            <ui:TabViewItem>
-                <ui:TabViewItem.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <ui:SymbolIcon Symbol="Settings24" Margin="0,0,5,0" />
-                        <TextBlock Text="General"/>
-                    </StackPanel>
-                </ui:TabViewItem.Header>
-                <ScrollViewer Margin="20" VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <TextBlock FontSize="20" FontWeight="Medium" Text="Prerequisites" />
-                        <TextBlock Margin="0,12,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="Check for required software and modules." />
-
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="PowerShell Version:" FontWeight="Medium" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="{Binding ViewModel.PowerShellVersion}" Margin="10,0,0,0" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="PowerCLI Installed:" FontWeight="Medium" VerticalAlignment="Center"/>
-                            <ui:SymbolIcon Grid.Column="1" Symbol="{Binding ViewModel.IsPowerCliInstalled, Converter={StaticResource BoolToSymbolConverter}}" Margin="10,0,0,0" VerticalAlignment="Center"/>
-                        </Grid>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                            <ui:Button Content="Check Now" Command="{Binding ViewModel.CheckPrerequisitesCommand}" />
-                            <ui:Button Content="Install PowerCLI" Margin="10,0,0,0" Command="{Binding ViewModel.InstallPowerCliCommand}" IsEnabled="{Binding .ViewModel.IsPowerCliInstalled, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
-                        </StackPanel>
-
-                        <TextBlock Margin="0,30,0,0" FontSize="20" FontWeight="Medium" Text="File Paths" />
-                        <TextBlock Margin="0,12,0,0" Text="Log File Location" />
-                        <ui:TextBox Margin="0,5,0,0" Text="{Binding ViewModel.LogPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
-                        <TextBlock Margin="0,12,0,0" Text="Export/Backup Location" />
-                        <ui:TextBox Margin="0,5,0,0" Text="{Binding ViewModel.ExportPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
-                        <ui:Button Content="Save Changes" Appearance="Primary" Margin="0,20,0,0" Command="{Binding ViewModel.SaveChangesCommand}" />
-
-                    </StackPanel>
-                </ScrollViewer>
-            </ui:TabViewItem>
-        </ui:TabView>
-    </StackPanel>
+            <Border Grid.Column="2" CornerRadius="8" Background="{DynamicResource ControlFillColorDefaultBrush}">
+                <ContentControl
+                    Content="{Binding SelectedContent}"
+                    Margin="20"/>
+            </Border>
+        </Grid>
+    </Grid>
 </Page>

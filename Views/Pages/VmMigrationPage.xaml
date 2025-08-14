@@ -6,11 +6,17 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
+    xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance viewmodels:VmMigrationViewModel, IsDesignTimeCreatable=False}"
     Title="VmMigrationPage"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+
+    <Page.Resources>
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <helpers:BoolToParameterConverter x:Key="BoolToParameterConverter" />
+    </Page.Resources>
 
     <Grid Margin="42">
         <Grid.RowDefinitions>
@@ -30,7 +36,7 @@
             </Grid.ColumnDefinitions>
 
             <GroupBox Grid.Column="0" Header="Select VMs to Migrate (from Source vCenter)">
-                <DataGrid ItemsSource="{Binding ViewModel.SourceVms}" AutoGenerateColumns="False" IsReadOnly="True">
+                <DataGrid ItemsSource="{Binding SourceVms}" AutoGenerateColumns="False" IsReadOnly="True">
                     <DataGrid.Columns>
                         <DataGridTemplateColumn>
                             <DataGridTemplateColumn.Header>
@@ -53,9 +59,9 @@
             <GroupBox Grid.Column="2" Header="Select Target (in Target vCenter)">
                 <StackPanel>
                     <TextBlock Text="Target Host" Margin="0,0,0,5"/>
-                    <ComboBox ItemsSource="{Binding ViewModel.TargetHosts}" SelectedItem="{Binding ViewModel.SelectedTargetHost}" DisplayMemberPath="Name" Margin="0,0,0,15"/>
+                    <ComboBox ItemsSource="{Binding TargetHosts}" SelectedItem="{Binding SelectedTargetHost}" DisplayMemberPath="Name" Margin="0,0,0,15"/>
                     <TextBlock Text="Target Datastore" Margin="0,0,0,5"/>
-                    <ComboBox ItemsSource="{Binding ViewModel.TargetDatastores}" SelectedItem="{Binding ViewModel.SelectedTargetDatastore}" DisplayMemberPath="Name"/>
+                    <ComboBox ItemsSource="{Binding TargetDatastores}" SelectedItem="{Binding SelectedTargetDatastore}" DisplayMemberPath="Name"/>
                 </StackPanel>
             </GroupBox>
         </Grid>
@@ -63,16 +69,16 @@
         <StackPanel Grid.Row="2" Margin="0,20,0,10">
             <ui:Button 
                 Content="Migrate Selected VMs"
-                Command="{Binding ViewModel.MigrateVmsCommand}"
+                Command="{Binding MigrateVmsCommand}"
                 Appearance="Primary"
                 Icon="ArrowSwap24"
-                IsEnabled="{Binding ViewModel.IsBusy, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
-            <ui:ProgressRing Margin="0,10,0,0" IsIndeterminate="True" Visibility="{Binding ViewModel.IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                IsEnabled="{Binding IsBusy, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
+            <ui:ProgressRing Margin="0,10,0,0" IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
         </StackPanel>
 
         <ui:TextBox
             Grid.Row="3"
-            Text="{Binding ViewModel.LogOutput, Mode=OneWay}"
+            Text="{Binding LogOutput, Mode=OneWay}"
             IsReadOnly="True"
             AcceptsReturn="True"
             VerticalScrollBarVisibility="Auto"
