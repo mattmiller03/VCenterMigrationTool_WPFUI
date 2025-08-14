@@ -22,20 +22,21 @@ namespace VCenterMigrationTool;
 
 public partial class App
     {
-        private static readonly IHost Host = Microsoft.Extensions.Hosting.Host
-            .CreateDefaultBuilder()
-            .ConfigureAppConfiguration(c => c.SetBasePath(AppContext.BaseDirectory))
-            .UseSerilog((context, services, configuration) => configuration
-                .ReadFrom.Services(services)
-                .Enrich.FromLogContext()
-                .WriteTo.Debug()
-                .WriteTo.File(
-                    path: "Logs/log-.txt",
-                    rollingInterval: RollingInterval.Day,
-                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
-                )
+    private static readonly IHost Host = Microsoft.Extensions.Hosting.Host
+        .CreateDefaultBuilder()
+        .ConfigureAppConfiguration(c => c.SetBasePath(AppContext.BaseDirectory))
+        // FIX: Replaced the unused 'context' parameter with '_'
+        .UseSerilog((_, services, configuration) => configuration
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext()
+            .WriteTo.Debug()
+            .WriteTo.File(
+                path: "Logs/log-.txt",
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
             )
-        .ConfigureServices((context, services) =>
+        )
+    .ConfigureServices((context, services) =>
         {
             // App Host
             services.AddHostedService<ApplicationHostService>();

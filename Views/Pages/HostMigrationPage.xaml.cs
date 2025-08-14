@@ -3,19 +3,17 @@ using VCenterMigrationTool.ViewModels;
 
 namespace VCenterMigrationTool.Views.Pages
 {
-    /// <summary>
-    /// Interaction logic for HostMigrationPage.xaml
-    /// </summary>
     public partial class HostMigrationPage : Page
     {
         public HostMigrationViewModel ViewModel { get; }
 
-        public HostMigrationPage(HostMigrationViewModel viewModel)
+        public HostMigrationPage (HostMigrationViewModel viewModel)
         {
             ViewModel = viewModel;
-            // FIX: DataContext is the ViewModel
+            // FIX: Set the DataContext directly to the ViewModel
             DataContext = viewModel;
+
             InitializeComponent();
         }
-        }
+    }
 }
