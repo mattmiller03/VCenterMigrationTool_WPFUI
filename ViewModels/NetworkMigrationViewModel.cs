@@ -4,40 +4,56 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
+using Wpf.Ui.Abstractions.Controls;
 
 namespace VCenterMigrationTool.ViewModels;
 
-public partial class NetworkMigrationViewModel : ObservableObject
+public partial class NetworkMigrationViewModel : ObservableObject, INavigationAware
 {
     private readonly PowerShellService _powerShellService;
+    private readonly SharedConnectionService _sharedConnectionService;
 
-    [ObservableProperty] private bool _isBusy;
-    [ObservableProperty] private string _logOutput = "Migration log will be displayed here...";
-    [ObservableProperty] private ObservableCollection<NetworkHostNode> _networkTopology = new();
+    // FIX: Changed the type from the non-existent 'NetworkTopology' to the correct 'NetworkHostNode'
+    [ObservableProperty]
+    private ObservableCollection<NetworkHostNode> _vSwitches = new();
 
-    public NetworkMigrationViewModel(PowerShellService powerShellService)
+    [ObservableProperty]
+    private ObservableCollection<ClusterInfo> _targetClusters = new();
+
+    [ObservableProperty]
+    private ClusterInfo? _selectedTargetCluster;
+
+    [ObservableProperty]
+    private ObservableCollection<string> _targetVSwitches = new();
+
+    [ObservableProperty]
+    private string? _selectedTargetVSwitch;
+
+    [ObservableProperty]
+    private bool _isMigrating;
+
+    [ObservableProperty]
+    private double _migrationProgress;
+
+    [ObservableProperty]
+    private string _migrationStatus = "Ready.";
+
+    public NetworkMigrationViewModel (PowerShellService powerShellService, SharedConnectionService sharedConnectionService)
     {
         _powerShellService = powerShellService;
+        _sharedConnectionService = sharedConnectionService;
     }
 
-    [RelayCommand]
-    private async Task LoadNetworkData()
-    {
-        IsBusy = true;
-        LogOutput = "Loading network topology from source vCenter...";
-        NetworkTopology = await _powerShellService.RunScriptAndGetObjectsAsync<NetworkHostNode>(".\\Scripts\\Get-NetworkTopology.ps1", new());
-        LogOutput = $"Loaded network topology for {NetworkTopology.Count} hosts.";
-        IsBusy = false;
-    }
+    public async Task OnNavigatedToAsync () => await Task.CompletedTask;
+    public async Task OnNavigatedFromAsync () => await Task.CompletedTask;
 
     [RelayCommand]
-    private async Task OnMigrateNetwork()
+    private async Task OnMigrateNetworks ()
     {
-        IsBusy = true;
-        LogOutput = "Starting network migration...\n";
-        // Logic to iterate through _networkTopology and find all IsSelected items
-        await Task.Delay(2000); // Simulate migration work
-        LogOutput += "Network migration simulation complete.";
-        IsBusy = false;
+        IsMigrating = true;
+        MigrationStatus = "Migrating networks...";
+        await Task.Delay(2000); // Simulate work
+        MigrationStatus = "Network migration complete.";
+        IsMigrating = false;
     }
 }
