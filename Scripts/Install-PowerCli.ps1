@@ -2,7 +2,58 @@
 param(
     [string]$LogPath = "Logs"
 )
-
+# Force PowerShell 7 if we're running in Windows PowerShell
+if ($PSVersionTable.PSVersion.Major -lt 6) {
+    Write-Information "Detected Windows PowerShell $($PSVersionTable.PSVersion). Switching to PowerShell 7..." -InformationAction Continue
+    
+    # Try to find PowerShell 7
+    $pwshPaths = @(
+        "pwsh.exe",
+        "C:\Program Files\PowerShell\7\pwsh.exe",
+        "C:\Program Files (x86)\PowerShell\7\pwsh.exe"
+    )
+    
+    foreach ($pwshPath in $pwshPaths) {
+        try {
+            if ($pwshPath -like "*\*") {
+                # Full path - check if file exists
+                if (Test-Path $pwshPath) {
+                    $pwshExe = $pwshPath
+                    break
+                }
+            } else {
+                # Just executable name - test if it's in PATH
+                $null = Get-Command $pwshPath -ErrorAction Stop
+                $pwshExe = $pwshPath
+                break
+            }
+        }
+        catch {
+            continue
+        }
+    }
+    
+    if ($pwshExe) {
+        Write-Information "Found PowerShell 7 at: $pwshExe" -InformationAction Continue
+        Write-Information "Restarting installation with PowerShell 7..." -InformationAction Continue
+        
+        # Rebuild the argument list
+        $scriptPath = $MyInvocation.MyCommand.Path
+        $arguments = @()
+        if ($LogPath) { $arguments += "-LogPath `"$LogPath`"" }
+        
+        # Execute this script again with PowerShell 7
+        $argumentString = $arguments -join " "
+        $process = Start-Process -FilePath $pwshExe -ArgumentList "-NoProfile", "-ExecutionPolicy", "Unrestricted", "-File", "`"$scriptPath`"", $argumentString -Wait -PassThru -NoNewWindow
+        
+        # Exit with the same exit code
+        exit $process.ExitCode
+    }
+    else {
+        Write-Error "PowerShell 7 not found. Please install PowerShell 7 first."
+        exit 1
+    }
+}
 # Function to write to both console and log file
 function Write-Log {
     param(

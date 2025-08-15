@@ -117,27 +117,29 @@ public class HybridPowerShellService
                 paramString.Append($" -LogPath \"{escapedLogPath}\"");
             }
 
-            // Try PowerShell 7 first, then fall back to Windows PowerShell
+            // Prioritize PowerShell 7 with multiple fallback paths
             var powershellPaths = new[]
             {
-                "pwsh.exe",  // PowerShell 7 (preferred) - should be in PATH
-                @"C:\Program Files\PowerShell\7\pwsh.exe",  // Common PowerShell 7 install location
+                "pwsh.exe",  // PowerShell 7 in PATH (most common)
+                @"C:\Program Files\PowerShell\7\pwsh.exe",  // Standard PowerShell 7 install
                 @"C:\Program Files (x86)\PowerShell\7\pwsh.exe",  // 32-bit PowerShell 7
-                "powershell.exe"  // Windows PowerShell (fallback)
+                @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe",  // Store install
+                "powershell.exe"  // Windows PowerShell (last resort)
             };
 
             Exception? lastException = null;
 
+            // Also add better logging to see which version is being used:
             foreach (var psPath in powershellPaths)
             {
                 try
                 {
-                    _logger.LogDebug("Attempting external execution with: {PowerShell}", psPath);
+                    _logger.LogInformation("Trying PowerShell executable: {PowerShell}", psPath);
 
-                    // For PowerShell 7 paths, verify the executable exists if it's a full path
+                    // For full paths, verify the executable exists
                     if (psPath.Contains("\\") && !File.Exists(psPath))
                     {
-                        _logger.LogDebug("PowerShell executable not found at path: {PowerShell}", psPath);
+                        _logger.LogDebug("PowerShell executable not found at: {PowerShell}", psPath);
                         continue;
                     }
 
@@ -152,6 +154,9 @@ public class HybridPowerShellService
                     };
 
                     using var process = new Process { StartInfo = psi };
+
+                    // Add logging to show which PowerShell version was actually used
+                    _logger.LogInformation("Successfully started PowerShell process: {PowerShell}", psPath);
 
                     var outputBuilder = new StringBuilder();
                     var errorBuilder = new StringBuilder();
