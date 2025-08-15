@@ -28,6 +28,13 @@ public class PowerShellService
     public async Task<string> RunScriptAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
         {
         var output = new StringBuilder();
+
+        // Check if this is a command rather than a script file
+        if (!scriptPath.Contains("Scripts\\") && !scriptPath.EndsWith(".ps1"))
+            {
+            return await RunCommandAsync(scriptPath, parameters);
+            }
+
         string fullScriptPath = Path.GetFullPath(scriptPath);
 
         _logger.LogDebug("Starting PowerShell script execution: {ScriptPath}", fullScriptPath);
@@ -49,11 +56,15 @@ public class PowerShellService
                 {
                 var scriptContent = File.ReadAllText(fullScriptPath);
                 ps.AddScript(scriptContent);
-                ps.AddParameters(parameters);
-                if (!string.IsNullOrEmpty(logPath))
+
+                // Add parameters - avoid duplicate LogPath
+                var filteredParameters = new Dictionary<string, object>(parameters);
+                if (!string.IsNullOrEmpty(logPath) && !filteredParameters.ContainsKey("LogPath"))
                     {
-                    ps.AddParameter("LogPath", logPath);
+                    filteredParameters.Add("LogPath", logPath);
                     }
+
+                ps.AddParameters(filteredParameters);
                 }
             catch (Exception ex)
                 {
@@ -62,8 +73,7 @@ public class PowerShellService
                 return;
                 }
 
-            // --- Full Implementation of Stream Handlers ---
-
+            // Stream handlers
             ps.Streams.Information.DataAdded += (sender, args) =>
             {
                 if (sender is PSDataCollection<InformationRecord> stream)
@@ -140,6 +150,56 @@ public class PowerShellService
         return output.ToString();
         }
 
+    // NEW METHOD: Execute PowerShell commands directly
+    public async Task<string> RunCommandAsync (string command, Dictionary<string, object>? parameters = null)
+        {
+        var output = new StringBuilder();
+
+        _logger.LogDebug("Executing PowerShell command: {Command}", command);
+
+        await Task.Run(() =>
+        {
+            using PowerShell ps = PowerShell.Create(_initialSessionState);
+
+            try
+                {
+                ps.AddScript(command);
+
+                if (parameters != null && parameters.Count > 0)
+                    {
+                    ps.AddParameters(parameters);
+                    }
+
+                var results = ps.Invoke();
+
+                if (results is not null && results.Count > 0)
+                    {
+                    foreach (var result in results)
+                        {
+                        output.AppendLine(result?.BaseObject?.ToString() ?? "<null>");
+                        }
+                    }
+
+                // Check for errors
+                if (ps.HadErrors)
+                    {
+                    foreach (var error in ps.Streams.Error)
+                        {
+                        output.AppendLine($"ERROR: {error.Exception?.Message}");
+                        _logger.LogError("PS Command Error: {Error}", error.ToString());
+                        }
+                    }
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Error executing PowerShell command: {Command}", command);
+                output.AppendLine($"COMMAND ERROR: {ex.Message}");
+                }
+        });
+
+        return output.ToString();
+        }
+
     public async Task<T?> RunScriptAndGetObjectAsync<T> (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
         {
         string jsonOutput = string.Empty;
@@ -157,11 +217,15 @@ public class PowerShellService
             try
                 {
                 ps.AddScript(File.ReadAllText(fullScriptPath));
-                ps.AddParameters(parameters);
-                if (!string.IsNullOrEmpty(logPath))
+
+                // Add parameters - avoid duplicate LogPath
+                var filteredParameters = new Dictionary<string, object>(parameters);
+                if (!string.IsNullOrEmpty(logPath) && !filteredParameters.ContainsKey("LogPath"))
                     {
-                    ps.AddParameter("LogPath", logPath);
+                    filteredParameters.Add("LogPath", logPath);
                     }
+
+                ps.AddParameters(filteredParameters);
 
                 var results = ps.Invoke();
 
@@ -208,11 +272,15 @@ public class PowerShellService
             try
                 {
                 ps.AddScript(File.ReadAllText(fullScriptPath));
-                ps.AddParameters(parameters);
-                if (!string.IsNullOrEmpty(logPath))
+
+                // Add parameters - avoid duplicate LogPath
+                var filteredParameters = new Dictionary<string, object>(parameters);
+                if (!string.IsNullOrEmpty(logPath) && !filteredParameters.ContainsKey("LogPath"))
                     {
-                    ps.AddParameter("LogPath", logPath);
+                    filteredParameters.Add("LogPath", logPath);
                     }
+
+                ps.AddParameters(filteredParameters);
 
                 var results = ps.Invoke();
 

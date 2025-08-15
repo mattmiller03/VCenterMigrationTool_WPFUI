@@ -48,38 +48,7 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 await OnCheckPrerequisites();
                 }
             }
-            // Add this temporary debug method to your PowerShellSettingsViewModel
 
-            [RelayCommand]
-            private async Task OnDebugPrerequisites ()
-            {
-                try
-                {
-                    string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-
-                    string rawOutput = await _powerShellService.RunScriptAsync(
-                        ".\\Scripts\\Get-Prerequisites.ps1",
-                        new Dictionary<string, object> { { "LogPath", logPath } },
-                        logPath);
-
-                    // Show the raw output in a message box for debugging
-                    System.Windows.MessageBox.Show($"Raw Output:\n\n{rawOutput}", "Debug Output",
-                        System.Windows.MessageBoxButton.OK);
-
-                    // Also try direct version check
-                    var directVersion = await _powerShellService.RunScriptAsync(
-                        "$PSVersionTable.PSVersion.ToString()",
-                        new Dictionary<string, object>());
-
-                    System.Windows.MessageBox.Show($"Direct Version Check:\n\n{directVersion}", "Direct Version",
-                        System.Windows.MessageBoxButton.OK);
-                }
-                catch (System.Exception ex)
-                {
-                    System.Windows.MessageBox.Show($"Debug Error: {ex.Message}", "Error",
-                        System.Windows.MessageBoxButton.OK);
-                }
-            }
         [RelayCommand]
         private async Task OnCheckPrerequisites ()
             {
@@ -90,11 +59,13 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 {
                 string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
 
-                // Get raw output first for debugging
+                // Use only LogPath parameter to avoid duplication
+                var parameters = new Dictionary<string, object> { { "LogPath", logPath } };
+
+                // Get raw output from the script
                 string rawOutput = await _powerShellService.RunScriptAsync(
                     ".\\Scripts\\Get-Prerequisites.ps1",
-                    new Dictionary<string, object> { { "LogPath", logPath } },
-                    logPath);
+                    parameters);
 
                 // Try to parse JSON from the output
                 var jsonResult = ExtractJsonFromOutput(rawOutput);
@@ -154,8 +125,9 @@ namespace VCenterMigrationTool.ViewModels.Settings
             try
                 {
                 string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-                await _powerShellService.RunScriptAsync(".\\Scripts\\Install-PowerCli.ps1",
-                    new Dictionary<string, object> { { "LogPath", logPath } }, logPath);
+                var parameters = new Dictionary<string, object> { { "LogPath", logPath } };
+
+                await _powerShellService.RunScriptAsync(".\\Scripts\\Install-PowerCli.ps1", parameters);
 
                 PowerCliInstallStatus = "Verifying installation...";
                 await OnCheckPrerequisites(); // Re-run check
@@ -279,16 +251,14 @@ namespace VCenterMigrationTool.ViewModels.Settings
             {
             try
                 {
-                // Direct PowerShell version check
-                var versionResult = await _powerShellService.RunScriptAsync(
-                    "$PSVersionTable.PSVersion.ToString()",
-                    new Dictionary<string, object>());
+                // Use the new RunCommandAsync method for direct PowerShell commands
+                var versionResult = await _powerShellService.RunCommandAsync("$PSVersionTable.PSVersion.ToString()");
 
                 if (!string.IsNullOrWhiteSpace(versionResult))
                     {
                     // Clean up the result
                     var cleanVersion = versionResult.Trim().Split('\n')[0].Trim();
-                    if (!string.IsNullOrWhiteSpace(cleanVersion))
+                    if (!string.IsNullOrWhiteSpace(cleanVersion) && cleanVersion != "ERROR:" && !cleanVersion.Contains("COMMAND ERROR"))
                         {
                         PowerShellVersion = cleanVersion;
                         }
@@ -312,10 +282,9 @@ namespace VCenterMigrationTool.ViewModels.Settings
                     PowerShellVersion = "Unable to determine";
                     }
 
-                // Simple PowerCLI check
-                var powerCliResult = await _powerShellService.RunScriptAsync(
-                    "if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }",
-                    new Dictionary<string, object>());
+                // Simple PowerCLI check using new command method
+                var powerCliResult = await _powerShellService.RunCommandAsync(
+                    "if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }");
 
                 IsPowerCliInstalled = powerCliResult?.Trim().ToLower() == "true";
 
