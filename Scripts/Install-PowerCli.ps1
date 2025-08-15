@@ -1,4 +1,4 @@
-# Install-PowerCli.ps1 - Minimal approach with basic commands only
+# Install-PowerCli.ps1 - Diagnostic version with detailed error reporting
 param(
     [string]$LogPath = "Logs"
 )
@@ -79,42 +79,114 @@ try {
     $scope = if ($isAdmin) { "AllUsers" } else { "CurrentUser" }
     Write-Log "Installing for scope: $scope" "INFO"
     
-    # Create a minimal installation script with only essential commands
+    # Create a diagnostic installation script
     $tempScriptPath = Join-Path $env:TEMP "InstallPowerCLI.ps1"
     Write-Log "Creating temporary installation script: $tempScriptPath" "INFO"
     
-    # Use only basic PowerShell commands that should always be available
+    # Enhanced diagnostic script
     $installScriptContent = @"
-# Minimal PowerCLI Installation Script - Basic commands only
+# Diagnostic PowerCLI Installation Script
+`$ErrorActionPreference = 'Stop'
+`$ProgressPreference = 'SilentlyContinue'
+
 try {
-    # Set repository to trusted (required for installation)
-    Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted -ErrorAction Stop
+    # Output basic info
+    "PowerShell Version: `$(`$PSVersionTable.PSVersion)"
+    "Execution Policy: `$(Get-ExecutionPolicy)"
+    "User: `$(`$env:USERNAME)"
     
-    # Install PowerCLI
-    Install-Module -Name 'VMware.PowerCLI' -Scope '$scope' -Force -AllowClobber -SkipPublisherCheck -ErrorAction Stop
-    
-    # Verify installation
-    `$module = Get-Module -ListAvailable -Name 'VMware.PowerCLI' -ErrorAction SilentlyContinue
-    
-    if (`$module) {
-        # Test import
-        Import-Module -Name 'VMware.PowerCLI' -Force -ErrorAction Stop
-        Remove-Module -Name 'VMware.PowerCLI' -ErrorAction SilentlyContinue
-        exit 0  # Success
-    } else {
-        exit 1  # Module not found after installation
+    # Check if PowerShellGet is available
+    if (Get-Command "Get-PSRepository" -ErrorAction SilentlyContinue) {
+        "PowerShellGet commands are available"
+        
+        # Check repository
+        try {
+            `$repo = Get-PSRepository -Name "PSGallery" -ErrorAction Stop
+            "PSGallery repository found. Trust: `$(`$repo.InstallationPolicy)"
+        }
+        catch {
+            "ERROR: Cannot access PSGallery repository: `$(`$_.Exception.Message)"
+            exit 10
+        }
+        
+        # Set repository to trusted
+        try {
+            Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted -ErrorAction Stop
+            "Repository set to trusted"
+        }
+        catch {
+            "ERROR: Cannot set repository trust: `$(`$_.Exception.Message)"
+            exit 11
+        }
+        
+        # Test internet connectivity
+        try {
+            `$testConnection = Test-NetConnection -ComputerName "www.powershellgallery.com" -Port 443 -ErrorAction Stop
+            if (`$testConnection.TcpTestSucceeded) {
+                "Internet connectivity to PowerShell Gallery: OK"
+            } else {
+                "ERROR: Cannot connect to PowerShell Gallery"
+                exit 12
+            }
+        }
+        catch {
+            "WARNING: Could not test connectivity: `$(`$_.Exception.Message)"
+        }
+        
+        # Attempt installation
+        try {
+            "Starting VMware.PowerCLI installation..."
+            Install-Module -Name 'VMware.PowerCLI' -Scope '$scope' -Force -AllowClobber -SkipPublisherCheck -ErrorAction Stop
+            "Installation command completed"
+        }
+        catch {
+            "ERROR: Install-Module failed: `$(`$_.Exception.Message)"
+            "Exception Type: `$(`$_.Exception.GetType().Name)"
+            exit 13
+        }
+        
+        # Verify installation
+        try {
+            `$module = Get-Module -ListAvailable -Name 'VMware.PowerCLI' -ErrorAction Stop
+            if (`$module) {
+                "SUCCESS: Module found after installation. Version: `$(`$module.Version)"
+                
+                # Test import
+                try {
+                    Import-Module -Name 'VMware.PowerCLI' -Force -ErrorAction Stop
+                    "SUCCESS: Module import test passed"
+                    Remove-Module -Name 'VMware.PowerCLI' -ErrorAction SilentlyContinue
+                    exit 0
+                }
+                catch {
+                    "WARNING: Module installed but import failed: `$(`$_.Exception.Message)"
+                    exit 14
+                }
+            } else {
+                "ERROR: Module not found after installation"
+                exit 15
+            }
+        }
+        catch {
+            "ERROR: Module verification failed: `$(`$_.Exception.Message)"
+            exit 16
+        }
+    }
+    else {
+        "ERROR: PowerShellGet commands not available"
+        exit 20
     }
 }
 catch {
-    exit 2  # Installation failed
+    "FATAL ERROR: `$(`$_.Exception.Message)"
+    "Exception Type: `$(`$_.Exception.GetType().Name)"
+    exit 99
 }
 finally {
     # Reset repository settings
     try {
         Set-PSRepository -Name 'PSGallery' -InstallationPolicy Untrusted -ErrorAction SilentlyContinue
-    } catch {
-        # Ignore reset errors
-    }
+    } catch {}
 }
 "@
 
@@ -128,7 +200,7 @@ finally {
         throw "Could not create temporary installation script"
     }
     
-    Write-Log "Executing installation script in external PowerShell process..." "INFO"
+    Write-Log "Executing diagnostic installation script..." "INFO"
     
     # Execute the installation script
     try {
@@ -155,53 +227,64 @@ finally {
         $stderr = $process.StandardError.ReadToEnd()
         
         # Wait for completion with timeout
-        $process.WaitForExit(600000)  # 10 minute timeout for PowerCLI download
+        $process.WaitForExit(600000)  # 10 minute timeout
         $exitCode = $process.ExitCode
         
         Write-Log "External PowerShell process completed with exit code: $exitCode" "INFO"
         
-        # Log any output (but don't treat stderr as fatal since we know Write-Host fails)
+        # Log detailed output
         if ($stdout.Trim()) {
-            Write-Log "Process output: $($stdout.Trim())" "INFO"
+            Write-Log "=== DIAGNOSTIC OUTPUT ===" "INFO"
+            $stdout.Split("`n") | ForEach-Object { 
+                if ($_.Trim()) { Write-Log "  $($_.Trim())" "INFO" }
+            }
         }
         
-        if ($stderr.Trim() -and -not ($stderr -like "*Write-Host*")) {
-            Write-Log "Process errors (excluding Write-Host): $($stderr.Trim())" "ERROR"
+        if ($stderr.Trim()) {
+            Write-Log "=== DIAGNOSTIC ERRORS ===" "ERROR"
+            $stderr.Split("`n") | ForEach-Object { 
+                if ($_.Trim()) { Write-Log "  $($_.Trim())" "ERROR" }
+            }
         }
         
-        # Interpret exit codes
+        # Interpret specific exit codes
         switch ($exitCode) {
             0 {
-                Write-Log "PowerCLI installation completed successfully" "INFO"
-                
-                # Verify installation in current session
-                Write-Log "Verifying installation in current session..." "INFO"
-                Start-Sleep -Seconds 2  # Give filesystem time to update
-                
-                $verifyModule = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
-                
-                if ($verifyModule) {
-                    Write-Log "SUCCESS: PowerCLI installation verified. Version: $($verifyModule.Version)" "INFO"
-                    Write-Output "Success: VMware.PowerCLI version $($verifyModule.Version) installed and verified successfully"
-                }
-                else {
-                    Write-Log "Installation succeeded but module not yet visible. May need application restart." "WARN"
-                    Write-Output "Success: PowerCLI installation completed. Restart the application to see the module."
-                }
+                Write-Log "SUCCESS: PowerCLI installation completed successfully" "INFO"
+                Write-Output "Success: VMware.PowerCLI installed successfully"
             }
-            1 {
-                Write-Log "Installation completed but module verification failed" "ERROR"
-                Write-Output "Warning: Installation may have completed but module verification failed. Try restarting the application."
+            10 {
+                Write-Log "ERROR: Cannot access PSGallery repository" "ERROR"
+                Write-Output "Failure: Cannot access PowerShell Gallery. Check internet connection."
             }
-            2 {
-                Write-Log "PowerCLI installation failed during module installation" "ERROR"
-                Write-Output "Failure: PowerCLI installation failed. Check internet connection or try manual installation."
+            11 {
+                Write-Log "ERROR: Cannot set repository trust" "ERROR"
+                Write-Output "Failure: Cannot configure PowerShell Gallery trust settings."
+            }
+            12 {
+                Write-Log "ERROR: No internet connectivity to PowerShell Gallery" "ERROR"
+                Write-Output "Failure: Cannot connect to PowerShell Gallery. Check firewall/proxy settings."
+            }
+            13 {
+                Write-Log "ERROR: Install-Module command failed" "ERROR"
+                Write-Output "Failure: PowerCLI installation failed. See diagnostic output above."
+            }
+            20 {
+                Write-Log "ERROR: PowerShellGet not available" "ERROR"
+                Write-Output "Failure: PowerShellGet module not available in external PowerShell."
             }
             default {
-                Write-Log "Unknown exit code: $exitCode" "ERROR"
-                Write-Output "Warning: Installation completed with unexpected result. Try restarting the application."
+                Write-Log "ERROR: Installation failed with exit code $exitCode" "ERROR"
+                Write-Output "Failure: PowerCLI installation failed. Check diagnostic output above."
             }
         }
+        
+        # Always suggest manual installation as backup
+        Write-Output ""
+        Write-Output "If automatic installation fails, install manually:"
+        Write-Output "1. Open PowerShell as Administrator"
+        Write-Output "2. Run: Install-Module -Name VMware.PowerCLI -Force"
+        Write-Output "3. Restart this application"
         
         # Clean up process
         $process.Dispose()
@@ -215,11 +298,6 @@ catch {
     $errorMessage = "Failure: An unexpected error occurred during installation. Details: $($_.Exception.Message)"
     Write-Log $errorMessage "ERROR"
     Write-Output $errorMessage
-    Write-Output ""
-    Write-Output "Manual installation instructions:"
-    Write-Output "1. Open PowerShell as Administrator"
-    Write-Output "2. Run: Install-Module -Name VMware.PowerCLI -Force"
-    Write-Output "3. Restart this application"
 }
 finally {
     # Clean up temporary script
@@ -235,7 +313,3 @@ finally {
     
     Write-Log "PowerCLI installation script completed" "INFO"
 }
-
-# Also suggest checking prerequisites after installation
-Write-Output ""
-Write-Output "After installation, click 'Check Prerequisites' to verify PowerCLI is detected."
