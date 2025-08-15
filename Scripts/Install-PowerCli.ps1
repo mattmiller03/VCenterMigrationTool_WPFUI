@@ -1,4 +1,4 @@
-# Install-PowerCli.ps1 - Using external PowerShell process for installation
+# Install-PowerCli.ps1 - Minimal approach with basic commands only
 param(
     [string]$LogPath = "Logs"
 )
@@ -33,7 +33,6 @@ function Write-Log {
     }
     catch {
         # Continue if logging fails
-        Write-Output "Warning: Could not write to log file"
     }
 }
 
@@ -76,117 +75,145 @@ try {
     Write-Log "Using external PowerShell process for installation..." "INFO"
     Write-Log "This approach bypasses .NET SDK PowerShell limitations" "INFO"
     
-    # Determine scope and create installation command
+    # Determine scope
     $scope = if ($isAdmin) { "AllUsers" } else { "CurrentUser" }
     Write-Log "Installing for scope: $scope" "INFO"
     
-    # Create the PowerShell command for external execution
-    $installCommand = @"
+    # Create a minimal installation script with only essential commands
+    $tempScriptPath = Join-Path $env:TEMP "InstallPowerCLI.ps1"
+    Write-Log "Creating temporary installation script: $tempScriptPath" "INFO"
+    
+    # Use only basic PowerShell commands that should always be available
+    $installScriptContent = @"
+# Minimal PowerCLI Installation Script - Basic commands only
 try {
-    Write-Host "Setting PowerShell Gallery as trusted..."
+    # Set repository to trusted (required for installation)
     Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted -ErrorAction Stop
     
-    Write-Host "Installing VMware.PowerCLI module..."
-    Write-Host "This may take several minutes depending on your internet connection..."
-    
+    # Install PowerCLI
     Install-Module -Name 'VMware.PowerCLI' -Scope '$scope' -Force -AllowClobber -SkipPublisherCheck -ErrorAction Stop
     
-    Write-Host "Verifying installation..."
-    `$module = Get-Module -ListAvailable -Name 'VMware.PowerCLI' -ErrorAction Stop
+    # Verify installation
+    `$module = Get-Module -ListAvailable -Name 'VMware.PowerCLI' -ErrorAction SilentlyContinue
     
     if (`$module) {
-        Write-Host "SUCCESS: VMware.PowerCLI version `$(`$module.Version) installed successfully"
-        
         # Test import
         Import-Module -Name 'VMware.PowerCLI' -Force -ErrorAction Stop
         Remove-Module -Name 'VMware.PowerCLI' -ErrorAction SilentlyContinue
-        Write-Host "SUCCESS: Module import test passed"
+        exit 0  # Success
     } else {
-        Write-Host "ERROR: Module not found after installation"
-        exit 1
+        exit 1  # Module not found after installation
     }
 }
 catch {
-    Write-Host "ERROR: Installation failed - `$(`$_.Exception.Message)"
-    exit 1
+    exit 2  # Installation failed
 }
 finally {
+    # Reset repository settings
     try {
         Set-PSRepository -Name 'PSGallery' -InstallationPolicy Untrusted -ErrorAction SilentlyContinue
-    } catch {}
+    } catch {
+        # Ignore reset errors
+    }
 }
 "@
 
-    Write-Log "Executing installation command in external PowerShell process..." "INFO"
-    
-    # Execute the installation in an external PowerShell process
-    $processArgs = @{
-        FilePath = "powershell.exe"
-        ArgumentList = @(
-            "-NoProfile"
-            "-ExecutionPolicy", "Unrestricted"
-            "-Command", $installCommand
-        )
-        Wait = $true
-        PassThru = $true
-        NoNewWindow = $true
-        RedirectStandardOutput = $true
-        RedirectStandardError = $true
+    # Write the installation script to temp file
+    try {
+        Set-Content -Path $tempScriptPath -Value $installScriptContent -Encoding UTF8
+        Write-Log "Temporary script created successfully" "INFO"
+    }
+    catch {
+        Write-Log "Failed to create temporary script: $($_.Exception.Message)" "ERROR"
+        throw "Could not create temporary installation script"
     }
     
-    $process = Start-Process @processArgs
+    Write-Log "Executing installation script in external PowerShell process..." "INFO"
     
-    # Capture output
-    $stdout = $process.StandardOutput.ReadToEnd()
-    $stderr = $process.StandardError.ReadToEnd()
-    $exitCode = $process.ExitCode
-    
-    Write-Log "External PowerShell process completed with exit code: $exitCode" "INFO"
-    
-    if ($stdout) {
-        Write-Log "Standard Output:" "INFO"
-        $stdout.Split("`n") | ForEach-Object { 
-            if ($_.Trim()) { Write-Log $_.Trim() "INFO" }
-        }
-    }
-    
-    if ($stderr) {
-        Write-Log "Standard Error:" "ERROR"
-        $stderr.Split("`n") | ForEach-Object { 
-            if ($_.Trim()) { Write-Log $_.Trim() "ERROR" }
-        }
-    }
-    
-    if ($exitCode -eq 0) {
-        Write-Log "PowerCLI installation completed successfully" "INFO"
+    # Execute the installation script
+    try {
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = "powershell.exe"
+        $psi.Arguments = "-NoProfile -ExecutionPolicy Unrestricted -File `"$tempScriptPath`""
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
         
-        # Verify installation in current session
-        Write-Log "Verifying installation in current session..." "INFO"
-        $verifyModule = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $psi
         
-        if ($verifyModule) {
-            Write-Log "SUCCESS: PowerCLI installation verified. Version: $($verifyModule.Version)" "INFO"
-            Write-Output "Success: VMware.PowerCLI version $($verifyModule.Version) installed and verified successfully"
+        Write-Log "Starting external PowerShell process..." "INFO"
+        $started = $process.Start()
+        
+        if (-not $started) {
+            throw "Failed to start PowerShell process"
         }
-        else {
-            Write-Log "WARNING: Installation reported success but module not visible in current session" "WARN"
-            Write-Output "Warning: Installation completed but module may require PowerShell restart to be visible"
+        
+        # Read output
+        $stdout = $process.StandardOutput.ReadToEnd()
+        $stderr = $process.StandardError.ReadToEnd()
+        
+        # Wait for completion with timeout
+        $process.WaitForExit(600000)  # 10 minute timeout for PowerCLI download
+        $exitCode = $process.ExitCode
+        
+        Write-Log "External PowerShell process completed with exit code: $exitCode" "INFO"
+        
+        # Log any output (but don't treat stderr as fatal since we know Write-Host fails)
+        if ($stdout.Trim()) {
+            Write-Log "Process output: $($stdout.Trim())" "INFO"
         }
+        
+        if ($stderr.Trim() -and -not ($stderr -like "*Write-Host*")) {
+            Write-Log "Process errors (excluding Write-Host): $($stderr.Trim())" "ERROR"
+        }
+        
+        # Interpret exit codes
+        switch ($exitCode) {
+            0 {
+                Write-Log "PowerCLI installation completed successfully" "INFO"
+                
+                # Verify installation in current session
+                Write-Log "Verifying installation in current session..." "INFO"
+                Start-Sleep -Seconds 2  # Give filesystem time to update
+                
+                $verifyModule = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
+                
+                if ($verifyModule) {
+                    Write-Log "SUCCESS: PowerCLI installation verified. Version: $($verifyModule.Version)" "INFO"
+                    Write-Output "Success: VMware.PowerCLI version $($verifyModule.Version) installed and verified successfully"
+                }
+                else {
+                    Write-Log "Installation succeeded but module not yet visible. May need application restart." "WARN"
+                    Write-Output "Success: PowerCLI installation completed. Restart the application to see the module."
+                }
+            }
+            1 {
+                Write-Log "Installation completed but module verification failed" "ERROR"
+                Write-Output "Warning: Installation may have completed but module verification failed. Try restarting the application."
+            }
+            2 {
+                Write-Log "PowerCLI installation failed during module installation" "ERROR"
+                Write-Output "Failure: PowerCLI installation failed. Check internet connection or try manual installation."
+            }
+            default {
+                Write-Log "Unknown exit code: $exitCode" "ERROR"
+                Write-Output "Warning: Installation completed with unexpected result. Try restarting the application."
+            }
+        }
+        
+        # Clean up process
+        $process.Dispose()
     }
-    else {
-        Write-Log "PowerCLI installation failed with exit code: $exitCode" "ERROR"
-        Write-Output "Failure: PowerCLI installation failed. Check logs for details."
-        
-        if ($stderr -match "administrator") {
-            Write-Output "Try running the application as Administrator or install PowerCLI manually:"
-            Write-Output "Open PowerShell as Administrator and run: Install-Module -Name VMware.PowerCLI -Force"
-        }
+    catch {
+        Write-Log "Error executing external PowerShell process: $($_.Exception.Message)" "ERROR"
+        throw
     }
 }
 catch {
     $errorMessage = "Failure: An unexpected error occurred during installation. Details: $($_.Exception.Message)"
     Write-Log $errorMessage "ERROR"
-    Write-Log "Stack trace: $($_.ScriptStackTrace)" "ERROR"
     Write-Output $errorMessage
     Write-Output ""
     Write-Output "Manual installation instructions:"
@@ -195,5 +222,20 @@ catch {
     Write-Output "3. Restart this application"
 }
 finally {
+    # Clean up temporary script
+    try {
+        if ($tempScriptPath -and (Test-Path $tempScriptPath)) {
+            Remove-Item $tempScriptPath -Force -ErrorAction SilentlyContinue
+            Write-Log "Temporary script cleaned up" "INFO"
+        }
+    }
+    catch {
+        # Ignore cleanup errors
+    }
+    
     Write-Log "PowerCLI installation script completed" "INFO"
 }
+
+# Also suggest checking prerequisites after installation
+Write-Output ""
+Write-Output "After installation, click 'Check Prerequisites' to verify PowerCLI is detected."
