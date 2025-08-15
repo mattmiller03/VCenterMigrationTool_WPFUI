@@ -5,11 +5,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Management.Automation;
-using System.Management.Automation.Runspaces;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace VCenterMigrationTool.Services;
@@ -28,7 +25,11 @@ public class HybridPowerShellService
     /// </summary>
     private bool ShouldUseExternalPowerShell (string scriptPath, Dictionary<string, object> parameters)
         {
-        // Use external PowerShell for PowerCLI operations or module management
+        // ALWAYS use external PowerShell due to SDK compatibility issues
+        // The internal PowerShell SDK has dependency conflicts in this application
+        return true;
+
+        /* Original logic kept for reference:
         var externalScripts = new[]
         {
             "Install-PowerCli.ps1",
@@ -48,6 +49,7 @@ public class HybridPowerShellService
 
         var scriptName = Path.GetFileName(scriptPath);
         return externalScripts.Any(s => s.Equals(scriptName, StringComparison.OrdinalIgnoreCase));
+        */
         }
 
     public async Task<string> RunScriptAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
@@ -58,101 +60,9 @@ public class HybridPowerShellService
             return await RunCommandAsync(scriptPath, parameters);
             }
 
-        // Decide execution method based on script requirements
-        if (ShouldUseExternalPowerShell(scriptPath, parameters))
-            {
-            _logger.LogDebug("Using external PowerShell for script: {ScriptPath}", scriptPath);
-            return await RunScriptExternalAsync(scriptPath, parameters, logPath);
-            }
-        else
-            {
-            _logger.LogDebug("Using internal PowerShell for script: {ScriptPath}", scriptPath);
-            return await RunScriptInternalAsync(scriptPath, parameters, logPath);
-            }
-        }
-
-    /// <summary>
-    /// Run simple scripts using internal PowerShell (for prerequisites, basic operations)
-    /// </summary>
-    private async Task<string> RunScriptInternalAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
-        {
-        var output = new StringBuilder();
-        string fullScriptPath = Path.GetFullPath(scriptPath);
-
-        _logger.LogDebug("Starting internal PowerShell script execution: {ScriptPath}", fullScriptPath);
-
-        if (!File.Exists(fullScriptPath))
-            {
-            _logger.LogError("Script not found at path: {ScriptPath}", fullScriptPath);
-            return $"ERROR: Script not found at {fullScriptPath}";
-            }
-
-        await Task.Run(() =>
-        {
-            using var ps = PowerShell.Create();
-
-            try
-                {
-                var scriptContent = File.ReadAllText(fullScriptPath);
-                ps.AddScript(scriptContent);
-
-                var filteredParameters = new Dictionary<string, object>(parameters);
-                if (!string.IsNullOrEmpty(logPath) && !filteredParameters.ContainsKey("LogPath"))
-                    {
-                    filteredParameters.Add("LogPath", logPath);
-                    }
-
-                ps.AddParameters(filteredParameters);
-
-                // Add stream handlers
-                ps.Streams.Information.DataAdded += (sender, args) =>
-                {
-                    if (sender is PSDataCollection<InformationRecord> stream)
-                        {
-                        var message = stream[args.Index].MessageData.ToString();
-                        _logger.LogInformation("PS Info: {Message}", message);
-                        output.AppendLine(message);
-                        }
-                };
-
-                ps.Streams.Warning.DataAdded += (sender, args) =>
-                {
-                    if (sender is PSDataCollection<WarningRecord> stream)
-                        {
-                        var warning = stream[args.Index].Message;
-                        _logger.LogWarning("PS Warning: {Warning}", warning);
-                        output.AppendLine($"WARNING: {warning}");
-                        }
-                };
-
-                ps.Streams.Error.DataAdded += (sender, args) =>
-                {
-                    if (sender is PSDataCollection<ErrorRecord> stream)
-                        {
-                        var errorRecord = stream[args.Index];
-                        _logger.LogError("PS Error: {ErrorDetails}", errorRecord.ToString());
-                        output.AppendLine($"ERROR: {errorRecord.Exception?.Message}");
-                        }
-                };
-
-                var results = ps.Invoke();
-
-                if (results?.Count > 0)
-                    {
-                    foreach (var result in results)
-                        {
-                        output.AppendLine(result?.BaseObject?.ToString() ?? "<null>");
-                        }
-                    }
-                }
-            catch (Exception ex)
-                {
-                _logger.LogError(ex, "Error in internal PowerShell execution");
-                output.AppendLine($"INTERNAL ERROR: {ex.Message}");
-                }
-        });
-
-        return output.ToString();
+        // Always use external PowerShell due to SDK issues
+        _logger.LogDebug("Using external PowerShell for script: {ScriptPath}", scriptPath);
+        return await RunScriptExternalAsync(scriptPath, parameters, logPath);
         }
 
     /// <summary>
@@ -172,18 +82,37 @@ public class HybridPowerShellService
 
         try
             {
-            // Build parameter string
+            // Build parameter string with proper escaping
             var paramString = new StringBuilder();
             foreach (var param in parameters)
                 {
-                // Properly escape parameter values
-                var value = param.Value?.ToString()?.Replace("'", "''") ?? "";
-                paramString.Append($" -{param.Key} '{value}'");
+                // Properly escape parameter values for PowerShell
+                var value = param.Value?.ToString() ?? "";
+
+                // Handle different parameter types
+                if (param.Value is System.Security.SecureString secureString)
+                    {
+                    // Convert SecureString to plain text for external process
+                    var ptr = System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(secureString);
+                    try
+                        {
+                        value = System.Runtime.InteropServices.Marshal.PtrToStringUni(ptr) ?? "";
+                        }
+                    finally
+                        {
+                        System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(ptr);
+                        }
+                    }
+
+                // Escape quotes and wrap in quotes for PowerShell
+                var escapedValue = value.Replace("\"", "`\"");
+                paramString.Append($" -{param.Key} \"{escapedValue}\"");
                 }
 
             if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
                 {
-                paramString.Append($" -LogPath '{logPath}'");
+                var escapedLogPath = logPath.Replace("\"", "`\"");
+                paramString.Append($" -LogPath \"{escapedLogPath}\"");
                 }
 
             // Try PowerShell 7 first, then fall back to Windows PowerShell
@@ -239,16 +168,16 @@ public class HybridPowerShellService
                     process.BeginErrorReadLine();
 
                     // Wait with timeout (10 minutes for large operations like PowerCLI install)
-                    using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(10));
                     try
-                    {
+                        {
                         await process.WaitForExitAsync(cts.Token);
-                    }
+                        }
                     catch (OperationCanceledException)
-                    {
+                        {
                         process.Kill();
                         throw new TimeoutException("PowerShell script execution timed out after 10 minutes");
-                    }
+                        }
 
                     var output = outputBuilder.ToString();
                     var errors = errorBuilder.ToString();
@@ -289,54 +218,66 @@ public class HybridPowerShellService
         }
 
     /// <summary>
-    /// Execute simple PowerShell commands using internal PowerShell
+    /// Execute simple PowerShell commands using external PowerShell (due to SDK issues)
     /// </summary>
     public async Task<string> RunCommandAsync (string command, Dictionary<string, object>? parameters = null)
         {
-        var output = new StringBuilder();
+        _logger.LogDebug("Executing PowerShell command via external process: {Command}", command);
 
-        _logger.LogDebug("Executing PowerShell command: {Command}", command);
-
-        await Task.Run(() =>
-        {
-            using var ps = PowerShell.Create();
+        try
+            {
+            // Create a temporary script file for the command
+            var tempScriptPath = Path.GetTempFileName() + ".ps1";
 
             try
                 {
-                ps.AddScript(command);
+                // Build the script content
+                var scriptContent = new StringBuilder();
 
+                // Add parameters if provided
                 if (parameters?.Count > 0)
                     {
-                    ps.AddParameters(parameters);
-                    }
-
-                var results = ps.Invoke();
-
-                if (results?.Count > 0)
-                    {
-                    foreach (var result in results)
+                    foreach (var param in parameters)
                         {
-                        output.AppendLine(result?.BaseObject?.ToString() ?? "<null>");
+                        var value = param.Value?.ToString() ?? "";
+                        var escapedValue = value.Replace("'", "''");
+                        scriptContent.AppendLine($"${param.Key} = '{escapedValue}'");
                         }
+                    scriptContent.AppendLine();
                     }
 
-                if (ps.HadErrors)
-                    {
-                    foreach (var error in ps.Streams.Error)
-                        {
-                        output.AppendLine($"ERROR: {error.Exception?.Message}");
-                        _logger.LogError("PS Command Error: {Error}", error.ToString());
-                        }
-                    }
+                // Add the command
+                scriptContent.AppendLine(command);
+
+                // Write to temp file
+                await File.WriteAllTextAsync(tempScriptPath, scriptContent.ToString());
+
+                // Execute the temp script
+                var result = await RunScriptExternalAsync(tempScriptPath, new Dictionary<string, object>());
+
+                return result;
                 }
-            catch (Exception ex)
+            finally
                 {
-                _logger.LogError(ex, "Error executing PowerShell command: {Command}", command);
-                output.AppendLine($"COMMAND ERROR: {ex.Message}");
+                // Clean up temp file
+                try
+                    {
+                    if (File.Exists(tempScriptPath))
+                        {
+                        File.Delete(tempScriptPath);
+                        }
+                    }
+                catch
+                    {
+                    // Ignore cleanup errors
+                    }
                 }
-        });
-
-        return output.ToString();
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error executing PowerShell command: {Command}", command);
+            return $"COMMAND ERROR: {ex.Message}";
+            }
         }
 
     /// <summary>
