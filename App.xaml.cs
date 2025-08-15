@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using VCenterMigrationTool.Models;
@@ -25,17 +26,37 @@ public partial class App
     private static readonly IHost Host = Microsoft.Extensions.Hosting.Host
         .CreateDefaultBuilder()
         .ConfigureAppConfiguration(c => c.SetBasePath(AppContext.BaseDirectory))
-        // FIX: Replaced the unused 'context' parameter with '_'
-        .UseSerilog((_, services, configuration) => configuration
-            .ReadFrom.Services(services)
-            .Enrich.FromLogContext()
-            .WriteTo.Debug()
-            .WriteTo.File(
-                path: "Logs/log-.txt",
-                rollingInterval: RollingInterval.Day,
-                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
-            )
-        )
+        .UseSerilog((context, services, configuration) =>
+        {
+            // Get the configuration service to determine log path
+            var tempServiceProvider = new ServiceCollection()
+                .AddSingleton<ConfigurationService>()
+                .AddLogging()
+                .BuildServiceProvider();
+
+            var configService = tempServiceProvider.GetRequiredService<ConfigurationService>();
+            var appConfig = configService.GetConfiguration();
+
+            // Use the configured log path or fallback to default
+            var logPath = !string.IsNullOrEmpty(appConfig.LogPath)
+                ? appConfig.LogPath
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VCenterMigrationTool", "Logs");
+
+            // Ensure log directory exists
+            Directory.CreateDirectory(logPath);
+
+            var logFilePath = Path.Combine(logPath, "log-.txt");
+
+            configuration
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+                .WriteTo.Debug()
+                .WriteTo.File(
+                    path: logFilePath,
+                    rollingInterval: RollingInterval.Day,
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+                );
+        })
     .ConfigureServices((context, services) =>
     {
         // App Host
@@ -97,24 +118,24 @@ public partial class App
     })
         .Build();
 
-    public static T? GetService<T>() where T : class
-    {
+    public static T? GetService<T> () where T : class
+        {
         return Host.Services.GetService(typeof(T)) as T;
-    }
+        }
 
-    private async void OnStartup(object sender, StartupEventArgs e)
-    {
+    private async void OnStartup (object sender, StartupEventArgs e)
+        {
         await Host.StartAsync();
-    }
+        }
 
-    private async void OnExit(object sender, ExitEventArgs e)
-    {
+    private async void OnExit (object sender, ExitEventArgs e)
+        {
         await Host.StopAsync();
         Host.Dispose();
-    }
+        }
 
-    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-    {
+    private void OnDispatcherUnhandledException (object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
         // Log the unhandled exception using Serilog
         Log.Error(e.Exception, "An unhandled exception occurred: {Message}", e.Exception.Message);
 
@@ -124,5 +145,5 @@ public partial class App
 
         // Prevent the application from crashing
         e.Handled = true;
+        }
     }
-}

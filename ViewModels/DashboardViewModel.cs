@@ -1,14 +1,14 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Security;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using Wpf.Ui.Abstractions.Controls;
+using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace VCenterMigrationTool.ViewModels;
 
@@ -126,21 +126,23 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         };
 
         // ENHANCED DEBUG: Log the bypass status before calling the script
-        _logger.LogInformation("DEBUG: Before calling script - PowerCliConfirmedInstalled = {PowerCliConfirmed}",
+        _logger.LogInformation("DEBUG: [Dashboard] Before calling script - PowerCliConfirmedInstalled = {PowerCliConfirmed}",
             HybridPowerShellService.PowerCliConfirmedInstalled);
-        _logger.LogInformation("DEBUG: WouldScriptGetBypass = {WouldBypass}",
+        _logger.LogInformation("DEBUG: [Dashboard] WouldScriptGetBypass = {WouldBypass}",
             _powerShellService.WouldScriptGetBypass("Test-vCenterConnection.ps1"));
 
         // FIXED: Add BypassModuleCheck manually if the optimized method isn't working
         if (HybridPowerShellService.PowerCliConfirmedInstalled)
             {
             scriptParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: Manually added BypassModuleCheck=true to parameters");
+            _logger.LogInformation("DEBUG: [Dashboard] Manually added BypassModuleCheck=true to parameters");
             }
 
-        // Log all parameters being passed
-        _logger.LogInformation("DEBUG: All parameters: {Parameters}",
-            string.Join(", ", scriptParams.Select(p => $"{p.Key}={p.Value}")));
+        // SECURE: Log parameters excluding sensitive data
+        var safeParams = scriptParams
+            .Where(p => !p.Key.ToLower().Contains("password"))
+            .Select(p => $"{p.Key}={p.Value}");
+        _logger.LogInformation("DEBUG: [Dashboard] Safe parameters: {Parameters}", string.Join(", ", safeParams));
 
         string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
         string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams, logPath);
@@ -207,19 +209,21 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         };
 
         // ENHANCED DEBUG: Log the bypass status before calling the script
-        _logger.LogInformation("DEBUG: Before calling script - PowerCliConfirmedInstalled = {PowerCliConfirmed}",
+        _logger.LogInformation("DEBUG: [Dashboard] Before calling script - PowerCliConfirmedInstalled = {PowerCliConfirmed}",
             HybridPowerShellService.PowerCliConfirmedInstalled);
 
         // FIXED: Add BypassModuleCheck manually if the optimized method isn't working
         if (HybridPowerShellService.PowerCliConfirmedInstalled)
             {
             scriptParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: Manually added BypassModuleCheck=true to parameters");
+            _logger.LogInformation("DEBUG: [Dashboard] Manually added BypassModuleCheck=true to parameters");
             }
 
-        // Log all parameters being passed
-        _logger.LogInformation("DEBUG: All parameters: {Parameters}",
-            string.Join(", ", scriptParams.Select(p => $"{p.Key}={p.Value}")));
+        // SECURE: Log parameters excluding sensitive data
+        var safeParams = scriptParams
+            .Where(p => !p.Key.ToLower().Contains("password"))
+            .Select(p => $"{p.Key}={p.Value}");
+        _logger.LogInformation("DEBUG: [Dashboard] Safe parameters: {Parameters}", string.Join(", ", safeParams));
 
         string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
         string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams, logPath);
@@ -277,7 +281,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         if (HybridPowerShellService.PowerCliConfirmedInstalled)
             {
             scriptParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: Added BypassModuleCheck=true for export script");
+            _logger.LogInformation("DEBUG: [Dashboard] Added BypassModuleCheck=true for export script");
             }
 
         var result = await _powerShellService.RunScriptAsync(".\\Scripts\\Export-vCenterConfig.ps1", scriptParams);

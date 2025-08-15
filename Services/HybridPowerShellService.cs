@@ -66,8 +66,11 @@ public class HybridPowerShellService
             optimizedParameters["BypassModuleCheck"] = true;
             _logger.LogInformation("DEBUG: Adding BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
 
-            // DEBUG: Log all parameters being passed
-            _logger.LogInformation("DEBUG: Final parameters: {Parameters}", string.Join(", ", optimizedParameters.Select(p => $"{p.Key}={p.Value}")));
+            // SECURE: Log parameters without sensitive data
+            var safeParams = optimizedParameters
+                .Where(p => !IsSensitiveParameter(p.Key))
+                .Select(p => $"{p.Key}={p.Value}");
+            _logger.LogInformation("DEBUG: Final parameters (excluding sensitive): {Parameters}", string.Join(", ", safeParams));
             }
         else
             {
@@ -139,6 +142,15 @@ public class HybridPowerShellService
         }
 
     /// <summary>
+    /// Determines if a parameter contains sensitive data that should not be logged
+    /// </summary>
+    private bool IsSensitiveParameter (string parameterName)
+        {
+        var sensitiveParams = new[] { "Password", "password", "pwd", "secret", "token", "key" };
+        return sensitiveParams.Any(s => parameterName.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+    /// <summary>
     /// Run complex scripts using external PowerShell (for PowerCLI operations)
     /// </summary>
     private async Task<string> RunScriptExternalAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
@@ -158,16 +170,26 @@ public class HybridPowerShellService
             // Build parameter string with proper escaping
             var paramString = new StringBuilder();
 
-            // DEBUG: Log all parameters before building the command line
-            _logger.LogInformation("DEBUG: Building parameter string from {ParameterCount} parameters:", parameters.Count);
+            // SECURE: Log parameter count but not sensitive values
+            var paramCount = parameters.Count;
+            var sensitiveParamCount = parameters.Keys.Count(IsSensitiveParameter);
+            _logger.LogInformation("DEBUG: Building parameter string from {ParameterCount} parameters ({SensitiveCount} sensitive)",
+                paramCount, sensitiveParamCount);
 
             foreach (var param in parameters)
                 {
                 // Properly escape parameter values for PowerShell
                 var value = param.Value?.ToString() ?? "";
 
-                // DEBUG: Log each parameter
-                _logger.LogInformation("DEBUG: Parameter {Key} = {Value} (Type: {Type})", param.Key, value, param.Value?.GetType().Name ?? "null");
+                // SECURE: Only log non-sensitive parameters
+                if (!IsSensitiveParameter(param.Key))
+                    {
+                    _logger.LogInformation("DEBUG: Parameter {Key} = {Value} (Type: {Type})", param.Key, value, param.Value?.GetType().Name ?? "null");
+                    }
+                else
+                    {
+                    _logger.LogInformation("DEBUG: Parameter {Key} = [REDACTED] (Type: {Type})", param.Key, param.Value?.GetType().Name ?? "null");
+                    }
 
                 // Handle different parameter types
                 if (param.Value is System.Security.SecureString secureString)
@@ -210,8 +232,33 @@ public class HybridPowerShellService
                 paramString.Append($" -LogPath \"{escapedLogPath}\"");
                 }
 
-            // DEBUG: Log the final parameter string being built
-            _logger.LogInformation("DEBUG: Final parameter string: {ParamString}", paramString.ToString());
+            // SECURE: Create a safe version of the command for logging (without sensitive data)
+            var safeParamString = new StringBuilder();
+            foreach (var param in parameters)
+                {
+                if (param.Value is bool boolValue && boolValue)
+                    {
+                    safeParamString.Append($" -{param.Key}");
+                    }
+                else if (!IsSensitiveParameter(param.Key))
+                    {
+                    var value = param.Value?.ToString() ?? "";
+                    var escapedValue = value.Replace("\"", "`\"");
+                    safeParamString.Append($" -{param.Key} \"{escapedValue}\"");
+                    }
+                else
+                    {
+                    safeParamString.Append($" -{param.Key} \"[REDACTED]\"");
+                    }
+                }
+
+            if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
+                {
+                var escapedLogPath = logPath.Replace("\"", "`\"");
+                safeParamString.Append($" -LogPath \"{escapedLogPath}\"");
+                }
+
+            _logger.LogInformation("DEBUG: Safe parameter string: {SafeParamString}", safeParamString.ToString());
 
             // Prioritize PowerShell 7 with multiple fallback paths
             var powershellPaths = new[]
@@ -248,8 +295,9 @@ public class HybridPowerShellService
                         CreateNoWindow = true
                         };
 
-                    // DEBUG: Log the complete command line being executed
-                    _logger.LogInformation("DEBUG: Executing command: {FileName} {Arguments}", psPath, psi.Arguments);
+                    // SECURE: Log safe command (without sensitive data)
+                    var safeCommand = $"-NoProfile -ExecutionPolicy Unrestricted -File \"{fullScriptPath}\"{safeParamString}";
+                    _logger.LogInformation("DEBUG: Executing safe command: {FileName} {SafeArguments}", psPath, safeCommand);
 
                     using var process = new Process { StartInfo = psi };
 
