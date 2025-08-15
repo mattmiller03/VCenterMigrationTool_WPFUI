@@ -8,6 +8,8 @@ using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using Wpf.Ui.Abstractions.Controls;
 using System.Collections.Generic;
+using System;
+using System.IO;
 
 namespace VCenterMigrationTool.ViewModels;
 
@@ -16,6 +18,8 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
     private readonly HybridPowerShellService _powerShellService;
     private readonly SharedConnectionService _sharedConnectionService;
     private readonly ConfigurationService _configurationService;
+    private readonly CredentialService _credentialService;
+    private readonly IDialogService _dialogService;
     private readonly ILogger<HostMigrationViewModel> _logger;
 
     [ObservableProperty]
@@ -26,6 +30,9 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
 
     [ObservableProperty]
     private ClusterInfo? _selectedTargetCluster;
+
+    [ObservableProperty]
+    private string? _selectedTargetDatacenter;
 
     [ObservableProperty]
     private bool _isLoadingData;
@@ -45,7 +52,7 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private string _logOutput = "Migration log will appear here...";
 
-    // Migration Options
+    // Migration Options - Enhanced for VMHostConfigV2
     [ObservableProperty]
     private bool _preserveVmAssignments = true;
 
@@ -55,16 +62,45 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private bool _updateDrsRules = false;
 
+    [ObservableProperty]
+    private bool _createBackupBeforeMigration = true;
+
+    [ObservableProperty]
+    private string _backupPath = string.Empty;
+
+    [ObservableProperty]
+    private int _operationTimeout = 600;
+
+    [ObservableProperty]
+    private string? _uplinkPortgroupName;
+
+    // Host Action Selection
+    [ObservableProperty]
+    private string _selectedAction = "Migrate";
+
+    [ObservableProperty]
+    private string? _selectedBackupFile;
+
+    public List<string> AvailableActions { get; } = new() { "Backup", "Restore", "Migrate" };
+
     public HostMigrationViewModel (
         HybridPowerShellService powerShellService,
         SharedConnectionService sharedConnectionService,
         ConfigurationService configurationService,
+        CredentialService credentialService,
+        IDialogService dialogService,
         ILogger<HostMigrationViewModel> logger)
         {
         _powerShellService = powerShellService;
         _sharedConnectionService = sharedConnectionService;
         _configurationService = configurationService;
+        _credentialService = credentialService;
+        _dialogService = dialogService;
         _logger = logger;
+
+        // Initialize backup path from configuration
+        var config = _configurationService.GetConfiguration();
+        BackupPath = Path.Combine(config.ExportPath ?? "Exports", "HostConfigs");
         }
 
     public async Task OnNavigatedToAsync ()
@@ -98,7 +134,8 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
         SelectedHostCount > 0 &&
         SelectedTargetCluster != null &&
         !IsMigrating &&
-        !IsLoadingData;
+        !IsLoadingData &&
+        (SelectedAction != "Restore" || !string.IsNullOrEmpty(SelectedBackupFile));
 
     [RelayCommand]
     private async Task LoadSourceTopology ()
@@ -116,13 +153,28 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
         try
             {
             var connection = _sharedConnectionService.SourceConnection;
+            var password = _credentialService.GetPassword(connection);
 
-            // TODO: Replace with actual password retrieval
+            if (string.IsNullOrEmpty(password))
+                {
+                var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
+                    "Password Required",
+                    $"Enter password for {connection.Username}@{connection.ServerAddress}:");
+
+                if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
+                    {
+                    LoadingStatus = "Password required to load topology";
+                    IsLoadingData = false;
+                    return;
+                    }
+                password = promptedPassword;
+                }
+
             var scriptParams = new Dictionary<string, object>
             {
                 { "VCenterServer", connection.ServerAddress },
                 { "Username", connection.Username },
-                { "Password", "placeholder" } // This needs proper password handling
+                { "Password", password }
             };
 
             // Add BypassModuleCheck if PowerCLI is confirmed
@@ -159,18 +211,14 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
                 {
                 LoadingStatus = "No topology data returned from source vCenter";
                 LogOutput += "Warning: No clusters or hosts found in source vCenter.\n";
-
-                // Load sample data for demonstration
                 LoadSampleSourceTopology();
                 }
             }
-        catch (System.Exception ex)
+        catch (Exception ex)
             {
             _logger.LogError(ex, "Failed to load source topology");
             LoadingStatus = "Failed to load source topology";
             LogOutput += $"Error loading source topology: {ex.Message}\n";
-
-            // Load sample data as fallback
             LoadSampleSourceTopology();
             }
         finally
@@ -197,13 +245,28 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
         try
             {
             var connection = _sharedConnectionService.TargetConnection;
+            var password = _credentialService.GetPassword(connection);
 
-            // TODO: Replace with actual password retrieval
+            if (string.IsNullOrEmpty(password))
+                {
+                var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
+                    "Password Required",
+                    $"Enter password for {connection.Username}@{connection.ServerAddress}:");
+
+                if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
+                    {
+                    LoadingStatus = "Password required to load clusters";
+                    IsLoadingData = false;
+                    return;
+                    }
+                password = promptedPassword;
+                }
+
             var scriptParams = new Dictionary<string, object>
             {
                 { "VCenterServer", connection.ServerAddress },
                 { "Username", connection.Username },
-                { "Password", "placeholder" } // This needs proper password handling
+                { "Password", password }
             };
 
             // Add BypassModuleCheck if PowerCLI is confirmed
@@ -236,18 +299,14 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
                 {
                 LoadingStatus = "No clusters found in target vCenter";
                 LogOutput += "Warning: No clusters found in target vCenter.\n";
-
-                // Load sample data for demonstration
                 LoadSampleTargetClusters();
                 }
             }
-        catch (System.Exception ex)
+        catch (Exception ex)
             {
             _logger.LogError(ex, "Failed to load target clusters");
             LoadingStatus = "Failed to load target clusters";
             LogOutput += $"Error loading target clusters: {ex.Message}\n";
-
-            // Load sample data as fallback
             LoadSampleTargetClusters();
             }
         finally
@@ -258,18 +317,18 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
         }
 
     [RelayCommand]
-    private async Task MigrateHosts ()
+    private async Task ExecuteHostAction ()
         {
         if (!CanStartMigration)
             {
-            LogOutput += "Error: Cannot start migration. Check that hosts are selected and target cluster is chosen.\n";
+            LogOutput += "Error: Cannot start action. Check that requirements are met.\n";
             return;
             }
 
         IsMigrating = true;
         MigrationProgress = 0;
-        MigrationStatus = "Starting host migration...";
-        LogOutput += "\n=== STARTING HOST MIGRATION ===\n";
+        MigrationStatus = $"Starting {SelectedAction}...";
+        LogOutput += $"\n=== STARTING HOST {SelectedAction.ToUpper()} ===\n";
 
         try
             {
@@ -278,39 +337,41 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
                 .Where(host => host.IsSelected)
                 .ToList();
 
-            LogOutput += $"Migrating {selectedHosts.Count} hosts to cluster '{SelectedTargetCluster!.Name}'\n";
-            LogOutput += $"Migration options:\n";
-            LogOutput += $"  - Preserve VM assignments: {PreserveVmAssignments}\n";
-            LogOutput += $"  - Migrate host profiles: {MigrateHostProfiles}\n";
-            LogOutput += $"  - Update DRS rules: {UpdateDrsRules}\n\n";
+            LogOutput += $"Processing {selectedHosts.Count} hosts with action: {SelectedAction}\n";
+            LogOutput += LogActionOptions();
 
             double progressIncrement = 100.0 / selectedHosts.Count;
 
             for (int i = 0; i < selectedHosts.Count; i++)
                 {
                 var host = selectedHosts[i];
-                MigrationStatus = $"Migrating host {i + 1} of {selectedHosts.Count}: {host.Name}";
-                LogOutput += $"[{System.DateTime.Now:HH:mm:ss}] Starting migration of host: {host.Name}\n";
+                MigrationStatus = $"{SelectedAction} host {i + 1} of {selectedHosts.Count}: {host.Name}";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Starting {SelectedAction} of host: {host.Name}\n";
 
-                // TODO: Implement actual host migration using Move-EsxiHost.ps1
-                await SimulateHostMigration(host);
+                try
+                    {
+                    await ExecuteVMHostConfigAction(host);
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Completed {SelectedAction} of host: {host.Name}\n";
+                    }
+                catch (Exception ex)
+                    {
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] ERROR in {SelectedAction} of host {host.Name}: {ex.Message}\n";
+                    _logger.LogError(ex, "Error processing host {HostName}", host.Name);
+                    }
 
                 MigrationProgress += progressIncrement;
-                LogOutput += $"[{System.DateTime.Now:HH:mm:ss}] Completed migration of host: {host.Name}\n";
-
-                // Small delay to show progress
-                await Task.Delay(1000);
+                await Task.Delay(500); // Brief pause for UI updates
                 }
 
-            MigrationStatus = "Host migration completed successfully";
+            MigrationStatus = $"Host {SelectedAction} completed successfully";
             MigrationProgress = 100;
-            LogOutput += "\n=== HOST MIGRATION COMPLETED SUCCESSFULLY ===\n";
+            LogOutput += $"\n=== HOST {SelectedAction.ToUpper()} COMPLETED ===\n";
             }
-        catch (System.Exception ex)
+        catch (Exception ex)
             {
-            _logger.LogError(ex, "Host migration failed");
-            MigrationStatus = "Host migration failed";
-            LogOutput += $"\nERROR: Host migration failed: {ex.Message}\n";
+            _logger.LogError(ex, "Host action failed");
+            MigrationStatus = $"Host {SelectedAction} failed";
+            LogOutput += $"\nERROR: Host {SelectedAction} failed: {ex.Message}\n";
             }
         finally
             {
@@ -325,35 +386,232 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
         if (IsMigrating)
             {
             IsMigrating = false;
-            MigrationStatus = "Migration cancelled by user";
-            LogOutput += $"\n[{System.DateTime.Now:HH:mm:ss}] Migration cancelled by user\n";
+            MigrationStatus = "Operation cancelled by user";
+            LogOutput += $"\n[{DateTime.Now:HH:mm:ss}] Operation cancelled by user\n";
             OnPropertyChanged(nameof(CanStartMigration));
             }
         }
 
-    /// <summary>
-    /// Simulates host migration - replace with actual PowerShell script call
-    /// </summary>
-    private async Task SimulateHostMigration (HostNode host)
+    [RelayCommand]
+    private void BrowseBackupPath ()
         {
-        // TODO: Replace this simulation with actual Move-EsxiHost.ps1 script execution
-        // var scriptParams = new Dictionary<string, object>
-        // {
-        //     { "SourceVCenter", _sharedConnectionService.SourceConnection.ServerAddress },
-        //     { "TargetVCenter", _sharedConnectionService.TargetConnection.ServerAddress },
-        //     { "HostName", host.Name },
-        //     { "TargetClusterName", SelectedTargetCluster.Name },
-        //     // Add credentials and other parameters
-        // };
-        // await _powerShellService.RunScriptAsync(".\\Scripts\\Move-EsxiHost.ps1", scriptParams);
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+            {
+            Title = "Select Backup Directory",
+            InitialDirectory = BackupPath
+            };
 
-        // Simulation for now
-        await Task.Delay(2000); // Simulate work
+        if (dialog.ShowDialog() == true)
+            {
+            BackupPath = dialog.FolderName;
+            }
         }
 
-    /// <summary>
-    /// Loads sample source topology data for demonstration
-    /// </summary>
+    [RelayCommand]
+    private void BrowseBackupFile ()
+        {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+            Title = "Select Backup File to Restore",
+            Filter = "JSON Backup Files (*.json)|*.json|All Files (*.*)|*.*",
+            InitialDirectory = BackupPath
+            };
+
+        if (dialog.ShowDialog() == true)
+            {
+            SelectedBackupFile = dialog.FileName;
+            OnPropertyChanged(nameof(CanStartMigration));
+            }
+        }
+
+    private async Task ExecuteVMHostConfigAction (HostNode host)
+        {
+        // Ensure backup directory exists
+        Directory.CreateDirectory(BackupPath);
+
+        var scriptParams = new Dictionary<string, object>
+        {
+            { "Action", SelectedAction },
+            { "VMHostName", host.Name },
+            { "BackupPath", BackupPath },
+            { "OperationTimeout", OperationTimeout }
+        };
+
+        // Add uplink portgroup name if specified
+        if (!string.IsNullOrEmpty(UplinkPortgroupName))
+            {
+            scriptParams["UplinkPortgroupName"] = UplinkPortgroupName;
+            }
+
+        // Add log path
+        string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
+        scriptParams["LogPath"] = logPath;
+
+        // Handle action-specific parameters
+        switch (SelectedAction)
+            {
+            case "Backup":
+                await ExecuteBackupAction(scriptParams);
+                break;
+            case "Restore":
+                await ExecuteRestoreAction(scriptParams);
+                break;
+            case "Migrate":
+                await ExecuteMigrateAction(scriptParams);
+                break;
+            }
+        }
+
+    private async Task ExecuteBackupAction (Dictionary<string, object> scriptParams)
+        {
+        var sourceConnection = _sharedConnectionService.SourceConnection!;
+        var password = await GetConnectionPassword(sourceConnection);
+
+        scriptParams["vCenter"] = sourceConnection.ServerAddress;
+        scriptParams["Credential"] = CreateCredentialParameter(sourceConnection.Username, password);
+
+        await ExecuteVMHostConfigScript(scriptParams);
+        }
+
+    private async Task ExecuteRestoreAction (Dictionary<string, object> scriptParams)
+        {
+        if (string.IsNullOrEmpty(SelectedBackupFile))
+            {
+            throw new InvalidOperationException("Backup file must be selected for restore action");
+            }
+
+        var targetConnection = _sharedConnectionService.TargetConnection!;
+        var password = await GetConnectionPassword(targetConnection);
+
+        scriptParams["vCenter"] = targetConnection.ServerAddress;
+        scriptParams["BackupFile"] = SelectedBackupFile;
+        scriptParams["Credential"] = CreateCredentialParameter(targetConnection.Username, password);
+
+        await ExecuteVMHostConfigScript(scriptParams);
+        }
+
+    private async Task ExecuteMigrateAction (Dictionary<string, object> scriptParams)
+        {
+        var sourceConnection = _sharedConnectionService.SourceConnection!;
+        var targetConnection = _sharedConnectionService.TargetConnection!;
+
+        var sourcePassword = await GetConnectionPassword(sourceConnection);
+        var targetPassword = await GetConnectionPassword(targetConnection);
+
+        // Get ESXi host credentials
+        var (hostCredResult, hostPassword) = _dialogService.ShowPasswordDialog(
+            "ESXi Host Credentials Required",
+            $"Enter ESXi root password for direct host connection:");
+
+        if (hostCredResult != true || string.IsNullOrEmpty(hostPassword))
+            {
+            throw new InvalidOperationException("ESXi host credentials are required for migration");
+            }
+
+        scriptParams["SourceVCenter"] = sourceConnection.ServerAddress;
+        scriptParams["TargetVCenter"] = targetConnection.ServerAddress;
+        scriptParams["SourceCredential"] = CreateCredentialParameter(sourceConnection.Username, sourcePassword);
+        scriptParams["TargetCredential"] = CreateCredentialParameter(targetConnection.Username, targetPassword);
+        scriptParams["ESXiHostCredential"] = CreateCredentialParameter("root", hostPassword);
+
+        // Add target cluster information
+        if (SelectedTargetCluster != null)
+            {
+            scriptParams["TargetClusterName"] = SelectedTargetCluster.Name;
+            }
+
+        if (!string.IsNullOrEmpty(SelectedTargetDatacenter))
+            {
+            scriptParams["TargetDatacenterName"] = SelectedTargetDatacenter;
+            }
+
+        await ExecuteVMHostConfigScript(scriptParams);
+        }
+
+    private async Task<string> GetConnectionPassword (VCenterConnection connection)
+        {
+        var password = _credentialService.GetPassword(connection);
+
+        if (string.IsNullOrEmpty(password))
+            {
+            var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
+                "Password Required",
+                $"Enter password for {connection.Username}@{connection.ServerAddress}:");
+
+            if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
+                {
+                throw new InvalidOperationException($"Password required for {connection.ServerAddress}");
+                }
+            password = promptedPassword;
+            }
+
+        return password;
+        }
+
+    private string CreateCredentialParameter (string username, string password)
+        {
+        // For PowerShell script, we'll pass username and password separately
+        // The script will create the credential object internally
+        return $"{username}:{password}";
+        }
+
+    private async Task ExecuteVMHostConfigScript (Dictionary<string, object> scriptParams)
+        {
+        // Add BypassModuleCheck if PowerCLI is confirmed
+        if (HybridPowerShellService.PowerCliConfirmedInstalled)
+            {
+            scriptParams["BypassModuleCheck"] = true;
+            }
+
+        string result = await _powerShellService.RunScriptOptimizedAsync(
+            ".\\Scripts\\Invoke-VMHostConfig.ps1",
+            scriptParams);
+
+        LogOutput += $"Script Output:\n{result}\n";
+
+        // Check for success/failure in output
+        if (result.Contains("SUCCESS:"))
+            {
+            LogOutput += "✅ Operation completed successfully\n";
+            }
+        else if (result.Contains("ERROR:"))
+            {
+            LogOutput += "❌ Operation encountered errors\n";
+            }
+        }
+
+    private string LogActionOptions ()
+        {
+        var options = $"Action options:\n";
+        options += $"  - Action: {SelectedAction}\n";
+        options += $"  - Backup Path: {BackupPath}\n";
+        options += $"  - Operation Timeout: {OperationTimeout} seconds\n";
+
+        if (!string.IsNullOrEmpty(UplinkPortgroupName))
+            {
+            options += $"  - Uplink Portgroup: {UplinkPortgroupName}\n";
+            }
+
+        if (SelectedAction == "Restore" && !string.IsNullOrEmpty(SelectedBackupFile))
+            {
+            options += $"  - Restore from: {Path.GetFileName(SelectedBackupFile)}\n";
+            }
+
+        if (SelectedAction == "Migrate")
+            {
+            options += $"  - Preserve VM assignments: {PreserveVmAssignments}\n";
+            options += $"  - Migrate host profiles: {MigrateHostProfiles}\n";
+            options += $"  - Update DRS rules: {UpdateDrsRules}\n";
+            options += $"  - Create backup: {CreateBackupBeforeMigration}\n";
+            if (SelectedTargetCluster != null)
+                {
+                options += $"  - Target cluster: {SelectedTargetCluster.Name}\n";
+                }
+            }
+
+        return options + "\n";
+        }
+
     private void LoadSampleSourceTopology ()
         {
         var sampleTopology = new ObservableCollection<ClusterNode>
@@ -384,9 +642,6 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
         LogOutput += "Loaded sample source topology for demonstration.\n";
         }
 
-    /// <summary>
-    /// Loads sample target clusters data for demonstration
-    /// </summary>
     private void LoadSampleTargetClusters ()
         {
         var sampleClusters = new ObservableCollection<ClusterInfo>
@@ -399,5 +654,10 @@ public partial class HostMigrationViewModel : ObservableObject, INavigationAware
         TargetClusters = sampleClusters;
         LoadingStatus = $"Loaded sample target clusters - {TargetClusters.Count} clusters";
         LogOutput += "Loaded sample target clusters for demonstration.\n";
+        }
+
+    partial void OnSelectedActionChanged (string value)
+        {
+        OnPropertyChanged(nameof(CanStartMigration));
         }
     }

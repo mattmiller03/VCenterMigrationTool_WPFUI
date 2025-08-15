@@ -18,6 +18,7 @@
         <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter" />
         <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         <helpers:NullToBoolConverter x:Key="NullToBoolConverter" />
+        <helpers:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter" />
     </Page.Resources>
 
     <Grid Margin="42">
@@ -30,7 +31,7 @@
         </Grid.RowDefinitions>
 
         <!-- Page Title -->
-        <TextBlock Grid.Row="0" FontSize="24" FontWeight="Medium" Text="ESXi Host Migration" />
+        <TextBlock Grid.Row="0" FontSize="24" FontWeight="Medium" Text="ESXi Host Management" />
 
         <!-- Load Data Button Section -->
         <ui:CardControl Grid.Row="1" Margin="0,20,0,0">
@@ -41,18 +42,18 @@
                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 <StackPanel Orientation="Horizontal">
                     <ui:Button Content="Load Source Topology" 
-                              Command="{Binding ViewModel.LoadSourceTopologyCommand}"
+                              Command="{Binding LoadSourceTopologyCommand}"
                               Icon="{ui:SymbolIcon CloudSync24}"
-                              IsEnabled="{Binding ViewModel.IsLoadingData, Converter={StaticResource InverseBooleanConverter}}" />
+                              IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}" />
                     <ui:Button Content="Load Target Clusters" 
-                              Command="{Binding ViewModel.LoadTargetClustersCommand}"
+                              Command="{Binding LoadTargetClustersCommand}"
                               Icon="{ui:SymbolIcon Server24}"
                               Margin="10,0,0,0"
-                              IsEnabled="{Binding ViewModel.IsLoadingData, Converter={StaticResource InverseBooleanConverter}}" />
+                              IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}" />
                     <ui:ProgressRing Width="24" Height="24" 
                                     Margin="15,0,0,0"
-                                    Visibility="{Binding ViewModel.IsLoadingData, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text="{Binding ViewModel.LoadingStatus}" 
+                                    Visibility="{Binding IsLoadingData, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TextBlock Text="{Binding LoadingStatus}" 
                               Margin="10,0,0,0" 
                               VerticalAlignment="Center"
                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -65,7 +66,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="20" />
-                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="400" />
             </Grid.ColumnDefinitions>
 
             <!-- Source Topology (Left Side) -->
@@ -86,7 +87,7 @@
                             <Style TargetType="StackPanel">
                                 <Setter Property="Visibility" Value="Collapsed" />
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ViewModel.SourceTopology.Count}" Value="0">
+                                    <DataTrigger Binding="{Binding SourceTopology.Count}" Value="0">
                                         <Setter Property="Visibility" Value="Visible" />
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -105,20 +106,10 @@
 
                     <!-- TreeView with Topology -->
                     <TreeView Grid.Row="1" 
-                             ItemsSource="{Binding ViewModel.SourceTopology}" 
+                             ItemsSource="{Binding SourceTopology}" 
                              Margin="0,10,0,0"
                              Background="Transparent"
                              BorderThickness="0">
-                        <TreeView.Style>
-                            <Style TargetType="TreeView" BasedOn="{StaticResource {x:Type TreeView}}">
-                                <Setter Property="Visibility" Value="Visible" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ViewModel.SourceTopology.Count}" Value="0">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TreeView.Style>
                         <TreeView.ItemContainerStyle>
                             <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
                                 <Setter Property="IsExpanded" Value="True" />
@@ -165,87 +156,169 @@
                 </Grid>
             </ui:CardControl>
 
-            <!-- Target Selection (Right Side) -->
+            <!-- Configuration Panel (Right Side) -->
             <ui:CardControl Grid.Column="2">
-                <StackPanel>
-                    <TextBlock Text="Target Configuration" FontWeight="Medium" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Host Action Configuration" FontWeight="Medium" />
 
-                    <TextBlock Text="Target Cluster" Margin="0,15,0,5" />
-                    <ComboBox ItemsSource="{Binding ViewModel.TargetClusters}" 
-                             SelectedItem="{Binding ViewModel.SelectedTargetCluster}"
-                             DisplayMemberPath="Name"
-                             IsEnabled="{Binding ViewModel.TargetClusters.Count, Converter={StaticResource NullToBoolConverter}}" />
+                        <!-- Action Selection -->
+                        <TextBlock Text="Action" Margin="0,15,0,5" FontWeight="Medium" />
+                        <ComboBox ItemsSource="{Binding AvailableActions}" 
+                                 SelectedItem="{Binding SelectedAction}"
+                                 Margin="0,0,0,15" />
 
-                    <!-- Empty State for Target Clusters -->
-                    <TextBlock Text="No target clusters loaded" 
-                              Margin="0,5,0,0"
-                              FontSize="12"
-                              Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ViewModel.TargetClusters.Count}" Value="0">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                        <!-- Backup Configuration -->
+                        <TextBlock Text="Backup Configuration" Margin="0,10,0,5" FontWeight="Medium" />
+                        <TextBlock Text="Backup Directory" Margin="0,0,0,5" FontSize="12" />
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ui:TextBox Grid.Column="0" Text="{Binding BackupPath}" />
+                            <ui:Button Grid.Column="1" 
+                                      Content="Browse" 
+                                      Command="{Binding BrowseBackupPathCommand}" 
+                                      Margin="5,0,0,0"
+                                      Icon="{ui:SymbolIcon FolderOpen24}" />
+                        </Grid>
 
-                    <!-- Migration Options -->
-                    <Separator Margin="0,20,0,15" />
-                    <TextBlock Text="Migration Options" FontWeight="Medium" />
-
-                    <CheckBox Content="Preserve VM assignments" 
-                             IsChecked="{Binding ViewModel.PreserveVmAssignments}"
-                             Margin="0,10,0,5" />
-                    <CheckBox Content="Migrate host profiles" 
-                             IsChecked="{Binding ViewModel.MigrateHostProfiles}"
-                             Margin="0,5,0,5" />
-                    <CheckBox Content="Update DRS rules" 
-                             IsChecked="{Binding ViewModel.UpdateDrsRules}"
-                             Margin="0,5,0,15" />
-
-                    <!-- Selection Summary -->
-                    <Border Background="{DynamicResource ControlFillColorDefaultBrush}" 
-                           CornerRadius="4" 
-                           Padding="10"
-                           Margin="0,0,0,15">
-                        <StackPanel>
-                            <TextBlock Text="Migration Summary" FontWeight="Medium" FontSize="12" />
-                            <TextBlock FontSize="12" Margin="0,5,0,0">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}{0} hosts selected">
-                                        <Binding Path="ViewModel.SelectedHostCount" />
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
-                            <TextBlock FontSize="12"
-                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="Target: {0}">
-                                        <Binding Path="ViewModel.SelectedTargetCluster.Name" TargetNullValue="No target selected" />
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
+                        <!-- Restore File Selection - Only visible for Restore action -->
+                        <StackPanel Visibility="{Binding SelectedAction, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Restore}">
+                            <TextBlock Text="Backup File to Restore" Margin="0,0,0,5" FontSize="12" />
+                            <Grid Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:TextBox Grid.Column="0" 
+                                           Text="{Binding SelectedBackupFile}" 
+                                           PlaceholderText="Select backup file..." />
+                                <ui:Button Grid.Column="1" 
+                                          Content="Browse" 
+                                          Command="{Binding BrowseBackupFileCommand}" 
+                                          Margin="5,0,0,0"
+                                          Icon="{ui:SymbolIcon DocumentSearch24}" />
+                            </Grid>
                         </StackPanel>
-                    </Border>
 
-                    <!-- Migration Button -->
-                    <ui:Button Content="Start Host Migration" 
-                              Command="{Binding ViewModel.MigrateHostsCommand}"
-                              Appearance="Primary"
-                              Icon="{ui:SymbolIcon ArrowSwap24}"
-                              IsEnabled="{Binding ViewModel.CanStartMigration}" />
-                </StackPanel>
+                        <!-- Target Configuration - Only visible for Migration -->
+                        <StackPanel Visibility="{Binding SelectedAction, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Migrate}">
+                            <TextBlock Text="Target Configuration" Margin="0,10,0,5" FontWeight="Medium" />
+
+                            <TextBlock Text="Target Datacenter (optional)" Margin="0,5,0,3" FontSize="12" />
+                            <ui:TextBox Text="{Binding SelectedTargetDatacenter}" 
+                                       PlaceholderText="Leave empty for first datacenter"
+                                       Margin="0,0,0,10" />
+
+                            <TextBlock Text="Target Cluster" Margin="0,0,0,5" FontSize="12" />
+                            <ComboBox ItemsSource="{Binding TargetClusters}" 
+                                     SelectedItem="{Binding SelectedTargetCluster}"
+                                     DisplayMemberPath="Name"
+                                     IsEnabled="{Binding TargetClusters.Count, Converter={StaticResource NullToBoolConverter}}"
+                                     Margin="0,0,0,15" />
+
+                            <!-- Migration Options -->
+                            <TextBlock Text="Migration Options" Margin="0,10,0,5" FontWeight="Medium" />
+                            <CheckBox Content="Preserve VM assignments" 
+                                     IsChecked="{Binding PreserveVmAssignments}"
+                                     Margin="0,5,0,5" />
+                            <CheckBox Content="Migrate host profiles" 
+                                     IsChecked="{Binding MigrateHostProfiles}"
+                                     Margin="0,0,0,5" />
+                            <CheckBox Content="Update DRS rules" 
+                                     IsChecked="{Binding UpdateDrsRules}"
+                                     Margin="0,0,0,5" />
+                            <CheckBox Content="Create backup before migration" 
+                                     IsChecked="{Binding CreateBackupBeforeMigration}"
+                                     Margin="0,0,0,15" />
+                        </StackPanel>
+
+                        <!-- Advanced Options -->
+                        <Expander Header="Advanced Options" Margin="0,10,0,15">
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Text="Operation Timeout (seconds)" Margin="0,0,0,5" FontSize="12" />
+                                <ui:NumberBox Value="{Binding OperationTimeout}" 
+                                             Minimum="60" 
+                                             Maximum="3600"
+                                             SmallChange="60"
+                                             LargeChange="300"
+                                             Margin="0,0,0,10" />
+
+                                <TextBlock Text="Uplink Portgroup Name (optional)" Margin="0,0,0,5" FontSize="12" />
+                                <ui:TextBox Text="{Binding UplinkPortgroupName}" 
+                                           PlaceholderText="Auto-detect if empty"
+                                           Margin="0,0,0,10" />
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Empty State for Target Clusters -->
+                        <TextBlock Text="No target clusters loaded" 
+                                  Margin="0,5,0,0"
+                                  FontSize="12"
+                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TargetClusters.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <!-- Selection Summary -->
+                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" 
+                               CornerRadius="4" 
+                               Padding="10"
+                               Margin="0,15,0,15">
+                            <StackPanel>
+                                <TextBlock Text="Operation Summary" FontWeight="Medium" FontSize="12" />
+                                <TextBlock FontSize="12" Margin="0,5,0,0">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}{0} hosts selected">
+                                            <Binding Path="SelectedHostCount" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <TextBlock FontSize="12"
+                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="Action: {0}">
+                                            <Binding Path="SelectedAction" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <TextBlock FontSize="12"
+                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                          Visibility="{Binding SelectedAction, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Migrate}">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="Target: {0}">
+                                            <Binding Path="SelectedTargetCluster.Name" TargetNullValue="No target selected" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Action Button -->
+                        <ui:Button Content="{Binding SelectedAction, StringFormat='Execute {0}'}" 
+                                  Command="{Binding ExecuteHostActionCommand}"
+                                  Appearance="Primary"
+                                  Icon="{ui:SymbolIcon Play24}"
+                                  IsEnabled="{Binding CanStartMigration}" />
+                    </StackPanel>
+                </ScrollViewer>
             </ui:CardControl>
         </Grid>
 
-        <!-- Migration Progress Section -->
+        <!-- Progress Section -->
         <ui:CardControl Grid.Row="3" Margin="0,20,0,0">
             <StackPanel>
-                <TextBlock Text="Migration Progress" FontWeight="Medium" />
+                <TextBlock Text="Operation Progress" FontWeight="Medium" />
 
                 <!-- Overall Progress -->
                 <Grid Margin="0,10,0,0">
@@ -254,7 +327,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <ProgressBar Grid.Column="0" 
-                                Value="{Binding ViewModel.MigrationProgress}" 
+                                Value="{Binding MigrationProgress}" 
                                 Maximum="100"
                                 Height="8" />
                     <TextBlock Grid.Column="1" 
@@ -263,7 +336,7 @@
                               FontSize="12">
                         <TextBlock.Text>
                             <MultiBinding StringFormat="{}{0:F0}%">
-                                <Binding Path="ViewModel.MigrationProgress" />
+                                <Binding Path="MigrationProgress" />
                             </MultiBinding>
                         </TextBlock.Text>
                     </TextBlock>
@@ -271,14 +344,15 @@
 
                 <!-- Status and Controls -->
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                    <TextBlock Text="{Binding ViewModel.MigrationStatus}" 
+                    <TextBlock Text="{Binding MigrationStatus}" 
                               VerticalAlignment="Center"
                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <ui:Button Content="Cancel Migration" 
-                              Command="{Binding ViewModel.CancelMigrationCommand}"
+                    <ui:Button Content="Cancel Operation" 
+                              Command="{Binding CancelMigrationCommand}"
                               Appearance="Danger"
                               Margin="20,0,0,0"
-                              Visibility="{Binding ViewModel.IsMigrating, Converter={StaticResource BoolToVisibilityConverter}}" />
+                              Icon="{ui:SymbolIcon Dismiss24}"
+                              Visibility="{Binding IsMigrating, Converter={StaticResource BoolToVisibilityConverter}}" />
                 </StackPanel>
             </StackPanel>
         </ui:CardControl>
@@ -289,10 +363,10 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="Migration Log" FontWeight="Medium"/>
+            <TextBlock Grid.Row="0" Text="Operation Log" FontWeight="Medium"/>
             <ui:TextBox Grid.Row="1"
                        Margin="0,10,0,0"
-                       Text="{Binding ViewModel.LogOutput, Mode=OneWay}"
+                       Text="{Binding LogOutput, Mode=OneWay}"
                        IsReadOnly="True"
                        AcceptsReturn="True"
                        VerticalScrollBarVisibility="Auto"
