@@ -97,16 +97,17 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
                 return;
                 }
 
-            // Load VMs from source - with error handling
+            // Load VMs from source - with error handling and optimization
             try
                 {
-                var vms = await _powerShellService.RunScriptAndGetObjectsAsync<VirtualMachine>(
+                // OPTIMIZED: Use the optimized method that automatically adds BypassModuleCheck
+                var vms = await _powerShellService.RunScriptAndGetObjectsOptimizedAsync<VirtualMachine>(
                     ".\\Scripts\\Get-VmsForMigration.ps1",
                     new System.Collections.Generic.Dictionary<string, object>
                     {
-                        { "VCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
-                        { "Username", _sharedConnectionService.SourceConnection.Username },
-                        { "Password", "placeholder" } // This would need proper password handling
+                    { "VCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
+                    { "Username", _sharedConnectionService.SourceConnection.Username },
+                    { "Password", "placeholder" } // This would need proper password handling
                     });
 
                 if (vms?.Any() == true)
@@ -127,16 +128,17 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
                 LoadSampleVMs();
                 }
 
-            // Load target resources - with error handling
+            // Load target resources - with error handling and optimization
             try
                 {
-                var targetJson = await _powerShellService.RunScriptAsync(
+                // OPTIMIZED: Use the optimized method that automatically adds BypassModuleCheck
+                var targetJson = await _powerShellService.RunScriptOptimizedAsync(
                     ".\\Scripts\\Get-TargetResources.ps1",
                     new System.Collections.Generic.Dictionary<string, object>
                     {
-                        { "VCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
-                        { "Username", _sharedConnectionService.TargetConnection.Username },
-                        { "Password", "placeholder" } // This would need proper password handling
+                    { "VCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
+                    { "Username", _sharedConnectionService.TargetConnection.Username },
+                    { "Password", "placeholder" } // This would need proper password handling
                     });
 
                 // Check if we got valid JSON

@@ -83,46 +83,45 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         ScriptOutput = string.Empty;
 
         string? password = _credentialService.GetPassword(SelectedSourceProfile);
-        SecureString securePassword = new(); // Create an empty SecureString
+        SecureString securePassword = new();
 
         if (string.IsNullOrEmpty(password))
-        {
-            // --- FIX: Handle the string return from the dialog service ---
+            {
             var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
                 "Password Required",
                 $"Enter password for {SelectedSourceProfile.Username}@{SelectedSourceProfile.ServerAddress}:"
             );
 
             if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
-            {
+                {
                 SourceConnectionStatus = "Connection cancelled.";
                 IsJobRunning = false;
                 return;
-            }
-            // Convert the prompted password string to a SecureString
+                }
+
             foreach (char c in promptedPassword)
-            {
+                {
                 securePassword.AppendChar(c);
+                }
             }
-        }
         else
-        {
-            // Convert the saved password string to a SecureString
-            foreach (char c in password)
             {
+            foreach (char c in password)
+                {
                 securePassword.AppendChar(c);
+                }
             }
-        }
-        securePassword.MakeReadOnly(); // Make it read-only for security
+        securePassword.MakeReadOnly();
 
         var scriptParams = new Dictionary<string, object>
-        {
-            { "VCenterServer", SelectedSourceProfile.ServerAddress },
-            { "Username", SelectedSourceProfile.Username },
-            { "Password", securePassword }
-        };
+    {
+        { "VCenterServer", SelectedSourceProfile.ServerAddress },
+        { "Username", SelectedSourceProfile.Username },
+        { "Password", securePassword }
+    };
 
-        string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
+        // OPTIMIZED: Use the optimized method that adds BypassModuleCheck automatically
+        string result = await _powerShellService.RunScriptOptimizedAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
 
         if (result.Trim() == "Success")
             {
@@ -148,47 +147,45 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         ScriptOutput = string.Empty;
 
         string? password = _credentialService.GetPassword(SelectedTargetProfile);
-
-        SecureString securePassword = new(); // Create an empty SecureString
+        SecureString securePassword = new();
 
         if (string.IsNullOrEmpty(password))
-        {
-            // --- FIX: Handle the string return from the dialog service ---
+            {
             var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
                 "Password Required",
                 $"Enter password for {SelectedTargetProfile.Username}@{SelectedTargetProfile.ServerAddress}:"
             );
 
             if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
-            {
+                {
                 TargetConnectionStatus = "Connection cancelled.";
                 IsJobRunning = false;
                 return;
-            }
-            // Convert the prompted password string to a SecureString
+                }
+
             foreach (char c in promptedPassword)
-            {
+                {
                 securePassword.AppendChar(c);
+                }
             }
-        }
         else
-        {
-            // Convert the saved password string to a SecureString
-            foreach (char c in password)
             {
+            foreach (char c in password)
+                {
                 securePassword.AppendChar(c);
+                }
             }
-        }
-        securePassword.MakeReadOnly(); // Make it read-only for security
+        securePassword.MakeReadOnly();
 
         var scriptParams = new Dictionary<string, object>
-        {
-            { "VCenterServer", SelectedTargetProfile.ServerAddress },
-            { "Username", SelectedTargetProfile.Username },
-            { "Password", securePassword }
-        };
+    {
+        { "VCenterServer", SelectedTargetProfile.ServerAddress },
+        { "Username", SelectedTargetProfile.Username },
+        { "Password", securePassword }
+    };
 
-        string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
+        // OPTIMIZED: Use the optimized method that adds BypassModuleCheck automatically
+        string result = await _powerShellService.RunScriptOptimizedAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
 
         if (result.Trim() == "Success")
             {

@@ -433,4 +433,87 @@ public class HybridPowerShellService
 
         return string.Empty;
     }
-}
+    /// <summary>
+    /// Static flag to track PowerCLI availability (set by settings page)
+    /// </summary>
+    public static bool PowerCliConfirmedInstalled { get; set; } = false;
+
+    /// <summary>
+    /// Enhanced method that automatically adds BypassModuleCheck when PowerCLI is confirmed
+    /// </summary>
+    public async Task<string> RunScriptOptimizedAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
+    {
+        // Clone parameters to avoid modifying the original
+        var optimizedParameters = new Dictionary<string, object>(parameters);
+
+        // Add bypass flag for PowerCLI scripts when we know it's installed
+        if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
+        {
+            optimizedParameters["BypassModuleCheck"] = true;
+            _logger.LogDebug("Adding BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
+        }
+
+        return await RunScriptAsync(scriptPath, optimizedParameters, logPath);
+    }
+
+    /// <summary>
+    /// Enhanced method for object deserialization with bypass optimization
+    /// </summary>
+    public async Task<T?> RunScriptAndGetObjectOptimizedAsync<T> (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
+        {
+        // Clone parameters to avoid modifying the original
+        var optimizedParameters = new Dictionary<string, object>(parameters);
+
+        // Add bypass flag for PowerCLI scripts when we know it's installed
+        if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
+            {
+            optimizedParameters["BypassModuleCheck"] = true;
+            _logger.LogDebug("Adding BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
+            }
+
+        return await RunScriptAndGetObjectAsync<T>(scriptPath, optimizedParameters, logPath);
+        }
+
+    /// <summary>
+    /// Enhanced method for collection deserialization with bypass optimization  
+    /// </summary>
+    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsOptimizedAsync<T> (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
+        {
+        // Clone parameters to avoid modifying the original
+        var optimizedParameters = new Dictionary<string, object>(parameters);
+
+        // Add bypass flag for PowerCLI scripts when we know it's installed
+        if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
+            {
+            optimizedParameters["BypassModuleCheck"] = true;
+            _logger.LogDebug("Adding BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
+            }
+
+        return await RunScriptAndGetObjectsAsync<T>(scriptPath, optimizedParameters, logPath);
+        }
+
+    /// <summary>
+    /// Determines if a script requires PowerCLI
+    /// </summary>
+    private bool IsPowerCliScript (string scriptPath)
+        {
+        var powerCliScripts = new[]
+        {
+        "Test-vCenterConnection.ps1",
+        "Get-VMs.ps1",
+        "Get-VmsForMigration.ps1",
+        "Get-TargetResources.ps1",
+        "Get-EsxiHosts.ps1",
+        "Get-NetworkTopology.ps1",
+        "Get-Clusters.ps1",
+        "Get-ClusterItems.ps1",
+        "Move-EsxiHost.ps1",
+        "Move-VM.ps1",
+        "Export-vCenterConfig.ps1",
+        "Test-VMNetwork.ps1"
+    };
+
+        var scriptName = Path.GetFileName(scriptPath);
+        return powerCliScripts.Any(s => s.Equals(scriptName, StringComparison.OrdinalIgnoreCase));
+        }
+    }

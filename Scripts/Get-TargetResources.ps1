@@ -1,8 +1,9 @@
-# Get-TargetResources.ps1 - Fixed version
+# Get-TargetResources.ps1 - Optimized version
 param(
     [string]$VCenterServer,
     [string]$Username,
-    [string]$Password
+    [string]$Password,
+    [switch]$BypassModuleCheck = $false  # NEW: Allow bypassing PowerCLI checks
 )
 
 # Function to write structured logs
@@ -16,31 +17,43 @@ try {
     Write-ScriptLog "Starting target resources script"
     Write-ScriptLog "Target vCenter: $VCenterServer"
     
-    # Check if PowerCLI module is available
-    $powerCliModule = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
-    if (-not $powerCliModule) {
-        Write-ScriptLog "PowerCLI module not found. Returning sample data." "WARN"
+    # OPTIMIZED: Only check PowerCLI if not bypassed
+    if (-not $BypassModuleCheck) {
+        Write-ScriptLog "Checking PowerCLI module availability..."
         
-        # Return sample data in JSON format
-        $sampleData = @{
-            Hosts = @(
-                @{ Name = "sample-target-esx01.lab.local" },
-                @{ Name = "sample-target-esx02.lab.local" },
-                @{ Name = "sample-target-esx03.lab.local" }
-            )
-            Datastores = @(
-                @{ Name = "sample-target-datastore1" },
-                @{ Name = "sample-target-datastore2" },
-                @{ Name = "sample-target-datastore3" }
-            )
+        $powerCliModule = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
+        if (-not $powerCliModule) {
+            Write-ScriptLog "PowerCLI module not found. Returning sample data." "WARN"
+            
+            # Return sample data in JSON format
+            $sampleData = @{
+                Hosts = @(
+                    @{ Name = "sample-target-esx01.lab.local" },
+                    @{ Name = "sample-target-esx02.lab.local" },
+                    @{ Name = "sample-target-esx03.lab.local" }
+                )
+                Datastores = @(
+                    @{ Name = "sample-target-datastore1" },
+                    @{ Name = "sample-target-datastore2" },
+                    @{ Name = "sample-target-datastore3" }
+                )
+            }
+            
+            $sampleData | ConvertTo-Json -Depth 3
+            return
         }
-        
-        $sampleData | ConvertTo-Json -Depth 3
-        return
-    }
 
-    Write-ScriptLog "PowerCLI module found. Importing..."
-    Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+        Write-ScriptLog "PowerCLI module found. Importing..."
+        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+    } else {
+        Write-ScriptLog "Bypassing PowerCLI module check (assumed available)"
+        # Still try to import silently
+        try {
+            Import-Module VMware.PowerCLI -Force -ErrorAction SilentlyContinue
+        } catch {
+            # Ignore import errors when bypassing
+        }
+    }
     
     # Suppress PowerCLI configuration warnings
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -ParticipateInCEIP $false -Scope Session -Confirm:$false | Out-Null

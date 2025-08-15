@@ -1,8 +1,9 @@
-# Get-VmsForMigration.ps1 - Fixed version
+# Get-VmsForMigration.ps1 - Optimized version
 param(
     [string]$VCenterServer,
     [string]$Username,
-    [string]$Password
+    [string]$Password,
+    [switch]$BypassModuleCheck = $false  # NEW: Allow bypassing PowerCLI checks
 )
 
 # Function to write structured logs
@@ -16,47 +17,57 @@ try {
     Write-ScriptLog "Starting VM inventory script"
     Write-ScriptLog "Target vCenter: $VCenterServer"
     
-    # Check if PowerCLI module is available
-    Write-ScriptLog "Checking PowerCLI module availability..."
-    
-    $powerCliModule = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
-    if (-not $powerCliModule) {
-        Write-ScriptLog "PowerCLI module not found. Returning sample data." "WARN"
+    # OPTIMIZED: Only check PowerCLI if not bypassed
+    if (-not $BypassModuleCheck) {
+        Write-ScriptLog "Checking PowerCLI module availability..."
         
-        # Return sample data in JSON format
-        $sampleVMs = @(
-            [PSCustomObject]@{
-                Name = "Sample-Web-Server"
-                PowerState = "PoweredOn"
-                EsxiHost = "sample-esx01.lab.local"
-                Datastore = "sample-datastore1"
-                Cluster = "Sample-Cluster1"
-            },
-            [PSCustomObject]@{
-                Name = "Sample-DB-Server"
-                PowerState = "PoweredOn"
-                EsxiHost = "sample-esx02.lab.local"
-                Datastore = "sample-datastore2"
-                Cluster = "Sample-Cluster1"
-            },
-            [PSCustomObject]@{
-                Name = "Sample-App-Server"
-                PowerState = "PoweredOff"
-                EsxiHost = "sample-esx01.lab.local"
-                Datastore = "sample-datastore1"
-                Cluster = "Sample-Cluster1"
-            }
-        )
-        
-        $sampleVMs | ConvertTo-Json -Depth 3
-        return
-    }
+        $powerCliModule = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
+        if (-not $powerCliModule) {
+            Write-ScriptLog "PowerCLI module not found. Returning sample data." "WARN"
+            
+            # Return sample data in JSON format
+            $sampleVMs = @(
+                [PSCustomObject]@{
+                    Name = "Sample-Web-Server"
+                    PowerState = "PoweredOn"
+                    EsxiHost = "sample-esx01.lab.local"
+                    Datastore = "sample-datastore1"
+                    Cluster = "Sample-Cluster1"
+                },
+                [PSCustomObject]@{
+                    Name = "Sample-DB-Server"
+                    PowerState = "PoweredOn"
+                    EsxiHost = "sample-esx02.lab.local"
+                    Datastore = "sample-datastore2"
+                    Cluster = "Sample-Cluster1"
+                },
+                [PSCustomObject]@{
+                    Name = "Sample-App-Server"
+                    PowerState = "PoweredOff"
+                    EsxiHost = "sample-esx01.lab.local"
+                    Datastore = "sample-datastore1"
+                    Cluster = "Sample-Cluster1"
+                }
+            )
+            
+            $sampleVMs | ConvertTo-Json -Depth 3
+            return
+        }
 
-    Write-ScriptLog "PowerCLI module found. Version: $($powerCliModule.Version)"
-    
-    # Import PowerCLI module
-    Write-ScriptLog "Importing PowerCLI module..."
-    Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+        Write-ScriptLog "PowerCLI module found. Version: $($powerCliModule.Version)"
+        
+        # Import PowerCLI module
+        Write-ScriptLog "Importing PowerCLI module..."
+        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+    } else {
+        Write-ScriptLog "Bypassing PowerCLI module check (assumed available)"
+        # Still try to import silently
+        try {
+            Import-Module VMware.PowerCLI -Force -ErrorAction SilentlyContinue
+        } catch {
+            # Ignore import errors when bypassing
+        }
+    }
     
     # Suppress PowerCLI configuration warnings
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -ParticipateInCEIP $false -Scope Session -Confirm:$false | Out-Null

@@ -60,7 +60,68 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 await OnCheckPrerequisites();
                 }
             }
+        [RelayCommand]
+        private async Task OnCheckPrerequisites ()
+            {
+            IsCheckingPrerequisites = true;
+            PrerequisiteCheckStatus = "Running prerequisite check script...";
 
+            try
+                {
+                string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
+                var parameters = new Dictionary<string, object> { { "LogPath", logPath } };
+
+                // Try to get structured result first
+                var result = await _powerShellService.RunScriptAndGetObjectAsync<PrerequisitesResult>(
+                    ".\\Scripts\\Get-Prerequisites.ps1",
+                    parameters);
+
+                if (result != null)
+                    {
+                    PowerShellVersion = result.PowerShellVersion;
+                    IsPowerCliInstalled = result.IsPowerCliInstalled;
+
+                    // NEW: Set the global bypass flag when PowerCLI is confirmed
+                    HybridPowerShellService.PowerCliConfirmedInstalled = result.IsPowerCliInstalled;
+
+                    PrerequisiteCheckStatus = IsPowerCliInstalled ?
+                        "Prerequisites check completed. PowerCLI is installed." :
+                        "Prerequisites check completed. PowerCLI module not found.";
+
+                    if (IsPowerCliInstalled)
+                        {
+                        _logger.LogInformation("PowerCLI confirmed installed - enabling bypass optimization for future scripts");
+                        }
+                    }
+                else
+                    {
+                    // Fallback: get raw output and parse manually
+                    string rawOutput = await _powerShellService.RunScriptAsync(
+                        ".\\Scripts\\Get-Prerequisites.ps1",
+                        parameters);
+
+                    await ParseManualOutput(rawOutput);
+                    }
+                }
+            catch (System.Exception ex)
+                {
+                PowerShellVersion = "Error during check";
+                IsPowerCliInstalled = false;
+
+                // NEW: Clear bypass flag on error
+                HybridPowerShellService.PowerCliConfirmedInstalled = false;
+
+                PrerequisiteCheckStatus = $"Error during prerequisites check: {ex.Message}";
+
+                // Try a simple fallback check
+                await TrySimpleFallbackCheck();
+                }
+            finally
+                {
+                IsCheckingPrerequisites = false;
+                }
+            }
+        
         [RelayCommand]
         private async Task OnCheckPrerequisites ()
             {
@@ -121,32 +182,27 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
                 var parameters = new Dictionary<string, object> { { "LogPath", logPath } };
 
-                // Update status during different phases
                 PowerCliInstallStatus = "Connecting to PowerShell Gallery...";
-                await Task.Delay(500); // Brief pause for UI update
+                await Task.Delay(500);
 
                 PowerCliInstallStatus = "Downloading VMware.PowerCLI module... (This may take 3-5 minutes)";
 
-                // The hybrid service will automatically use external PowerShell for Install-PowerCli.ps1
                 string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Install-PowerCli.ps1", parameters);
 
-                // Parse the result to determine success/failure
                 if (result.Contains("Success:"))
                     {
                     PowerCliInstallStatus = "PowerCLI installation completed successfully!";
 
-                    // Automatically re-check prerequisites to update the UI
-                    await Task.Delay(1000); // Give user a moment to see success message
-                    await OnCheckPrerequisites(); // This will update IsPowerCliInstalled
+                    await Task.Delay(1000);
+                    await OnCheckPrerequisites(); // This will set the bypass flag
                     }
                 else if (result.Contains("already installed"))
                     {
                     PowerCliInstallStatus = "PowerCLI was already installed.";
-                    await OnCheckPrerequisites(); // Update the UI status
+                    await OnCheckPrerequisites(); // This will set the bypass flag
                     }
                 else
                     {
-                    // Installation failed
                     var errorMessage = "PowerCLI installation failed.";
                     if (result.Contains("Failure:"))
                         {
@@ -156,11 +212,15 @@ namespace VCenterMigrationTool.ViewModels.Settings
                         }
 
                     PowerCliInstallStatus = $"Installation failed: {errorMessage}";
+
+                    // NEW: Clear bypass flag on installation failure
+                    HybridPowerShellService.PowerCliConfirmedInstalled = false;
                     }
                 }
             catch (System.Exception ex)
                 {
                 PowerCliInstallStatus = $"Installation failed: {ex.Message}";
+                HybridPowerShellService.PowerCliConfirmedInstalled = false; // Clear on error
                 _logger.LogError(ex, "Error during PowerCLI installation");
                 }
             finally
