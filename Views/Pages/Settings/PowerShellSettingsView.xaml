@@ -19,6 +19,8 @@
     <StackPanel>
         <TextBlock FontSize="20" FontWeight="Medium" Text="Prerequisites" />
         <TextBlock Margin="0,12,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="Check for required software and modules." />
+
+        <!-- PowerShell Version Info -->
         <Grid Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -27,6 +29,8 @@
             <TextBlock Grid.Column="0" Text="PowerShell Version:" FontWeight="Medium" VerticalAlignment="Center"/>
             <TextBlock Grid.Column="1" Text="{Binding PowerShellVersion}" Margin="10,0,0,0" VerticalAlignment="Center" Height="38" TextWrapping="Wrap"/>
         </Grid>
+
+        <!-- PowerCLI Status -->
         <Grid Margin="0,0,0,15">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -37,12 +41,79 @@
             <TextBlock Grid.Column="1" Text="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToStringConverter}, ConverterParameter=Installed;Not Installed}" Margin="10,0,10,0" VerticalAlignment="Center" Height="52"/>
             <ui:SymbolIcon Grid.Column="2" Symbol="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToSymbolConverter}}" Foreground="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToColorConverter}}" VerticalAlignment="Center"/>
         </Grid>
+
+        <!-- Status Messages -->
         <TextBlock Text="{Binding PrerequisiteCheckStatus}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+        <TextBlock Text="{Binding PowerCliInstallStatus}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+        <!-- Progress Bars -->
         <ProgressBar IsIndeterminate="True" Height="6" Margin="0,0,0,10" Visibility="{Binding IsCheckingPrerequisites, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+        <!-- NEW: PowerCLI Installation Progress -->
+        <Grid Visibility="{Binding IsInstallingPowerCli, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Progress Ring and Status -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                <ui:ProgressRing Width="24" Height="24" IsIndeterminate="True" Margin="0,0,10,0"/>
+                <TextBlock Text="Installing PowerCLI..." FontWeight="Medium" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Progress Bar -->
+            <ProgressBar Grid.Row="1" IsIndeterminate="True" Height="4" Margin="0,0,0,10"/>
+
+            <!-- Installation Steps Info -->
+            <TextBlock Grid.Row="2" 
+                       Text="This may take 3-5 minutes. Please wait..." 
+                       FontStyle="Italic" 
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       TextWrapping="Wrap"/>
+        </Grid>
+
+        <!-- Action Buttons -->
         <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-            <ui:Button Content="Check Prerequisites" Icon="{ui:SymbolIcon DocumentSearch24}" Command="{Binding CheckPrerequisitesCommand}" IsEnabled="{Binding IsCheckingPrerequisites, Converter={StaticResource InverseBooleanConverter}}" />
-            <ui:Button Content="Install PowerCLI" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="10,0,0,0" Command="{Binding InstallPowerCliCommand}" IsEnabled="{Binding IsInstallingPowerCli, Converter={StaticResource InverseBooleanConverter}}" Visibility="{Binding IsPowerCliInstalled, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+            <ui:Button Content="Check Prerequisites" 
+                       Icon="{ui:SymbolIcon DocumentSearch24}" 
+                       Command="{Binding CheckPrerequisitesCommand}" 
+                       IsEnabled="{Binding IsCheckingPrerequisites, Converter={StaticResource InverseBooleanConverter}}" />
+
+            <ui:Button Content="Install PowerCLI" 
+                       Icon="{ui:SymbolIcon ArrowDownload24}" 
+                       Margin="10,0,0,0" 
+                       Command="{Binding InstallPowerCliCommand}" 
+                       IsEnabled="{Binding IsInstallingPowerCli, Converter={StaticResource InverseBooleanConverter}}" 
+                       Visibility="{Binding IsPowerCliInstalled, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+
+                <!-- NEW: Button Content Template for Progress State -->
+                <ui:Button.Style>
+                    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsInstallingPowerCli}" Value="True">
+                                <Setter Property="Content" Value="Installing..."/>
+                                <Setter Property="Icon" Value="{ui:SymbolIcon ArrowClockwise24}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ui:Button.Style>
+            </ui:Button>
         </StackPanel>
-        <ui:InfoBar Title="PowerCLI Ready!" Message="PowerCLI module is installed and ready to use." Severity="Success" IsOpen="{Binding IsPowerCliInstalled}" Margin="0,0,0,20" />
+
+        <!-- Success Message -->
+        <ui:InfoBar Title="PowerCLI Ready!" 
+                    Message="PowerCLI module is installed and ready to use." 
+                    Severity="Success" 
+                    IsOpen="{Binding IsPowerCliInstalled}" 
+                    Margin="0,0,0,20" />
+
+        <!-- NEW: Installation Progress InfoBar -->
+        <ui:InfoBar Title="Installing PowerCLI" 
+                    Message="Downloading and installing VMware PowerCLI module. This process may take several minutes depending on your internet connection." 
+                    Severity="Informational" 
+                    IsOpen="{Binding IsInstallingPowerCli}" 
+                    Margin="0,0,0,20" />
     </StackPanel>
 </UserControl>
