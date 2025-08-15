@@ -114,13 +114,13 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         securePassword.MakeReadOnly();
 
         var scriptParams = new Dictionary<string, object>
-    {
-        { "VCenterServer", SelectedSourceProfile.ServerAddress },
-        { "Username", SelectedSourceProfile.Username },
-        { "Password", securePassword }
-    };
+        {
+            { "VCenterServer", SelectedSourceProfile.ServerAddress },
+            { "Username", SelectedSourceProfile.Username },
+            { "Password", securePassword }
+        };
 
-        // OPTIMIZED: Use the optimized method that adds BypassModuleCheck automatically
+        // FIXED: Use the optimized method that adds BypassModuleCheck automatically
         string result = await _powerShellService.RunScriptOptimizedAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
 
         if (result.Trim() == "Success")
@@ -178,13 +178,13 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         securePassword.MakeReadOnly();
 
         var scriptParams = new Dictionary<string, object>
-    {
-        { "VCenterServer", SelectedTargetProfile.ServerAddress },
-        { "Username", SelectedTargetProfile.Username },
-        { "Password", securePassword }
-    };
+        {
+            { "VCenterServer", SelectedTargetProfile.ServerAddress },
+            { "Username", SelectedTargetProfile.Username },
+            { "Password", securePassword }
+        };
 
-        // OPTIMIZED: Use the optimized method that adds BypassModuleCheck automatically
+        // FIXED: Use the optimized method that adds BypassModuleCheck automatically
         string result = await _powerShellService.RunScriptOptimizedAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams);
 
         if (result.Trim() == "Success")
@@ -232,12 +232,12 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         {
             { "VCenterServer", source.ServerAddress },
             { "User", source.Username },
-            // --- FIX: Add the '!' operator here ---
             { "Password", password! },
             { "ExportPath", exportPath }
         };
 
-        var result = await _powerShellService.RunScriptAsync(".\\Scripts\\Export-vCenterConfig.ps1", scriptParams);
+        // FIXED: Use the optimized method for export script as well
+        var result = await _powerShellService.RunScriptOptimizedAsync(".\\Scripts\\Export-vCenterConfig.ps1", scriptParams);
 
         ScriptOutput = result;
         CurrentJobText = "Test job completed.";
