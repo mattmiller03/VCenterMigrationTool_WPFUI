@@ -25,14 +25,44 @@ public class PowerShellService
     // Create a proper PowerShell session with full cmdlet support
     private PowerShell CreatePowerShellInstance ()
         {
-        // Use CreateDefault() instead of CreateDefault2() for full cmdlet support
-        var initialState = InitialSessionState.CreateDefault();
-        initialState.ExecutionPolicy = ExecutionPolicy.Unrestricted;
+        try
+            {
+            // Use CreateDefault() for full cmdlet support
+            var initialState = InitialSessionState.CreateDefault();
+            initialState.ExecutionPolicy = ExecutionPolicy.Unrestricted;
 
-        // Import essential modules that should always be available
-        initialState.ImportPSModule(new[] { "Microsoft.PowerShell.Management", "Microsoft.PowerShell.Utility" });
+            // Import essential modules
+            var essentialModules = new[]
+            {
+                "Microsoft.PowerShell.Management",    // Get-Date, Test-Path, etc.
+                "Microsoft.PowerShell.Utility",       // Write-Output, ConvertTo-Json, etc.
+                "Microsoft.PowerShell.Security",      // Get-ExecutionPolicy, etc.
+                "PackageManagement",                   // Package management cmdlets
+                "PowerShellGet"                        // Install-Module, Get-PSRepository, etc.
+            };
 
-        return PowerShell.Create(initialState);
+            foreach (var module in essentialModules)
+                {
+                try
+                    {
+                    initialState.ImportPSModule(module);
+                    _logger.LogDebug("Successfully imported module: {Module}", module);
+                    }
+                catch (Exception ex)
+                    {
+                    _logger.LogWarning("Could not import module {Module}: {Error}", module, ex.Message);
+                    // Continue with other modules even if one fails
+                    }
+                }
+
+            return PowerShell.Create(initialState);
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error creating PowerShell instance with custom session state, falling back to default");
+            // Fallback to basic PowerShell instance
+            return PowerShell.Create();
+            }
         }
 
     public async Task<string> RunScriptAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
