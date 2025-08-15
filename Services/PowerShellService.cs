@@ -16,13 +16,23 @@ namespace VCenterMigrationTool.Services;
 public class PowerShellService
     {
     private readonly ILogger<PowerShellService> _logger;
-    private readonly InitialSessionState _initialSessionState;
 
     public PowerShellService (ILogger<PowerShellService> logger)
         {
         _logger = logger;
-        _initialSessionState = InitialSessionState.CreateDefault2();
-        _initialSessionState.ExecutionPolicy = ExecutionPolicy.Unrestricted;
+        }
+
+    // Create a proper PowerShell session with full cmdlet support
+    private PowerShell CreatePowerShellInstance ()
+        {
+        // Use CreateDefault() instead of CreateDefault2() for full cmdlet support
+        var initialState = InitialSessionState.CreateDefault();
+        initialState.ExecutionPolicy = ExecutionPolicy.Unrestricted;
+
+        // Import essential modules that should always be available
+        initialState.ImportPSModule(new[] { "Microsoft.PowerShell.Management", "Microsoft.PowerShell.Utility" });
+
+        return PowerShell.Create(initialState);
         }
 
     public async Task<string> RunScriptAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
@@ -50,7 +60,7 @@ public class PowerShellService
 
         await Task.Run(() =>
         {
-            using PowerShell ps = PowerShell.Create(_initialSessionState);
+            using PowerShell ps = CreatePowerShellInstance();
 
             try
                 {
@@ -150,7 +160,7 @@ public class PowerShellService
         return output.ToString();
         }
 
-    // NEW METHOD: Execute PowerShell commands directly
+    // Execute PowerShell commands directly
     public async Task<string> RunCommandAsync (string command, Dictionary<string, object>? parameters = null)
         {
         var output = new StringBuilder();
@@ -159,7 +169,7 @@ public class PowerShellService
 
         await Task.Run(() =>
         {
-            using PowerShell ps = PowerShell.Create(_initialSessionState);
+            using PowerShell ps = CreatePowerShellInstance();
 
             try
                 {
@@ -213,7 +223,7 @@ public class PowerShellService
 
         await Task.Run(() =>
         {
-            using PowerShell ps = PowerShell.Create(_initialSessionState);
+            using PowerShell ps = CreatePowerShellInstance();
             try
                 {
                 ps.AddScript(File.ReadAllText(fullScriptPath));
@@ -268,7 +278,7 @@ public class PowerShellService
 
         await Task.Run(() =>
         {
-            using PowerShell ps = PowerShell.Create(_initialSessionState);
+            using PowerShell ps = CreatePowerShellInstance();
             try
                 {
                 ps.AddScript(File.ReadAllText(fullScriptPath));
