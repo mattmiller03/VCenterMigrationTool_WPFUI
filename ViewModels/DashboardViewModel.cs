@@ -87,8 +87,13 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         SourceConnectionStatus = $"Connecting to {SelectedSourceProfile.ServerAddress}...";
         ScriptOutput = string.Empty;
 
+        // CRITICAL DEBUG: Check bypass status at the very beginning
+        _logger.LogInformation("=== DASHBOARD CONNECTION DEBUG START ===");
+        _logger.LogInformation("DEBUG: [Dashboard] PowerCliConfirmedInstalled = {PowerCliConfirmed}",
+            HybridPowerShellService.PowerCliConfirmedInstalled);
+
         string? password = _credentialService.GetPassword(SelectedSourceProfile);
-        SecureString securePassword = new();
+        string finalPassword;
 
         if (string.IsNullOrEmpty(password))
             {
@@ -104,48 +109,57 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 return;
                 }
 
-            foreach (char c in promptedPassword)
-                {
-                securePassword.AppendChar(c);
-                }
+            finalPassword = promptedPassword;
             }
         else
             {
-            foreach (char c in password)
-                {
-                securePassword.AppendChar(c);
-                }
+            finalPassword = password;
             }
-        securePassword.MakeReadOnly();
 
+        // FIXED: Use string password directly instead of SecureString
         var scriptParams = new Dictionary<string, object>
         {
             { "VCenterServer", SelectedSourceProfile.ServerAddress },
             { "Username", SelectedSourceProfile.Username },
-            { "Password", securePassword }
+            { "Password", finalPassword }
         };
 
-        // ENHANCED DEBUG: Log the bypass status before calling the script
-        _logger.LogInformation("DEBUG: [Dashboard] Before calling script - PowerCliConfirmedInstalled = {PowerCliConfirmed}",
-            HybridPowerShellService.PowerCliConfirmedInstalled);
-        _logger.LogInformation("DEBUG: [Dashboard] WouldScriptGetBypass = {WouldBypass}",
-            _powerShellService.WouldScriptGetBypass("Test-vCenterConnection.ps1"));
+        _logger.LogInformation("DEBUG: [Dashboard] Initial parameters created");
 
-        // FIXED: Add BypassModuleCheck manually if the optimized method isn't working
+        // CRITICAL: Add BypassModuleCheck BEFORE any other processing
         if (HybridPowerShellService.PowerCliConfirmedInstalled)
             {
             scriptParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: [Dashboard] Manually added BypassModuleCheck=true to parameters");
+            _logger.LogInformation("DEBUG: [Dashboard] ADDED BypassModuleCheck=true to parameters");
+            }
+        else
+            {
+            _logger.LogInformation("DEBUG: [Dashboard] NOT adding BypassModuleCheck (PowerCLI not confirmed)");
             }
 
-        // SECURE: Log parameters excluding sensitive data
-        var safeParams = scriptParams
-            .Where(p => !p.Key.ToLower().Contains("password"))
-            .Select(p => $"{p.Key}={p.Value}");
-        _logger.LogInformation("DEBUG: [Dashboard] Safe parameters: {Parameters}", string.Join(", ", safeParams));
+        // DEBUG: Check each parameter individually
+        _logger.LogInformation("DEBUG: [Dashboard] Final parameter verification:");
+        foreach (var param in scriptParams)
+            {
+            if (param.Key.ToLower().Contains("password"))
+                {
+                _logger.LogInformation("DEBUG: [Dashboard] Parameter {Key} = [REDACTED] (Type: {Type})",
+                    param.Key, param.Value?.GetType().Name ?? "null");
+                }
+            else
+                {
+                _logger.LogInformation("DEBUG: [Dashboard] Parameter {Key} = {Value} (Type: {Type})",
+                    param.Key, param.Value, param.Value?.GetType().Name ?? "null");
+                }
+            }
+
+        _logger.LogInformation("DEBUG: [Dashboard] About to call RunScriptAsync");
 
         string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
         string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams, logPath);
+
+        _logger.LogInformation("DEBUG: [Dashboard] Script execution completed");
+        _logger.LogInformation("=== DASHBOARD CONNECTION DEBUG END ===");
 
         if (result.Trim() == "Success")
             {
@@ -170,8 +184,13 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         TargetConnectionStatus = $"Connecting to {SelectedTargetProfile.ServerAddress}...";
         ScriptOutput = string.Empty;
 
+        // CRITICAL DEBUG: Check bypass status at the very beginning
+        _logger.LogInformation("=== TARGET CONNECTION DEBUG START ===");
+        _logger.LogInformation("DEBUG: [Target] PowerCliConfirmedInstalled = {PowerCliConfirmed}",
+            HybridPowerShellService.PowerCliConfirmedInstalled);
+
         string? password = _credentialService.GetPassword(SelectedTargetProfile);
-        SecureString securePassword = new();
+        string finalPassword;
 
         if (string.IsNullOrEmpty(password))
             {
@@ -187,46 +206,54 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 return;
                 }
 
-            foreach (char c in promptedPassword)
-                {
-                securePassword.AppendChar(c);
-                }
+            finalPassword = promptedPassword;
             }
         else
             {
-            foreach (char c in password)
-                {
-                securePassword.AppendChar(c);
-                }
+            finalPassword = password;
             }
-        securePassword.MakeReadOnly();
 
+        // FIXED: Use string password directly instead of SecureString
         var scriptParams = new Dictionary<string, object>
         {
             { "VCenterServer", SelectedTargetProfile.ServerAddress },
             { "Username", SelectedTargetProfile.Username },
-            { "Password", securePassword }
+            { "Password", finalPassword }
         };
 
-        // ENHANCED DEBUG: Log the bypass status before calling the script
-        _logger.LogInformation("DEBUG: [Dashboard] Before calling script - PowerCliConfirmedInstalled = {PowerCliConfirmed}",
-            HybridPowerShellService.PowerCliConfirmedInstalled);
+        _logger.LogInformation("DEBUG: [Target] Initial parameters created");
 
-        // FIXED: Add BypassModuleCheck manually if the optimized method isn't working
+        // CRITICAL: Add BypassModuleCheck BEFORE any other processing
         if (HybridPowerShellService.PowerCliConfirmedInstalled)
             {
             scriptParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: [Dashboard] Manually added BypassModuleCheck=true to parameters");
+            _logger.LogInformation("DEBUG: [Target] ADDED BypassModuleCheck=true to parameters");
+            }
+        else
+            {
+            _logger.LogInformation("DEBUG: [Target] NOT adding BypassModuleCheck (PowerCLI not confirmed)");
             }
 
-        // SECURE: Log parameters excluding sensitive data
-        var safeParams = scriptParams
-            .Where(p => !p.Key.ToLower().Contains("password"))
-            .Select(p => $"{p.Key}={p.Value}");
-        _logger.LogInformation("DEBUG: [Dashboard] Safe parameters: {Parameters}", string.Join(", ", safeParams));
+        // DEBUG: Check each parameter individually
+        _logger.LogInformation("DEBUG: [Target] Final parameter verification:");
+        foreach (var param in scriptParams)
+            {
+            if (param.Key.ToLower().Contains("password"))
+                {
+                _logger.LogInformation("DEBUG: [Target] Parameter {Key} = [REDACTED] (Type: {Type})",
+                    param.Key, param.Value?.GetType().Name ?? "null");
+                }
+            else
+                {
+                _logger.LogInformation("DEBUG: [Target] Parameter {Key} = {Value} (Type: {Type})",
+                    param.Key, param.Value, param.Value?.GetType().Name ?? "null");
+                }
+            }
 
         string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
         string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams, logPath);
+
+        _logger.LogInformation("=== TARGET CONNECTION DEBUG END ===");
 
         if (result.Trim() == "Success")
             {
@@ -281,7 +308,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         if (HybridPowerShellService.PowerCliConfirmedInstalled)
             {
             scriptParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: [Dashboard] Added BypassModuleCheck=true for export script");
+            _logger.LogInformation("DEBUG: [TestJob] Added BypassModuleCheck=true for export script");
             }
 
         var result = await _powerShellService.RunScriptAsync(".\\Scripts\\Export-vCenterConfig.ps1", scriptParams);

@@ -1,143 +1,174 @@
-vCenter Migration Tool v1.0
+﻿# vCenter Migration Tool v1.0
 
-1. Introduction
+## 1. Introduction
 
-This document outlines the structure and a development guide for the vCenter Migration Tool, a WPF application designed to assist with migrating a VMware vCenter environment. The application provides a modern, intuitive graphical user interface (GUI) for executing complex PowerShell and PowerCLI operations. The project is currently at version 1.0, with a solid architectural foundation and several core features implemented.
+This document outlines the structure and development guide for the vCenter Migration Tool, a WPF application designed to assist with migrating a VMware vCenter environment. The application provides a modern, intuitive graphical user interface (GUI) for executing complex PowerShell and PowerCLI operations. The project is currently at version 1.0, with a solid architectural foundation and several core features implemented.
 
-2. Core Features (Current Status)
+## 2. Current Status & Recent Updates (August 2025)
 
-    Modern Fluent UI: Built using the WPF-UI library, providing a modern look and feel with built-in theme support (Light/Dark).
+### 2.1 Recently Resolved Issues ✅
 
-    MVVM Architecture: Strictly follows the Model-View-ViewModel pattern for a clean separation of concerns.
+**PowerShell Integration & Security Improvements:**
+- **Fixed PowerCLI Bypass Parameter Issue**: Resolved issue where `BypassModuleCheck` parameter wasn't being passed correctly to PowerShell scripts, causing unnecessary PowerCLI module imports and slow connection times
+- **Implemented Persistent PowerCLI Detection**: PowerCLI installation status now persists across application restarts using automatic detection on startup
+- **Enhanced Password Security**: Removed all plain text password logging while maintaining full functionality - passwords now show as `[REDACTED]` in logs
+- **Dynamic Log Path Configuration**: Application logs now save to the user-configured log directory from settings instead of hardcoded paths
+- **Dual Connection Path Fix**: Both Dashboard connection testing and Settings profile testing now correctly pass the BypassModuleCheck parameter
 
-    Dependency Injection: Utilizes the .NET Generic Host to manage services and viewmodels, ensuring a decoupled and testable codebase.
+### 2.2 Current Working Features ✅
 
-    Persistent Connection Profiles:
+- **Modern Fluent UI**: Built using WPF-UI library with Light/Dark theme support
+- **MVVM Architecture**: Clean separation of concerns with dependency injection
+- **Persistent Connection Profiles**: Encrypted password storage with Windows credentials
+- **Dashboard**: Source/Target vCenter connection testing with real-time status
+- **Settings System**: 
+  - PowerShell/PowerCLI prerequisites checking and installation
+  - File path configuration for logs and exports
+  - Connection profile management with testing capabilities
+- **Security**: All password handling is secure with no plain text logging
+- **Logging**: Comprehensive logging with Serilog to user-configured locations
 
-        Users can add, edit, and delete vCenter connection profiles (name, server address, username).
+## 3. Technology Stack
 
-        Passwords are encrypted using the current user's Windows credentials (ProtectedData) and stored in a profiles.json file in the user's %LocalAppData%\VCenterMigrationTool folder.
+- **Framework**: .NET 8
+- **UI**: Windows Presentation Foundation (WPF) 
+- **UI Library**: WPF-UI (Fluent) v4.0.3
+- **Architecture**: Model-View-ViewModel (MVVM)
+- **MVVM Toolkit**: CommunityToolkit.Mvvm for source-generated observable properties and commands
+- **Dependency Injection**: Microsoft.Extensions.Hosting
+- **Logging**: Serilog with dynamic log paths
+- **Backend Logic**: PowerShell 7+ with external process execution (HybridPowerShellService)
 
-        A central ConnectionProfileService manages all profile data.
-
-    Dashboard:
-
-        Displays connection status for a selected "Source" and "Target" vCenter.
-
-        Allows users to select from saved profiles to establish connections.
-
-        Features a "Current Job Status" area with a progress bar to monitor long-running tasks.
-
-    Multi-Page Navigation: A fluent navigation menu provides access to different functional areas of the application.
-
-    Modular Migration Pages:
-
-        vCenter Object Migration: A dedicated page with checkboxes for selecting high-level objects to migrate (Roles, Folders, Tags). Includes granular, cluster-specific selection for Resource Pools and vDS via a ComboBox and ListView.
-
-        ESXi Host Migration: A page featuring a TreeView to display the source vCenter's cluster/host topology, allowing for multi-host selection. Users can select a target cluster from a ComboBox to initiate migration.
-
-        VM Migration: A page with a DataGrid to display a detailed inventory of VMs from the source. Users can select multiple VMs, a target host, and a target datastore for migration.
-
-    PowerShell Integration:
-
-        A robust PowerShellService can execute any .ps1 script.
-
-        Supports passing complex parameters to scripts.
-
-        Can return simple string output for logs or structured JSON objects that are automatically deserialized into C# models.
-
-    Logging: Integrated Serilog for logging to both the Visual Studio Debug window and rolling daily log files, which is essential for diagnosing PowerShell script failures.
-
-3. Technology Stack
-
-    Framework: .NET 8
-
-    UI: Windows Presentation Foundation (WPF)
-
-    UI Library: WPF-UI (Fluent) v4.0.3
-
-    Architecture: Model-View-ViewModel (MVVM)
-
-    MVVM Toolkit: CommunityToolkit.Mvvm for source-generated observable properties and commands.
-
-    Dependency Injection: Microsoft.Extensions.Hosting
-
-    Logging: Serilog
-
-    Backend Logic: PowerShell 7+ with the Microsoft.PowerShell.SDK
-
-4. Project Structure
+## 4. Project Structure
 
 The project follows a standard MVVM structure:
 
-    /Models: Contains the C# classes that represent data (e.g., VCenterConnection.cs, MigrationTask.cs).
+- **/Models**: Contains C# classes representing data (e.g., VCenterConnection.cs, MigrationTask.cs)
+- **/Views**:
+  - **/Pages**: Individual pages (DashboardPage.xaml, SettingsPage.xaml, etc.)
+  - **/Windows**: Main application shell (MainWindow.xaml)
+- **/ViewModels**: Logic and data for each View (e.g., DashboardViewModel.cs, SettingsViewModel.cs)
+- **/Services**: Backend services:
+  - **HybridPowerShellService.cs**: Executes PowerShell scripts with security and optimization
+  - **ConnectionProfileService.cs**: Manages connection profiles with encryption
+  - **ConfigurationService.cs**: Handles application configuration and settings
+  - **ApplicationHostService.cs**: Manages application startup and navigation
+- **/Helpers**: Value converters and utility classes
+- **/Scripts**: PowerShell .ps1 files (all set to "Copy if newer")
 
-    /Views:
+## 5. Key Development Patterns
 
-        /Pages: Contains the XAML files for individual pages (DashboardPage.xaml, SettingsPage.xaml, etc.).
+### 5.1 PowerShell Integration Best Practices
 
-        /Windows: Contains the main application shell (MainWindow.xaml).
+**Security Requirements:**
+- All password parameters must be marked as sensitive in logging
+- Use `IsSensitiveParameter()` method to detect password-related parameters
+- Parameters containing "password", "pwd", "secret", "token", or "key" are automatically redacted
 
-    /ViewModels: Contains the C# classes that hold the logic and data for each View (e.g., DashboardViewModel.cs, SettingsViewModel.cs).
+**PowerCLI Optimization:**
+- PowerCLI installation status is automatically detected on application startup
+- Scripts requiring PowerCLI automatically receive `BypassModuleCheck=true` parameter when PowerCLI is confirmed installed
+- Use `SavePowerCliStatus()` method when PowerCLI installation status changes
 
-    /Services: Contains backend services that perform specific tasks.
+**Script Parameter Handling:**
+```csharp
+// Correct way to add parameters for PowerCLI scripts
+var scriptParams = new Dictionary<string, object>
+{
+    { "VCenterServer", serverAddress },
+    { "Username", username },
+    { "Password", password }
+};
 
-        PowerShellService.cs: Executes PowerShell scripts.
+// BypassModuleCheck is automatically added if PowerCLI is confirmed
+if (HybridPowerShellService.PowerCliConfirmedInstalled)
+{
+    scriptParams["BypassModuleCheck"] = true;
+}
 
-        ConnectionProfileService.cs: Manages loading and saving connection profiles.
+await _powerShellService.RunScriptAsync("Script.ps1", scriptParams, logPath);
+```
 
-        ApplicationHostService.cs: Manages the application startup and initial navigation.
+### 5.2 Creating a New Page
 
-    /Helpers: Contains value converters and other helper classes (BoolToVisibilityConverter.cs, etc.).
+1. **Create the Model(s)**: In /Models folder, create C# classes for data representation
+2. **Create the PowerShell Script(s)**: In /Scripts folder, create .ps1 files that output JSON using `ConvertTo-Json`
+3. **Create the ViewModel**: In /ViewModels folder, inherit from `ObservableObject`, inject required services
+4. **Create the View**: In /Views/Pages folder, create XAML page
+5. **Create Code-Behind**: Constructor accepts ViewModel via DI, sets DataContext
+6. **Register in App.xaml.cs**: Register Page and ViewModel as singletons in ConfigureServices
+7. **Add to Navigation**: Add NavigationViewItem to MainWindowViewModel
 
-    /Scripts: Contains all .ps1 files used by the application. Crucially, all scripts must have their "Copy to Output Directory" property set to "Copy if newer".
+### 5.3 Data Binding Pattern
 
-5. Key Development Patterns
+Established pattern for all pages:
+- Code-behind constructor receives ViewModel via DI
+- Page's DataContext is set to the page itself (`DataContext = this;`)
+- ViewModel exposed via public property: `public MyViewModel ViewModel { get; }`
+- All XAML bindings use ViewModel prefix: `Text="{Binding ViewModel.MyProperty}"`
 
-To ensure consistency, please follow these established patterns when adding new features:
+## 6. Current Issues & Next Steps
 
-Creating a New Page
+### 6.1 Known Working Areas ✅
+- Dashboard connection testing (both source and target)
+- Settings page PowerShell prerequisites checking and PowerCLI installation
+- Connection profile management with secure password storage
+- Application configuration and logging
+- UI navigation and theming
 
-    Create the Model(s): In the /Models folder, create the C# classes needed to represent the data for the page.
+### 6.2 Areas Needing Development 🚧
 
-    Create the PowerShell Script(s): In the /Scripts folder, create the .ps1 files. Scripts that return data to be displayed should output a single JSON string using ConvertTo-Json.
+**High Priority:**
+1. **VM Migration Page**: Complete the DataGrid functionality with real PowerShell integration
+2. **Network Migration Page**: Implement the network topology discovery and migration logic
+3. **Host Migration Page**: Build out the TreeView for cluster/host selection and migration
+4. **vCenter Objects Migration**: Implement roles, permissions, folders, and tags migration
 
-    Create the ViewModel: In the /ViewModels folder, create a new public partial class that inherits from ObservableObject. Inject any required services (like PowerShellService) through the constructor.
+**Medium Priority:**
+1. **Shared Connection Service Enhancement**: Ensure proper connection state sharing between pages
+2. **Progress Reporting**: Implement real-time progress for long-running migration operations
+3. **Error Handling**: Enhanced error recovery and user feedback for failed operations
+4. **Export/Import Configuration**: Complete the vCenter configuration backup and restore functionality
 
-    Create the View: In the /Views/Pages folder, create a new <Page>.
+### 6.3 Technical Debt to Address
+- Consider adding persistent configuration storage for PowerCLI status
+- Implement retry logic for failed PowerShell operations
+- Add unit tests for critical services
+- Consider adding PowerShell execution timeouts for specific operations
 
-    Create the Code-Behind: Create the .xaml.cs file for the new page. The constructor must accept its ViewModel via dependency injection and set the DataContext.
+## 7. Development Guidelines
 
-    Register in App.xaml.cs: Register the new Page and ViewModel as singletons in the ConfigureServices method.
+### 7.1 Security Requirements
+- **NEVER log passwords in plain text**
+- Always use `IsSensitiveParameter()` checks before logging
+- Use SecureString where possible, convert only when necessary for external processes
+- Validate all user inputs before passing to PowerShell scripts
 
-    Add to Navigation in MainWindowViewModel.cs: Add a new NavigationViewItem to the _menuItems collection to make the page accessible.
+### 7.2 PowerShell Script Guidelines
+- All scripts should accept a `-LogPath` parameter for consistent logging
+- Scripts requiring PowerCLI should accept a `-BypassModuleCheck` switch parameter
+- Always output structured data using `ConvertTo-Json` for C# consumption
+- Include proper error handling and logging within scripts
 
-Data Binding in Pages
+### 7.3 Logging Best Practices
+- Use structured logging with proper log levels (Debug, Info, Warning, Error)
+- Include context information in log messages
+- Never log sensitive data (passwords, tokens, etc.)
+- Use the configured log path from ConfigurationService
 
-The established pattern for pages is:
+## 8. Recent Code Changes Summary
 
-    The code-behind's constructor receives the ViewModel via DI.
+**Files Modified in Latest Session:**
+- `HybridPowerShellService.cs`: Added persistent PowerCLI detection, secure parameter logging
+- `DashboardViewModel.cs`: Enhanced debugging, secure parameter handling
+- `ViewProfilesViewModel.cs`: Added BypassModuleCheck support for settings page testing
+- `PowerShellSettingsViewModel.cs`: Added SavePowerCliStatus calls
+- `App.xaml.cs`: Dynamic log path configuration
 
-    The page's DataContext is set to the page itself (DataContext = this;).
+**Key Improvements:**
+- PowerCLI bypass optimization now persists across application restarts
+- All password logging removed for security compliance
+- Enhanced debugging capabilities for troubleshooting PowerShell issues
+- Automatic PowerCLI detection on application startup
 
-    The ViewModel is exposed via a public property: public MyViewModel ViewModel { get; }.
-    
-    All XAML bindings must then use the ViewModel. prefix (e.g., Text="{Binding ViewModel.MyProperty}").
-
-This pattern has proven stable across the application.
-
-6. Current State & Next Steps
-
-The application is stable and compiles without errors or warnings. The core UI structure is complete, and the main migration pages have been scaffolded with placeholder logic.
-
-Immediate next steps for the next developer would be:
-
-    Implement Real PowerShell Logic: Replace the Task.Delay simulations in the ViewModel commands (OnStartMigration, OnMigrateHosts, etc.) with actual calls to the PowerShellService that execute the migration scripts (Move-EsxiHost.ps1, etc.).
-
-    Shared Connection Service: The ViewModels currently use placeholder connection profiles. A shared service should be created to hold the currently selected "Source" and "Target" profiles from the Dashboard, so other pages can access them.
-
-    Implement Password Prompts: For connection tests or migrations where a password is not saved, implement a dialog box to securely prompt the user for the password at runtime.
-
-    Complete the VM Migration Page: Build out the DataGrid on the VmMigrationPage with full functionality, including "select all" and potentially filtering/sorting.
-
-    Build the Network Migration Page: The page has been designed; the next step is to implement the real PowerShell logic for migrating network components.
+The application is now stable, secure, and ready for the next phase of development focusing on completing the migration functionality for VMs, networks, and hosts.

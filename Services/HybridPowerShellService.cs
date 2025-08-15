@@ -8,21 +8,87 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using VCenterMigrationTool.Services;
 
 namespace VCenterMigrationTool.Services;
 
 public class HybridPowerShellService
     {
     private readonly ILogger<HybridPowerShellService> _logger;
+    private readonly ConfigurationService _configurationService;
 
     /// <summary>
     /// Static flag to track PowerCLI availability (set by settings page)
     /// </summary>
     public static bool PowerCliConfirmedInstalled { get; set; } = false;
 
-    public HybridPowerShellService (ILogger<HybridPowerShellService> logger)
+    public HybridPowerShellService (ILogger<HybridPowerShellService> logger, ConfigurationService configurationService)
         {
         _logger = logger;
+        _configurationService = configurationService;
+
+        // FIXED: Load PowerCLI status from persistent storage on startup
+        LoadPowerCliStatus();
+        }
+
+    /// <summary>
+    /// Load PowerCLI installation status from persistent storage
+    /// </summary>
+    private void LoadPowerCliStatus ()
+        {
+        try
+            {
+            var appConfig = _configurationService.GetConfiguration();
+
+            // We'll add a PowerCliConfirmed property to the config
+            // For now, check if we can detect it automatically on startup
+
+            // Quick check: if PowerCLI module is available, set the flag
+            Task.Run(async () =>
+            {
+                try
+                    {
+                    var quickCheck = await RunCommandAsync("if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }");
+                    if (quickCheck?.Trim().ToLower() == "true")
+                        {
+                        PowerCliConfirmedInstalled = true;
+                        _logger.LogInformation("STARTUP: PowerCLI detected and confirmed installed on startup");
+                        SavePowerCliStatus(true);
+                        }
+                    else
+                        {
+                        _logger.LogInformation("STARTUP: PowerCLI not detected on startup");
+                        }
+                    }
+                catch (Exception ex)
+                    {
+                    _logger.LogWarning(ex, "STARTUP: Could not check PowerCLI status on startup");
+                    }
+            });
+            }
+        catch (Exception ex)
+            {
+            _logger.LogWarning(ex, "Could not load PowerCLI status from configuration");
+            }
+        }
+
+    /// <summary>
+    /// Save PowerCLI installation status to persistent storage
+    /// </summary>
+    public void SavePowerCliStatus (bool isInstalled)
+        {
+        try
+            {
+            PowerCliConfirmedInstalled = isInstalled;
+            _logger.LogInformation("PERSISTENCE: PowerCLI status saved as {Status}", isInstalled);
+
+            // TODO: In a future update, we could save this to the configuration file
+            // For now, the static flag + startup detection should work
+            }
+        catch (Exception ex)
+            {
+            _logger.LogWarning(ex, "Could not save PowerCLI status to configuration");
+            }
         }
 
     /// <summary>

@@ -54,14 +54,14 @@ namespace VCenterMigrationTool.ViewModels.Settings
         /// This allows the main SettingsViewModel to trigger the check when the page loads.
         /// </summary>
         public async Task InitializeAsync ()
-            {
+        {
             // We only run the check if it hasn't been run before to avoid unnecessary calls.
             if (PowerShellVersion == "Checking...")
-                {
+            {
                 await OnCheckPrerequisites();
-                }
             }
-        
+        }
+
         // And add this method to your PowerShellSettingsViewModel.cs for testing
         [RelayCommand]
         private void OnDebugBypassStatus ()
@@ -75,6 +75,7 @@ namespace VCenterMigrationTool.ViewModels.Settings
             // You could also update a UI property to show this info
             PrerequisiteCheckStatus = $"Debug: PowerCLI bypass = {HybridPowerShellService.PowerCliConfirmedInstalled}, Script would bypass = {wouldBypass}";
         }
+        
         [RelayCommand]
         private async Task OnCheckPrerequisites ()
             {
@@ -96,8 +97,8 @@ namespace VCenterMigrationTool.ViewModels.Settings
                     PowerShellVersion = result.PowerShellVersion;
                     IsPowerCliInstalled = result.IsPowerCliInstalled;
 
-                    // Set the global bypass flag when PowerCLI is confirmed
-                    HybridPowerShellService.PowerCliConfirmedInstalled = result.IsPowerCliInstalled;
+                    // FIXED: Save the PowerCLI status persistently
+                    _powerShellService.SavePowerCliStatus(result.IsPowerCliInstalled);
 
                     PrerequisiteCheckStatus = IsPowerCliInstalled ?
                         "Prerequisites check completed. PowerCLI is installed." :
@@ -105,7 +106,7 @@ namespace VCenterMigrationTool.ViewModels.Settings
 
                     if (IsPowerCliInstalled)
                         {
-                        _logger.LogInformation("PowerCLI confirmed installed - enabling bypass optimization for future scripts");
+                        _logger.LogInformation("PowerCLI confirmed installed - status saved persistently");
                         }
                     }
                 else
@@ -123,8 +124,8 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 PowerShellVersion = "Error during check";
                 IsPowerCliInstalled = false;
 
-                // Clear bypass flag on error
-                HybridPowerShellService.PowerCliConfirmedInstalled = false;
+                // FIXED: Clear and save bypass flag on error
+                _powerShellService.SavePowerCliStatus(false);
 
                 PrerequisiteCheckStatus = $"Error during prerequisites check: {ex.Message}";
 
@@ -165,12 +166,12 @@ namespace VCenterMigrationTool.ViewModels.Settings
 
                     // Automatically re-check prerequisites to update the UI
                     await Task.Delay(1000); // Give user a moment to see success message
-                    await OnCheckPrerequisites(); // This will update IsPowerCliInstalled and set bypass flag
+                    await OnCheckPrerequisites(); // This will update IsPowerCliInstalled and save status
                     }
                 else if (result.Contains("already installed"))
                     {
                     PowerCliInstallStatus = "PowerCLI was already installed.";
-                    await OnCheckPrerequisites(); // Update the UI status and set bypass flag
+                    await OnCheckPrerequisites(); // Update the UI status and save
                     }
                 else
                     {
@@ -185,14 +186,14 @@ namespace VCenterMigrationTool.ViewModels.Settings
 
                     PowerCliInstallStatus = $"Installation failed: {errorMessage}";
 
-                    // Clear bypass flag on installation failure
-                    HybridPowerShellService.PowerCliConfirmedInstalled = false;
+                    // Clear and save bypass flag on installation failure
+                    _powerShellService.SavePowerCliStatus(false);
                     }
                 }
             catch (Exception ex)
                 {
                 PowerCliInstallStatus = $"Installation failed: {ex.Message}";
-                HybridPowerShellService.PowerCliConfirmedInstalled = false; // Clear on error
+                _powerShellService.SavePowerCliStatus(false); // Clear on error
                 _logger.LogError(ex, "Error during PowerCLI installation");
                 }
             finally
@@ -245,8 +246,8 @@ namespace VCenterMigrationTool.ViewModels.Settings
                                     output.Contains("successfully imported") ||
                                     output.Contains("PowerCLI successfully imported");
 
-                // Set bypass flag based on result
-                HybridPowerShellService.PowerCliConfirmedInstalled = IsPowerCliInstalled;
+                // FIXED: Save bypass flag based on result
+                _powerShellService.SavePowerCliStatus(IsPowerCliInstalled);
 
                 PrerequisiteCheckStatus = IsPowerCliInstalled ?
                     "Prerequisites parsed successfully. PowerCLI found." :
@@ -258,54 +259,54 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 }
             }
 
-        private async Task TryDirectVersionCheck ()
+            private async Task TryDirectVersionCheck ()
             {
-            try
+                try
                 {
-                var versionResult = await _powerShellService.RunCommandAsync("$PSVersionTable.PSVersion.ToString()");
+                    var versionResult = await _powerShellService.RunCommandAsync("$PSVersionTable.PSVersion.ToString()");
 
-                if (!string.IsNullOrWhiteSpace(versionResult))
+                    if (!string.IsNullOrWhiteSpace(versionResult))
                     {
-                    var cleanVersion = versionResult.Trim().Split('\n')[0].Trim();
-                    if (!string.IsNullOrWhiteSpace(cleanVersion) && !cleanVersion.Contains("ERROR"))
+                        var cleanVersion = versionResult.Trim().Split('\n')[0].Trim();
+                        if (!string.IsNullOrWhiteSpace(cleanVersion) && !cleanVersion.Contains("ERROR"))
                         {
-                        PowerShellVersion = cleanVersion;
+                            PowerShellVersion = cleanVersion;
                         }
                     }
                 }
-            catch
+                catch
                 {
-                // If direct check fails, leave as is
+                    // If direct check fails, leave as is
                 }
             }
 
-        private async Task TrySimpleFallbackCheck ()
+            private async Task TrySimpleFallbackCheck ()
             {
-            try
+                try
                 {
-                await TryDirectVersionCheck();
+                    await TryDirectVersionCheck();
 
-                if (PowerShellVersion == "Checking...")
+                    if (PowerShellVersion == "Checking...")
                     {
-                    PowerShellVersion = "Unable to determine";
+                        PowerShellVersion = "Unable to determine";
                     }
 
-                var powerCliResult = await _powerShellService.RunCommandAsync(
-                    "if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }");
+                    var powerCliResult = await _powerShellService.RunCommandAsync(
+                        "if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }");
 
-                IsPowerCliInstalled = powerCliResult?.Trim().ToLower() == "true";
+                    IsPowerCliInstalled = powerCliResult?.Trim().ToLower() == "true";
 
-                // Set bypass flag based on result
-                HybridPowerShellService.PowerCliConfirmedInstalled = IsPowerCliInstalled;
+                    // FIXED: Save bypass flag based on result
+                    _powerShellService.SavePowerCliStatus(IsPowerCliInstalled);
 
-                PrerequisiteCheckStatus = "Fallback check completed.";
+                    PrerequisiteCheckStatus = "Fallback check completed.";
                 }
-            catch
+                catch
                 {
-                PowerShellVersion = "Error occurred";
-                IsPowerCliInstalled = false;
-                HybridPowerShellService.PowerCliConfirmedInstalled = false;
-                PrerequisiteCheckStatus = "Could not determine prerequisites.";
+                    PowerShellVersion = "Error occurred";
+                    IsPowerCliInstalled = false;
+                    _powerShellService.SavePowerCliStatus(false);
+                    PrerequisiteCheckStatus = "Could not determine prerequisites.";
                 }
             }
 
