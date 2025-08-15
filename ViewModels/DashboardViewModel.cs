@@ -34,10 +34,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     private VCenterConnection? _selectedTargetProfile;
 
     [ObservableProperty]
-    private string _sourceConnectionStatus = "Not Connected";
+    private string _sourceConnectionStatus = "Connection not active";
 
     [ObservableProperty]
-    private string _targetConnectionStatus = "Not Connected";
+    private string _targetConnectionStatus = "Connection not active";
 
     [ObservableProperty]
     private bool _isJobRunning;
@@ -78,17 +78,76 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         await Task.CompletedTask;
         }
 
+    /// <summary>
+    /// Converts technical PowerShell results into user-friendly status messages
+    /// </summary>
+    private string GetSimpleConnectionStatus (string result, string serverAddress)
+        {
+        if (string.IsNullOrWhiteSpace(result))
+            {
+            return "Connection failed";
+            }
+
+        var trimmedResult = result.Trim();
+
+        // Success case
+        if (trimmedResult == "Success")
+            {
+            return "Connection active";
+            }
+
+        // Failed cases - provide simple, user-friendly messages
+        if (trimmedResult.StartsWith("Failure:"))
+            {
+            var errorMessage = trimmedResult.Replace("Failure:", "").Trim();
+
+            // Categorize common error types into simple messages
+            if (errorMessage.Contains("Could not resolve") ||
+                errorMessage.Contains("endpoint listening") ||
+                errorMessage.Contains("network") ||
+                errorMessage.Contains("host"))
+                {
+                return "Connection failed - Server unreachable";
+                }
+            else if (errorMessage.Contains("authentication") ||
+                     errorMessage.Contains("login") ||
+                     errorMessage.Contains("credential") ||
+                     errorMessage.Contains("password"))
+                {
+                return "Connection failed - Authentication error";
+                }
+            else if (errorMessage.Contains("timeout") ||
+                     errorMessage.Contains("timed out"))
+                {
+                return "Connection failed - Timeout";
+                }
+            else if (errorMessage.Contains("certificate") ||
+                     errorMessage.Contains("SSL") ||
+                     errorMessage.Contains("TLS"))
+                {
+                return "Connection failed - Certificate error";
+                }
+            else
+                {
+                return "Connection failed";
+                }
+            }
+
+        // Any other case
+        return "Connection failed";
+        }
+
     [RelayCommand]
     private async Task OnConnectSource ()
         {
         if (SelectedSourceProfile is null) return;
 
         IsJobRunning = true;
-        SourceConnectionStatus = $"Connecting to {SelectedSourceProfile.ServerAddress}...";
+        SourceConnectionStatus = "Connecting...";
         ScriptOutput = string.Empty;
 
         // CRITICAL DEBUG: Check bypass status at the very beginning
-        _logger.LogInformation("=== DASHBOARD CONNECTION DEBUG START ===");
+        _logger.LogInformation("=== DASHBOARD SOURCE CONNECTION DEBUG START ===");
         _logger.LogInformation("DEBUG: [Dashboard] PowerCliConfirmedInstalled = {PowerCliConfirmed}",
             HybridPowerShellService.PowerCliConfirmedInstalled);
 
@@ -104,7 +163,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
                 {
-                SourceConnectionStatus = "Connection cancelled.";
+                SourceConnectionStatus = "Connection not active";
                 IsJobRunning = false;
                 return;
                 }
@@ -137,7 +196,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             _logger.LogInformation("DEBUG: [Dashboard] NOT adding BypassModuleCheck (PowerCLI not confirmed)");
             }
 
-        // DEBUG: Check each parameter individually
+        // DEBUG: Check each parameter individually (excluding sensitive data)
         _logger.LogInformation("DEBUG: [Dashboard] Final parameter verification:");
         foreach (var param in scriptParams)
             {
@@ -159,18 +218,22 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams, logPath);
 
         _logger.LogInformation("DEBUG: [Dashboard] Script execution completed");
-        _logger.LogInformation("=== DASHBOARD CONNECTION DEBUG END ===");
+        _logger.LogInformation("=== DASHBOARD SOURCE CONNECTION DEBUG END ===");
 
+        // FIXED: Use simplified status messages
+        SourceConnectionStatus = GetSimpleConnectionStatus(result, SelectedSourceProfile.ServerAddress);
+
+        // Update shared connection service and detailed output
         if (result.Trim() == "Success")
             {
-            SourceConnectionStatus = $"Connected to {SelectedSourceProfile.ServerAddress}";
             _sharedConnectionService.SourceConnection = SelectedSourceProfile;
             }
         else
             {
-            SourceConnectionStatus = $"Failed: {result.Replace("Failure:", "").Trim()}";
             _sharedConnectionService.SourceConnection = null;
             }
+
+        // Put the detailed technical output in the script output area where it belongs
         ScriptOutput = result;
         IsJobRunning = false;
         }
@@ -181,7 +244,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         if (SelectedTargetProfile is null) return;
 
         IsJobRunning = true;
-        TargetConnectionStatus = $"Connecting to {SelectedTargetProfile.ServerAddress}...";
+        TargetConnectionStatus = "Connecting...";
         ScriptOutput = string.Empty;
 
         // CRITICAL DEBUG: Check bypass status at the very beginning
@@ -201,7 +264,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
                 {
-                TargetConnectionStatus = "Connection cancelled.";
+                TargetConnectionStatus = "Connection not active";
                 IsJobRunning = false;
                 return;
                 }
@@ -234,7 +297,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             _logger.LogInformation("DEBUG: [Target] NOT adding BypassModuleCheck (PowerCLI not confirmed)");
             }
 
-        // DEBUG: Check each parameter individually
+        // DEBUG: Check each parameter individually (excluding sensitive data)
         _logger.LogInformation("DEBUG: [Target] Final parameter verification:");
         foreach (var param in scriptParams)
             {
@@ -255,16 +318,20 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
         _logger.LogInformation("=== TARGET CONNECTION DEBUG END ===");
 
+        // FIXED: Use simplified status messages
+        TargetConnectionStatus = GetSimpleConnectionStatus(result, SelectedTargetProfile.ServerAddress);
+
+        // Update shared connection service and detailed output
         if (result.Trim() == "Success")
             {
-            TargetConnectionStatus = $"Connected to {SelectedTargetProfile.ServerAddress}";
             _sharedConnectionService.TargetConnection = SelectedTargetProfile;
             }
         else
             {
-            TargetConnectionStatus = $"Failed: {result.Replace("Failure:", "").Trim()}";
             _sharedConnectionService.TargetConnection = null;
             }
+
+        // Put the detailed technical output in the script output area where it belongs
         ScriptOutput = result;
         IsJobRunning = false;
         }
