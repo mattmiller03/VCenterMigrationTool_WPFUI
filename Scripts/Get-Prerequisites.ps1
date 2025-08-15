@@ -159,7 +159,7 @@ finally {
         $jsonResult = $result | ConvertTo-Json -Compress
         Write-Log "Returning result: $jsonResult" "DEBUG"
         
-        # This is the actual output that C# will capture
+        # This is the ONLY output that C# should capture
         Write-Output $jsonResult
     }
     catch {
