@@ -39,7 +39,7 @@ function Write-Log {
 
 try {
     Write-Log "Starting PowerCLI installation process" "INFO"
-    Write-Log "Log path: $LogPath" "INFO"
+    Write-Log "Log path: $($LogPath)" "INFO"
     Write-Log "PowerShell version: $($PSVersionTable.PSVersion.ToString())" "INFO"
     
     # Check execution policy
