@@ -185,7 +185,7 @@ public class HybridPowerShellService
                         }
                     }
 
-                // Handle boolean parameters (like BypassModuleCheck)
+                // FIXED: Handle boolean parameters correctly (like BypassModuleCheck)
                 if (param.Value is bool boolValue)
                     {
                     // For PowerShell switches, we add the parameter name without a value when true
@@ -203,11 +203,15 @@ public class HybridPowerShellService
                 paramString.Append($" -{param.Key} \"{escapedValue}\"");
                 }
 
+            // FIXED: Don't add LogPath if it's already in parameters
             if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
                 {
                 var escapedLogPath = logPath.Replace("\"", "`\"");
                 paramString.Append($" -LogPath \"{escapedLogPath}\"");
                 }
+
+            // DEBUG: Log the final parameter string being built
+            _logger.LogInformation("DEBUG: Final parameter string: {ParamString}", paramString.ToString());
 
             // Prioritize PowerShell 7 with multiple fallback paths
             var powershellPaths = new[]
