@@ -38,7 +38,7 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
     [ObservableProperty]
     private string _migrationStatus = "Ready.";
 
-    public NetworkMigrationViewModel (PowerShellService powerShellService, SharedConnectionService sharedConnectionService)
+    public NetworkMigrationViewModel (HybridPowerShellService powerShellService, SharedConnectionService sharedConnectionService)
     {
         _powerShellService = powerShellService;
         _sharedConnectionService = sharedConnectionService;

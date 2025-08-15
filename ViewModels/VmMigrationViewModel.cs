@@ -13,7 +13,7 @@ namespace VCenterMigrationTool.ViewModels;
 
 public partial class VmMigrationViewModel : ObservableObject, INavigationAware
     {
-    private readonly PowerShellService _powerShellService;
+    private readonly HybridPowerShellService _powerShellService;
     private readonly SharedConnectionService _sharedConnectionService;
     private readonly ILogger<VmMigrationViewModel> _logger;
 
@@ -39,7 +39,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
     private string _logOutput = "Awaiting migration task...";
 
     public VmMigrationViewModel (
-        PowerShellService powerShellService,
+        HybridPowerShellService powerShellService,
         SharedConnectionService sharedConnectionService,
         ILogger<VmMigrationViewModel> logger)
         {

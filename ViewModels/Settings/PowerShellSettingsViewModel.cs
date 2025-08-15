@@ -10,7 +10,8 @@ namespace VCenterMigrationTool.ViewModels.Settings
     {
     public partial class PowerShellSettingsViewModel : ObservableObject
         {
-        private readonly PowerShellService _powerShellService;
+        // UPDATED: Use HybridPowerShellService instead of PowerShellService
+        private readonly HybridPowerShellService _powerShellService;
         private readonly ConfigurationService _configurationService;
 
         [ObservableProperty]
@@ -31,7 +32,8 @@ namespace VCenterMigrationTool.ViewModels.Settings
         [ObservableProperty]
         private string _powerCliInstallStatus = "Ready to install PowerCLI.";
 
-        public PowerShellSettingsViewModel (PowerShellService powerShellService, ConfigurationService configurationService)
+        // UPDATED: Constructor now takes HybridPowerShellService
+        public PowerShellSettingsViewModel (HybridPowerShellService powerShellService, ConfigurationService configurationService)
             {
             _powerShellService = powerShellService;
             _configurationService = configurationService;
@@ -58,46 +60,28 @@ namespace VCenterMigrationTool.ViewModels.Settings
             try
                 {
                 string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-
-                // Use only LogPath parameter to avoid duplication
                 var parameters = new Dictionary<string, object> { { "LogPath", logPath } };
 
-                // Get raw output from the script
-                string rawOutput = await _powerShellService.RunScriptAsync(
+                // Try to get structured result first
+                var result = await _powerShellService.RunScriptAndGetObjectAsync<PrerequisitesResult>(
                     ".\\Scripts\\Get-Prerequisites.ps1",
                     parameters);
 
-                // Try to parse JSON from the output
-                var jsonResult = ExtractJsonFromOutput(rawOutput);
-                bool jsonParsed = false;
-
-                if (!string.IsNullOrWhiteSpace(jsonResult))
+                if (result != null)
                     {
-                    try
-                        {
-                        var result = JsonSerializer.Deserialize<PrerequisitesResult>(jsonResult,
-                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                        if (result != null)
-                            {
-                            PowerShellVersion = result.PowerShellVersion;
-                            IsPowerCliInstalled = result.IsPowerCliInstalled;
-                            PrerequisiteCheckStatus = IsPowerCliInstalled ?
-                                "Prerequisites check completed. PowerCLI is installed." :
-                                "Prerequisites check completed. PowerCLI module not found.";
-                            jsonParsed = true;
-                            }
-                        }
-                    catch (JsonException)
-                        {
-                        // JSON parsing failed, fall back to manual parsing
-                        jsonParsed = false;
-                        }
+                    PowerShellVersion = result.PowerShellVersion;
+                    IsPowerCliInstalled = result.IsPowerCliInstalled;
+                    PrerequisiteCheckStatus = IsPowerCliInstalled ?
+                        "Prerequisites check completed. PowerCLI is installed." :
+                        "Prerequisites check completed. PowerCLI module not found.";
                     }
-
-                if (!jsonParsed)
+                else
                     {
-                    // Fallback: parse manually from the raw output
+                    // Fallback: get raw output and parse manually
+                    string rawOutput = await _powerShellService.RunScriptAsync(
+                        ".\\Scripts\\Get-Prerequisites.ps1",
+                        parameters);
+
                     await ParseManualOutput(rawOutput);
                     }
                 }
@@ -127,7 +111,8 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
                 var parameters = new Dictionary<string, object> { { "LogPath", logPath } };
 
-                await _powerShellService.RunScriptAsync(".\\Scripts\\Install-PowerCli.ps1", parameters);
+                // The hybrid service will automatically use external PowerShell for Install-PowerCli.ps1
+                string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Install-PowerCli.ps1", parameters);
 
                 PowerCliInstallStatus = "Verifying installation...";
                 await OnCheckPrerequisites(); // Re-run check
@@ -147,59 +132,23 @@ namespace VCenterMigrationTool.ViewModels.Settings
             }
 
         /// <summary>
-        /// Extracts JSON from mixed output that may contain logs and other text
+        /// Parse output manually when JSON deserialization fails
         /// </summary>
-        private string ExtractJsonFromOutput (string output)
-            {
-            if (string.IsNullOrWhiteSpace(output))
-                return string.Empty;
-
-            var lines = output.Split('\n', '\r');
-
-            // Look for single-line JSON
-            foreach (var line in lines)
-                {
-                var trimmedLine = line.Trim();
-                if (trimmedLine.StartsWith("{") && trimmedLine.EndsWith("}") && trimmedLine.Contains("PowerShellVersion"))
-                    {
-                    return trimmedLine;
-                    }
-                }
-
-            // Look for multi-line JSON
-            int jsonStart = output.IndexOf('{');
-            int jsonEnd = output.LastIndexOf('}');
-
-            if (jsonStart >= 0 && jsonEnd > jsonStart)
-                {
-                var candidate = output.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                if (candidate.Contains("PowerShellVersion"))
-                    {
-                    return candidate;
-                    }
-                }
-
-            return string.Empty;
-            }
-
         private async Task ParseManualOutput (string output)
             {
             try
                 {
-                // Enhanced parsing for PowerShell version
                 var lines = output.Split('\n', '\r');
 
                 foreach (var line in lines)
                     {
                     var cleanLine = line.Trim();
 
-                    // Look for various patterns of PowerShell version output
                     if (cleanLine.Contains("PowerShell Version:"))
                         {
                         var parts = cleanLine.Split(':');
                         if (parts.Length > 1)
                             {
-                            // Clean up the version string
                             var versionPart = parts[1].Trim()
                                 .Replace("]", "")
                                 .Replace("[INFO]", "")
@@ -213,19 +162,8 @@ namespace VCenterMigrationTool.ViewModels.Settings
                                 }
                             }
                         }
-                    // Also look for direct version patterns like "7.4.1"
-                    else if (cleanLine.Contains("PowerShell") && System.Text.RegularExpressions.Regex.IsMatch(cleanLine, @"\d+\.\d+\.\d+"))
-                        {
-                        var versionMatch = System.Text.RegularExpressions.Regex.Match(cleanLine, @"\d+\.\d+\.\d+");
-                        if (versionMatch.Success)
-                            {
-                            PowerShellVersion = versionMatch.Value;
-                            break;
-                            }
-                        }
                     }
 
-                // If we still don't have a version, try the fallback
                 if (PowerShellVersion == "Checking..." || PowerShellVersion == "Unknown")
                     {
                     await TryDirectVersionCheck();
@@ -251,14 +189,12 @@ namespace VCenterMigrationTool.ViewModels.Settings
             {
             try
                 {
-                // Use the new RunCommandAsync method for direct PowerShell commands
                 var versionResult = await _powerShellService.RunCommandAsync("$PSVersionTable.PSVersion.ToString()");
 
                 if (!string.IsNullOrWhiteSpace(versionResult))
                     {
-                    // Clean up the result
                     var cleanVersion = versionResult.Trim().Split('\n')[0].Trim();
-                    if (!string.IsNullOrWhiteSpace(cleanVersion) && cleanVersion != "ERROR:" && !cleanVersion.Contains("COMMAND ERROR"))
+                    if (!string.IsNullOrWhiteSpace(cleanVersion) && !cleanVersion.Contains("ERROR"))
                         {
                         PowerShellVersion = cleanVersion;
                         }
@@ -266,7 +202,7 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 }
             catch
                 {
-                // If direct check fails, leave it as is
+                // If direct check fails, leave as is
                 }
             }
 
@@ -274,7 +210,6 @@ namespace VCenterMigrationTool.ViewModels.Settings
             {
             try
                 {
-                // Simple PowerShell version check
                 await TryDirectVersionCheck();
 
                 if (PowerShellVersion == "Checking...")
@@ -282,7 +217,6 @@ namespace VCenterMigrationTool.ViewModels.Settings
                     PowerShellVersion = "Unable to determine";
                     }
 
-                // Simple PowerCLI check using new command method
                 var powerCliResult = await _powerShellService.RunCommandAsync(
                     "if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }");
 

@@ -59,7 +59,9 @@ public partial class App
         services.AddSingleton<ConfigurationService>();
         services.AddSingleton<SharedConnectionService>();
         services.AddSingleton<IDialogService, DialogService>();
-        services.AddSingleton<PowerShellService>();
+
+        // UPDATED: Use HybridPowerShellService instead of PowerShellService
+        services.AddSingleton<HybridPowerShellService>();
 
         // Main Window and ViewModel
         services.AddSingleton<INavigationWindow, MainWindow>();

@@ -9,6 +9,11 @@
 		<ApplicationIcon>Assets\applicationIcon-256.ico</ApplicationIcon>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<None Remove="Assets\applicationIcon-1024.png" />
+		<None Remove="Assets\applicationIcon-256.ico" />
+		<None Remove="Assets\applicationIcon-256.png" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<!-- Ensure all scripts are copied to output directory -->
@@ -21,14 +26,15 @@
 		<PackageReference Include="Meziantou.Framework.Win32.CredentialManager" Version="1.7.4" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-		<PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.1" />
+		<!-- Updated PowerShell packages for hybrid approach -->
+		<PackageReference Include="System.Management.Automation" Version="7.4.1" />
+		<!-- Removed Microsoft.PowerShell.SDK - using external processes for complex operations -->
 		<PackageReference Include="Serilog" Version="4.3.0" />
 		<PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
 		<PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
 		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
 		<PackageReference Include="System.Formats.Asn1" Version="9.0.8" />
 		<PackageReference Include="System.IO.Packaging" Version="9.0.1" />
-		<PackageReference Include="System.Management.Automation" Version="7.4.1" />
 		<PackageReference Include="System.Text.Json" Version="9.0.8" />
 		<PackageReference Include="WPF-UI" Version="4.0.3" />
 		<PackageReference Include="WPF-UI.DependencyInjection" Version="4.0.3" />
@@ -36,155 +42,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Resource Include="Assets\applicationIcon-1024.png" />
-	  <Resource Include="Assets\applicationIcon-256.png" />
+		<Resource Include="Assets\applicationIcon-1024.png" />
+		<Resource Include="Assets\applicationIcon-256.png" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Helpers\BoolToColorConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\BoolToParameterConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\BoolToStringConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\BoolToSymbolConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\BoolToVisibilityConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\BrushToColorConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\EnumToBooleanConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\EnumToIconConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\EnumToVisibilityConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\InverseBooleanConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\InverseBooleanToVisibilityConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\NullToBoolConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Helpers\NullToVisibilityConverter.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\AppConfig.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\ClusterInfo.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\ClusterItem.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\ClusterNode.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\DataColor.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\EsxiHost.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\HostNode.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\MigrationTask.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\NetworkTopology.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\PrerequisitesResult.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\SettingsCategory.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\TargetDatastore.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\TargetHost.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\VCenterConnection.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Models\VirtualMachine.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Services\ApplicationHostService.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Services\ConfigurationService.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Services\ConnectionProfileService.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Services\CredentialService.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Services\DialogService.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Services\IDialogService.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Services\PowerShellService.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="Services\SharedConnectionService.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="ViewModels\DashboardViewModel.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="ViewModels\HostMigrationViewModel.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="ViewModels\MainWindowViewModel.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="ViewModels\NetworkMigrationViewModel.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="ViewModels\PasswordPromptViewModel.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="ViewModels\SettingsViewModel.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="ViewModels\Settings\AppearanceSettingsViewModel.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="ViewModels\VCenterMigrationViewModel.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="ViewModels\ViewModel.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	  <Compile Update="ViewModels\VmMigrationViewModel.cs">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Update="appsettings.json">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="appsettings.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 </Project>

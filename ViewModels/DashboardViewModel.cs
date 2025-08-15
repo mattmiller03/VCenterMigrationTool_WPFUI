@@ -12,7 +12,7 @@ namespace VCenterMigrationTool.ViewModels;
 
 public partial class DashboardViewModel : ObservableObject, INavigationAware
     {
-    private readonly PowerShellService _powerShellService;
+    private readonly HybridPowerShellService _powerShellService;
     private readonly ConnectionProfileService _profileService;
     private readonly CredentialService _credentialService;
     private readonly SharedConnectionService _sharedConnectionService;
@@ -46,7 +46,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     private int _jobProgress;
 
     public DashboardViewModel (
-        PowerShellService powerShellService,
+        HybridPowerShellService powerShellService,
         ConnectionProfileService profileService,
         CredentialService credentialService,
         SharedConnectionService sharedConnectionService,

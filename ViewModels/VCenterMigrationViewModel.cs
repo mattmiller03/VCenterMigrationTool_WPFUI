@@ -10,7 +10,7 @@ namespace VCenterMigrationTool.ViewModels;
 
 public partial class VCenterMigrationViewModel : ObservableObject, INavigationAware
 {
-    private readonly PowerShellService _powerShellService;
+    private readonly HybridPowerShellService _powerShellService;
     private readonly SharedConnectionService _sharedConnectionService;
 
     [ObservableProperty] private bool _migrateRoles;
@@ -26,7 +26,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
     [ObservableProperty] private double _overallProgress;
     [ObservableProperty] private string _currentTaskDetails = "No active tasks.";
 
-    public VCenterMigrationViewModel (PowerShellService powerShellService, SharedConnectionService sharedConnectionService)
+    public VCenterMigrationViewModel (HybridPowerShellService powerShellService, SharedConnectionService sharedConnectionService)
     {
         _powerShellService = powerShellService;
         _sharedConnectionService = sharedConnectionService;
