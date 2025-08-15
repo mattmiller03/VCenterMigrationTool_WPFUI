@@ -9,6 +9,7 @@ using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace VCenterMigrationTool.Services;
@@ -238,13 +239,16 @@ public class HybridPowerShellService
                     process.BeginErrorReadLine();
 
                     // Wait with timeout (10 minutes for large operations like PowerCLI install)
-                    var completed = await process.WaitForExitAsync(TimeSpan.FromMinutes(10));
-
-                    if (!completed)
-                        {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+                    try
+                    {
+                        await process.WaitForExitAsync(cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
                         process.Kill();
                         throw new TimeoutException("PowerShell script execution timed out after 10 minutes");
-                        }
+                    }
 
                     var output = outputBuilder.ToString();
                     var errors = errorBuilder.ToString();
