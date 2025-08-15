@@ -10,7 +10,7 @@ namespace VCenterMigrationTool.ViewModels;
 
 public partial class NetworkMigrationViewModel : ObservableObject, INavigationAware
 {
-    private readonly PowerShellService _powerShellService;
+    private readonly HybridPowerShellService _powerShellService;
     private readonly SharedConnectionService _sharedConnectionService;
 
     // FIX: Changed the type from the non-existent 'NetworkTopology' to the correct 'NetworkHostNode'

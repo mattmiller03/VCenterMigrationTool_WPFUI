@@ -13,7 +13,7 @@ public partial class ViewProfilesViewModel : ObservableObject
     {
     private readonly ConnectionProfileService _profileService;
     private readonly CredentialService _credentialService;
-    private readonly PowerShellService _powerShellService;
+    private readonly HybridPowerShellService _powerShellService;
     private readonly ConfigurationService _configurationService;
     private readonly IMessenger _messenger;
 
@@ -32,7 +32,7 @@ public partial class ViewProfilesViewModel : ObservableObject
     public ViewProfilesViewModel (
         ConnectionProfileService profileService,
         CredentialService credentialService,
-        PowerShellService powerShellService,
+        HybridPowerShellService powerShellService,
         ConfigurationService configurationService,
         IMessenger messenger)
         {
