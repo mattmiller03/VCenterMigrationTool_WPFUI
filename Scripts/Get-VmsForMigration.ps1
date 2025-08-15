@@ -1,151 +1,117 @@
-# Get-VmsForMigration.ps1 - Optimized version
+<#
+.SYNOPSIS
+    Retrieves VM information from vCenter for migration planning.
+
+.DESCRIPTION
+    This script connects to a vCenter server and retrieves detailed information about virtual machines
+    that can be used for migration planning. Returns data in JSON format for consumption by the
+    vCenter Migration Tool.
+
+.PARAMETER VCenterServer
+    The hostname or IP address of the vCenter Server.
+
+.PARAMETER Username
+    Username for vCenter authentication.
+
+.PARAMETER Password
+    Password for vCenter authentication.
+
+.PARAMETER BypassModuleCheck
+    Switch to bypass PowerCLI module verification for faster execution.
+
+.PARAMETER LogPath
+    Optional path for logging output.
+
+.EXAMPLE
+    .\Get-VmsForMigration.ps1 -VCenterServer "vcenter.lab.local" -Username "admin" -Password "password"
+#>
+
+[CmdletBinding()]
 param(
+    [Parameter(Mandatory=$true)]
     [string]$VCenterServer,
+    
+    [Parameter(Mandatory=$true)]
     [string]$Username,
+    
+    [Parameter(Mandatory=$true)]
     [string]$Password,
-    [switch]$BypassModuleCheck = $false  # NEW: Allow bypassing PowerCLI checks
+    
+    [Parameter()]
+    [switch]$BypassModuleCheck,
+    
+    [Parameter()]
+    [string]$LogPath
 )
 
-# Function to write structured logs
-function Write-ScriptLog {
-    param([string]$Message, [string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Information "[$timestamp] [$Level] $Message" -InformationAction Continue
+# Import PowerCLI modules if not bypassed
+if (-not $BypassModuleCheck) {
+    try {
+        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
+        Write-Host "PowerCLI modules imported successfully"
+    }
+    catch {
+        Write-Error "Failed to import PowerCLI modules: $_"
+        exit 1
+    }
 }
 
 try {
-    Write-ScriptLog "Starting VM inventory script"
-    Write-ScriptLog "Target vCenter: $VCenterServer"
+    # Create credential object
+    $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
+    $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
     
-    # OPTIMIZED: Only check PowerCLI if not bypassed
-    if (-not $BypassModuleCheck) {
-        Write-ScriptLog "Checking PowerCLI module availability..."
-        
-        $powerCliModule = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
-        if (-not $powerCliModule) {
-            Write-ScriptLog "PowerCLI module not found. Returning sample data." "WARN"
-            
-            # Return sample data in JSON format
-            $sampleVMs = @(
-                [PSCustomObject]@{
-                    Name = "Sample-Web-Server"
-                    PowerState = "PoweredOn"
-                    EsxiHost = "sample-esx01.lab.local"
-                    Datastore = "sample-datastore1"
-                    Cluster = "Sample-Cluster1"
-                },
-                [PSCustomObject]@{
-                    Name = "Sample-DB-Server"
-                    PowerState = "PoweredOn"
-                    EsxiHost = "sample-esx02.lab.local"
-                    Datastore = "sample-datastore2"
-                    Cluster = "Sample-Cluster1"
-                },
-                [PSCustomObject]@{
-                    Name = "Sample-App-Server"
-                    PowerState = "PoweredOff"
-                    EsxiHost = "sample-esx01.lab.local"
-                    Datastore = "sample-datastore1"
-                    Cluster = "Sample-Cluster1"
-                }
-            )
-            
-            $sampleVMs | ConvertTo-Json -Depth 3
-            return
+    # Connect to vCenter
+    Write-Host "Connecting to vCenter: $VCenterServer"
+    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+    
+    # Get all VMs with relevant information
+    Write-Host "Retrieving VM information..."
+    $vms = Get-VM | Where-Object { 
+        # Exclude templates and system VMs
+        $_.ExtensionData.Config.Template -eq $false -and
+        $_.Name -notlike "vCLS*" 
+    } | Select-Object @{
+        Name = "Name"
+        Expression = { $_.Name }
+    }, @{
+        Name = "PowerState"
+        Expression = { $_.PowerState.ToString() }
+    }, @{
+        Name = "EsxiHost"
+        Expression = { $_.VMHost.Name }
+    }, @{
+        Name = "Datastore"
+        Expression = { ($_.DatastoreIdList | ForEach-Object { (Get-Datastore -Id $_).Name }) -join ", " }
+    }, @{
+        Name = "Cluster"
+        Expression = { 
+            if ($_.VMHost) {
+                $cluster = Get-Cluster -VMHost $_.VMHost -ErrorAction SilentlyContinue
+                if ($cluster) { $cluster.Name } else { "Standalone" }
+            } else { "Unknown" }
         }
-
-        Write-ScriptLog "PowerCLI module found. Version: $($powerCliModule.Version)"
-        
-        # Import PowerCLI module
-        Write-ScriptLog "Importing PowerCLI module..."
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-    } else {
-        Write-ScriptLog "Bypassing PowerCLI module check (assumed available)"
-        # Still try to import silently
-        try {
-            Import-Module VMware.PowerCLI -Force -ErrorAction SilentlyContinue
-        } catch {
-            # Ignore import errors when bypassing
-        }
+    }, @{
+        Name = "IsSelected"
+        Expression = { $false }  # Default to not selected
     }
     
-    # Suppress PowerCLI configuration warnings
-    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -ParticipateInCEIP $false -Scope Session -Confirm:$false | Out-Null
+    Write-Host "Found $($vms.Count) VMs"
     
-    # Connect to vCenter (if parameters provided)
-    if ($VCenterServer -and $Username -and $Password) {
-        Write-ScriptLog "Connecting to vCenter: $VCenterServer"
-        
-        $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-        $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
-        
-        $connection = Connect-VIServer -Server $VCenterServer -Credential $credential -Force -ErrorAction Stop
-        Write-ScriptLog "Successfully connected to $($connection.Name)"
-        
-        try {
-            # Get VMs with error handling
-            Write-ScriptLog "Retrieving VM inventory..."
-            $vms = Get-VM -ErrorAction Stop | Select-Object -First 50 | ForEach-Object {
-                [PSCustomObject]@{
-                    Name = $_.Name
-                    PowerState = $_.PowerState.ToString()
-                    EsxiHost = if ($_.VMHost) { $_.VMHost.Name } else { "Unknown" }
-                    Datastore = if ($_ | Get-Datastore -ErrorAction SilentlyContinue | Select-Object -First 1) { 
-                        ($_ | Get-Datastore | Select-Object -First 1).Name 
-                    } else { 
-                        "Unknown" 
-                    }
-                    Cluster = if ($_.VMHost -and $_.VMHost.Parent) { $_.VMHost.Parent.Name } else { "Unknown" }
-                }
-            }
-            
-            Write-ScriptLog "Retrieved $($vms.Count) VMs"
-            $vms | ConvertTo-Json -Depth 3
-        }
-        finally {
-            # Always disconnect
-            Write-ScriptLog "Disconnecting from vCenter"
-            Disconnect-VIServer -Server $VCenterServer -Confirm:$false -Force -ErrorAction SilentlyContinue
-        }
-    }
-    else {
-        Write-ScriptLog "No connection parameters provided. Returning sample data." "WARN"
-        
-        # Return sample data when no connection info provided
-        $sampleVMs = @(
-            [PSCustomObject]@{
-                Name = "Demo-Web-Server-01"
-                PowerState = "PoweredOn"
-                EsxiHost = "demo-esx01.lab.local"
-                Datastore = "demo-datastore1"
-                Cluster = "Demo-Cluster1"
-            },
-            [PSCustomObject]@{
-                Name = "Demo-DB-Server-01"
-                PowerState = "PoweredOn"
-                EsxiHost = "demo-esx02.lab.local"
-                Datastore = "demo-datastore2"
-                Cluster = "Demo-Cluster1"
-            }
-        )
-        
-        $sampleVMs | ConvertTo-Json -Depth 3
-    }
+    # Convert to JSON and output
+    $jsonOutput = $vms | ConvertTo-Json -Depth 3
+    Write-Output $jsonOutput
+    
 }
 catch {
-    Write-ScriptLog "Error occurred: $($_.Exception.Message)" "ERROR"
-    Write-ScriptLog "Stack trace: $($_.ScriptStackTrace)" "ERROR"
-    
-    # Return sample data on error
-    $sampleVMs = @(
-        [PSCustomObject]@{
-            Name = "Error-Recovery-VM-01"
-            PowerState = "Unknown"
-            EsxiHost = "error-recovery-host"
-            Datastore = "error-recovery-ds"
-            Cluster = "Error-Recovery-Cluster"
-        }
-    )
-    
-    $sampleVMs | ConvertTo-Json -Depth 3
+    Write-Error "Error retrieving VMs: $_"
+    # Return empty array as JSON for error handling
+    Write-Output "[]"
+}
+finally {
+    # Disconnect from vCenter
+    if ($viConnection) {
+        Disconnect-VIServer -Server $viConnection -Confirm:$false -Force
+        Write-Host "Disconnected from vCenter"
+    }
 }

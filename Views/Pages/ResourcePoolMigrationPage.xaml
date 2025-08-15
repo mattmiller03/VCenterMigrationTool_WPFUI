@@ -1,0 +1,43 @@
+﻿<Page
+    x:Class="VCenterMigrationTool.Views.Pages.ResourcePoolMigrationPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
+    xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance viewmodels:ResourcePoolMigrationViewModel, IsDesignTimeCreatable=False}"
+    Title="ResourcePoolMigrationPage"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+
+    <Page.Resources>
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+        <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
+    </Page.Resources>
+
+    <Grid Margin="42">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="200" />
+        </Grid.RowDefinitions>
+
+        <!-- Page Title -->
+        <TextBlock Grid.Row="0" FontSize="24" FontWeight="Medium" Text="Resource Pool Migration" />
+
+        <!-- Load Data Section -->
+        <ui:CardControl Grid.Row="1" Margin="0,20,0,0">
+            <StackPanel>
+                <TextBlock Text="Data Loading" FontWeight="Medium" />
+                <TextBlock Margin="0,5,0,10" 
+                          Text="Load clusters and resource pool information from both vCenters" 
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <StackPanel Orientation="Horizontal">
+                    <ui:Button Content="Load Clusters" 
+                              Command="{Binding LoadClustersCommand}"
