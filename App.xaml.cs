@@ -37,62 +37,62 @@ public partial class App
             )
         )
     .ConfigureServices((context, services) =>
-        {
-            // App Host
-            services.AddHostedService<ApplicationHostService>();
+    {
+        // App Host
+        services.AddHostedService<ApplicationHostService>();
 
-            // Messaging Service
-            services.AddSingleton<IMessenger, WeakReferenceMessenger>();
+        // Messaging Service
+        services.AddSingleton<IMessenger, WeakReferenceMessenger>();
 
-            // --- FIX: Explicitly register the page provider ---
-            services.AddSingleton<INavigationViewPageProvider, DependencyInjectionNavigationViewPageProvider>();
+        // --- FIX: Explicitly register the page provider ---
+        services.AddSingleton<INavigationViewPageProvider, DependencyInjectionNavigationViewPageProvider>();
 
-            // Wpf.Ui Services
-            services.AddSingleton<IPageService, PageService>();
-            services.AddSingleton<IThemeService, ThemeService>();
-            services.AddSingleton<ITaskBarService, TaskBarService>();
-            services.AddSingleton<INavigationService, NavigationService>();
+        // Wpf.Ui Services
+        services.AddSingleton<IPageService, PageService>();
+        services.AddSingleton<IThemeService, ThemeService>();
+        services.AddSingleton<ITaskBarService, TaskBarService>();
+        services.AddSingleton<INavigationService, NavigationService>();
 
-            // Custom Application Services
-            services.AddSingleton<ConnectionProfileService>();
-            services.AddSingleton<CredentialService>();
-            services.AddSingleton<ConfigurationService>();
-            services.AddSingleton<SharedConnectionService>();
-            services.AddSingleton<IDialogService, DialogService>();
-            services.AddSingleton<PowerShellService>();
+        // Custom Application Services
+        services.AddSingleton<ConnectionProfileService>();
+        services.AddSingleton<CredentialService>();
+        services.AddSingleton<ConfigurationService>();
+        services.AddSingleton<SharedConnectionService>();
+        services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<PowerShellService>();
 
-            // Main Window and ViewModel
-            services.AddSingleton<INavigationWindow, MainWindow>();
-            services.AddSingleton<MainWindowViewModel>();
+        // Main Window and ViewModel
+        services.AddSingleton<INavigationWindow, MainWindow>();
+        services.AddSingleton<MainWindowViewModel>();
 
-            // Standard Pages and ViewModels
-            services.AddSingleton<DashboardPage>();
-            services.AddSingleton<DashboardViewModel>();
-            services.AddSingleton<VCenterMigrationPage>();
-            services.AddSingleton<VCenterMigrationViewModel>();
-            services.AddSingleton<HostMigrationPage>();
-            services.AddSingleton<HostMigrationViewModel>();
-            services.AddSingleton<VmMigrationPage>();
-            services.AddSingleton<VmMigrationViewModel>();
-            services.AddSingleton<NetworkMigrationPage>();
-            services.AddSingleton<NetworkMigrationViewModel>();
+        // Standard Pages and ViewModels
+        services.AddSingleton<DashboardPage>();
+        services.AddSingleton<DashboardViewModel>();
+        services.AddSingleton<VCenterMigrationPage>();
+        services.AddSingleton<VCenterMigrationViewModel>();
+        services.AddSingleton<HostMigrationPage>();
+        services.AddSingleton<HostMigrationViewModel>();
+        services.AddSingleton<VmMigrationPage>();
+        services.AddSingleton<VmMigrationViewModel>();
+        services.AddSingleton<NetworkMigrationPage>();
+        services.AddSingleton<NetworkMigrationViewModel>();
 
-            // Settings Page and its sub-ViewModels
-            services.AddSingleton<SettingsPage>();
-            services.AddSingleton<SettingsViewModel>();
-            services.AddTransient<AppearanceSettingsViewModel>();
-            services.AddTransient<PowerShellSettingsViewModel>();
-            services.AddTransient<FilePathsSettingsViewModel>();
-            services.AddTransient<ViewProfilesViewModel>();
-            services.AddTransient<ProfileEditorViewModel>();
+        // Settings Page and its sub-ViewModels
+        services.AddSingleton<SettingsPage>();
+        services.AddSingleton<SettingsViewModel>();
+        services.AddTransient<AppearanceSettingsViewModel>();
+        services.AddTransient<PowerShellSettingsViewModel>();
+        services.AddTransient<FilePathsSettingsViewModel>();
+        services.AddTransient<ViewProfilesViewModel>();
+        services.AddTransient<ProfileEditorViewModel>();
 
-            // Dialogs
-            services.AddTransient<PasswordPromptDialog>();
-            services.AddTransient<PasswordPromptViewModel>();
+        // Dialogs
+        services.AddTransient<PasswordPromptDialog>();
+        services.AddTransient<PasswordPromptViewModel>();
 
-            // Configuration
-            services.Configure<AppConfig>(context.Configuration.GetSection(nameof(AppConfig)));
-        })
+        // Configuration
+        services.Configure<AppConfig>(context.Configuration.GetSection(nameof(AppConfig)));
+    })
         .Build();
 
     public static T? GetService<T>() where T : class

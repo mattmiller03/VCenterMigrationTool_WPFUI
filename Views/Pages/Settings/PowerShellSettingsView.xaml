@@ -25,7 +25,7 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="PowerShell Version:" FontWeight="Medium" VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="1" Text="{Binding PowerShellVersion}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="{Binding PowerShellVersion}" Margin="10,0,0,0" VerticalAlignment="Center" Height="38" TextWrapping="Wrap"/>
         </Grid>
         <Grid Margin="0,0,0,15">
             <Grid.ColumnDefinitions>
@@ -34,7 +34,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="PowerCLI Status:" FontWeight="Medium" VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="1" Text="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToStringConverter}, ConverterParameter=Installed;Not Installed}" Margin="10,0,10,0" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToStringConverter}, ConverterParameter=Installed;Not Installed}" Margin="10,0,10,0" VerticalAlignment="Center" Height="52"/>
             <ui:SymbolIcon Grid.Column="2" Symbol="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToSymbolConverter}}" Foreground="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToColorConverter}}" VerticalAlignment="Center"/>
         </Grid>
         <TextBlock Text="{Binding PrerequisiteCheckStatus}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10"/>
