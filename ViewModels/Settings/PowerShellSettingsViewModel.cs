@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -14,15 +14,13 @@ namespace VCenterMigrationTool.ViewModels.Settings
         // UPDATED: Use HybridPowerShellService instead of PowerShellService
         private readonly HybridPowerShellService _powerShellService;
         private readonly ConfigurationService _configurationService;
+        private readonly ILogger<PowerShellSettingsViewModel> _logger; // ADDED: Missing logger
 
         [ObservableProperty]
         private string _powerShellVersion = "Checking...";
 
         [ObservableProperty]
         private bool _isPowerCliInstalled;
-
-        [ObservableProperty]
-        private string _installationPhase = "";
 
         [ObservableProperty]
         private bool _isCheckingPrerequisites;
@@ -36,11 +34,19 @@ namespace VCenterMigrationTool.ViewModels.Settings
         [ObservableProperty]
         private string _powerCliInstallStatus = "Ready to install PowerCLI.";
 
-        // UPDATED: Constructor now takes HybridPowerShellService
-        public PowerShellSettingsViewModel (HybridPowerShellService powerShellService, ConfigurationService configurationService)
+        // ADDED: New property for installation phase tracking
+        [ObservableProperty]
+        private string _installationPhase = "";
+
+        // UPDATED: Constructor now takes ILogger
+        public PowerShellSettingsViewModel (
+            HybridPowerShellService powerShellService,
+            ConfigurationService configurationService,
+            ILogger<PowerShellSettingsViewModel> logger)
             {
             _powerShellService = powerShellService;
             _configurationService = configurationService;
+            _logger = logger;
             }
 
         /// <summary>
@@ -54,12 +60,7 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 await OnCheckPrerequisites();
                 }
             }
-        // Optional: Add a method to provide real-time updates during installation
-        private void UpdateInstallationStatus (string phase, string details)
-        {
-            InstallationPhase = phase;
-            PowerCliInstallStatus = $"{phase}: {details}";
-        }
+
         [RelayCommand]
         private async Task OnCheckPrerequisites ()
             {
@@ -157,10 +158,10 @@ namespace VCenterMigrationTool.ViewModels.Settings
                     PowerCliInstallStatus = $"Installation failed: {errorMessage}";
                     }
                 }
-            catch (Exception ex)
+            catch (System.Exception ex)
                 {
                 PowerCliInstallStatus = $"Installation failed: {ex.Message}";
-                _logger?.LogError(ex, "Error during PowerCLI installation");
+                _logger.LogError(ex, "Error during PowerCLI installation");
                 }
             finally
                 {
@@ -267,6 +268,13 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 IsPowerCliInstalled = false;
                 PrerequisiteCheckStatus = "Could not determine prerequisites.";
                 }
+            }
+
+        // Optional: Add a method to provide real-time updates during installation
+        private void UpdateInstallationStatus (string phase, string details)
+            {
+            InstallationPhase = phase;
+            PowerCliInstallStatus = $"{phase}: {details}";
             }
         }
     }
