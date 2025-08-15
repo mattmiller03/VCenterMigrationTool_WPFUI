@@ -9,45 +9,12 @@
 		<ApplicationIcon>Assets\applicationIcon-256.ico</ApplicationIcon>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<None Remove="Assets\applicationIcon-1024.png" />
-		<None Remove="Assets\applicationIcon-256.ico" />
-		<None Remove="Assets\applicationIcon-256.png" />
-		<None Remove="Scripts\Export-vCenterConfig.ps1" />
-		<None Remove="Scripts\Get-ClusterItems.ps1" />
-		<None Remove="Scripts\Get-Clusters.ps1" />
-		<None Remove="Scripts\Get-EsxiHosts.ps1" />
-		<None Remove="Scripts\Get-NetworkTopology.ps1" />
-		<None Remove="Scripts\Get-Prerequisites.ps1" />
-		<None Remove="Scripts\Get-TargetResources.ps1" />
-		<None Remove="Scripts\Get-VMs.ps1" />
-		<None Remove="Scripts\Get-VmsForMigration.ps1" />
-		<None Remove="Scripts\Install-PowerCli.ps1" />
-		<None Remove="Scripts\Move-EsxiHost.ps1" />
-		<None Remove="Scripts\Move-VM.ps1" />
-		<None Remove="Scripts\Test-vCenterConnection.ps1" />
-		<None Remove="Scripts\Test-VMNetwork.ps1" />
-	</ItemGroup>
 
 	<ItemGroup>
-	  <Content Include="Scripts\Get-ClusterItems.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Get-Clusters.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Export-vCenterConfig.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Get-EsxiHosts.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Get-NetworkTopology.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Get-Prerequisites.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
+		<!-- Ensure all scripts are copied to output directory -->
+		<None Update="Scripts\*.ps1">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -71,36 +38,6 @@
 	<ItemGroup>
 	  <Resource Include="Assets\applicationIcon-1024.png" />
 	  <Resource Include="Assets\applicationIcon-256.png" />
-	  <Content Include="Scripts\Get-TargetResources.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Get-VMs.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Get-VmsForMigration.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Install-PowerCli.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Move-EsxiHost.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Move-VM.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Test-vCenterConnection.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Scripts\Test-VMNetwork.ps1">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Scripts\*.ps1">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
@@ -12,7 +11,6 @@ namespace VCenterMigrationTool.ViewModels.Settings
         {
         private readonly PowerShellService _powerShellService;
         private readonly ConfigurationService _configurationService;
-        private readonly ILogger<PowerShellSettingsViewModel> _logger;
 
         [ObservableProperty]
         private string _powerShellVersion = "Checking...";
@@ -32,14 +30,10 @@ namespace VCenterMigrationTool.ViewModels.Settings
         [ObservableProperty]
         private string _powerCliInstallStatus = "Ready to install PowerCLI.";
 
-        public PowerShellSettingsViewModel (
-            PowerShellService powerShellService,
-            ConfigurationService configurationService,
-            ILogger<PowerShellSettingsViewModel> logger)
+        public PowerShellSettingsViewModel (PowerShellService powerShellService, ConfigurationService configurationService)
             {
             _powerShellService = powerShellService;
             _configurationService = configurationService;
-            _logger = logger;
             }
 
         /// <summary>
@@ -62,58 +56,41 @@ namespace VCenterMigrationTool.ViewModels.Settings
 
             try
                 {
-                _logger.LogInformation("Starting PowerShell prerequisites check");
-
                 string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
 
-                // Get the raw script output first
-                string scriptOutput = await _powerShellService.RunScriptAsync(
+                // Use the enhanced script execution method
+                var result = await _powerShellService.RunScriptAndGetObjectAsync<PrerequisitesResult>(
                     ".\\Scripts\\Get-Prerequisites.ps1",
                     new Dictionary<string, object> { { "LogPath", logPath } },
                     logPath);
 
-                _logger.LogDebug("Prerequisites script output: {Output}", scriptOutput);
-
-                // Try to extract JSON from the output
-                string jsonOutput = ExtractJsonFromOutput(scriptOutput);
-
-                if (!string.IsNullOrWhiteSpace(jsonOutput))
+                if (result != null)
                     {
-                    // Try to deserialize the JSON
-                    var result = await _powerShellService.RunScriptAndGetObjectAsync<PrerequisitesResult>(
+                    PowerShellVersion = result.PowerShellVersion;
+                    IsPowerCliInstalled = result.IsPowerCliInstalled;
+                    PrerequisiteCheckStatus = IsPowerCliInstalled ?
+                        "Prerequisites check completed. PowerCLI is installed." :
+                        "Prerequisites check completed. PowerCLI module not found.";
+                    }
+                else
+                    {
+                    // Fallback: try getting raw output and parse manually
+                    string rawOutput = await _powerShellService.RunScriptAsync(
                         ".\\Scripts\\Get-Prerequisites.ps1",
                         new Dictionary<string, object> { { "LogPath", logPath } },
                         logPath);
 
-                    if (result != null)
-                        {
-                        PowerShellVersion = result.PowerShellVersion;
-                        IsPowerCliInstalled = result.IsPowerCliInstalled;
-                        PrerequisiteCheckStatus = IsPowerCliInstalled
-                            ? "Prerequisites check completed. PowerCLI is installed."
-                            : "Prerequisites check completed. PowerCLI module not found.";
-
-                        _logger.LogInformation("Prerequisites check completed. PowerShell: {Version}, PowerCLI: {Installed}",
-                            PowerShellVersion, IsPowerCliInstalled);
-                        }
-                    else
-                        {
-                        // Fallback: parse manually if deserialization fails
-                        await ParseOutputManually(scriptOutput);
-                        }
-                    }
-                else
-                    {
-                    // No JSON found, parse manually
-                    await ParseOutputManually(scriptOutput);
+                    await ParseManualOutput(rawOutput);
                     }
                 }
             catch (System.Exception ex)
                 {
-                _logger.LogError(ex, "Error during prerequisites check");
                 PowerShellVersion = "Error during check";
                 IsPowerCliInstalled = false;
                 PrerequisiteCheckStatus = $"Error during prerequisites check: {ex.Message}";
+
+                // Try a simple fallback check
+                await TrySimpleFallbackCheck();
                 }
             finally
                 {
@@ -129,28 +106,19 @@ namespace VCenterMigrationTool.ViewModels.Settings
 
             try
                 {
-                _logger.LogInformation("Starting PowerCLI installation");
-
                 string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-                string installOutput = await _powerShellService.RunScriptAsync(
-                    ".\\Scripts\\Install-PowerCli.ps1",
-                    new Dictionary<string, object> { { "LogPath", logPath } },
-                    logPath);
-
-                _logger.LogInformation("PowerCLI installation output: {Output}", installOutput);
+                await _powerShellService.RunScriptAsync(".\\Scripts\\Install-PowerCli.ps1",
+                    new Dictionary<string, object> { { "LogPath", logPath } }, logPath);
 
                 PowerCliInstallStatus = "Verifying installation...";
+                await OnCheckPrerequisites(); // Re-run check
 
-                // Re-run prerequisite check to verify installation
-                await OnCheckPrerequisites();
-
-                PowerCliInstallStatus = IsPowerCliInstalled
-                    ? "PowerCLI installation completed successfully."
-                    : "PowerCLI installation may have failed. Check logs for details.";
+                PowerCliInstallStatus = IsPowerCliInstalled ?
+                    "PowerCLI installation completed successfully." :
+                    "PowerCLI installation may have failed. Check logs for details.";
                 }
             catch (System.Exception ex)
                 {
-                _logger.LogError(ex, "Error during PowerCLI installation");
                 PowerCliInstallStatus = $"Installation failed: {ex.Message}";
                 }
             finally
@@ -159,95 +127,75 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 }
             }
 
-        /// <summary>
-        /// Attempts to extract JSON from script output that may contain other text
-        /// </summary>
-        private string ExtractJsonFromOutput (string output)
+        private async Task ParseManualOutput (string output)
             {
-            if (string.IsNullOrWhiteSpace(output))
-                return string.Empty;
-
-            // Look for JSON patterns in the output
-            var lines = output.Split('\n', '\r');
-
-            foreach (var line in lines)
-                {
-                var trimmedLine = line.Trim();
-                if (trimmedLine.StartsWith("{") && trimmedLine.EndsWith("}"))
-                    {
-                    return trimmedLine;
-                    }
-                }
-
-            // If no single-line JSON found, try to find multi-line JSON
-            int jsonStart = output.IndexOf('{');
-            int jsonEnd = output.LastIndexOf('}');
-
-            if (jsonStart >= 0 && jsonEnd > jsonStart)
-                {
-                return output.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                }
-
-            return string.Empty;
-            }
-
-        /// <summary>
-        /// Fallback method to parse output manually when JSON deserialization fails
-        /// </summary>
-        private async Task ParseOutputManually (string output)
-            {
-            _logger.LogWarning("Falling back to manual parsing of prerequisites output");
-
             try
                 {
-                // Extract PowerShell version from output
+                // Try to extract PowerShell version
                 if (output.Contains("PowerShell Version:"))
                     {
-                    var versionLine = System.Array.Find(output.Split('\n'), line => line.Contains("PowerShell Version:"));
-                    if (!string.IsNullOrEmpty(versionLine))
+                    var lines = output.Split('\n');
+                    foreach (var line in lines)
                         {
-                        var parts = versionLine.Split(':');
-                        if (parts.Length > 1)
+                        if (line.Contains("PowerShell Version:"))
                             {
-                            PowerShellVersion = parts[1].Trim().Replace("]", "").Replace("[INFO]", "").Trim();
+                            var parts = line.Split(':');
+                            if (parts.Length > 1)
+                                {
+                                PowerShellVersion = parts[1].Trim().Replace("]", "").Replace("[INFO]", "").Trim();
+                                break;
+                                }
                             }
                         }
                     }
-                else
-                    {
-                    // Try to get PowerShell version directly
-                    var versionResult = await _powerShellService.RunScriptAsync(
-                        "$PSVersionTable.PSVersion.ToString()",
-                        new Dictionary<string, object>());
 
-                    if (!string.IsNullOrWhiteSpace(versionResult))
-                        {
-                        PowerShellVersion = versionResult.Trim();
-                        }
-                    else
-                        {
-                        PowerShellVersion = "Unable to determine";
-                        }
-                    }
-
-                // Check for PowerCLI in output
+                // Check for PowerCLI indicators in output
                 IsPowerCliInstalled = output.Contains("PowerCLI found") ||
-                                    output.Contains("VMware.PowerCLI module found") ||
+                                    output.Contains("VMware.PowerCLI module is installed") ||
                                     output.Contains("successfully imported");
 
-                PrerequisiteCheckStatus = IsPowerCliInstalled
-                    ? "Prerequisites check completed (manual parsing). PowerCLI found."
-                    : "Prerequisites check completed (manual parsing). PowerCLI not found.";
-
-                _logger.LogInformation("Manual parsing completed. PowerShell: {Version}, PowerCLI: {Installed}",
-                    PowerShellVersion, IsPowerCliInstalled);
+                PrerequisiteCheckStatus = IsPowerCliInstalled ?
+                    "Prerequisites parsed successfully. PowerCLI found." :
+                    "Prerequisites parsed successfully. PowerCLI not found.";
                 }
-            catch (System.Exception ex)
+            catch
                 {
-                _logger.LogError(ex, "Error during manual parsing");
-                PowerShellVersion = "Parse error";
+                await TrySimpleFallbackCheck();
+                }
+            }
+
+        private async Task TrySimpleFallbackCheck ()
+            {
+            try
+                {
+                // Simple PowerShell version check
+                var versionResult = await _powerShellService.RunScriptAsync(
+                    "$PSVersionTable.PSVersion.ToString()",
+                    new Dictionary<string, object>());
+
+                if (!string.IsNullOrWhiteSpace(versionResult))
+                    {
+                    PowerShellVersion = versionResult.Trim();
+                    }
+                else
+                    {
+                    PowerShellVersion = "Unable to determine";
+                    }
+
+                // Simple PowerCLI check
+                var powerCliResult = await _powerShellService.RunScriptAsync(
+                    "if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }",
+                    new Dictionary<string, object>());
+
+                IsPowerCliInstalled = powerCliResult?.Trim().ToLower() == "true";
+
+                PrerequisiteCheckStatus = "Fallback check completed.";
+                }
+            catch
+                {
+                PowerShellVersion = "Error occurred";
                 IsPowerCliInstalled = false;
-                PrerequisiteCheckStatus = "Error parsing prerequisites output.";
+                PrerequisiteCheckStatus = "Could not determine prerequisites.";
                 }
             }
         }

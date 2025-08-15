@@ -1,4 +1,4 @@
-﻿# Get-Prerequisites.ps1 - Enhanced version with better error handling
+﻿# Get-Prerequisites.ps1 - Complete working version
 param(
     [string]$LogPath = "Logs"
 )
@@ -18,7 +18,12 @@ function Write-Log {
     
     # Ensure log directory exists
     if (-not (Test-Path $LogPath)) {
-        New-Item -ItemType Directory -Path $LogPath -Force | Out-Null
+        try {
+            New-Item -ItemType Directory -Path $LogPath -Force | Out-Null
+        }
+        catch {
+            # Continue if can't create log directory
+        }
     }
     
     try {
@@ -26,12 +31,11 @@ function Write-Log {
         Add-Content -Path $logFile -Value $logMessage -ErrorAction SilentlyContinue
     }
     catch {
-        # If logging fails, continue without breaking the script
-        Write-Information "Warning: Could not write to log file" -InformationAction Continue
+        # Continue if logging fails
     }
 }
 
-# Initialize a result object with default values
+# Initialize result object with default values
 $result = [PSCustomObject]@{
     PowerShellVersion   = "Unknown"
     IsPowerCliInstalled = $false
@@ -40,7 +44,7 @@ $result = [PSCustomObject]@{
 try {
     Write-Log "Starting PowerShell prerequisites check"
 
-    # 1. Get PowerShell Version (this should always work)
+    # 1. Get PowerShell Version - this should always work
     try {
         if ($PSVersionTable -and $PSVersionTable.PSVersion) {
             $result.PowerShellVersion = $PSVersionTable.PSVersion.ToString()
@@ -48,7 +52,7 @@ try {
         }
         else {
             $result.PowerShellVersion = "Unable to determine"
-            Write-Log "Warning: Could not determine PowerShell version" "WARN"
+            Write-Log "Could not determine PowerShell version" "WARN"
         }
     }
     catch {
@@ -56,21 +60,20 @@ try {
         Write-Log "Error getting PowerShell version: $($_.Exception.Message)" "ERROR"
     }
 
-    # 2. Check for PowerCLI Module - Multiple detection methods
+    # 2. Check for PowerCLI Module using multiple methods
     Write-Log "Checking for VMware.PowerCLI module..."
     
     $powerCliFound = $false
-    $powerCliVersion = "Not Found"
     
+    # Method 1: Get-Module -ListAvailable
     try {
-        # Method 1: Try Get-Module -ListAvailable (most reliable)
-        Write-Log "Method 1: Checking with Get-Module -ListAvailable..."
-        $listAvailableModules = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
+        Write-Log "Checking with Get-Module -ListAvailable..."
+        $availableModules = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
         
-        if ($listAvailableModules) {
+        if ($availableModules) {
             $powerCliFound = $true
-            $powerCliVersion = $listAvailableModules[0].Version.ToString()
-            Write-Log "PowerCLI found via Get-Module -ListAvailable. Version: $powerCliVersion"
+            $version = $availableModules[0].Version.ToString()
+            Write-Log "PowerCLI found via Get-Module -ListAvailable. Version: $version"
         }
         else {
             Write-Log "PowerCLI not found via Get-Module -ListAvailable"
@@ -80,38 +83,41 @@ try {
         Write-Log "Error with Get-Module -ListAvailable: $($_.Exception.Message)" "WARN"
     }
     
-    # Method 2: Try Get-InstalledModule (if available)
+    # Method 2: Get-InstalledModule (if PowerShellGet is available)
     if (-not $powerCliFound) {
         try {
-            Write-Log "Method 2: Checking with Get-InstalledModule..."
-            $installedModule = Get-InstalledModule -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
-            
-            if ($installedModule) {
-                $powerCliFound = $true
-                $powerCliVersion = $installedModule.Version.ToString()
-                Write-Log "PowerCLI found via Get-InstalledModule. Version: $powerCliVersion"
+            Write-Log "Checking with Get-InstalledModule..."
+            if (Get-Command "Get-InstalledModule" -ErrorAction SilentlyContinue) {
+                $installedModule = Get-InstalledModule -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
+                
+                if ($installedModule) {
+                    $powerCliFound = $true
+                    Write-Log "PowerCLI found via Get-InstalledModule. Version: $($installedModule.Version)"
+                }
+                else {
+                    Write-Log "PowerCLI not found via Get-InstalledModule"
+                }
             }
             else {
-                Write-Log "PowerCLI not found via Get-InstalledModule"
+                Write-Log "Get-InstalledModule command not available"
             }
         }
         catch {
-            Write-Log "Get-InstalledModule not available or error: $($_.Exception.Message)" "WARN"
+            Write-Log "Error with Get-InstalledModule: $($_.Exception.Message)" "WARN"
         }
     }
     
-    # Method 3: Try to import and check (last resort)
+    # Method 3: Try Import-Module test
     if (-not $powerCliFound) {
         try {
-            Write-Log "Method 3: Attempting to import VMware.PowerCLI..."
-            $importResult = Import-Module -Name "VMware.PowerCLI" -PassThru -ErrorAction SilentlyContinue
+            Write-Log "Testing module import..."
+            $importTest = Import-Module -Name "VMware.PowerCLI" -PassThru -ErrorAction SilentlyContinue
             
-            if ($importResult) {
+            if ($importTest) {
                 $powerCliFound = $true
-                $powerCliVersion = $importResult.Version.ToString()
-                Write-Log "PowerCLI successfully imported. Version: $powerCliVersion"
+                Write-Log "PowerCLI successfully imported for testing"
                 
-                # Clean up - remove the module since we just wanted to test
+                # Remove the module since we just wanted to test
                 Remove-Module -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
             }
             else {
@@ -119,52 +125,47 @@ try {
             }
         }
         catch {
-            Write-Log "Error importing VMware.PowerCLI: $($_.Exception.Message)" "WARN"
+            Write-Log "Error testing module import: $($_.Exception.Message)" "WARN"
         }
     }
     
-    # Set the final result
+    # Set final result
     $result.IsPowerCliInstalled = $powerCliFound
     
     if ($powerCliFound) {
-        Write-Log "VMware.PowerCLI module found. Version: $powerCliVersion"
+        Write-Log "VMware.PowerCLI module is installed and available"
     }
     else {
-        Write-Log "VMware.PowerCLI module NOT found." "WARN"
-        Write-Log "To install PowerCLI, run: Install-Module -Name VMware.PowerCLI -Force" "INFO"
+        Write-Log "VMware.PowerCLI module NOT found" "WARN"
+        Write-Log "To install: Install-Module -Name VMware.PowerCLI -Force" "INFO"
     }
     
-    Write-Log "Prerequisites check completed successfully."
+    Write-Log "Prerequisites check completed"
 }
 catch {
-    $errorMessage = "A fatal error occurred during prerequisites check: $($_.Exception.Message)"
+    $errorMessage = "Fatal error during prerequisites check: $($_.Exception.Message)"
     Write-Log $errorMessage "ERROR"
-    Write-Log "Stack trace: $($_.ScriptStackTrace)" "ERROR"
     
-    # Update the result object with error information, but don't fail completely
+    # Ensure we have some values even on error
     if ($result.PowerShellVersion -eq "Unknown") {
-        $result.PowerShellVersion = "Error: $($_.Exception.Message)"
+        $result.PowerShellVersion = "Error occurred"
     }
     $result.IsPowerCliInstalled = $false
 }
 finally {
-    # Always output the result object as JSON
+    # Always output JSON result
     try {
-        Write-Log "Returning JSON result: $($result | ConvertTo-Json -Compress)" "DEBUG"
+        # Output the JSON result for the C# application
+        $jsonResult = $result | ConvertTo-Json -Compress
+        Write-Log "Returning result: $jsonResult" "DEBUG"
         
-        # Use the built-in ConvertTo-Json if available, otherwise manually create JSON
-        if (Get-Command ConvertTo-Json -ErrorAction SilentlyContinue) {
-            $result | ConvertTo-Json -Compress
-        }
-        else {
-            # Manual JSON creation as fallback
-            $manualJson = "{`"PowerShellVersion`":`"$($result.PowerShellVersion)`",`"IsPowerCliInstalled`":$($result.IsPowerCliInstalled.ToString().ToLower())}"
-            Write-Information $manualJson -InformationAction Continue
-        }
+        # This is the actual output that C# will capture
+        Write-Output $jsonResult
     }
     catch {
-        Write-Log "Error converting to JSON: $($_.Exception.Message)" "ERROR"
-        # Output a basic JSON structure manually
-        Write-Information "{`"PowerShellVersion`":`"Error-JSON-Conversion`",`"IsPowerCliInstalled`":false}" -InformationAction Continue
+        # Fallback if ConvertTo-Json fails
+        $manualJson = "{`"PowerShellVersion`":`"$($result.PowerShellVersion)`",`"IsPowerCliInstalled`":$($result.IsPowerCliInstalled.ToString().ToLower())}"
+        Write-Log "ConvertTo-Json failed, using manual JSON: $manualJson" "WARN"
+        Write-Output $manualJson
     }
 }
