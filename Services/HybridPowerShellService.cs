@@ -56,11 +56,22 @@ public class HybridPowerShellService
         // Clone parameters to avoid modifying the original
         var optimizedParameters = new Dictionary<string, object>(parameters);
 
+        // DEBUG: Log the current state
+        _logger.LogInformation("DEBUG: PowerCliConfirmedInstalled = {PowerCliConfirmed}", PowerCliConfirmedInstalled);
+        _logger.LogInformation("DEBUG: IsPowerCliScript({ScriptPath}) = {IsPowerCli}", scriptPath, IsPowerCliScript(scriptPath));
+
         // Add bypass flag for PowerCLI scripts when we know it's installed
         if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
             {
             optimizedParameters["BypassModuleCheck"] = true;
-            _logger.LogDebug("Adding BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
+            _logger.LogInformation("DEBUG: Adding BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
+
+            // DEBUG: Log all parameters being passed
+            _logger.LogInformation("DEBUG: Final parameters: {Parameters}", string.Join(", ", optimizedParameters.Select(p => $"{p.Key}={p.Value}")));
+            }
+        else
+            {
+            _logger.LogInformation("DEBUG: NOT adding BypassModuleCheck for script: {ScriptPath}", scriptPath);
             }
 
         return await RunScriptAsync(scriptPath, optimizedParameters, logPath);
@@ -146,10 +157,17 @@ public class HybridPowerShellService
             {
             // Build parameter string with proper escaping
             var paramString = new StringBuilder();
+
+            // DEBUG: Log all parameters before building the command line
+            _logger.LogInformation("DEBUG: Building parameter string from {ParameterCount} parameters:", parameters.Count);
+
             foreach (var param in parameters)
                 {
                 // Properly escape parameter values for PowerShell
                 var value = param.Value?.ToString() ?? "";
+
+                // DEBUG: Log each parameter
+                _logger.LogInformation("DEBUG: Parameter {Key} = {Value} (Type: {Type})", param.Key, value, param.Value?.GetType().Name ?? "null");
 
                 // Handle different parameter types
                 if (param.Value is System.Security.SecureString secureString)
@@ -159,11 +177,25 @@ public class HybridPowerShellService
                     try
                         {
                         value = System.Runtime.InteropServices.Marshal.PtrToStringUni(ptr) ?? "";
+                        _logger.LogInformation("DEBUG: Converted SecureString parameter {Key}", param.Key);
                         }
                     finally
                         {
                         System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(ptr);
                         }
+                    }
+
+                // Handle boolean parameters (like BypassModuleCheck)
+                if (param.Value is bool boolValue)
+                    {
+                    // For PowerShell switches, we add the parameter name without a value when true
+                    if (boolValue)
+                        {
+                        paramString.Append($" -{param.Key}");
+                        _logger.LogInformation("DEBUG: Added switch parameter: -{Key}", param.Key);
+                        }
+                    // If false, we don't add the parameter at all
+                    continue;
                     }
 
                 // Escape quotes and wrap in quotes for PowerShell
@@ -211,6 +243,9 @@ public class HybridPowerShellService
                         UseShellExecute = false,
                         CreateNoWindow = true
                         };
+
+                    // DEBUG: Log the complete command line being executed
+                    _logger.LogInformation("DEBUG: Executing command: {FileName} {Arguments}", psPath, psi.Arguments);
 
                     using var process = new Process { StartInfo = psi };
 
@@ -485,17 +520,20 @@ public class HybridPowerShellService
 
         return string.Empty;
         }
-        /// <summary>
-        /// Debug method to check the current PowerCLI bypass status
-        /// </summary>
-        public string GetPowerCliBypassStatus ()
+
+    /// <summary>
+    /// Debug method to check the current PowerCLI bypass status
+    /// </summary>
+    public string GetPowerCliBypassStatus ()
         {
-            return $"PowerCliConfirmedInstalled: {PowerCliConfirmedInstalled}";
+        return $"PowerCliConfirmedInstalled: {PowerCliConfirmedInstalled}";
         }
 
-        // Also add this method to check if a specific script would get the bypass flag
-        public bool WouldScriptGetBypass (string scriptPath)
+    /// <summary>
+    /// Debug method to check if a specific script would get the bypass flag
+    /// </summary>
+    public bool WouldScriptGetBypass (string scriptPath)
         {
-            return PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath);
+        return PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath);
         }
     }
