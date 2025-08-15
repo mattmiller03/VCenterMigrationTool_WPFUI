@@ -1,27 +1,303 @@
-﻿<Page x:Class="VCenterMigrationTool.Views.Pages.HostMigrationPage"
-      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
-      xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
-      mc:Ignorable="d" 
-      d:DataContext="{d:DesignInstance Type=viewmodels:HostMigrationViewModel}"
-      Title="HostMigrationPage">
+﻿<Page
+    x:Class="VCenterMigrationTool.Views.Pages.HostMigrationPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
+    xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance viewmodels:HostMigrationViewModel, IsDesignTimeCreatable=False}"
+    Title="HostMigrationPage"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+
     <Page.Resources>
         <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        <helpers:BoolToParameterConverter x:Key="BoolToParameterConverter" />
+        <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter" />
         <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        <helpers:NullToBoolConverter x:Key="NullToBoolConverter" />
     </Page.Resources>
+
     <Grid Margin="42">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="200" />
+        </Grid.RowDefinitions>
+
+        <!-- Page Title -->
         <TextBlock Grid.Row="0" FontSize="24" FontWeight="Medium" Text="ESXi Host Migration" />
 
-        <TreeView ItemsSource="{Binding SourceTopology}" />
-        <ComboBox ItemsSource="{Binding TargetClusters}" SelectedItem="{Binding SelectedTargetCluster}" />
-        <TextBlock Visibility="{Binding SelectedTargetCluster, Converter={StaticResource NullToVisibilityConverter}}" />
-        <Button Command="{Binding MigrateHostsCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
-        <ui:ProgressRing Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}" />
-        <ui:TextBox Text="{Binding LogOutput, Mode=OneWay}" />
+        <!-- Load Data Button Section -->
+        <ui:CardControl Grid.Row="1" Margin="0,20,0,0">
+            <StackPanel>
+                <TextBlock Text="Data Loading" FontWeight="Medium" />
+                <TextBlock Margin="0,5,0,10" 
+                          Text="Load source vCenter topology and target cluster information" 
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <StackPanel Orientation="Horizontal">
+                    <ui:Button Content="Load Source Topology" 
+                              Command="{Binding ViewModel.LoadSourceTopologyCommand}"
+                              Icon="{ui:SymbolIcon CloudSync24}"
+                              IsEnabled="{Binding ViewModel.IsLoadingData, Converter={StaticResource InverseBooleanConverter}}" />
+                    <ui:Button Content="Load Target Clusters" 
+                              Command="{Binding ViewModel.LoadTargetClustersCommand}"
+                              Icon="{ui:SymbolIcon Server24}"
+                              Margin="10,0,0,0"
+                              IsEnabled="{Binding ViewModel.IsLoadingData, Converter={StaticResource InverseBooleanConverter}}" />
+                    <ui:ProgressRing Width="24" Height="24" 
+                                    Margin="15,0,0,0"
+                                    Visibility="{Binding ViewModel.IsLoadingData, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TextBlock Text="{Binding ViewModel.LoadingStatus}" 
+                              Margin="10,0,0,0" 
+                              VerticalAlignment="Center"
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </StackPanel>
+        </ui:CardControl>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="2" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="300" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Source Topology (Left Side) -->
+            <ui:CardControl Grid.Column="0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Source vCenter Topology" FontWeight="Medium" />
+
+                    <!-- Empty State -->
+                    <StackPanel Grid.Row="1" 
+                               HorizontalAlignment="Center" 
+                               VerticalAlignment="Center">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ViewModel.SourceTopology.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <ui:SymbolIcon Symbol="Server24" FontSize="48" Opacity="0.5" HorizontalAlignment="Center" />
+                        <TextBlock Text="No topology loaded" 
+                                  Margin="0,10,0,0" 
+                                  HorizontalAlignment="Center"
+                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="Click 'Load Source Topology' to begin" 
+                                  HorizontalAlignment="Center"
+                                  FontSize="12"
+                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <!-- TreeView with Topology -->
+                    <TreeView Grid.Row="1" 
+                             ItemsSource="{Binding ViewModel.SourceTopology}" 
+                             Margin="0,10,0,0"
+                             Background="Transparent"
+                             BorderThickness="0">
+                        <TreeView.Style>
+                            <Style TargetType="TreeView" BasedOn="{StaticResource {x:Type TreeView}}">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ViewModel.SourceTopology.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TreeView.Style>
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                                <Setter Property="IsExpanded" Value="True" />
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate ItemsSource="{Binding Hosts}">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="FolderOpen24" Margin="0,0,8,0" />
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Margin="8,0,0,0" 
+                                              Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="({0} hosts)">
+                                                <Binding Path="Hosts.Count" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                                <HierarchicalDataTemplate.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox Grid.Column="0" 
+                                                     IsChecked="{Binding IsSelected}" 
+                                                     VerticalAlignment="Center" />
+                                            <ui:SymbolIcon Grid.Column="1" 
+                                                          Symbol="Desktop24" 
+                                                          Margin="8,0,8,0" 
+                                                          VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" 
+                                                      Text="{Binding Name}" 
+                                                      VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </HierarchicalDataTemplate.ItemTemplate>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                </Grid>
+            </ui:CardControl>
+
+            <!-- Target Selection (Right Side) -->
+            <ui:CardControl Grid.Column="2">
+                <StackPanel>
+                    <TextBlock Text="Target Configuration" FontWeight="Medium" />
+
+                    <TextBlock Text="Target Cluster" Margin="0,15,0,5" />
+                    <ComboBox ItemsSource="{Binding ViewModel.TargetClusters}" 
+                             SelectedItem="{Binding ViewModel.SelectedTargetCluster}"
+                             DisplayMemberPath="Name"
+                             IsEnabled="{Binding ViewModel.TargetClusters.Count, Converter={StaticResource NullToBoolConverter}}" />
+
+                    <!-- Empty State for Target Clusters -->
+                    <TextBlock Text="No target clusters loaded" 
+                              Margin="0,5,0,0"
+                              FontSize="12"
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ViewModel.TargetClusters.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <!-- Migration Options -->
+                    <Separator Margin="0,20,0,15" />
+                    <TextBlock Text="Migration Options" FontWeight="Medium" />
+
+                    <CheckBox Content="Preserve VM assignments" 
+                             IsChecked="{Binding ViewModel.PreserveVmAssignments}"
+                             Margin="0,10,0,5" />
+                    <CheckBox Content="Migrate host profiles" 
+                             IsChecked="{Binding ViewModel.MigrateHostProfiles}"
+                             Margin="0,5,0,5" />
+                    <CheckBox Content="Update DRS rules" 
+                             IsChecked="{Binding ViewModel.UpdateDrsRules}"
+                             Margin="0,5,0,15" />
+
+                    <!-- Selection Summary -->
+                    <Border Background="{DynamicResource ControlFillColorDefaultBrush}" 
+                           CornerRadius="4" 
+                           Padding="10"
+                           Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="Migration Summary" FontWeight="Medium" FontSize="12" />
+                            <TextBlock FontSize="12" Margin="0,5,0,0">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} hosts selected">
+                                        <Binding Path="ViewModel.SelectedHostCount" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <TextBlock FontSize="12"
+                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="Target: {0}">
+                                        <Binding Path="ViewModel.SelectedTargetCluster.Name" TargetNullValue="No target selected" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Migration Button -->
+                    <ui:Button Content="Start Host Migration" 
+                              Command="{Binding ViewModel.MigrateHostsCommand}"
+                              Appearance="Primary"
+                              Icon="{ui:SymbolIcon ArrowSwap24}"
+                              IsEnabled="{Binding ViewModel.CanStartMigration}" />
+                </StackPanel>
+            </ui:CardControl>
+        </Grid>
+
+        <!-- Migration Progress Section -->
+        <ui:CardControl Grid.Row="3" Margin="0,20,0,0">
+            <StackPanel>
+                <TextBlock Text="Migration Progress" FontWeight="Medium" />
+
+                <!-- Overall Progress -->
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ProgressBar Grid.Column="0" 
+                                Value="{Binding ViewModel.MigrationProgress}" 
+                                Maximum="100"
+                                Height="8" />
+                    <TextBlock Grid.Column="1" 
+                              Margin="10,0,0,0"
+                              VerticalAlignment="Center"
+                              FontSize="12">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0:F0}%">
+                                <Binding Path="ViewModel.MigrationProgress" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </Grid>
+
+                <!-- Status and Controls -->
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <TextBlock Text="{Binding ViewModel.MigrationStatus}" 
+                              VerticalAlignment="Center"
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:Button Content="Cancel Migration" 
+                              Command="{Binding ViewModel.CancelMigrationCommand}"
+                              Appearance="Danger"
+                              Margin="20,0,0,0"
+                              Visibility="{Binding ViewModel.IsMigrating, Converter={StaticResource BoolToVisibilityConverter}}" />
+                </StackPanel>
+            </StackPanel>
+        </ui:CardControl>
+
+        <!-- Detailed Log Output -->
+        <Grid Grid.Row="4" Margin="0,20,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="Migration Log" FontWeight="Medium"/>
+            <ui:TextBox Grid.Row="1"
+                       Margin="0,10,0,0"
+                       Text="{Binding ViewModel.LogOutput, Mode=OneWay}"
+                       IsReadOnly="True"
+                       AcceptsReturn="True"
+                       VerticalScrollBarVisibility="Auto"
+                       FontFamily="Consolas"
+                       FontSize="12"/>
+        </Grid>
     </Grid>
 </Page>
