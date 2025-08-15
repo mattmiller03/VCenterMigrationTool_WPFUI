@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -19,6 +20,9 @@ namespace VCenterMigrationTool.ViewModels.Settings
 
         [ObservableProperty]
         private bool _isPowerCliInstalled;
+
+        [ObservableProperty]
+        private string _installationPhase = "";
 
         [ObservableProperty]
         private bool _isCheckingPrerequisites;
@@ -50,7 +54,12 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 await OnCheckPrerequisites();
                 }
             }
-
+        // Optional: Add a method to provide real-time updates during installation
+        private void UpdateInstallationStatus (string phase, string details)
+        {
+            InstallationPhase = phase;
+            PowerCliInstallStatus = $"{phase}: {details}";
+        }
         [RelayCommand]
         private async Task OnCheckPrerequisites ()
             {
@@ -104,26 +113,54 @@ namespace VCenterMigrationTool.ViewModels.Settings
         private async Task OnInstallPowerCli ()
             {
             IsInstallingPowerCli = true;
-            PowerCliInstallStatus = "Installing VMware.PowerCLI module... This may take several minutes.";
+            PowerCliInstallStatus = "Preparing PowerCLI installation...";
 
             try
                 {
                 string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
                 var parameters = new Dictionary<string, object> { { "LogPath", logPath } };
 
+                // Update status during different phases
+                PowerCliInstallStatus = "Connecting to PowerShell Gallery...";
+                await Task.Delay(500); // Brief pause for UI update
+
+                PowerCliInstallStatus = "Downloading VMware.PowerCLI module... (This may take 3-5 minutes)";
+
                 // The hybrid service will automatically use external PowerShell for Install-PowerCli.ps1
                 string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Install-PowerCli.ps1", parameters);
 
-                PowerCliInstallStatus = "Verifying installation...";
-                await OnCheckPrerequisites(); // Re-run check
+                // Parse the result to determine success/failure
+                if (result.Contains("Success:"))
+                    {
+                    PowerCliInstallStatus = "PowerCLI installation completed successfully!";
 
-                PowerCliInstallStatus = IsPowerCliInstalled ?
-                    "PowerCLI installation completed successfully." :
-                    "PowerCLI installation may have failed. Check logs for details.";
+                    // Automatically re-check prerequisites to update the UI
+                    await Task.Delay(1000); // Give user a moment to see success message
+                    await OnCheckPrerequisites(); // This will update IsPowerCliInstalled
+                    }
+                else if (result.Contains("already installed"))
+                    {
+                    PowerCliInstallStatus = "PowerCLI was already installed.";
+                    await OnCheckPrerequisites(); // Update the UI status
+                    }
+                else
+                    {
+                    // Installation failed
+                    var errorMessage = "PowerCLI installation failed.";
+                    if (result.Contains("Failure:"))
+                        {
+                        var failureIndex = result.IndexOf("Failure:");
+                        var errorLine = result.Substring(failureIndex).Split('\n')[0];
+                        errorMessage = errorLine.Replace("Failure:", "").Trim();
+                        }
+
+                    PowerCliInstallStatus = $"Installation failed: {errorMessage}";
+                    }
                 }
-            catch (System.Exception ex)
+            catch (Exception ex)
                 {
                 PowerCliInstallStatus = $"Installation failed: {ex.Message}";
+                _logger?.LogError(ex, "Error during PowerCLI installation");
                 }
             finally
                 {

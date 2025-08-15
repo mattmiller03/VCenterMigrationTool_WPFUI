@@ -13,11 +13,6 @@
 		<None Remove="Assets\applicationIcon-1024.png" />
 		<None Remove="Assets\applicationIcon-256.ico" />
 		<None Remove="Assets\applicationIcon-256.png" />
-		<None Remove="Scripts\Install-PowerCli.ps1" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Content Include="Scripts\Install-PowerCli.ps1" />
 	</ItemGroup>
 
 	<ItemGroup>

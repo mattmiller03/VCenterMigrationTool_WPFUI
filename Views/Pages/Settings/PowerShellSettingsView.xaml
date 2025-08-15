@@ -50,30 +50,58 @@
         <ProgressBar IsIndeterminate="True" Height="6" Margin="0,0,0,10" Visibility="{Binding IsCheckingPrerequisites, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
         <!-- NEW: PowerCLI Installation Progress -->
-        <Grid Visibility="{Binding IsInstallingPowerCli, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,15">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <!-- ENHANCED: PowerCLI Installation Progress Card -->
+        <ui:Card Visibility="{Binding IsInstallingPowerCli, Converter={StaticResource BooleanToVisibilityConverter}}" 
+         Margin="0,0,0,15" 
+         Padding="20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <!-- Progress Ring and Status -->
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                <ui:ProgressRing Width="24" Height="24" IsIndeterminate="True" Margin="0,0,10,0"/>
-                <TextBlock Text="Installing PowerCLI..." FontWeight="Medium" VerticalAlignment="Center"/>
-            </StackPanel>
+                <!-- Header with Progress Ring -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                    <ui:ProgressRing Width="32" Height="32" IsIndeterminate="True" Margin="0,0,15,0"/>
+                    <StackPanel>
+                        <TextBlock Text="Installing PowerCLI" FontWeight="SemiBold" FontSize="16"/>
+                        <TextBlock Text="Please wait while we download and install the VMware PowerCLI module" 
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                           FontSize="12"/>
+                    </StackPanel>
+                </StackPanel>
 
-            <!-- Progress Bar -->
-            <ProgressBar Grid.Row="1" IsIndeterminate="True" Height="4" Margin="0,0,0,10"/>
+                <!-- Current Status -->
+                <TextBlock Grid.Row="1" 
+                   Text="{Binding PowerCliInstallStatus}" 
+                   Margin="0,0,0,10" 
+                   TextWrapping="Wrap"
+                   FontWeight="Medium"/>
 
-            <!-- Installation Steps Info -->
-            <TextBlock Grid.Row="2" 
-                       Text="This may take 3-5 minutes. Please wait..." 
-                       FontStyle="Italic" 
-                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                       TextWrapping="Wrap"/>
-        </Grid>
+                <!-- Progress Bar -->
+                <ProgressBar Grid.Row="2" 
+                     IsIndeterminate="True" 
+                     Height="6" 
+                     Margin="0,0,0,15"/>
 
+                <!-- Installation Info -->
+                <StackPanel Grid.Row="3">
+                    <TextBlock Text="⏱️ Expected time: 3-5 minutes" 
+                       FontSize="12" 
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                       Margin="0,0,0,5"/>
+                    <TextBlock Text="📦 Downloading: VMware.PowerCLI (~150MB)" 
+                       FontSize="12" 
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                       Margin="0,0,0,5"/>
+                    <TextBlock Text="🔗 Source: PowerShell Gallery" 
+                       FontSize="12" 
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </Grid>
+        </ui:Card>
         <!-- Action Buttons -->
         <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
             <ui:Button Content="Check Prerequisites" 
