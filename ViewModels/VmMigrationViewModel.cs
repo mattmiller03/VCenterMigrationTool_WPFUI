@@ -204,7 +204,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             _logger.LogInformation("Loading VMs from source vCenter: {Server}", _sharedConnectionService.SourceConnection.ServerAddress);
 
             // Use the new credential method
-            var result = await _powerShellService.RunScriptWithVCenterCredentialAsync(
+            var result = await _powerShellService.RunVCenterScriptAsync(
                 "Scripts\\Get-VMs.ps1",
                 _sharedConnectionService.SourceConnection,
                 password);

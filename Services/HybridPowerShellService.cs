@@ -14,7 +14,7 @@ using VCenterMigrationTool.Services;
 namespace VCenterMigrationTool.Services;
 
 public class HybridPowerShellService
-    {
+{
     private readonly ILogger<HybridPowerShellService> _logger;
     private readonly ConfigurationService _configurationService;
 
@@ -23,22 +23,22 @@ public class HybridPowerShellService
     /// </summary>
     public static bool PowerCliConfirmedInstalled { get; set; } = false;
 
-    public HybridPowerShellService (ILogger<HybridPowerShellService> logger, ConfigurationService configurationService)
-        {
+    public HybridPowerShellService(ILogger<HybridPowerShellService> logger, ConfigurationService configurationService)
+    {
         _logger = logger;
         _configurationService = configurationService;
 
         // FIXED: Load PowerCLI status from persistent storage on startup
         LoadPowerCliStatus();
-        }
+    }
 
     /// <summary>
     /// Load PowerCLI installation status from persistent storage
     /// </summary>
-    private void LoadPowerCliStatus ()
-        {
+    private void LoadPowerCliStatus()
+    {
         try
-            {
+        {
             var appConfig = _configurationService.GetConfiguration();
 
             // We'll add a PowerCliConfirmed property to the config
@@ -48,88 +48,93 @@ public class HybridPowerShellService
             Task.Run(async () =>
             {
                 try
-                    {
-                    var quickCheck = await RunCommandAsync("if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }");
+                {
+                    var quickCheck =
+                        await RunCommandAsync(
+                            "if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }");
                     if (quickCheck?.Trim().ToLower() == "true")
-                        {
+                    {
                         PowerCliConfirmedInstalled = true;
                         _logger.LogInformation("STARTUP: PowerCLI detected and confirmed installed on startup");
                         SavePowerCliStatus(true);
-                        }
+                    }
                     else
-                        {
-                        _logger.LogInformation("STARTUP: PowerCLI not detected on startup");
-                        }
-                    }
-                catch (Exception ex)
                     {
-                    _logger.LogWarning(ex, "STARTUP: Could not check PowerCLI status on startup");
+                        _logger.LogInformation("STARTUP: PowerCLI not detected on startup");
                     }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "STARTUP: Could not check PowerCLI status on startup");
+                }
             });
-            }
-        catch (Exception ex)
-            {
-            _logger.LogWarning(ex, "Could not load PowerCLI status from configuration");
-            }
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not load PowerCLI status from configuration");
+        }
+    }
 
     /// <summary>
     /// Save PowerCLI installation status to persistent storage
     /// </summary>
-    public void SavePowerCliStatus (bool isInstalled)
-        {
+    public void SavePowerCliStatus(bool isInstalled)
+    {
         try
-            {
+        {
             PowerCliConfirmedInstalled = isInstalled;
             _logger.LogInformation("PERSISTENCE: PowerCLI status saved as {Status}", isInstalled);
 
             // TODO: In a future update, we could save this to the configuration file
             // For now, the static flag + startup detection should work
-            }
-        catch (Exception ex)
-            {
-            _logger.LogWarning(ex, "Could not save PowerCLI status to configuration");
-            }
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not save PowerCLI status to configuration");
+        }
+    }
 
     /// <summary>
     /// Determines whether to use internal or external PowerShell based on script requirements
     /// </summary>
-    private bool ShouldUseExternalPowerShell (string scriptPath, Dictionary<string, object> parameters)
-        {
+    private bool ShouldUseExternalPowerShell(string scriptPath, Dictionary<string, object> parameters)
+    {
         // ALWAYS use external PowerShell due to SDK compatibility issues
         // The internal PowerShell SDK has dependency conflicts in this application
         return true;
-        }
+    }
 
-    public async Task<string> RunScriptAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
-        {
+    public async Task<string> RunScriptAsync(string scriptPath, Dictionary<string, object> parameters,
+        string? logPath = null)
+    {
         // Check if this is a command rather than a script file
         if (!scriptPath.Contains("Scripts\\") && !scriptPath.EndsWith(".ps1"))
-            {
+        {
             return await RunCommandAsync(scriptPath, parameters);
-            }
+        }
 
         // Always use external PowerShell due to SDK issues
         _logger.LogDebug("Using external PowerShell for script: {ScriptPath}", scriptPath);
         return await RunScriptExternalAsync(scriptPath, parameters, logPath);
-        }
+    }
 
     /// <summary>
     /// Enhanced method that automatically adds BypassModuleCheck when PowerCLI is confirmed
     /// </summary>
-    public async Task<string> RunScriptOptimizedAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
-        {
+    public async Task<string> RunScriptOptimizedAsync(string scriptPath, Dictionary<string, object> parameters,
+        string? logPath = null)
+    {
         // Clone parameters to avoid modifying the original
         var optimizedParameters = new Dictionary<string, object>(parameters);
 
         // DEBUG: Log the current state
         _logger.LogInformation("DEBUG: PowerCliConfirmedInstalled = {PowerCliConfirmed}", PowerCliConfirmedInstalled);
-        _logger.LogInformation("DEBUG: IsPowerCliScript({ScriptPath}) = {IsPowerCli}", scriptPath, IsPowerCliScript(scriptPath));
+        _logger.LogInformation("DEBUG: IsPowerCliScript({ScriptPath}) = {IsPowerCli}", scriptPath,
+            IsPowerCliScript(scriptPath));
 
         // Add bypass flag for PowerCLI scripts when we know it's installed
         if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
-            {
+        {
             optimizedParameters["BypassModuleCheck"] = true;
             _logger.LogInformation("DEBUG: Adding BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
 
@@ -137,57 +142,60 @@ public class HybridPowerShellService
             var safeParams = optimizedParameters
                 .Where(p => !IsSensitiveParameter(p.Key))
                 .Select(p => $"{p.Key}={p.Value}");
-            _logger.LogInformation("DEBUG: Final parameters (excluding sensitive): {Parameters}", string.Join(", ", safeParams));
-            }
+            _logger.LogInformation("DEBUG: Final parameters (excluding sensitive): {Parameters}",
+                string.Join(", ", safeParams));
+        }
         else
-            {
+        {
             _logger.LogInformation("DEBUG: NOT adding BypassModuleCheck for script: {ScriptPath}", scriptPath);
-            }
+        }
 
         return await RunScriptAsync(scriptPath, optimizedParameters, logPath);
-        }
+    }
 
     /// <summary>
     /// Enhanced method for object deserialization with bypass optimization
     /// </summary>
-    public async Task<T?> RunScriptAndGetObjectOptimizedAsync<T> (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
-        {
+    public async Task<T?> RunScriptAndGetObjectOptimizedAsync<T>(string scriptPath,
+        Dictionary<string, object> parameters, string? logPath = null)
+    {
         // Clone parameters to avoid modifying the original
         var optimizedParameters = new Dictionary<string, object>(parameters);
 
         // Add bypass flag for PowerCLI scripts when we know it's installed
         if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
-            {
+        {
             optimizedParameters["BypassModuleCheck"] = true;
             _logger.LogDebug("Adding BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
-            }
+        }
 
         return await RunScriptAndGetObjectAsync<T>(scriptPath, optimizedParameters, logPath);
-        }
+    }
 
     /// <summary>
     /// Enhanced method for collection deserialization with bypass optimization  
     /// </summary>
-    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsOptimizedAsync<T> (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
-        {
+    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsOptimizedAsync<T>(string scriptPath,
+        Dictionary<string, object> parameters, string? logPath = null)
+    {
         // Clone parameters to avoid modifying the original
         var optimizedParameters = new Dictionary<string, object>(parameters);
 
         // Add bypass flag for PowerCLI scripts when we know it's installed
         if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
-            {
+        {
             optimizedParameters["BypassModuleCheck"] = true;
             _logger.LogDebug("Adding BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
-            }
+        }
 
         return await RunScriptAndGetObjectsAsync<T>(scriptPath, optimizedParameters, logPath);
-        }
+    }
 
     /// <summary>
     /// Determines if a script requires PowerCLI
     /// </summary>
-    private bool IsPowerCliScript (string scriptPath)
-        {
+    private bool IsPowerCliScript(string scriptPath)
+    {
         var powerCliScripts = new[]
         {
             "Test-vCenterConnection.ps1",
@@ -210,166 +218,173 @@ public class HybridPowerShellService
 
         var scriptName = Path.GetFileName(scriptPath);
         return powerCliScripts.Any(s => s.Equals(scriptName, StringComparison.OrdinalIgnoreCase));
-        }
+    }
 
     /// <summary>
     /// Determines if a parameter contains sensitive data that should not be logged
     /// </summary>
-    private bool IsSensitiveParameter (string parameterName)
-        {
+    private bool IsSensitiveParameter(string parameterName)
+    {
         var sensitiveParams = new[] { "Password", "password", "pwd", "secret", "token", "key" };
         return sensitiveParams.Any(s => parameterName.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0);
-        }
+    }
 
     /// <summary>
     /// Run complex scripts using external PowerShell (for PowerCLI operations)
     /// </summary>
-    private async Task<string> RunScriptExternalAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
-        {
+    private async Task<string> RunScriptExternalAsync(string scriptPath, Dictionary<string, object> parameters,
+        string? logPath = null)
+    {
         _logger.LogInformation("DEBUG: Starting external PowerShell execution for script: {ScriptPath}", scriptPath);
         string fullScriptPath = Path.GetFullPath(scriptPath);
 
         _logger.LogDebug("Starting external PowerShell script execution: {ScriptPath}", fullScriptPath);
 
         if (!File.Exists(fullScriptPath))
-            {
+        {
             _logger.LogError("Script not found at path: {ScriptPath}", fullScriptPath);
             return $"ERROR: Script not found at {fullScriptPath}";
-            }
+        }
 
         try
-            {
+        {
             // Build parameter string with proper escaping
             var paramString = new StringBuilder();
 
             // SECURE: Log parameter count but not sensitive values
             var paramCount = parameters.Count;
             var sensitiveParamCount = parameters.Keys.Count(IsSensitiveParameter);
-            _logger.LogInformation("DEBUG: Building parameter string from {ParameterCount} parameters ({SensitiveCount} sensitive)",
+            _logger.LogInformation(
+                "DEBUG: Building parameter string from {ParameterCount} parameters ({SensitiveCount} sensitive)",
                 paramCount, sensitiveParamCount);
 
             foreach (var param in parameters)
-                {
+            {
                 // Properly escape parameter values for PowerShell
                 var value = param.Value?.ToString() ?? "";
 
                 // SECURE: Only log non-sensitive parameters
                 if (!IsSensitiveParameter(param.Key))
-                    {
-                    _logger.LogInformation("DEBUG: Parameter {Key} = {Value} (Type: {Type})", param.Key, value, param.Value?.GetType().Name ?? "null");
-                    }
+                {
+                    _logger.LogInformation("DEBUG: Parameter {Key} = {Value} (Type: {Type})", param.Key, value,
+                        param.Value?.GetType().Name ?? "null");
+                }
                 else
-                    {
-                    _logger.LogInformation("DEBUG: Parameter {Key} = [REDACTED] (Type: {Type})", param.Key, param.Value?.GetType().Name ?? "null");
-                    }
+                {
+                    _logger.LogInformation("DEBUG: Parameter {Key} = [REDACTED] (Type: {Type})", param.Key,
+                        param.Value?.GetType().Name ?? "null");
+                }
 
                 // Handle different parameter types
                 if (param.Value is System.Security.SecureString secureString)
-                    {
+                {
                     // Convert SecureString to plain text for external process
                     var ptr = System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(secureString);
                     try
-                        {
+                    {
                         value = System.Runtime.InteropServices.Marshal.PtrToStringUni(ptr) ?? "";
                         _logger.LogInformation("DEBUG: Converted SecureString parameter {Key}", param.Key);
-                        }
-                    finally
-                        {
-                        System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(ptr);
-                        }
                     }
+                    finally
+                    {
+                        System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(ptr);
+                    }
+                }
 
                 // FIXED: Handle boolean parameters correctly (like BypassModuleCheck)
                 if (param.Value is bool boolValue)
-                    {
+                {
                     // For PowerShell switches, we add the parameter name without a value when true
                     if (boolValue)
-                        {
+                    {
                         paramString.Append($" -{param.Key}");
                         _logger.LogInformation("DEBUG: Added switch parameter: -{Key}", param.Key);
-                        }
+                    }
+
                     // If false, we don't add the parameter at all
                     continue;
-                    }
+                }
 
                 // Escape quotes and wrap in quotes for PowerShell
                 var escapedValue = value.Replace("\"", "`\"");
                 paramString.Append($" -{param.Key} \"{escapedValue}\"");
-                }
+            }
 
             // FIXED: Don't add LogPath if it's already in parameters
             if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
-                {
+            {
                 var escapedLogPath = logPath.Replace("\"", "`\"");
                 paramString.Append($" -LogPath \"{escapedLogPath}\"");
-                }
+            }
 
             // SECURE: Create a safe version of the command for logging (without sensitive data)
             var safeParamString = new StringBuilder();
             foreach (var param in parameters)
-                {
+            {
                 if (param.Value is bool boolValue && boolValue)
-                    {
+                {
                     safeParamString.Append($" -{param.Key}");
-                    }
+                }
                 else if (!IsSensitiveParameter(param.Key))
-                    {
+                {
                     var value = param.Value?.ToString() ?? "";
                     var escapedValue = value.Replace("\"", "`\"");
                     safeParamString.Append($" -{param.Key} \"{escapedValue}\"");
-                    }
-                else
-                    {
-                    safeParamString.Append($" -{param.Key} \"[REDACTED]\"");
-                    }
                 }
+                else
+                {
+                    safeParamString.Append($" -{param.Key} \"[REDACTED]\"");
+                }
+            }
 
             if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
-                {
+            {
                 var escapedLogPath = logPath.Replace("\"", "`\"");
                 safeParamString.Append($" -LogPath \"{escapedLogPath}\"");
-                }
+            }
 
             _logger.LogInformation("DEBUG: Safe parameter string: {SafeParamString}", safeParamString.ToString());
 
             // Prioritize PowerShell 7 with multiple fallback paths
             var powershellPaths = new[]
             {
-                "pwsh.exe",  // PowerShell 7 in PATH (most common)
-                @"C:\Program Files\PowerShell\7\pwsh.exe",  // Standard PowerShell 7 install
-                @"C:\Program Files (x86)\PowerShell\7\pwsh.exe",  // 32-bit PowerShell 7
-                @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe",  // Store install
-                "powershell.exe"  // Windows PowerShell (last resort)
+                "pwsh.exe", // PowerShell 7 in PATH (most common)
+                @"C:\Program Files\PowerShell\7\pwsh.exe", // Standard PowerShell 7 install
+                @"C:\Program Files (x86)\PowerShell\7\pwsh.exe", // 32-bit PowerShell 7
+                @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe", // Store install
+                "powershell.exe" // Windows PowerShell (last resort)
             };
 
             Exception? lastException = null;
 
             foreach (var psPath in powershellPaths)
-                {
+            {
                 try
-                    {
+                {
                     _logger.LogInformation("Trying PowerShell executable: {PowerShell}", psPath);
 
                     // For full paths, verify the executable exists
                     if (psPath.Contains("\\") && !File.Exists(psPath))
-                        {
+                    {
                         _logger.LogDebug("PowerShell executable not found at: {PowerShell}", psPath);
                         continue;
-                        }
+                    }
 
                     var psi = new ProcessStartInfo
-                        {
+                    {
                         FileName = psPath,
                         Arguments = $"-NoProfile -ExecutionPolicy Unrestricted -File \"{fullScriptPath}\"{paramString}",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
-                        };
+                    };
 
                     // SECURE: Log safe command (without sensitive data)
-                    var safeCommand = $"-NoProfile -ExecutionPolicy Unrestricted -File \"{fullScriptPath}\"{safeParamString}";
-                    _logger.LogInformation("DEBUG: Executing safe command: {FileName} {SafeArguments}", psPath, safeCommand);
+                    var safeCommand =
+                        $"-NoProfile -ExecutionPolicy Unrestricted -File \"{fullScriptPath}\"{safeParamString}";
+                    _logger.LogInformation("DEBUG: Executing safe command: {FileName} {SafeArguments}", psPath,
+                        safeCommand);
 
                     using var process = new Process { StartInfo = psi };
 
@@ -379,21 +394,23 @@ public class HybridPowerShellService
                     process.OutputDataReceived += (sender, args) =>
                     {
                         if (args.Data != null)
-                            {
+                        {
                             outputBuilder.AppendLine(args.Data);
                             _logger.LogDebug("PS Output: {Output}", args.Data);
-                            }
+                        }
                     };
 
                     process.ErrorDataReceived += (sender, args) =>
                     {
                         if (args.Data != null)
-                            {
+                        {
                             errorBuilder.AppendLine(args.Data);
                             _logger.LogWarning("PS Error: {Error}", args.Data);
-                            }
+                        }
                     };
-                    _logger.LogInformation("DEBUG: Creating PowerShell process with command: {FileName} {SafeArguments}", psPath, safeCommand);
+                    _logger.LogInformation(
+                        "DEBUG: Creating PowerShell process with command: {FileName} {SafeArguments}", psPath,
+                        safeCommand);
                     process.Start();
                     _logger.LogInformation("Successfully started PowerShell process: {PowerShell}", psPath);
                     process.BeginOutputReadLine();
@@ -402,16 +419,17 @@ public class HybridPowerShellService
                     // Wait with timeout (10 minutes for large operations like PowerCLI install)
                     using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(10));
                     try
-                        {
+                    {
                         await process.WaitForExitAsync(cts.Token);
-                        _logger.LogInformation("DEBUG: PowerShell process completed with exit code: {ExitCode}", process.ExitCode);
-                        }
+                        _logger.LogInformation("DEBUG: PowerShell process completed with exit code: {ExitCode}",
+                            process.ExitCode);
+                    }
                     catch (OperationCanceledException)
-                        {
-                            _logger.LogError("DEBUG: PowerShell process timed out after 2 minutes");
+                    {
+                        _logger.LogError("DEBUG: PowerShell process timed out after 2 minutes");
                         process.Kill();
                         throw new TimeoutException("PowerShell script execution timed out after 10 minutes");
-                        }
+                    }
 
                     var output = outputBuilder.ToString();
                     var errors = errorBuilder.ToString();
@@ -421,64 +439,65 @@ public class HybridPowerShellService
 
                     // Include errors in output but don't treat them as fatal
                     if (!string.IsNullOrEmpty(errors))
-                        {
+                    {
                         output += "\nSTDERR:\n" + errors;
-                        }
+                    }
 
                     return output;
-                    }
+                }
                 catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
-                    {
+                {
                     // File not found - try next PowerShell version
                     _logger.LogDebug("PowerShell executable not found: {PowerShell}", psPath);
                     lastException = ex;
                     continue;
-                    }
+                }
                 catch (Exception ex)
-                    {
+                {
                     _logger.LogWarning(ex, "Failed to execute with {PowerShell}, trying next option", psPath);
                     lastException = ex;
                     continue;
-                    }
                 }
+            }
 
             throw new InvalidOperationException("No suitable PowerShell executable found", lastException);
-            }
+        }
         catch (Exception ex)
-            {
+        {
             _logger.LogError(ex, "Error executing external PowerShell script: {Script}", scriptPath);
             return $"ERROR: {ex.Message}";
-            }
         }
+    }
 
     /// <summary>
     /// Execute simple PowerShell commands using external PowerShell (due to SDK issues)
     /// </summary>
-    public async Task<string> RunCommandAsync (string command, Dictionary<string, object>? parameters = null)
-        {
+    public async Task<string> RunCommandAsync(string command, Dictionary<string, object>? parameters = null)
+    {
         _logger.LogDebug("Executing PowerShell command via external process: {Command}", command);
 
         try
-            {
+        {
             // Create a temporary script file for the command
             var tempScriptPath = Path.GetTempFileName() + ".ps1";
 
             try
-                {
+            {
                 // Build the script content
                 var scriptContent = new StringBuilder();
 
                 // Add parameters if provided
                 if (parameters?.Count > 0)
-                    {
+                {
                     foreach (var param in parameters)
-                        {
+                    {
                         var value = param.Value?.ToString() ?? "";
                         var escapedValue = value.Replace("'", "''");
                         scriptContent.AppendLine($"${param.Key} = '{escapedValue}'");
-                        }
-                    scriptContent.AppendLine();
                     }
+
+                    scriptContent.AppendLine();
+                }
 
                 // Add the command
                 scriptContent.AppendLine(command);
@@ -490,102 +509,106 @@ public class HybridPowerShellService
                 var result = await RunScriptExternalAsync(tempScriptPath, new Dictionary<string, object>());
 
                 return result;
-                }
+            }
             finally
-                {
+            {
                 // Clean up temp file
                 try
-                    {
+                {
                     if (File.Exists(tempScriptPath))
-                        {
-                        File.Delete(tempScriptPath);
-                        }
-                    }
-                catch
                     {
-                    // Ignore cleanup errors
+                        File.Delete(tempScriptPath);
                     }
                 }
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error executing PowerShell command: {Command}", command);
-            return $"COMMAND ERROR: {ex.Message}";
+                catch
+                {
+                    // Ignore cleanup errors
+                }
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing PowerShell command: {Command}", command);
+            return $"COMMAND ERROR: {ex.Message}";
+        }
+    }
 
     /// <summary>
     /// Run script and deserialize JSON output to object
     /// </summary>
-    public async Task<T?> RunScriptAndGetObjectAsync<T> (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
-        {
+    public async Task<T?> RunScriptAndGetObjectAsync<T>(string scriptPath, Dictionary<string, object> parameters,
+        string? logPath = null)
+    {
         string scriptOutput = await RunScriptAsync(scriptPath, parameters, logPath);
 
         if (string.IsNullOrWhiteSpace(scriptOutput))
-            {
+        {
             return default;
-            }
+        }
 
         // Extract JSON from mixed output
         var jsonResult = ExtractJsonFromOutput(scriptOutput);
 
         if (string.IsNullOrWhiteSpace(jsonResult))
-            {
+        {
             _logger.LogWarning("No valid JSON found in script output for {Script}", scriptPath);
             return default;
-            }
+        }
 
         try
-            {
+        {
             return JsonSerializer.Deserialize<T>(jsonResult,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            }
-        catch (JsonException ex)
-            {
-            _logger.LogError(ex, "JSON deserialization error for script {Script}. JSON: {Json}", scriptPath, jsonResult);
-            return default;
-            }
         }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "JSON deserialization error for script {Script}. JSON: {Json}", scriptPath,
+                jsonResult);
+            return default;
+        }
+    }
 
     /// <summary>
     /// Run script and deserialize JSON output to collection
     /// </summary>
-    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsAsync<T> (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
-        {
+    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsAsync<T>(string scriptPath,
+        Dictionary<string, object> parameters, string? logPath = null)
+    {
         string scriptOutput = await RunScriptAsync(scriptPath, parameters, logPath);
 
         if (string.IsNullOrWhiteSpace(scriptOutput))
-            {
+        {
             return new ObservableCollection<T>();
-            }
+        }
 
         // Extract JSON from mixed output
         var jsonResult = ExtractJsonFromOutput(scriptOutput);
 
         if (string.IsNullOrWhiteSpace(jsonResult))
-            {
+        {
             _logger.LogWarning("No valid JSON found in script output for {Script}", scriptPath);
             return new ObservableCollection<T>();
-            }
+        }
 
         try
-            {
+        {
             var items = JsonSerializer.Deserialize<ObservableCollection<T>>(jsonResult,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             return items ?? new ObservableCollection<T>();
-            }
-        catch (JsonException ex)
-            {
-            _logger.LogError(ex, "JSON deserialization error for collection in script {Script}. JSON: {Json}", scriptPath, jsonResult);
-            return new ObservableCollection<T>();
-            }
         }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "JSON deserialization error for collection in script {Script}. JSON: {Json}",
+                scriptPath, jsonResult);
+            return new ObservableCollection<T>();
+        }
+    }
 
     /// <summary>
     /// Extract JSON from mixed script output - IMPROVED VERSION
     /// </summary>
-    private string ExtractJsonFromOutput (string output)
-        {
+    private string ExtractJsonFromOutput(string output)
+    {
         if (string.IsNullOrWhiteSpace(output))
             return string.Empty;
 
@@ -595,140 +618,294 @@ public class HybridPowerShellService
         var jsonCandidates = new List<string>();
 
         foreach (var line in lines)
-            {
+        {
             var trimmedLine = line.Trim();
             if (trimmedLine.StartsWith("{") && trimmedLine.EndsWith("}"))
-                {
+            {
                 // Quick validation - should contain expected JSON structure
                 if (trimmedLine.Contains("\"") && trimmedLine.Length > 10)
-                    {
+                {
                     jsonCandidates.Add(trimmedLine);
-                    }
                 }
             }
+        }
 
         // Return the FIRST valid JSON found (ignore duplicates)
         if (jsonCandidates.Count > 0)
-            {
+        {
             var firstJson = jsonCandidates[0];
 
             // Additional validation - try to parse it
             try
-                {
+            {
                 using var doc = JsonDocument.Parse(firstJson);
                 return firstJson; // Valid JSON
-                }
-            catch
-                {
-                // Not valid JSON, continue to multi-line search
-                }
             }
+            catch
+            {
+                // Not valid JSON, continue to multi-line search
+            }
+        }
 
         // Look for multi-line JSON (fallback)
         int jsonStart = output.IndexOf('{');
         int jsonEnd = output.IndexOf('}');
 
         if (jsonStart >= 0 && jsonEnd > jsonStart)
-            {
+        {
             var candidate = output.Substring(jsonStart, jsonEnd - jsonStart + 1);
 
             // Validate this candidate
             try
-                {
+            {
                 using var doc = JsonDocument.Parse(candidate);
                 return candidate;
-                }
-            catch
-                {
-                // Not valid JSON
-                }
             }
+            catch
+            {
+                // Not valid JSON
+            }
+        }
 
         return string.Empty;
-        }
+    }
 
     /// <summary>
     /// Debug method to check the current PowerCLI bypass status
     /// </summary>
-    public string GetPowerCliBypassStatus ()
-        {
+    public string GetPowerCliBypassStatus()
+    {
         return $"PowerCliConfirmedInstalled: {PowerCliConfirmedInstalled}";
-        }
+    }
 
     /// <summary>
     /// Debug method to check if a specific script would get the bypass flag
     /// </summary>
-    public bool WouldScriptGetBypass (string scriptPath)
-        {
+    public bool WouldScriptGetBypass(string scriptPath)
+    {
         return PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath);
-        }
+    }
+
     /// <summary>
-    /// Creates a PSCredential object and passes it as a parameter to PowerShell scripts
-    /// This avoids credential serialization issues
+    /// Creates a PSCredential object and passes it to PowerShell scripts
+    /// This is the preferred method for script authentication
     /// </summary>
-    public async Task<string> RunScriptWithCredentialAsync (string scriptPath, string username, string password, Dictionary<string, object>? additionalParameters = null, string? logPath = null)
-        {
+    public async Task<string> RunScriptWithCredentialObjectAsync(string scriptPath, string username, string password,
+        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
+    {
         try
-            {
-            _logger.LogInformation("Creating PSCredential for user: {Username}", username);
+        {
+            _logger.LogInformation("Executing script with PSCredential object: {ScriptPath}", scriptPath);
 
-            // Create the credential object
-            var securePassword = new System.Security.SecureString();
-            foreach (char c in password)
-                {
-                securePassword.AppendChar(c);
-                }
-            securePassword.MakeReadOnly();
+            // Prepare the script content that creates the credential object
+            var scriptContent = new StringBuilder();
 
-            var credential = new System.Management.Automation.PSCredential(username, securePassword);
-
-            // Prepare parameters with credential
-            var parameters = new Dictionary<string, object>
-                {
-                ["Credential"] = credential
-                };
+            // Create the PSCredential object in PowerShell
+            scriptContent.AppendLine("# Create PSCredential object");
+            scriptContent.AppendLine(
+                $"$securePassword = ConvertTo-SecureString '{password.Replace("'", "''")}' -AsPlainText -Force");
+            scriptContent.AppendLine(
+                $"$credential = New-Object System.Management.Automation.PSCredential('{username.Replace("'", "''")}', $securePassword)");
+            scriptContent.AppendLine();
 
             // Add any additional parameters
             if (additionalParameters != null)
-                {
+            {
                 foreach (var param in additionalParameters)
+                {
+                    if (param.Value is bool boolValue)
                     {
-                    parameters[param.Key] = param.Value;
+                        scriptContent.AppendLine($"${param.Key} = ${boolValue.ToString().ToLower()}");
+                    }
+                    else if (param.Value is string stringValue)
+                    {
+                        scriptContent.AppendLine($"${param.Key} = '{stringValue.Replace("'", "''")}'");
+                    }
+                    else
+                    {
+                        scriptContent.AppendLine($"${param.Key} = '{param.Value?.ToString()?.Replace("'", "''")}'");
                     }
                 }
 
-            _logger.LogInformation("Executing script with PSCredential object: {ScriptPath}", scriptPath);
-
-            // Use existing RunScriptAsync method
-            return await RunScriptAsync(scriptPath, parameters, logPath);
+                scriptContent.AppendLine();
             }
-        catch (Exception ex)
+
+            // Add the script execution
+            scriptContent.AppendLine($"# Execute the target script");
+            scriptContent.AppendLine($". '{Path.GetFullPath(scriptPath)}'");
+
+            // Create temporary script file
+            var tempScriptPath = Path.GetTempFileName() + ".ps1";
+
+            try
             {
-            _logger.LogError(ex, "Error creating PSCredential or executing script: {ScriptPath}", scriptPath);
-            return $"ERROR: {ex.Message}";
+                await File.WriteAllTextAsync(tempScriptPath, scriptContent.ToString());
+
+                // Execute using existing external PowerShell method
+                var result = await RunScriptExternalAsync(tempScriptPath, new Dictionary<string, object>(), logPath);
+
+                return result;
+            }
+            finally
+            {
+                // Clean up temp file
+                try
+                {
+                    if (File.Exists(tempScriptPath))
+                    {
+                        File.Delete(tempScriptPath);
+                    }
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing script with PSCredential: {ScriptPath}", scriptPath);
+            return $"ERROR: {ex.Message}";
+        }
+    }
 
     /// <summary>
-    /// Alternative method that takes a VCenterConnection object
+    /// Enhanced method specifically for vCenter connections using PSCredential
     /// </summary>
-    public async Task<string> RunScriptWithVCenterCredentialAsync (string scriptPath, VCenterConnection connection, string password, Dictionary<string, object>? additionalParameters = null, string? logPath = null)
+    public async Task<string> RunVCenterScriptAsync(string scriptPath, VCenterConnection connection, string password,
+        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
+    {
+        var parameters = new Dictionary<string, object>
         {
-        var baseParameters = new Dictionary<string, object>
-            {
             ["VCenterServer"] = connection.ServerAddress
-            };
+        };
 
         // Add any additional parameters
         if (additionalParameters != null)
-            {
+        {
             foreach (var param in additionalParameters)
-                {
-                baseParameters[param.Key] = param.Value;
-                }
+            {
+                parameters[param.Key] = param.Value;
             }
-
-        return await RunScriptWithCredentialAsync(scriptPath, connection.Username, password, baseParameters, logPath);
         }
 
+        // Add BypassModuleCheck if PowerCLI is confirmed
+        if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
+        {
+            parameters["BypassModuleCheck"] = true;
+            _logger.LogInformation("Added BypassModuleCheck for vCenter script: {ScriptPath}", scriptPath);
+        }
+
+        return await RunScriptWithCredentialObjectAsync(scriptPath, connection.Username, password, parameters, logPath);
     }
+
+    /// <summary>
+    /// Method for dual vCenter operations (source and target)
+    /// </summary>
+    public async Task<string> RunDualVCenterScriptAsync(string scriptPath,
+        VCenterConnection sourceConnection, string sourcePassword,
+        VCenterConnection targetConnection, string targetPassword,
+        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
+    {
+        try
+        {
+            _logger.LogInformation("Executing dual vCenter script: {ScriptPath}", scriptPath);
+
+            // Prepare the script content that creates both credential objects
+            var scriptContent = new StringBuilder();
+
+            // Create source PSCredential object
+            scriptContent.AppendLine("# Create Source PSCredential object");
+            scriptContent.AppendLine(
+                $"$sourceSecurePassword = ConvertTo-SecureString '{sourcePassword.Replace("'", "''")}' -AsPlainText -Force");
+            scriptContent.AppendLine(
+                $"$sourceCredential = New-Object System.Management.Automation.PSCredential('{sourceConnection.Username.Replace("'", "''")}', $sourceSecurePassword)");
+            scriptContent.AppendLine();
+
+            // Create target PSCredential object
+            scriptContent.AppendLine("# Create Target PSCredential object");
+            scriptContent.AppendLine(
+                $"$targetSecurePassword = ConvertTo-SecureString '{targetPassword.Replace("'", "''")}' -AsPlainText -Force");
+            scriptContent.AppendLine(
+                $"$targetCredential = New-Object System.Management.Automation.PSCredential('{targetConnection.Username.Replace("'", "''")}', $targetSecurePassword)");
+            scriptContent.AppendLine();
+
+            // Add server parameters
+            scriptContent.AppendLine($"$SourceVCenter = '{sourceConnection.ServerAddress.Replace("'", "''")}'");
+            scriptContent.AppendLine($"$TargetVCenter = '{targetConnection.ServerAddress.Replace("'", "''")}'");
+            scriptContent.AppendLine();
+
+            // Add any additional parameters
+            if (additionalParameters != null)
+            {
+                foreach (var param in additionalParameters)
+                {
+                    if (param.Value is bool boolValue)
+                    {
+                        scriptContent.AppendLine($"${param.Key} = ${boolValue.ToString().ToLower()}");
+                    }
+                    else if (param.Value is string stringValue)
+                    {
+                        scriptContent.AppendLine($"${param.Key} = '{stringValue.Replace("'", "''")}'");
+                    }
+                    else if (param.Value is Array arrayValue)
+                    {
+                        var arrayString = string.Join("','",
+                            arrayValue.Cast<object>().Select(o => o.ToString()?.Replace("'", "''")));
+                        scriptContent.AppendLine($"${param.Key} = @('{arrayString}')");
+                    }
+                    else
+                    {
+                        scriptContent.AppendLine($"${param.Key} = '{param.Value?.ToString()?.Replace("'", "''")}'");
+                    }
+                }
+
+                scriptContent.AppendLine();
+            }
+
+            // Add BypassModuleCheck if PowerCLI is confirmed
+            if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
+            {
+                scriptContent.AppendLine("$BypassModuleCheck = $true");
+                scriptContent.AppendLine();
+            }
+
+            // Add the script execution
+            scriptContent.AppendLine($"# Execute the target script");
+            scriptContent.AppendLine($". '{Path.GetFullPath(scriptPath)}'");
+
+            // Create temporary script file
+            var tempScriptPath = Path.GetTempFileName() + ".ps1";
+
+            try
+            {
+                await File.WriteAllTextAsync(tempScriptPath, scriptContent.ToString());
+
+                // Execute using existing external PowerShell method
+                var result = await RunScriptExternalAsync(tempScriptPath, new Dictionary<string, object>(), logPath);
+
+                return result;
+            }
+            finally
+            {
+                // Clean up temp file
+                try
+                {
+                    if (File.Exists(tempScriptPath))
+                    {
+                        File.Delete(tempScriptPath);
+                    }
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing dual vCenter script: {ScriptPath}", scriptPath);
+            return $"ERROR: {ex.Message}";
+        }
+    }
+}

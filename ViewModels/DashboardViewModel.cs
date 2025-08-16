@@ -137,114 +137,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         return "Connection failed";
         }
 
-    [RelayCommand]
-    private async Task TestSourceConnection ()
-    {
-        if (_sharedConnectionService.SourceConnection == null)
-        {
-            SourceConnectionStatus = "No source connection configured";
-            return;
-        }
 
-        try
-        {
-            IsTestingSource = true;
-            SourceConnectionStatus = "Testing connection...";
-            _logger.LogInformation("Starting source vCenter connection test for {Server}",
-                _sharedConnectionService.SourceConnection.ServerAddress);
-
-            // Get the password from credential service
-            var password = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
-
-            if (string.IsNullOrEmpty(password))
-            {
-                SourceConnectionStatus = "Error: No password found. Please configure credentials in Settings.";
-                _logger.LogWarning("No stored password found for source connection");
-                return;
-            }
-
-            // Use the new credential method
-            var result = await _powerShellService.RunScriptWithVCenterCredentialAsync(
-                "Scripts\\Test-vCenterConnection.ps1",
-                _sharedConnectionService.SourceConnection,
-                password);
-
-            if (result.Contains("SUCCESS"))
-            {
-                SourceConnectionStatus = "✅ Connected successfully";
-                _logger.LogInformation("Source vCenter connection test successful");
-            }
-            else
-            {
-                SourceConnectionStatus = "❌ Connection failed - check credentials";
-                _logger.LogError("Source vCenter connection test failed: {Result}", result);
-            }
-        }
-        catch (Exception ex)
-        {
-            SourceConnectionStatus = $"❌ Error: {ex.Message}";
-            _logger.LogError(ex, "Error testing source vCenter connection");
-        }
-        finally
-        {
-            IsTestingSource = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task TestTargetConnection ()
-    {
-        if (_sharedConnectionService.TargetConnection == null)
-        {
-            TargetConnectionStatus = "No target connection configured";
-            return;
-        }
-
-        try
-        {
-            IsTestingTarget = true;
-            TargetConnectionStatus = "Testing connection...";
-            _logger.LogInformation("Starting target vCenter connection test for {Server}",
-                _sharedConnectionService.TargetConnection.ServerAddress);
-
-            // Get the password from credential service
-            var password = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
-
-            if (string.IsNullOrEmpty(password))
-            {
-                TargetConnectionStatus = "Error: No password found. Please configure credentials in Settings.";
-                _logger.LogWarning("No stored password found for target connection");
-                return;
-            }
-
-            // Use the new credential method
-            var result = await _powerShellService.RunScriptWithVCenterCredentialAsync(
-                "Scripts\\Test-vCenterConnection.ps1",
-                _sharedConnectionService.TargetConnection,
-                password);
-
-            if (result.Contains("SUCCESS"))
-            {
-                TargetConnectionStatus = "✅ Connected successfully";
-                _logger.LogInformation("Target vCenter connection test successful");
-            }
-            else
-            {
-                TargetConnectionStatus = "❌ Connection failed - check credentials";
-                _logger.LogError("Target vCenter connection test failed: {Result}", result);
-            }
-        }
-        catch (Exception ex)
-        {
-            TargetConnectionStatus = $"❌ Error: {ex.Message}";
-            _logger.LogError(ex, "Error testing target vCenter connection");
-        }
-        finally
-        {
-            IsTestingTarget = false;
-        }
-    }
-    
     [RelayCommand]
     private async Task OnConnectSource ()
         {
@@ -254,7 +147,6 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         SourceConnectionStatus = "Connecting...";
         ScriptOutput = string.Empty;
 
-        // CRITICAL DEBUG: Check bypass status at the very beginning
         _logger.LogInformation("=== DASHBOARD SOURCE CONNECTION DEBUG START ===");
         _logger.LogInformation("DEBUG: [Dashboard] PowerCliConfirmedInstalled = {PowerCliConfirmed}",
             HybridPowerShellService.PowerCliConfirmedInstalled);
@@ -283,56 +175,26 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             finalPassword = password;
             }
 
-        // FIXED: Use string password directly instead of SecureString
-        var scriptParams = new Dictionary<string, object>
-        {
-            { "VCenterServer", SelectedSourceProfile.ServerAddress },
-            { "Username", SelectedSourceProfile.Username },
-            { "Password", finalPassword }
-        };
-
-        _logger.LogInformation("DEBUG: [Dashboard] Initial parameters created");
-
-        // CRITICAL: Add BypassModuleCheck BEFORE any other processing
-        if (HybridPowerShellService.PowerCliConfirmedInstalled)
-            {
-            scriptParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: [Dashboard] ADDED BypassModuleCheck=true to parameters");
-            }
-        else
-            {
-            _logger.LogInformation("DEBUG: [Dashboard] NOT adding BypassModuleCheck (PowerCLI not confirmed)");
-            }
-
-        // DEBUG: Check each parameter individually (excluding sensitive data)
-        _logger.LogInformation("DEBUG: [Dashboard] Final parameter verification:");
-        foreach (var param in scriptParams)
-            {
-            if (param.Key.ToLower().Contains("password"))
-                {
-                _logger.LogInformation("DEBUG: [Dashboard] Parameter {Key} = [REDACTED] (Type: {Type})",
-                    param.Key, param.Value?.GetType().Name ?? "null");
-                }
-            else
-                {
-                _logger.LogInformation("DEBUG: [Dashboard] Parameter {Key} = {Value} (Type: {Type})",
-                    param.Key, param.Value, param.Value?.GetType().Name ?? "null");
-                }
-            }
-
-        _logger.LogInformation("DEBUG: [Dashboard] About to call RunScriptAsync");
+        _logger.LogInformation("DEBUG: [Dashboard] About to call RunVCenterScriptAsync");
 
         string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-        string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams, logPath);
+
+        // Use the new credential-based method
+        string result = await _powerShellService.RunVCenterScriptAsync(
+            ".\\Scripts\\Test-vCenterConnection.ps1",
+            SelectedSourceProfile,
+            finalPassword,
+            null, // no additional parameters
+            logPath);
 
         _logger.LogInformation("DEBUG: [Dashboard] Script execution completed");
         _logger.LogInformation("=== DASHBOARD SOURCE CONNECTION DEBUG END ===");
 
-        // FIXED: Use simplified status messages
+        // Use simplified status messages
         SourceConnectionStatus = GetSimpleConnectionStatus(result, SelectedSourceProfile.ServerAddress);
 
-        // Update shared connection service and detailed output
-        if (result.Trim() == "Success")
+        // Update shared connection service
+        if (result.Contains("SUCCESS") || result.Trim() == "Success")
             {
             _sharedConnectionService.SourceConnection = SelectedSourceProfile;
             }
@@ -341,10 +203,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             _sharedConnectionService.SourceConnection = null;
             }
 
-        // Put the detailed technical output in the script output area where it belongs
         ScriptOutput = result;
         IsJobRunning = false;
         }
+
 
     [RelayCommand]
     private async Task OnConnectTarget ()
@@ -355,7 +217,6 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         TargetConnectionStatus = "Connecting...";
         ScriptOutput = string.Empty;
 
-        // CRITICAL DEBUG: Check bypass status at the very beginning
         _logger.LogInformation("=== TARGET CONNECTION DEBUG START ===");
         _logger.LogInformation("DEBUG: [Target] PowerCliConfirmedInstalled = {PowerCliConfirmed}",
             HybridPowerShellService.PowerCliConfirmedInstalled);
@@ -384,53 +245,23 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             finalPassword = password;
             }
 
-        // FIXED: Use string password directly instead of SecureString
-        var scriptParams = new Dictionary<string, object>
-        {
-            { "VCenterServer", SelectedTargetProfile.ServerAddress },
-            { "Username", SelectedTargetProfile.Username },
-            { "Password", finalPassword }
-        };
-
-        _logger.LogInformation("DEBUG: [Target] Initial parameters created");
-
-        // CRITICAL: Add BypassModuleCheck BEFORE any other processing
-        if (HybridPowerShellService.PowerCliConfirmedInstalled)
-            {
-            scriptParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: [Target] ADDED BypassModuleCheck=true to parameters");
-            }
-        else
-            {
-            _logger.LogInformation("DEBUG: [Target] NOT adding BypassModuleCheck (PowerCLI not confirmed)");
-            }
-
-        // DEBUG: Check each parameter individually (excluding sensitive data)
-        _logger.LogInformation("DEBUG: [Target] Final parameter verification:");
-        foreach (var param in scriptParams)
-            {
-            if (param.Key.ToLower().Contains("password"))
-                {
-                _logger.LogInformation("DEBUG: [Target] Parameter {Key} = [REDACTED] (Type: {Type})",
-                    param.Key, param.Value?.GetType().Name ?? "null");
-                }
-            else
-                {
-                _logger.LogInformation("DEBUG: [Target] Parameter {Key} = {Value} (Type: {Type})",
-                    param.Key, param.Value, param.Value?.GetType().Name ?? "null");
-                }
-            }
-
         string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-        string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams, logPath);
+
+        // Use the new credential-based method
+        string result = await _powerShellService.RunVCenterScriptAsync(
+            ".\\Scripts\\Test-vCenterConnection.ps1",
+            SelectedTargetProfile,
+            finalPassword,
+            null, // no additional parameters
+            logPath);
 
         _logger.LogInformation("=== TARGET CONNECTION DEBUG END ===");
 
-        // FIXED: Use simplified status messages
+        // Use simplified status messages
         TargetConnectionStatus = GetSimpleConnectionStatus(result, SelectedTargetProfile.ServerAddress);
 
-        // Update shared connection service and detailed output
-        if (result.Trim() == "Success")
+        // Update shared connection service
+        if (result.Contains("SUCCESS") || result.Trim() == "Success")
             {
             _sharedConnectionService.TargetConnection = SelectedTargetProfile;
             }
@@ -439,7 +270,6 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             _sharedConnectionService.TargetConnection = null;
             }
 
-        // Put the detailed technical output in the script output area where it belongs
         ScriptOutput = result;
         IsJobRunning = false;
         }
