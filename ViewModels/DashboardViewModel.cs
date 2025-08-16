@@ -1,14 +1,15 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Security;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using Wpf.Ui.Abstractions.Controls;
-using Microsoft.Extensions.Logging;
-using System.Linq;
 
 namespace VCenterMigrationTool.ViewModels;
 
@@ -137,7 +138,6 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         return "Connection failed";
         }
 
-
     [RelayCommand]
     private async Task OnConnectSource ()
         {
@@ -179,15 +179,24 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
         string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
 
-        // Use the new credential-based method
+        // FIX: Explicitly add BypassModuleCheck when PowerCLI is confirmed
+        var additionalParams = new Dictionary<string, object>();
+        if (HybridPowerShellService.PowerCliConfirmedInstalled)
+            {
+            additionalParams["BypassModuleCheck"] = true;
+            _logger.LogInformation("DEBUG: [Dashboard] Explicitly adding BypassModuleCheck=true for connection test");
+            }
+
+        // Use the credential-based method with explicit bypass parameter
         string result = await _powerShellService.RunVCenterScriptAsync(
             ".\\Scripts\\Test-vCenterConnection.ps1",
             SelectedSourceProfile,
             finalPassword,
-            null, // no additional parameters
+            additionalParams, // Pass the additional parameters including BypassModuleCheck
             logPath);
 
         _logger.LogInformation("DEBUG: [Dashboard] Script execution completed");
+        _logger.LogInformation("DEBUG: [Dashboard] Result: {Result}", result?.Substring(0, Math.Min(result.Length, 100)));
         _logger.LogInformation("=== DASHBOARD SOURCE CONNECTION DEBUG END ===");
 
         // Use simplified status messages
@@ -206,7 +215,6 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         ScriptOutput = result;
         IsJobRunning = false;
         }
-
 
     [RelayCommand]
     private async Task OnConnectTarget ()
@@ -247,14 +255,24 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
         string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
 
-        // Use the new credential-based method
+        // FIX: Explicitly add BypassModuleCheck when PowerCLI is confirmed
+        var additionalParams = new Dictionary<string, object>();
+        if (HybridPowerShellService.PowerCliConfirmedInstalled)
+            {
+            additionalParams["BypassModuleCheck"] = true;
+            _logger.LogInformation("DEBUG: [Target] Explicitly adding BypassModuleCheck=true for connection test");
+            }
+
+        // Use the credential-based method with explicit bypass parameter
         string result = await _powerShellService.RunVCenterScriptAsync(
             ".\\Scripts\\Test-vCenterConnection.ps1",
             SelectedTargetProfile,
             finalPassword,
-            null, // no additional parameters
+            additionalParams, // Pass the additional parameters including BypassModuleCheck
             logPath);
 
+        _logger.LogInformation("DEBUG: [Target] Script execution completed");
+        _logger.LogInformation("DEBUG: [Target] Result: {Result}", result?.Substring(0, Math.Min(result.Length, 100)));
         _logger.LogInformation("=== TARGET CONNECTION DEBUG END ===");
 
         // Use simplified status messages
@@ -309,14 +327,15 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             { "ExportPath", exportPath }
         };
 
-        // FIXED: Add BypassModuleCheck manually if needed
-        if (HybridPowerShellService.PowerCliConfirmedInstalled)
-            {
-            scriptParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: [TestJob] Added BypassModuleCheck=true for export script");
-            }
+        // FIX: Use the optimized method which handles BypassModuleCheck automatically
+        _logger.LogInformation("DEBUG: [TestJob] Using RunScriptOptimizedAsync for export script");
+        _logger.LogInformation("DEBUG: [TestJob] PowerCliConfirmedInstalled = {PowerCliConfirmed}",
+            HybridPowerShellService.PowerCliConfirmedInstalled);
 
-        var result = await _powerShellService.RunScriptAsync(".\\Scripts\\Export-vCenterConfig.ps1", scriptParams);
+        // Use the optimized version which automatically adds BypassModuleCheck when appropriate
+        var result = await _powerShellService.RunScriptOptimizedAsync(
+            ".\\Scripts\\Export-vCenterConfig.ps1",
+            scriptParams);
 
         ScriptOutput = result;
         CurrentJobText = "Test job completed.";
