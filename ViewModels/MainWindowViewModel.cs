@@ -30,6 +30,7 @@ namespace VCenterMigrationTool.ViewModels
                 new NavigationViewItem("vCenter Objects", SymbolRegular.Box24, typeof(Views.Pages.VCenterMigrationPage)),
                 new NavigationViewItem("ESXi Hosts", SymbolRegular.Server24, typeof(Views.Pages.HostMigrationPage)),
                 new NavigationViewItem("Virtual Machines", SymbolRegular.Desktop24, typeof(Views.Pages.VmMigrationPage)),
+                new NavigationViewItem("Resource Pools", SymbolRegular.DatabaseStack16, typeof(Views.Pages.ResourcePoolMigrationPage)),
                 new NavigationViewItem("Network", SymbolRegular.NetworkCheck24, typeof(Views.Pages.NetworkMigrationPage))
             };
 

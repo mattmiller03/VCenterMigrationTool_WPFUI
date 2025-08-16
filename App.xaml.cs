@@ -99,6 +99,8 @@ public partial class App
         services.AddSingleton<VmMigrationViewModel>();
         services.AddSingleton<NetworkMigrationPage>();
         services.AddSingleton<NetworkMigrationViewModel>();
+        services.AddSingleton<ResourcePoolMigrationPage>();
+        services.AddSingleton<ResourcePoolMigrationViewModel>();
 
         // Settings Page and its sub-ViewModels
         services.AddSingleton<SettingsPage>();

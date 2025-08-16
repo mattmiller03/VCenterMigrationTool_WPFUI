@@ -2,7 +2,6 @@
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -14,9 +13,6 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace VCenterMigrationTool.ViewModels;
 
-/// <summary>
-/// ViewModel for managing resource pool export and import operations between vCenters
-/// </summary>
 public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigationAware
     {
     private readonly HybridPowerShellService _powerShellService;
@@ -39,13 +35,10 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
     private ClusterInfo? _selectedTargetCluster;
 
     [ObservableProperty]
-    private ObservableCollection<ResourcePoolInfo> _availableResourcePools = new();
+    private ObservableCollection<ResourcePoolInfo> _sourceResourcePools = new();
 
     [ObservableProperty]
-    private ObservableCollection<string> _exportFiles = new();
-
-    [ObservableProperty]
-    private string? _selectedExportFile;
+    private bool _isLoadingData;
 
     [ObservableProperty]
     private bool _isOperationRunning;
@@ -64,12 +57,15 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
     private bool _exportAllPools = true;
 
     [ObservableProperty]
-    private string _specificPoolNames = string.Empty;
+    private string _exportFilePath = string.Empty;
 
     [ObservableProperty]
-    private string _exportFileName = "ResourcePools";
+    private ObservableCollection<string> _selectedPoolNames = new();
 
     // Import Options
+    [ObservableProperty]
+    private string _importFilePath = string.Empty;
+
     [ObservableProperty]
     private bool _removeExistingPools = false;
 
@@ -77,7 +73,14 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
     private bool _moveVMsToResourcePools = true;
 
     [ObservableProperty]
-    private string _lastReportPath = string.Empty;
+    private string _reportFilePath = string.Empty;
+
+    // Additional properties for UI binding
+    [ObservableProperty]
+    private bool _isLoadingData;
+
+    [ObservableProperty]
+    private ObservableCollection<string> _selectedPoolNames = new();
 
     public ResourcePoolMigrationViewModel (
         HybridPowerShellService powerShellService,
@@ -93,6 +96,11 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
         _credentialService = credentialService;
         _dialogService = dialogService;
         _logger = logger;
+
+        // Initialize default paths
+        var exportPath = _configurationService.GetConfiguration().ExportPath ?? "Exports";
+        ExportFilePath = Path.Combine(exportPath, "ResourcePools.json");
+        ReportFilePath = Path.Combine(exportPath, "ResourcePoolMigration_Report.html");
         }
 
     public async Task OnNavigatedToAsync ()
@@ -101,71 +109,163 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
         if (_sharedConnectionService.SourceConnection != null && _sharedConnectionService.TargetConnection != null)
             {
             OperationStatus = "Connections available - ready to load data";
-            await LoadClusters();
             }
         else
             {
             OperationStatus = "Please establish source and target connections on the Dashboard first";
             }
 
-        // Load existing export files
-        LoadExportFiles();
+        await Task.CompletedTask;
         }
 
     public async Task OnNavigatedFromAsync () => await Task.CompletedTask;
 
     [RelayCommand]
-    private async Task LoadClusters ()
+    private async Task LoadSourceClusters ()
         {
-        if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
+        if (_sharedConnectionService.SourceConnection == null)
             {
-            LogOutput += "Error: Both source and target vCenter connections are required.\n";
+            LogOutput = "Error: No source vCenter connection. Please connect on the Dashboard first.\n";
             return;
             }
 
+        IsLoadingData = true;
+        OperationStatus = "Loading source clusters...";
+        LogOutput = "Starting source cluster discovery...\n";
+
         try
             {
-            IsOperationRunning = true;
-            OperationStatus = "Loading clusters from both vCenters...";
-            LogOutput += "Loading cluster information...\n";
+            var connection = _sharedConnectionService.SourceConnection;
+            var password = await GetConnectionPassword(connection);
 
-            // Load source clusters
-            await LoadClustersFromConnection(_sharedConnectionService.SourceConnection, SourceClusters, "source");
+            var scriptParams = new Dictionary<string, object>
+            {
+                { "VCenterServer", connection.ServerAddress },
+                { "Username", connection.Username },
+                { "Password", password }
+            };
 
-            // Load target clusters
-            await LoadClustersFromConnection(_sharedConnectionService.TargetConnection, TargetClusters, "target");
+            if (HybridPowerShellService.PowerCliConfirmedInstalled)
+                {
+                scriptParams["BypassModuleCheck"] = true;
+                }
 
-            OperationStatus = $"Loaded {SourceClusters.Count} source clusters and {TargetClusters.Count} target clusters";
-            LogOutput += $"Cluster loading completed successfully.\n";
+            string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
+
+            var clusters = await _powerShellService.RunScriptAndGetObjectsOptimizedAsync<ClusterInfo>(
+                ".\\Scripts\\Get-Clusters.ps1",
+                scriptParams,
+                logPath);
+
+            if (clusters?.Any() == true)
+                {
+                SourceClusters = new ObservableCollection<ClusterInfo>(clusters);
+                OperationStatus = $"Loaded {SourceClusters.Count} source clusters";
+                LogOutput += $"Successfully loaded source clusters:\n";
+                foreach (var cluster in SourceClusters)
+                    {
+                    LogOutput += $"  - {cluster.Name}\n";
+                    }
+                }
+            else
+                {
+                OperationStatus = "No clusters found in source vCenter";
+                LogOutput += "Warning: No clusters found in source vCenter.\n";
+                }
             }
         catch (Exception ex)
             {
-            _logger.LogError(ex, "Failed to load clusters");
-            OperationStatus = "Failed to load clusters";
-            LogOutput += $"Error loading clusters: {ex.Message}\n";
+            _logger.LogError(ex, "Failed to load source clusters");
+            OperationStatus = "Failed to load source clusters";
+            LogOutput += $"Error loading source clusters: {ex.Message}\n";
             }
         finally
             {
-            IsOperationRunning = false;
+            IsLoadingData = false;
+            }
+        }
+
+    [RelayCommand]
+    private async Task LoadTargetClusters ()
+        {
+        if (_sharedConnectionService.TargetConnection == null)
+            {
+            LogOutput += "Error: No target vCenter connection. Please connect on the Dashboard first.\n";
+            return;
+            }
+
+        IsLoadingData = true;
+        OperationStatus = "Loading target clusters...";
+        LogOutput += "Starting target cluster discovery...\n";
+
+        try
+            {
+            var connection = _sharedConnectionService.TargetConnection;
+            var password = await GetConnectionPassword(connection);
+
+            var scriptParams = new Dictionary<string, object>
+            {
+                { "VCenterServer", connection.ServerAddress },
+                { "Username", connection.Username },
+                { "Password", password }
+            };
+
+            if (HybridPowerShellService.PowerCliConfirmedInstalled)
+                {
+                scriptParams["BypassModuleCheck"] = true;
+                }
+
+            string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
+
+            var clusters = await _powerShellService.RunScriptAndGetObjectsOptimizedAsync<ClusterInfo>(
+                ".\\Scripts\\Get-Clusters.ps1",
+                scriptParams,
+                logPath);
+
+            if (clusters?.Any() == true)
+                {
+                TargetClusters = new ObservableCollection<ClusterInfo>(clusters);
+                OperationStatus = $"Loaded {TargetClusters.Count} target clusters";
+                LogOutput += $"Successfully loaded target clusters:\n";
+                foreach (var cluster in TargetClusters)
+                    {
+                    LogOutput += $"  - {cluster.Name}\n";
+                    }
+                }
+            else
+                {
+                OperationStatus = "No clusters found in target vCenter";
+                LogOutput += "Warning: No clusters found in target vCenter.\n";
+                }
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Failed to load target clusters");
+            OperationStatus = "Failed to load target clusters";
+            LogOutput += $"Error loading target clusters: {ex.Message}\n";
+            }
+        finally
+            {
+            IsLoadingData = false;
             }
         }
 
     [RelayCommand]
     private async Task LoadResourcePools ()
         {
-        if (SelectedSourceCluster == null)
+        if (_sharedConnectionService.SourceConnection == null || SelectedSourceCluster == null)
             {
-            LogOutput += "Error: Please select a source cluster first.\n";
+            LogOutput += "Error: Source connection and cluster selection required.\n";
             return;
             }
 
+        IsLoadingData = true;
+        OperationStatus = "Loading resource pools...";
+        LogOutput += $"Loading resource pools from cluster: {SelectedSourceCluster.Name}...\n";
+
         try
             {
-            IsOperationRunning = true;
-            OperationStatus = "Loading resource pools from source cluster...";
-            LogOutput += $"Loading resource pools from cluster: {SelectedSourceCluster.Name}\n";
-
-            var connection = _sharedConnectionService.SourceConnection!;
+            var connection = _sharedConnectionService.SourceConnection;
             var password = await GetConnectionPassword(connection);
 
             var scriptParams = new Dictionary<string, object>
@@ -190,24 +290,19 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
 
             if (resourcePools?.Any() == true)
                 {
-                AvailableResourcePools = new ObservableCollection<ResourcePoolInfo>(resourcePools.OrderBy(rp => rp.Name));
-                OperationStatus = $"Loaded {AvailableResourcePools.Count} resource pools";
-                LogOutput += $"Found {AvailableResourcePools.Count} resource pools:\n";
-
-                foreach (var pool in AvailableResourcePools.Take(10))
+                SourceResourcePools = new ObservableCollection<ResourcePoolInfo>(resourcePools);
+                OperationStatus = $"Loaded {SourceResourcePools.Count} resource pools";
+                LogOutput += $"Successfully loaded resource pools:\n";
+                foreach (var pool in SourceResourcePools)
                     {
-                    LogOutput += $"  - {pool.Name} (Parent: {pool.ParentName})\n";
-                    }
-
-                if (AvailableResourcePools.Count > 10)
-                    {
-                    LogOutput += $"  ... and {AvailableResourcePools.Count - 10} more pools\n";
+                    LogOutput += $"  - {pool.Name} ({pool.VmCount} VMs)\n";
                     }
                 }
             else
                 {
-                OperationStatus = "No custom resource pools found in selected cluster";
-                LogOutput += "No custom resource pools found (excluding built-in pools).\n";
+                OperationStatus = "No custom resource pools found";
+                LogOutput += "No custom resource pools found in the selected cluster.\n";
+                SourceResourcePools.Clear();
                 }
             }
         catch (Exception ex)
@@ -218,67 +313,69 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             }
         finally
             {
-            IsOperationRunning = false;
+            IsLoadingData = false;
             }
         }
 
     [RelayCommand]
     private async Task ExportResourcePools ()
         {
-        if (SelectedSourceCluster == null)
+        if (_sharedConnectionService.SourceConnection == null || SelectedSourceCluster == null)
             {
-            LogOutput += "Error: Please select a source cluster for export.\n";
+            LogOutput += "Error: Source connection and cluster selection required for export.\n";
             return;
             }
 
+        if (string.IsNullOrWhiteSpace(ExportFilePath))
+            {
+            LogOutput += "Error: Export file path is required.\n";
+            return;
+            }
+
+        IsOperationRunning = true;
+        OperationProgress = 0;
+        OperationStatus = "Exporting resource pools...";
+        LogOutput += $"\n=== STARTING RESOURCE POOL EXPORT ===\n";
+
         try
             {
-            IsOperationRunning = true;
-            OperationProgress = 0;
-            OperationStatus = "Exporting resource pools...";
-            LogOutput += $"\n=== STARTING RESOURCE POOL EXPORT ===\n";
-            LogOutput += $"Source Cluster: {SelectedSourceCluster.Name}\n";
-
-            var connection = _sharedConnectionService.SourceConnection!;
+            var connection = _sharedConnectionService.SourceConnection;
             var password = await GetConnectionPassword(connection);
 
-            var exportPath = _configurationService.GetConfiguration().ExportPath ?? "Exports";
-            Directory.CreateDirectory(exportPath);
-
-            var outputJsonPath = Path.Combine(exportPath, $"{ExportFileName}.json");
+            // Ensure export directory exists
+            var exportDir = Path.GetDirectoryName(ExportFilePath);
+            if (!string.IsNullOrEmpty(exportDir) && !Directory.Exists(exportDir))
+                {
+                Directory.CreateDirectory(exportDir);
+                }
 
             var scriptParams = new Dictionary<string, object>
             {
                 { "SourceVC", connection.ServerAddress },
                 { "SourceCred", CreateCredentialParameter(connection.Username, password) },
-                { "OutputJson", outputJsonPath },
-                { "LogPath", Path.Combine(_configurationService.GetConfiguration().LogPath ?? "Logs", "ResourcePoolExport.log") }
+                { "OutputJson", ExportFilePath },
+                { "ClusterName", SelectedSourceCluster.Name },
+                { "LogPath", Path.Combine(_configurationService.GetConfiguration().LogPath ?? "Logs", "ResourcePool-Export.log") }
             };
-
-            OperationProgress = 25;
 
             if (ExportAllPools)
                 {
                 scriptParams["All"] = true;
-                scriptParams["ClusterName"] = SelectedSourceCluster.Name;
-                LogOutput += "Export mode: All custom resource pools\n";
-                }
-            else if (!string.IsNullOrWhiteSpace(SpecificPoolNames))
-                {
-                var poolNames = SpecificPoolNames.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(name => name.Trim())
-                    .ToArray();
-                scriptParams["PoolNames"] = poolNames;
-                LogOutput += $"Export mode: Specific pools - {string.Join(", ", poolNames)}\n";
+                LogOutput += $"Exporting all resource pools from cluster: {SelectedSourceCluster.Name}\n";
                 }
             else
                 {
-                LogOutput += "Error: Please specify either 'All Pools' or provide specific pool names.\n";
-                return;
+                if (!SelectedPoolNames.Any())
+                    {
+                    LogOutput += "Error: No resource pools selected for export.\n";
+                    return;
+                    }
+                scriptParams["PoolNames"] = SelectedPoolNames.ToArray();
+                LogOutput += $"Exporting selected resource pools: {string.Join(", ", SelectedPoolNames)}\n";
                 }
 
-            OperationProgress = 50;
-            OperationStatus = "Executing export script...";
+            OperationProgress = 25;
+            OperationStatus = "Executing resource pool export script...";
 
             string result = await _powerShellService.RunScriptOptimizedAsync(
                 ".\\Scripts\\ResourcePool-export.ps1",
@@ -291,24 +388,23 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             LogOutput += result + "\n";
             LogOutput += "=== EXPORT COMPLETED ===\n";
 
-            // Refresh export files list
-            LoadExportFiles();
-
             if (result.Contains("Exported") && result.Contains("pool definitions"))
                 {
-                LogOutput += "\n✅ Resource pools exported successfully!\n";
-                OperationStatus = "Export completed successfully";
+                OperationStatus = "Resource pools exported successfully!";
+                LogOutput += $"\n✅ Resource pools exported to timestamped file.\n";
+                LogOutput += $"Check the export directory for the timestamped JSON file.\n";
                 }
             else
                 {
-                LogOutput += "\n⚠️ Export may have encountered issues. Please review the log.\n";
+                OperationStatus = "Export completed with issues - check logs";
+                LogOutput += $"\n⚠️ Export may have encountered issues. Please review the output above.\n";
                 }
             }
         catch (Exception ex)
             {
             _logger.LogError(ex, "Resource pool export failed");
             OperationStatus = "Resource pool export failed";
-            LogOutput += $"\nERROR: Export failed: {ex.Message}\n";
+            LogOutput += $"\nERROR: Resource pool export failed: {ex.Message}\n";
             }
         finally
             {
@@ -319,59 +415,65 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
     [RelayCommand]
     private async Task ImportResourcePools ()
         {
-        if (SelectedTargetCluster == null)
+        if (_sharedConnectionService.TargetConnection == null || SelectedTargetCluster == null)
             {
-            LogOutput += "Error: Please select a target cluster for import.\n";
+            LogOutput += "Error: Target connection and cluster selection required for import.\n";
             return;
             }
 
-        if (string.IsNullOrEmpty(SelectedExportFile))
+        if (string.IsNullOrWhiteSpace(ImportFilePath) || !File.Exists(ImportFilePath))
             {
-            LogOutput += "Error: Please select an export file to import.\n";
+            LogOutput += "Error: Valid import file path is required.\n";
             return;
             }
+
+        IsOperationRunning = true;
+        OperationProgress = 0;
+        OperationStatus = "Importing resource pools...";
+        LogOutput += $"\n=== STARTING RESOURCE POOL IMPORT ===\n";
 
         try
             {
-            IsOperationRunning = true;
-            OperationProgress = 0;
-            OperationStatus = "Importing resource pools...";
-            LogOutput += $"\n=== STARTING RESOURCE POOL IMPORT ===\n";
-            LogOutput += $"Target Cluster: {SelectedTargetCluster.Name}\n";
-            LogOutput += $"Import File: {Path.GetFileName(SelectedExportFile)}\n";
-            LogOutput += $"Remove Existing Pools: {RemoveExistingPools}\n";
-            LogOutput += $"Move VMs to Pools: {MoveVMsToResourcePools}\n";
-
-            var connection = _sharedConnectionService.TargetConnection!;
+            var connection = _sharedConnectionService.TargetConnection;
             var password = await GetConnectionPassword(connection);
-
-            var reportsPath = Path.Combine(_configurationService.GetConfiguration().ExportPath ?? "Exports", "Reports");
-            Directory.CreateDirectory(reportsPath);
-
-            var reportPath = Path.Combine(reportsPath, $"ResourcePoolMigration_{DateTime.Now:yyyyMMdd_HHmmss}.html");
 
             var scriptParams = new Dictionary<string, object>
             {
                 { "DestVC", connection.ServerAddress },
                 { "DestCred", CreateCredentialParameter(connection.Username, password) },
-                { "InputJson", SelectedExportFile },
+                { "InputJson", ImportFilePath },
                 { "TargetCluster", SelectedTargetCluster.Name },
-                { "LogPath", Path.Combine(_configurationService.GetConfiguration().LogPath ?? "Logs", "ResourcePoolImport.log") },
-                { "ReportPath", reportPath }
+                { "LogPath", Path.Combine(_configurationService.GetConfiguration().LogPath ?? "Logs", "ResourcePool-Import.log") }
             };
+
+            if (!string.IsNullOrWhiteSpace(ReportFilePath))
+                {
+                // Ensure report directory exists
+                var reportDir = Path.GetDirectoryName(ReportFilePath);
+                if (!string.IsNullOrEmpty(reportDir) && !Directory.Exists(reportDir))
+                    {
+                    Directory.CreateDirectory(reportDir);
+                    }
+                scriptParams["ReportPath"] = ReportFilePath;
+                }
 
             if (RemoveExistingPools)
                 {
                 scriptParams["RemoveAllPools"] = true;
+                LogOutput += "⚠️ Option enabled: Remove existing resource pools before import\n";
                 }
 
             if (MoveVMsToResourcePools)
                 {
                 scriptParams["MoveVMs"] = true;
+                LogOutput += "📦 Option enabled: Move VMs to their designated resource pools\n";
                 }
 
+            LogOutput += $"Target cluster: {SelectedTargetCluster.Name}\n";
+            LogOutput += $"Import file: {Path.GetFileName(ImportFilePath)}\n\n";
+
             OperationProgress = 25;
-            OperationStatus = "Executing import script...";
+            OperationStatus = "Executing resource pool import script...";
 
             string result = await _powerShellService.RunScriptOptimizedAsync(
                 ".\\Scripts\\ResourcePool-import.ps1",
@@ -384,25 +486,39 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             LogOutput += result + "\n";
             LogOutput += "=== IMPORT COMPLETED ===\n";
 
-            // Store report path for opening later
-            LastReportPath = reportPath;
-
-            if (result.Contains("Pools Created:") || result.Contains("HTML report generated"))
+            if (result.Contains("HTML report generated"))
                 {
-                LogOutput += "\n✅ Resource pool import completed!\n";
-                LogOutput += $"📊 HTML report generated: {Path.GetFileName(reportPath)}\n";
-                OperationStatus = "Import completed successfully";
+                OperationStatus = "Resource pools imported successfully!";
+                LogOutput += $"\n✅ Resource pools imported successfully.\n";
+                LogOutput += $"📊 Detailed HTML report generated for review.\n";
+
+                // Extract report path from output if available
+                if (result.Contains("HTML report generated at:"))
+                    {
+                    var reportPathMatch = System.Text.RegularExpressions.Regex.Match(result, @"HTML report generated at: (.+)");
+                    if (reportPathMatch.Success)
+                        {
+                        var actualReportPath = reportPathMatch.Groups[1].Value.Trim();
+                        LogOutput += $"Report location: {actualReportPath}\n";
+                        }
+                    }
+                }
+            else if (result.Contains("IMPORT SUMMARY"))
+                {
+                OperationStatus = "Import completed - check report for details";
+                LogOutput += $"\n📋 Import process completed. Please review the detailed output above.\n";
                 }
             else
                 {
-                LogOutput += "\n⚠️ Import may have encountered issues. Please review the log.\n";
+                OperationStatus = "Import completed with issues - check logs";
+                LogOutput += $"\n⚠️ Import may have encountered issues. Please review the output above.\n";
                 }
             }
         catch (Exception ex)
             {
             _logger.LogError(ex, "Resource pool import failed");
             OperationStatus = "Resource pool import failed";
-            LogOutput += $"\nERROR: Import failed: {ex.Message}\n";
+            LogOutput += $"\nERROR: Resource pool import failed: {ex.Message}\n";
             }
         finally
             {
@@ -413,124 +529,84 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
     [RelayCommand]
     private void BrowseExportFile ()
         {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+            Title = "Select Export File Location",
+            Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
+            DefaultExt = "json",
+            FileName = "ResourcePools.json",
+            InitialDirectory = _configurationService.GetConfiguration().ExportPath ?? "Exports"
+            };
+
+        if (dialog.ShowDialog() == true)
+            {
+            ExportFilePath = dialog.FileName;
+            }
+        }
+
+    [RelayCommand]
+    private void BrowseImportFile ()
+        {
         var dialog = new Microsoft.Win32.OpenFileDialog
             {
-            Title = "Select Resource Pool Export File",
+            Title = "Select Import File",
             Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
             InitialDirectory = _configurationService.GetConfiguration().ExportPath ?? "Exports"
             };
 
         if (dialog.ShowDialog() == true)
             {
-            SelectedExportFile = dialog.FileName;
+            ImportFilePath = dialog.FileName;
             }
         }
 
     [RelayCommand]
-    private void OpenReport ()
+    private void BrowseReportFile ()
         {
-        if (!string.IsNullOrEmpty(LastReportPath) && File.Exists(LastReportPath))
+        var dialog = new Microsoft.Win32.SaveFileDialog
             {
-            try
-                {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                    FileName = LastReportPath,
-                    UseShellExecute = true
-                    });
-                }
-            catch (Exception ex)
-                {
-                _logger.LogError(ex, "Failed to open report");
-                LogOutput += $"Error opening report: {ex.Message}\n";
-                }
+            Title = "Select Report File Location",
+            Filter = "HTML Files (*.html)|*.html|All Files (*.*)|*.*",
+            DefaultExt = "html",
+            FileName = $"ResourcePoolMigration_{DateTime.Now:yyyyMMdd_HHmmss}.html",
+            InitialDirectory = _configurationService.GetConfiguration().ExportPath ?? "Exports"
+            };
+
+        if (dialog.ShowDialog() == true)
+            {
+            ReportFilePath = dialog.FileName;
+            }
+        }
+
+    [RelayCommand]
+    private void TogglePoolSelection (ResourcePoolInfo? pool)
+        {
+        if (pool == null) return;
+
+        if (SelectedPoolNames.Contains(pool.Name))
+            {
+            SelectedPoolNames.Remove(pool.Name);
             }
         else
             {
-            LogOutput += "No report available to open.\n";
+            SelectedPoolNames.Add(pool.Name);
             }
         }
 
     [RelayCommand]
-    private void RefreshExportFiles ()
+    private void SelectAllPools ()
         {
-        LoadExportFiles();
-        LogOutput += "Export files list refreshed.\n";
-        }
-
-    private async Task LoadClustersFromConnection (VCenterConnection connection, ObservableCollection<ClusterInfo> clusters, string connectionType)
-        {
-        try
+        SelectedPoolNames.Clear();
+        foreach (var pool in SourceResourcePools)
             {
-            var password = await GetConnectionPassword(connection);
-
-            var scriptParams = new Dictionary<string, object>
-            {
-                { "VCenterServer", connection.ServerAddress },
-                { "Username", connection.Username },
-                { "Password", password }
-            };
-
-            if (HybridPowerShellService.PowerCliConfirmedInstalled)
-                {
-                scriptParams["BypassModuleCheck"] = true;
-                }
-
-            string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-
-            var clusterData = await _powerShellService.RunScriptAndGetObjectsOptimizedAsync<ClusterInfo>(
-                ".\\Scripts\\Get-Clusters.ps1",
-                scriptParams,
-                logPath);
-
-            if (clusterData?.Any() == true)
-                {
-                clusters.Clear();
-                foreach (var cluster in clusterData.OrderBy(c => c.Name))
-                    {
-                    clusters.Add(cluster);
-                    }
-
-                LogOutput += $"Loaded {clusters.Count} {connectionType} clusters: {string.Join(", ", clusters.Select(c => c.Name))}\n";
-                }
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Failed to load {ConnectionType} clusters", connectionType);
-            LogOutput += $"Error loading {connectionType} clusters: {ex.Message}\n";
+            SelectedPoolNames.Add(pool.Name);
             }
         }
 
-    private void LoadExportFiles ()
+    [RelayCommand]
+    private void UnselectAllPools ()
         {
-        try
-            {
-            var exportPath = _configurationService.GetConfiguration().ExportPath ?? "Exports";
-
-            if (Directory.Exists(exportPath))
-                {
-                var jsonFiles = Directory.GetFiles(exportPath, "*ResourcePool*.json", SearchOption.AllDirectories)
-                    .Union(Directory.GetFiles(exportPath, "*pool*.json", SearchOption.AllDirectories))
-                    .OrderByDescending(f => File.GetLastWriteTime(f))
-                    .ToArray();
-
-                ExportFiles.Clear();
-                foreach (var file in jsonFiles)
-                    {
-                    ExportFiles.Add(file);
-                    }
-
-                if (ExportFiles.Any())
-                    {
-                    SelectedExportFile = ExportFiles.First();
-                    }
-                }
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Failed to load export files");
-            LogOutput += $"Error loading export files: {ex.Message}\n";
-            }
+        SelectedPoolNames.Clear();
         }
 
     private async Task<string> GetConnectionPassword (VCenterConnection connection)
