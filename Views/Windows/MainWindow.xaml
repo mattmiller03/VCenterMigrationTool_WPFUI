@@ -7,6 +7,7 @@
     xmlns:tray="http://schemas.lepo.co/wpfui/2022/xaml/tray"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
+    xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
     mc:Ignorable="d"
     Title="{Binding ApplicationTitle, Mode=OneWay}"    Width="1100"
     Height="650"
@@ -20,13 +21,13 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ui:NavigationView
-            x:Name="RootNavigation"
-            Grid.Row="1"
-            MenuItemsSource="{Binding NavigationItems, Mode=OneWay}"
-            FooterMenuItemsSource="{Binding NavigationFooter, Mode=OneWay}"
-            IsBackButtonVisible="Visible"
-            IsPaneOpen="True">  
+        <ui:NavigationView helpers:WindowScrollBehavior.EnableGlobalScroll="True"
+                           x:Name="RootNavigation"
+                           Grid.Row="1"
+                           MenuItemsSource="{Binding NavigationItems, Mode=OneWay}"
+                           FooterMenuItemsSource="{Binding NavigationFooter, Mode=OneWay}"
+                           IsBackButtonVisible="Visible"
+                           IsPaneOpen="True">  
         <ui:NavigationView.Header>
             <ui:BreadcrumbBar
                 Margin="42,32,0,0"

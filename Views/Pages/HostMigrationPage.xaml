@@ -24,9 +24,8 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" 
                   HorizontalScrollBarVisibility="Disabled"
                   PanningMode="VerticalOnly"
-                  CanContentScroll="True"
-                  helpers:ScrollBehavior.FixMouseWheel="True">
-        <Grid Margin="42">
+                  CanContentScroll="True">
+        <Grid Margin="42" helpers:ScrollBehavior.FixMouseWheel="True">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
