@@ -138,6 +138,114 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         }
 
     [RelayCommand]
+    private async Task TestSourceConnection ()
+    {
+        if (_sharedConnectionService.SourceConnection == null)
+        {
+            SourceConnectionStatus = "No source connection configured";
+            return;
+        }
+
+        try
+        {
+            IsTestingSource = true;
+            SourceConnectionStatus = "Testing connection...";
+            _logger.LogInformation("Starting source vCenter connection test for {Server}",
+                _sharedConnectionService.SourceConnection.ServerAddress);
+
+            // Get the password from credential service
+            var password = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+
+            if (string.IsNullOrEmpty(password))
+            {
+                SourceConnectionStatus = "Error: No password found. Please configure credentials in Settings.";
+                _logger.LogWarning("No stored password found for source connection");
+                return;
+            }
+
+            // Use the new credential method
+            var result = await _powerShellService.RunScriptWithVCenterCredentialAsync(
+                "Scripts\\Test-vCenterConnection.ps1",
+                _sharedConnectionService.SourceConnection,
+                password);
+
+            if (result.Contains("SUCCESS"))
+            {
+                SourceConnectionStatus = "✅ Connected successfully";
+                _logger.LogInformation("Source vCenter connection test successful");
+            }
+            else
+            {
+                SourceConnectionStatus = "❌ Connection failed - check credentials";
+                _logger.LogError("Source vCenter connection test failed: {Result}", result);
+            }
+        }
+        catch (Exception ex)
+        {
+            SourceConnectionStatus = $"❌ Error: {ex.Message}";
+            _logger.LogError(ex, "Error testing source vCenter connection");
+        }
+        finally
+        {
+            IsTestingSource = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task TestTargetConnection ()
+    {
+        if (_sharedConnectionService.TargetConnection == null)
+        {
+            TargetConnectionStatus = "No target connection configured";
+            return;
+        }
+
+        try
+        {
+            IsTestingTarget = true;
+            TargetConnectionStatus = "Testing connection...";
+            _logger.LogInformation("Starting target vCenter connection test for {Server}",
+                _sharedConnectionService.TargetConnection.ServerAddress);
+
+            // Get the password from credential service
+            var password = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+
+            if (string.IsNullOrEmpty(password))
+            {
+                TargetConnectionStatus = "Error: No password found. Please configure credentials in Settings.";
+                _logger.LogWarning("No stored password found for target connection");
+                return;
+            }
+
+            // Use the new credential method
+            var result = await _powerShellService.RunScriptWithVCenterCredentialAsync(
+                "Scripts\\Test-vCenterConnection.ps1",
+                _sharedConnectionService.TargetConnection,
+                password);
+
+            if (result.Contains("SUCCESS"))
+            {
+                TargetConnectionStatus = "✅ Connected successfully";
+                _logger.LogInformation("Target vCenter connection test successful");
+            }
+            else
+            {
+                TargetConnectionStatus = "❌ Connection failed - check credentials";
+                _logger.LogError("Target vCenter connection test failed: {Result}", result);
+            }
+        }
+        catch (Exception ex)
+        {
+            TargetConnectionStatus = $"❌ Error: {ex.Message}";
+            _logger.LogError(ex, "Error testing target vCenter connection");
+        }
+        finally
+        {
+            IsTestingTarget = false;
+        }
+    }
+    
+    [RelayCommand]
     private async Task OnConnectSource ()
         {
         if (SelectedSourceProfile is null) return;

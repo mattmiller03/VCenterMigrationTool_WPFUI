@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
@@ -180,7 +181,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
         {
         if (_sharedConnectionService.SourceConnection == null)
             {
-            LogOutput = "Error: No source vCenter connection. Please connect on the Dashboard first.";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No source vCenter connection. Please connect on the Dashboard first.\n";
             return;
             }
 
@@ -190,25 +191,58 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             MigrationStatus = "Loading source VMs...";
             SourceVms.Clear();
 
-            var parameters = new Dictionary<string, object>
-                {
-                ["VCenterServer"] = _sharedConnectionService.SourceConnection.ServerAddress,
-                ["Username"] = _sharedConnectionService.SourceConnection.Username,
-                ["Password"] = _credentialService.GetPassword(_sharedConnectionService.SourceConnection) ?? ""
-                };
+            // Get the password from credential service
+            var password = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
 
-            var scriptPath = Path.Combine("Scripts", "Get-VMs.ps1");
-            var vms = await _powerShellService.RunScriptAndGetObjectsOptimizedAsync<VirtualMachine>(scriptPath, parameters);
-
-            foreach (var vm in vms)
+            if (string.IsNullOrEmpty(password))
                 {
-                SourceVms.Add(vm);
+                MigrationStatus = "Error: No password found. Please configure credentials in Settings.";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No stored password found for source connection\n";
+                return;
                 }
 
-            MigrationStatus = $"Loaded {SourceVms.Count} VMs from source vCenter";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded {SourceVms.Count} VMs from {_sharedConnectionService.SourceConnection.ServerAddress}\n";
+            _logger.LogInformation("Loading VMs from source vCenter: {Server}", _sharedConnectionService.SourceConnection.ServerAddress);
 
-            _logger.LogInformation("Successfully loaded {Count} VMs from source vCenter", SourceVms.Count);
+            // Use the new credential method
+            var result = await _powerShellService.RunScriptWithVCenterCredentialAsync(
+                "Scripts\\Get-VMs.ps1",
+                _sharedConnectionService.SourceConnection,
+                password);
+
+            if (!string.IsNullOrEmpty(result) && !result.Contains("ERROR"))
+                {
+                // Parse JSON result
+                try
+                    {
+                    var vms = System.Text.Json.JsonSerializer.Deserialize<VirtualMachine[]>(result,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                    if (vms != null)
+                        {
+                        foreach (var vm in vms)
+                            {
+                            SourceVms.Add(vm);
+                            }
+                        }
+
+                    MigrationStatus = $"Loaded {SourceVms.Count} VMs from source vCenter";
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded {SourceVms.Count} VMs from {_sharedConnectionService.SourceConnection.ServerAddress}\n";
+
+                    _logger.LogInformation("Successfully loaded {Count} VMs from source vCenter", SourceVms.Count);
+                    }
+                catch (JsonException ex)
+                    {
+                    MigrationStatus = "Error parsing VM data from vCenter";
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error parsing VM data: {ex.Message}\n";
+                    _logger.LogError(ex, "Error parsing VM JSON data");
+                    }
+                }
+            else
+                {
+                MigrationStatus = "Failed to load VMs from source vCenter";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Failed to load VMs: {result}\n";
+                _logger.LogError("Failed to load VMs: {Result}", result);
+                }
             }
         catch (Exception ex)
             {

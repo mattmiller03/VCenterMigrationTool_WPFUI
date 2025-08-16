@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 
 namespace VCenterMigrationTool.Services;
@@ -661,4 +662,73 @@ public class HybridPowerShellService
         {
         return PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath);
         }
+    /// <summary>
+    /// Creates a PSCredential object and passes it as a parameter to PowerShell scripts
+    /// This avoids credential serialization issues
+    /// </summary>
+    public async Task<string> RunScriptWithCredentialAsync (string scriptPath, string username, string password, Dictionary<string, object>? additionalParameters = null, string? logPath = null)
+        {
+        try
+            {
+            _logger.LogInformation("Creating PSCredential for user: {Username}", username);
+
+            // Create the credential object
+            var securePassword = new System.Security.SecureString();
+            foreach (char c in password)
+                {
+                securePassword.AppendChar(c);
+                }
+            securePassword.MakeReadOnly();
+
+            var credential = new System.Management.Automation.PSCredential(username, securePassword);
+
+            // Prepare parameters with credential
+            var parameters = new Dictionary<string, object>
+                {
+                ["Credential"] = credential
+                };
+
+            // Add any additional parameters
+            if (additionalParameters != null)
+                {
+                foreach (var param in additionalParameters)
+                    {
+                    parameters[param.Key] = param.Value;
+                    }
+                }
+
+            _logger.LogInformation("Executing script with PSCredential object: {ScriptPath}", scriptPath);
+
+            // Use existing RunScriptAsync method
+            return await RunScriptAsync(scriptPath, parameters, logPath);
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error creating PSCredential or executing script: {ScriptPath}", scriptPath);
+            return $"ERROR: {ex.Message}";
+            }
+        }
+
+    /// <summary>
+    /// Alternative method that takes a VCenterConnection object
+    /// </summary>
+    public async Task<string> RunScriptWithVCenterCredentialAsync (string scriptPath, VCenterConnection connection, string password, Dictionary<string, object>? additionalParameters = null, string? logPath = null)
+        {
+        var baseParameters = new Dictionary<string, object>
+            {
+            ["VCenterServer"] = connection.ServerAddress
+            };
+
+        // Add any additional parameters
+        if (additionalParameters != null)
+            {
+            foreach (var param in additionalParameters)
+                {
+                baseParameters[param.Key] = param.Value;
+                }
+            }
+
+        return await RunScriptWithCredentialAsync(scriptPath, connection.Username, password, baseParameters, logPath);
+        }
+
     }
