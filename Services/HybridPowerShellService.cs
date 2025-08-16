@@ -225,6 +225,7 @@ public class HybridPowerShellService
     /// </summary>
     private async Task<string> RunScriptExternalAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
         {
+        _logger.LogInformation("DEBUG: Starting external PowerShell execution for script: {ScriptPath}", scriptPath);
         string fullScriptPath = Path.GetFullPath(scriptPath);
 
         _logger.LogDebug("Starting external PowerShell script execution: {ScriptPath}", fullScriptPath);
@@ -373,7 +374,7 @@ public class HybridPowerShellService
 
                     var outputBuilder = new StringBuilder();
                     var errorBuilder = new StringBuilder();
-
+                    _logger.LogInformation("DEBUG: Waiting for PowerShell process to complete...");
                     process.OutputDataReceived += (sender, args) =>
                     {
                         if (args.Data != null)
@@ -391,7 +392,7 @@ public class HybridPowerShellService
                             _logger.LogWarning("PS Error: {Error}", args.Data);
                             }
                     };
-
+                    _logger.LogInformation("DEBUG: Creating PowerShell process with command: {FileName} {SafeArguments}", psPath, safeCommand);
                     process.Start();
                     _logger.LogInformation("Successfully started PowerShell process: {PowerShell}", psPath);
                     process.BeginOutputReadLine();
@@ -402,9 +403,11 @@ public class HybridPowerShellService
                     try
                         {
                         await process.WaitForExitAsync(cts.Token);
+                        _logger.LogInformation("DEBUG: PowerShell process completed with exit code: {ExitCode}", process.ExitCode);
                         }
                     catch (OperationCanceledException)
                         {
+                            _logger.LogError("DEBUG: PowerShell process timed out after 2 minutes");
                         process.Kill();
                         throw new TimeoutException("PowerShell script execution timed out after 10 minutes");
                         }
