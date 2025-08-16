@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
@@ -21,6 +22,8 @@ namespace VCenterMigrationTool.ViewModels.Settings
         [ObservableProperty]
         private string _debugBypassStatus = "Debug: Bypass flag not set";
 
+        [ObservableProperty]
+        private int _activeProcessCount;
 
         [ObservableProperty]
         private bool _isPowerCliInstalled;
@@ -40,6 +43,35 @@ namespace VCenterMigrationTool.ViewModels.Settings
         [ObservableProperty]
         private string _installationPhase = "";
 
+        [ObservableProperty]
+        private string _processMonitoringStatus = "No active processes";
+
+        private Timer? _processMonitorTimer;
+        public void StartProcessMonitoring ()
+        {
+            _processMonitorTimer = new Timer(UpdateProcessCount, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+        }
+
+        public void StopProcessMonitoring ()
+        {
+            _processMonitorTimer?.Dispose();
+            _processMonitorTimer = null;
+        }
+        private void UpdateProcessCount (object? state)
+        {
+            try
+            {
+                ActiveProcessCount = _powerShellService.GetActiveProcessCount();
+                ProcessMonitoringStatus = ActiveProcessCount == 0
+                    ? "No active PowerShell processes"
+                    : $"{ActiveProcessCount} active PowerShell process{(ActiveProcessCount == 1 ? "" : "es")}";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating process count");
+                ProcessMonitoringStatus = "Error monitoring processes";
+            }
+        }
         public PowerShellSettingsViewModel (
             HybridPowerShellService powerShellService,
             ConfigurationService configurationService,
@@ -139,6 +171,23 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 }
             }
 
+
+        [RelayCommand]
+        private void CleanupProcesses ()
+        {
+            try
+            {
+                _powerShellService.CleanupAllProcesses();
+                ProcessMonitoringStatus = "All PowerShell processes cleaned up";
+                _logger.LogInformation("Manual PowerShell process cleanup completed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during manual process cleanup");
+                ProcessMonitoringStatus = "Error during cleanup";
+            }
+        }
+        
         [RelayCommand]
         private async Task OnInstallPowerCli ()
             {

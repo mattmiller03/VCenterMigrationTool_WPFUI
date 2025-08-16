@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -7,17 +8,20 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 
 namespace VCenterMigrationTool.Services;
 
-public class HybridPowerShellService
+public class HybridPowerShellService : IDisposable
 {
     private readonly ILogger<HybridPowerShellService> _logger;
     private readonly ConfigurationService _configurationService;
-
+    private readonly ConcurrentDictionary<int, Process> _activeProcesses = new();
+    private readonly Timer _cleanupTimer;
+    private bool _disposed = false;
     /// <summary>
     /// Static flag to track PowerCLI availability (set by settings page)
     /// </summary>
@@ -30,7 +34,8 @@ public class HybridPowerShellService
 
         // FIXED: Load PowerCLI status from persistent storage on startup
         LoadPowerCliStatus();
-    }
+        _cleanupTimer = new Timer(CleanupOrphanedProcesses, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
+        }
 
     /// <summary>
     /// Load PowerCLI installation status from persistent storage
@@ -230,206 +235,116 @@ public class HybridPowerShellService
     }
 
     /// <summary>
-    /// Run complex scripts using external PowerShell (for PowerCLI operations)
+    /// Enhanced external PowerShell execution with proper cleanup
     /// </summary>
-    private async Task<string> RunScriptExternalAsync(string scriptPath, Dictionary<string, object> parameters,
-        string? logPath = null)
-    {
+    private async Task<string> RunScriptExternalAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
+        {
         _logger.LogInformation("DEBUG: Starting external PowerShell execution for script: {ScriptPath}", scriptPath);
         string fullScriptPath = Path.GetFullPath(scriptPath);
 
         _logger.LogDebug("Starting external PowerShell script execution: {ScriptPath}", fullScriptPath);
 
         if (!File.Exists(fullScriptPath))
-        {
+            {
             _logger.LogError("Script not found at path: {ScriptPath}", fullScriptPath);
             return $"ERROR: Script not found at {fullScriptPath}";
-        }
+            }
+
+        Process? process = null;
+        var processId = 0;
 
         try
-        {
+            {
             // Build parameter string with proper escaping
-            var paramString = new StringBuilder();
+            var paramString = BuildParameterString(parameters, logPath);
 
-            // SECURE: Log parameter count but not sensitive values
-            var paramCount = parameters.Count;
-            var sensitiveParamCount = parameters.Keys.Count(IsSensitiveParameter);
-            _logger.LogInformation(
-                "DEBUG: Building parameter string from {ParameterCount} parameters ({SensitiveCount} sensitive)",
-                paramCount, sensitiveParamCount);
+            // Create safe parameter string for logging
+            var safeParamString = BuildSafeParameterString(parameters, logPath);
+            _logger.LogInformation("DEBUG: Safe parameter string: {SafeParamString}", safeParamString);
 
-            foreach (var param in parameters)
-            {
-                // Properly escape parameter values for PowerShell
-                var value = param.Value?.ToString() ?? "";
-
-                // SECURE: Only log non-sensitive parameters
-                if (!IsSensitiveParameter(param.Key))
-                {
-                    _logger.LogInformation("DEBUG: Parameter {Key} = {Value} (Type: {Type})", param.Key, value,
-                        param.Value?.GetType().Name ?? "null");
-                }
-                else
-                {
-                    _logger.LogInformation("DEBUG: Parameter {Key} = [REDACTED] (Type: {Type})", param.Key,
-                        param.Value?.GetType().Name ?? "null");
-                }
-
-                // Handle different parameter types
-                if (param.Value is System.Security.SecureString secureString)
-                {
-                    // Convert SecureString to plain text for external process
-                    var ptr = System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(secureString);
-                    try
-                    {
-                        value = System.Runtime.InteropServices.Marshal.PtrToStringUni(ptr) ?? "";
-                        _logger.LogInformation("DEBUG: Converted SecureString parameter {Key}", param.Key);
-                    }
-                    finally
-                    {
-                        System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(ptr);
-                    }
-                }
-
-                // FIXED: Handle boolean parameters correctly (like BypassModuleCheck)
-                if (param.Value is bool boolValue)
-                {
-                    // For PowerShell switches, we add the parameter name without a value when true
-                    if (boolValue)
-                    {
-                        paramString.Append($" -{param.Key}");
-                        _logger.LogInformation("DEBUG: Added switch parameter: -{Key}", param.Key);
-                    }
-
-                    // If false, we don't add the parameter at all
-                    continue;
-                }
-
-                // Escape quotes and wrap in quotes for PowerShell
-                var escapedValue = value.Replace("\"", "`\"");
-                paramString.Append($" -{param.Key} \"{escapedValue}\"");
-            }
-
-            // FIXED: Don't add LogPath if it's already in parameters
-            if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
-            {
-                var escapedLogPath = logPath.Replace("\"", "`\"");
-                paramString.Append($" -LogPath \"{escapedLogPath}\"");
-            }
-
-            // SECURE: Create a safe version of the command for logging (without sensitive data)
-            var safeParamString = new StringBuilder();
-            foreach (var param in parameters)
-            {
-                if (param.Value is bool boolValue && boolValue)
-                {
-                    safeParamString.Append($" -{param.Key}");
-                }
-                else if (!IsSensitiveParameter(param.Key))
-                {
-                    var value = param.Value?.ToString() ?? "";
-                    var escapedValue = value.Replace("\"", "`\"");
-                    safeParamString.Append($" -{param.Key} \"{escapedValue}\"");
-                }
-                else
-                {
-                    safeParamString.Append($" -{param.Key} \"[REDACTED]\"");
-                }
-            }
-
-            if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
-            {
-                var escapedLogPath = logPath.Replace("\"", "`\"");
-                safeParamString.Append($" -LogPath \"{escapedLogPath}\"");
-            }
-
-            _logger.LogInformation("DEBUG: Safe parameter string: {SafeParamString}", safeParamString.ToString());
-
-            // Prioritize PowerShell 7 with multiple fallback paths
+            // Try different PowerShell executables
             var powershellPaths = new[]
             {
-                "pwsh.exe", // PowerShell 7 in PATH (most common)
-                @"C:\Program Files\PowerShell\7\pwsh.exe", // Standard PowerShell 7 install
-                @"C:\Program Files (x86)\PowerShell\7\pwsh.exe", // 32-bit PowerShell 7
-                @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe", // Store install
-                "powershell.exe" // Windows PowerShell (last resort)
+                "pwsh.exe",  // PowerShell 7 in PATH (most common)
+                @"C:\Program Files\PowerShell\7\pwsh.exe",  // Standard PowerShell 7 install
+                @"C:\Program Files (x86)\PowerShell\7\pwsh.exe",  // 32-bit PowerShell 7
+                @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe",  // Store install
+                "powershell.exe"  // Windows PowerShell (last resort)
             };
 
             Exception? lastException = null;
 
             foreach (var psPath in powershellPaths)
-            {
-                try
                 {
+                try
+                    {
                     _logger.LogInformation("Trying PowerShell executable: {PowerShell}", psPath);
 
                     // For full paths, verify the executable exists
                     if (psPath.Contains("\\") && !File.Exists(psPath))
-                    {
+                        {
                         _logger.LogDebug("PowerShell executable not found at: {PowerShell}", psPath);
                         continue;
-                    }
+                        }
 
                     var psi = new ProcessStartInfo
-                    {
+                        {
                         FileName = psPath,
                         Arguments = $"-NoProfile -ExecutionPolicy Unrestricted -File \"{fullScriptPath}\"{paramString}",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
-                    };
+                        };
 
-                    // SECURE: Log safe command (without sensitive data)
-                    var safeCommand =
-                        $"-NoProfile -ExecutionPolicy Unrestricted -File \"{fullScriptPath}\"{safeParamString}";
-                    _logger.LogInformation("DEBUG: Executing safe command: {FileName} {SafeArguments}", psPath,
-                        safeCommand);
+                    _logger.LogInformation("DEBUG: Creating PowerShell process with command: {FileName} {SafeArguments}", psPath, safeParamString);
 
-                    using var process = new Process { StartInfo = psi };
+                    process = new Process { StartInfo = psi };
+                    processId = process.Id;
+
+                    // Track the process for cleanup
+                    _activeProcesses.TryAdd(processId, process);
 
                     var outputBuilder = new StringBuilder();
                     var errorBuilder = new StringBuilder();
-                    _logger.LogInformation("DEBUG: Waiting for PowerShell process to complete...");
+
                     process.OutputDataReceived += (sender, args) =>
                     {
                         if (args.Data != null)
-                        {
+                            {
                             outputBuilder.AppendLine(args.Data);
                             _logger.LogDebug("PS Output: {Output}", args.Data);
-                        }
+                            }
                     };
 
                     process.ErrorDataReceived += (sender, args) =>
                     {
                         if (args.Data != null)
-                        {
+                            {
                             errorBuilder.AppendLine(args.Data);
                             _logger.LogWarning("PS Error: {Error}", args.Data);
-                        }
+                            }
                     };
-                    _logger.LogInformation(
-                        "DEBUG: Creating PowerShell process with command: {FileName} {SafeArguments}", psPath,
-                        safeCommand);
+
                     process.Start();
-                    _logger.LogInformation("Successfully started PowerShell process: {PowerShell}", psPath);
+                    _logger.LogInformation("Successfully started PowerShell process: {PowerShell} (PID: {ProcessId})", psPath, process.Id);
+
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
 
-                    // Wait with timeout (10 minutes for large operations like PowerCLI install)
-                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(10));
+                    // Wait with timeout and cancellation support
+                    using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
                     try
-                    {
+                        {
                         await process.WaitForExitAsync(cts.Token);
-                        _logger.LogInformation("DEBUG: PowerShell process completed with exit code: {ExitCode}",
-                            process.ExitCode);
-                    }
+                        _logger.LogInformation("DEBUG: PowerShell process completed with exit code: {ExitCode}", process.ExitCode);
+                        }
                     catch (OperationCanceledException)
-                    {
-                        _logger.LogError("DEBUG: PowerShell process timed out after 2 minutes");
-                        process.Kill();
+                        {
+                        _logger.LogError("DEBUG: PowerShell process timed out after 10 minutes");
+                        KillProcessSafely(process);
                         throw new TimeoutException("PowerShell script execution timed out after 10 minutes");
-                    }
+                        }
 
                     var output = outputBuilder.ToString();
                     var errors = errorBuilder.ToString();
@@ -439,35 +354,50 @@ public class HybridPowerShellService
 
                     // Include errors in output but don't treat them as fatal
                     if (!string.IsNullOrEmpty(errors))
-                    {
+                        {
                         output += "\nSTDERR:\n" + errors;
-                    }
+                        }
 
                     return output;
-                }
+                    }
                 catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
-                {
+                    {
                     // File not found - try next PowerShell version
                     _logger.LogDebug("PowerShell executable not found: {PowerShell}", psPath);
                     lastException = ex;
                     continue;
-                }
+                    }
                 catch (Exception ex)
-                {
+                    {
                     _logger.LogWarning(ex, "Failed to execute with {PowerShell}, trying next option", psPath);
                     lastException = ex;
                     continue;
+                    }
+                finally
+                    {
+                    // Always clean up the process
+                    if (process != null)
+                        {
+                        CleanupProcess(process, processId);
+                        }
+                    }
                 }
-            }
 
             throw new InvalidOperationException("No suitable PowerShell executable found", lastException);
-        }
+            }
         catch (Exception ex)
-        {
+            {
             _logger.LogError(ex, "Error executing external PowerShell script: {Script}", scriptPath);
+
+            // Ensure process cleanup even on exception
+            if (process != null)
+                {
+                CleanupProcess(process, processId);
+                }
+
             return $"ERROR: {ex.Message}";
+            }
         }
-    }
 
     /// <summary>
     /// Execute simple PowerShell commands using external PowerShell (due to SDK issues)
@@ -908,4 +838,244 @@ public class HybridPowerShellService
             return $"ERROR: {ex.Message}";
         }
     }
-}
+    /// <summary>
+    /// Safely kill a PowerShell process
+    /// </summary>
+    private void KillProcessSafely (Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                _logger.LogWarning("Forcibly terminating PowerShell process {ProcessId}", process.Id);
+                process.Kill(entireProcessTree: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error killing PowerShell process {ProcessId}", process.Id);
+        }
+    }
+
+    /// <summary>
+    /// Clean up a specific process
+    /// </summary>
+    private void CleanupProcess (Process process, int processId)
+        {
+        try
+            {
+            // Remove from tracking
+            _activeProcesses.TryRemove(processId, out _);
+
+            // Ensure process is terminated
+            if (!process.HasExited)
+                {
+                KillProcessSafely(process);
+                }
+
+            // Dispose the process object
+            process?.Dispose();
+
+            _logger.LogDebug("Cleaned up PowerShell process {ProcessId}", processId);
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error during process cleanup for {ProcessId}", processId);
+            }
+        }
+
+    /// <summary>
+    /// Periodic cleanup of orphaned processes
+    /// </summary>
+    private void CleanupOrphanedProcesses (object? state)
+        {
+        try
+            {
+            var orphanedProcesses = new List<KeyValuePair<int, Process>>();
+
+            foreach (var kvp in _activeProcesses)
+                {
+                try
+                    {
+                    var process = kvp.Value;
+                    if (process.HasExited)
+                        {
+                        orphanedProcesses.Add(kvp);
+                        }
+                    }
+                catch (Exception ex)
+                    {
+                    _logger.LogWarning(ex, "Error checking process status for {ProcessId}", kvp.Key);
+                    orphanedProcesses.Add(kvp);
+                    }
+                }
+
+            foreach (var orphan in orphanedProcesses)
+                {
+                CleanupProcess(orphan.Value, orphan.Key);
+                }
+
+            if (orphanedProcesses.Count > 0)
+                {
+                _logger.LogInformation("Cleaned up {Count} orphaned PowerShell processes", orphanedProcesses.Count);
+                }
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error during periodic process cleanup");
+            }
+        }
+
+    /// <summary>
+    /// Force cleanup of all active PowerShell processes
+    /// </summary>
+    public void CleanupAllProcesses ()
+        {
+        _logger.LogInformation("Starting cleanup of all active PowerShell processes");
+
+        var processesToCleanup = _activeProcesses.ToArray();
+
+        foreach (var kvp in processesToCleanup)
+            {
+            CleanupProcess(kvp.Value, kvp.Key);
+            }
+
+        _logger.LogInformation("Completed cleanup of {Count} PowerShell processes", processesToCleanup.Length);
+        }
+
+    /// <summary>
+    /// Get count of currently active PowerShell processes
+    /// </summary>
+    public int GetActiveProcessCount ()
+        {
+        return _activeProcesses.Count;
+        }
+
+    /// <summary>
+    /// Build parameter string with proper escaping (existing method - keep as is)
+    /// </summary>
+    private StringBuilder BuildParameterString (Dictionary<string, object> parameters, string? logPath)
+        {
+        var paramString = new StringBuilder();
+
+        foreach (var param in parameters)
+            {
+            var value = param.Value?.ToString() ?? "";
+
+            if (param.Value is System.Security.SecureString secureString)
+                {
+                var ptr = System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(secureString);
+                try
+                    {
+                    value = System.Runtime.InteropServices.Marshal.PtrToStringUni(ptr) ?? "";
+                    }
+                finally
+                    {
+                    System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(ptr);
+                    }
+                }
+
+            if (param.Value is bool boolValue)
+                {
+                if (boolValue)
+                    {
+                    paramString.Append($" -{param.Key}");
+                    }
+                continue;
+                }
+
+            var escapedValue = value.Replace("\"", "`\"");
+            paramString.Append($" -{param.Key} \"{escapedValue}\"");
+            }
+
+        if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
+            {
+            var escapedLogPath = logPath.Replace("\"", "`\"");
+            paramString.Append($" -LogPath \"{escapedLogPath}\"");
+            }
+
+        return paramString;
+        }
+
+    /// <summary>
+    /// Build safe parameter string for logging (existing method - keep as is)
+    /// </summary>
+    private StringBuilder BuildSafeParameterString (Dictionary<string, object> parameters, string? logPath)
+        {
+        var safeParamString = new StringBuilder();
+
+        foreach (var param in parameters)
+            {
+            if (param.Value is bool boolValue && boolValue)
+                {
+                safeParamString.Append($" -{param.Key}");
+                }
+            else if (!IsSensitiveParameter(param.Key))
+                {
+                var value = param.Value?.ToString() ?? "";
+                var escapedValue = value.Replace("\"", "`\"");
+                safeParamString.Append($" -{param.Key} \"{escapedValue}\"");
+                }
+            else
+                {
+                safeParamString.Append($" -{param.Key} \"[REDACTED]\"");
+                }
+            }
+
+        if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
+            {
+            var escapedLogPath = logPath.Replace("\"", "`\"");
+            safeParamString.Append($" -LogPath \"{escapedLogPath}\"");
+            }
+
+        return safeParamString;
+        }
+
+    // Keep all your existing methods (RunScriptAsync, RunVCenterScriptAsync, etc.)
+    // Just ensure they use the enhanced RunScriptExternalAsync method above
+
+    #region IDisposable Implementation
+
+    public void Dispose ()
+        {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+        }
+
+    protected virtual void Dispose (bool disposing)
+        {
+        if (!_disposed)
+            {
+            if (disposing)
+                {
+                _logger.LogInformation("Disposing HybridPowerShellService and cleaning up processes");
+
+                // Stop the cleanup timer
+                _cleanupTimer?.Dispose();
+
+                // Cleanup all active processes
+                CleanupAllProcesses();
+                }
+
+            _disposed = true;
+            }
+        }
+
+    ~HybridPowerShellService ()
+        {
+        Dispose(false);
+        }
+
+    #endregion
+
+    // Include all your existing methods here:
+    // - LoadPowerCliStatus()
+    // - SavePowerCliStatus()
+    // - RunScriptAsync()
+    // - RunVCenterScriptAsync()
+    // - RunDualVCenterScriptAsync()
+    // - IsPowerCliScript()
+    // - IsSensitiveParameter()
+    // - etc.
+    }
+    

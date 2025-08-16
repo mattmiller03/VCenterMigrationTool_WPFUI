@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using System;
 using System.IO;
@@ -57,67 +58,67 @@ public partial class App
                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
                 );
         })
-    .ConfigureServices((context, services) =>
-    {
-        // App Host
-        services.AddHostedService<ApplicationHostService>();
+        .ConfigureServices((context, services) =>
+        {
+            // App Host
+            services.AddHostedService<ApplicationHostService>();
 
-        // Messaging Service
-        services.AddSingleton<IMessenger, WeakReferenceMessenger>();
+            // Messaging Service
+            services.AddSingleton<IMessenger, WeakReferenceMessenger>();
 
-        // --- FIX: Explicitly register the page provider ---
-        services.AddSingleton<INavigationViewPageProvider, DependencyInjectionNavigationViewPageProvider>();
+            // --- FIX: Explicitly register the page provider ---
+            services.AddSingleton<INavigationViewPageProvider, DependencyInjectionNavigationViewPageProvider>();
 
-        // Wpf.Ui Services
-        services.AddSingleton<IPageService, PageService>();
-        services.AddSingleton<IThemeService, ThemeService>();
-        services.AddSingleton<ITaskBarService, TaskBarService>();
-        services.AddSingleton<INavigationService, NavigationService>();
+            // Wpf.Ui Services
+            services.AddSingleton<IPageService, PageService>();
+            services.AddSingleton<IThemeService, ThemeService>();
+            services.AddSingleton<ITaskBarService, TaskBarService>();
+            services.AddSingleton<INavigationService, NavigationService>();
 
-        // Custom Application Services
-        services.AddSingleton<ConnectionProfileService>();
-        services.AddSingleton<CredentialService>();
-        services.AddSingleton<ConfigurationService>();
-        services.AddSingleton<SharedConnectionService>();
-        services.AddSingleton<IDialogService, DialogService>();
+            // Custom Application Services
+            services.AddSingleton<ConnectionProfileService>();
+            services.AddSingleton<CredentialService>();
+            services.AddSingleton<ConfigurationService>();
+            services.AddSingleton<SharedConnectionService>();
+            services.AddSingleton<IDialogService, DialogService>();
 
-        // UPDATED: Use HybridPowerShellService instead of PowerShellService
-        services.AddSingleton<HybridPowerShellService>();
+            // UPDATED: Use HybridPowerShellService instead of PowerShellService
+            services.AddSingleton<HybridPowerShellService>();
 
-        // Main Window and ViewModel
-        services.AddSingleton<INavigationWindow, MainWindow>();
-        services.AddSingleton<MainWindowViewModel>();
+            // Main Window and ViewModel
+            services.AddSingleton<INavigationWindow, MainWindow>();
+            services.AddSingleton<MainWindowViewModel>();
 
-        // Standard Pages and ViewModels
-        services.AddSingleton<DashboardPage>();
-        services.AddSingleton<DashboardViewModel>();
-        services.AddSingleton<VCenterMigrationPage>();
-        services.AddSingleton<VCenterMigrationViewModel>();
-        services.AddSingleton<HostMigrationPage>();
-        services.AddSingleton<HostMigrationViewModel>();
-        services.AddSingleton<VmMigrationPage>();
-        services.AddSingleton<VmMigrationViewModel>();
-        services.AddSingleton<NetworkMigrationPage>();
-        services.AddSingleton<NetworkMigrationViewModel>();
-        services.AddSingleton<ResourcePoolMigrationPage>();
-        services.AddSingleton<ResourcePoolMigrationViewModel>();
+            // Standard Pages and ViewModels
+            services.AddSingleton<DashboardPage>();
+            services.AddSingleton<DashboardViewModel>();
+            services.AddSingleton<VCenterMigrationPage>();
+            services.AddSingleton<VCenterMigrationViewModel>();
+            services.AddSingleton<HostMigrationPage>();
+            services.AddSingleton<HostMigrationViewModel>();
+            services.AddSingleton<VmMigrationPage>();
+            services.AddSingleton<VmMigrationViewModel>();
+            services.AddSingleton<NetworkMigrationPage>();
+            services.AddSingleton<NetworkMigrationViewModel>();
+            services.AddSingleton<ResourcePoolMigrationPage>();
+            services.AddSingleton<ResourcePoolMigrationViewModel>();
 
-        // Settings Page and its sub-ViewModels
-        services.AddSingleton<SettingsPage>();
-        services.AddSingleton<SettingsViewModel>();
-        services.AddTransient<AppearanceSettingsViewModel>();
-        services.AddTransient<PowerShellSettingsViewModel>();
-        services.AddTransient<FilePathsSettingsViewModel>();
-        services.AddTransient<ViewProfilesViewModel>();
-        services.AddTransient<ProfileEditorViewModel>();
+            // Settings Page and its sub-ViewModels
+            services.AddSingleton<SettingsPage>();
+            services.AddSingleton<SettingsViewModel>();
+            services.AddTransient<AppearanceSettingsViewModel>();
+            services.AddTransient<PowerShellSettingsViewModel>();
+            services.AddTransient<FilePathsSettingsViewModel>();
+            services.AddTransient<ViewProfilesViewModel>();
+            services.AddTransient<ProfileEditorViewModel>();
 
-        // Dialogs
-        services.AddTransient<PasswordPromptDialog>();
-        services.AddTransient<PasswordPromptViewModel>();
+            // Dialogs
+            services.AddTransient<PasswordPromptDialog>();
+            services.AddTransient<PasswordPromptViewModel>();
 
-        // Configuration
-        services.Configure<AppConfig>(context.Configuration.GetSection(nameof(AppConfig)));
-    })
+            // Configuration
+            services.Configure<AppConfig>(context.Configuration.GetSection(nameof(AppConfig)));
+        })
         .Build();
 
     public static T? GetService<T> () where T : class
@@ -132,8 +133,34 @@ public partial class App
 
     private async void OnExit (object sender, ExitEventArgs e)
         {
-        await Host.StopAsync();
-        Host.Dispose();
+        // Get logger from the host services
+        var logger = Host.Services.GetService<ILogger<App>>();
+        logger?.LogInformation("Application shutting down - cleaning up services");
+
+        try
+            {
+            // Get the PowerShell service and clean up processes
+            var powerShellService = Host.Services.GetService<HybridPowerShellService>();
+            if (powerShellService != null)
+                {
+                logger?.LogInformation("Cleaning up PowerShell processes before shutdown");
+                powerShellService.CleanupAllProcesses();
+                }
+            }
+        catch (Exception ex)
+            {
+            logger?.LogError(ex, "Error during PowerShell service cleanup");
+            }
+
+        try
+            {
+            await Host.StopAsync();
+            Host.Dispose();
+            }
+        catch (Exception ex)
+            {
+            logger?.LogError(ex, "Error during host shutdown");
+            }
         }
 
     private void OnDispatcherUnhandledException (object sender, DispatcherUnhandledExceptionEventArgs e)
