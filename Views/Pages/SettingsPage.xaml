@@ -9,6 +9,7 @@
     xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
     xmlns:settingsViewModels="clr-namespace:VCenterMigrationTool.ViewModels.Settings"
     xmlns:settingsViews="clr-namespace:VCenterMigrationTool.Views.Pages.Settings"
+    xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
     x:Name="SettingsPageRoot"
     Title="SettingsPage"
     d:DataContext="{d:DesignInstance viewmodels:SettingsViewModel, IsDesignTimeCreatable=False}"
@@ -23,8 +24,12 @@
         </DataTemplate>
 
     </Page.Resources>
-
-    <Grid Margin="42">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                  HorizontalScrollBarVisibility="Disabled"
+                  PanningMode="VerticalOnly"
+                  CanContentScroll="True"
+                  helpers:ScrollBehavior.FixMouseWheel="True">
+        <Grid Margin="42">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -66,4 +71,5 @@
             </Border>
         </Grid>
     </Grid>
+        </ScrollViewer>
 </Page>

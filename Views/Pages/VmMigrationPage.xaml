@@ -20,356 +20,483 @@
         <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
     </Page.Resources>
 
-    <Grid Margin="42">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="200" />
-        </Grid.RowDefinitions>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                  HorizontalScrollBarVisibility="Disabled"
+                  PanningMode="VerticalOnly"
+                  CanContentScroll="True"
+                  helpers:ScrollBehavior.FixMouseWheel="True">
+        <Grid Margin="42">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-        <!-- Page Title -->
-        <TextBlock Grid.Row="0" FontSize="24" FontWeight="Medium" Text="Virtual Machine Migration" />
+            <!-- Page Title -->
+            <TextBlock Grid.Row="0" 
+                      FontSize="24" 
+                      FontWeight="Medium" 
+                      Text="Virtual Machine Migration" 
+                      Margin="0,0,0,20" />
 
-        <!-- Load Data Section -->
-        <ui:CardControl Grid.Row="1" Margin="0,20,0,0">
-            <StackPanel>
-                <TextBlock Text="Data Loading" FontWeight="Medium" />
-                <TextBlock Margin="0,5,0,10" 
-                          Text="Load source VMs and target vCenter resources" 
-                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                <StackPanel Orientation="Horizontal">
-                    <ui:Button Content="Load Source VMs" 
-                              Command="{Binding LoadSourceVMsCommand}"
-                              Icon="{ui:SymbolIcon Desktop24}"
-                              IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}" />
-                    <ui:Button Content="Load Target Resources" 
-                              Command="{Binding LoadTargetResourcesCommand}"
-                              Icon="{ui:SymbolIcon Server24}"
-                              Margin="10,0,0,0"
-                              IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}" />
-                    <ui:ProgressRing Width="24" Height="24" 
-                                    Margin="15,0,0,0"
-                                    Visibility="{Binding IsLoadingData, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text="{Binding MigrationStatus}" 
-                              Margin="10,0,0,0" 
-                              VerticalAlignment="Center"
+            <!-- Load Data Section -->
+            <ui:CardControl Grid.Row="1" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Data Loading" FontWeight="Medium" FontSize="16" />
+                    <TextBlock Margin="0,5,0,15" 
+                              Text="Load source VMs and target vCenter resources" 
                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
-            </StackPanel>
-        </ui:CardControl>
 
-        <!-- Main Content Area -->
-        <Grid Grid.Row="2" Margin="0,20,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="20" />
-                <ColumnDefinition Width="400" />
-            </Grid.ColumnDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-            <!-- Source VMs Section -->
-            <ui:CardControl Grid.Column="0">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <ui:Button Content="Load Source VMs" 
+                                      Command="{Binding LoadSourceVMsCommand}"
+                                      Icon="{ui:SymbolIcon Desktop24}"
+                                      IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
+                                      Appearance="Primary"
+                                      Margin="0,0,0,10" />
 
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBlock Text="Source Virtual Machines" FontWeight="Medium" VerticalAlignment="Center" />
-                        <ui:Button Content="Select All" 
-                                  Command="{Binding SelectAllVMsCommand}"
-                                  Margin="15,0,5,0"
-                                  Appearance="Secondary" />
-                        <ui:Button Content="Unselect All" 
-                                  Command="{Binding UnselectAllVMsCommand}"
-                                  Appearance="Secondary" />
-                    </StackPanel>
+                            <ui:Button Content="Select All VMs" 
+                                      Command="{Binding SelectAllVMsCommand}"
+                                      Icon="{ui:SymbolIcon CheckboxChecked24}"
+                                      IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
+                                      Margin="0,0,0,5" />
 
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBlock Text="{Binding SourceVms.Count, StringFormat='Total: {0} VMs'}" 
-                                  Margin="0,0,15,0"
-                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                            <TextBlock.Text>
-                                <MultiBinding StringFormat="Selected: {0} VMs">
-                                    <Binding Path="SourceVms" />
-                                    <Binding Path="SourceVms.Count" />
-                                </MultiBinding>
-                            </TextBlock.Text>
-                        </TextBlock>
-                    </StackPanel>
-
-                    <!-- VM DataGrid -->
-                    <DataGrid Grid.Row="2" 
-                             ItemsSource="{Binding SourceVms}" 
-                             AutoGenerateColumns="False" 
-                             IsReadOnly="False"
-                             CanUserAddRows="False"
-                             CanUserDeleteRows="False">
-                        <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="Select" Width="60">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" 
-                                                 HorizontalAlignment="Center" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="VM Name" Binding="{Binding Name}" Width="*" />
-                            <DataGridTextColumn Header="Power State" Binding="{Binding PowerState}" Width="100" />
-                            <DataGridTextColumn Header="Host" Binding="{Binding EsxiHost}" Width="150" />
-                            <DataGridTextColumn Header="Cluster" Binding="{Binding Cluster}" Width="120" />
-                            <DataGridTextColumn Header="Datastore" Binding="{Binding Datastore}" Width="120" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Grid>
-            </ui:CardControl>
-
-            <!-- Configuration Panel -->
-            <ui:CardControl Grid.Column="2">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <TextBlock Text="Migration Configuration" FontWeight="Medium" />
-
-                        <!-- Target Configuration -->
-                        <TextBlock Text="Target Configuration" Margin="0,15,0,5" FontWeight="Medium" />
-
-                        <TextBlock Text="Target Cluster" Margin="0,0,0,5" FontSize="12" />
-                        <ComboBox ItemsSource="{Binding TargetClusters}" 
-                                 SelectedItem="{Binding SelectedTargetCluster}"
-                                 DisplayMemberPath="Name"
-                                 Margin="0,0,0,10" />
-
-                        <!-- Migration Options -->
-                        <TextBlock Text="Migration Options" Margin="0,10,0,5" FontWeight="Medium" />
-
-                        <TextBlock Text="VM Name Suffix" Margin="0,0,0,3" FontSize="12" />
-                        <ui:TextBox Text="{Binding NameSuffix}" 
-                                   PlaceholderText="e.g., -Imported"
-                                   Margin="0,0,0,10" />
-
-                        <TextBlock Text="Disk Format" Margin="0,0,0,3" FontSize="12" />
-                        <ComboBox ItemsSource="{Binding AvailableDiskFormats}" 
-                                 SelectedItem="{Binding SelectedDiskFormat}"
-                                 Margin="0,0,0,10" />
-
-                        <CheckBox Content="Preserve MAC addresses" 
-                                 IsChecked="{Binding PreserveMAC}"
-                                 Margin="0,5,0,5" />
-
-                        <CheckBox Content="Enhanced network handling" 
-                                 IsChecked="{Binding EnhancedNetworkHandling}"
-                                 Margin="0,0,0,5" />
-
-                        <CheckBox Content="Ignore network errors" 
-                                 IsChecked="{Binding IgnoreNetworkErrors}"
-                                 Margin="0,0,0,5" />
-
-                        <CheckBox Content="Validation only (no migration)" 
-                                 IsChecked="{Binding ValidateOnly}"
-                                 Margin="0,0,0,15" />
-
-                        <!-- Parallel Processing -->
-                        <TextBlock Text="Processing Options" Margin="0,10,0,5" FontWeight="Medium" />
-
-                        <CheckBox Content="Sequential mode (one VM at a time)" 
-                                 IsChecked="{Binding SequentialMode}"
-                                 Margin="0,5,0,10" />
-
-                        <StackPanel Visibility="{Binding SequentialMode, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
-                                   Margin="0,0,0,15">
-                            <TextBlock Text="Max Concurrent Migrations" Margin="0,0,0,5" FontSize="12" />
-                            <ui:NumberBox Value="{Binding MaxConcurrentMigrations}" 
-                                         Minimum="1" 
-                                         Maximum="8"
-                                         SmallChange="1" />
+                            <ui:Button Content="Unselect All VMs" 
+                                      Command="{Binding UnselectAllVMsCommand}"
+                                      Icon="{ui:SymbolIcon CheckboxUnchecked24}"
+                                      IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}" />
                         </StackPanel>
 
-                        <!-- Network Mapping -->
-                        <Expander Header="Network Mapping" Margin="0,10,0,15" IsExpanded="False">
-                            <StackPanel Margin="0,10,0,0">
-                                <TextBlock Text="Map source networks to target networks" 
-                                          FontSize="12"
-                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                          Margin="0,0,0,10" />
+                        <StackPanel Grid.Column="2">
+                            <ui:Button Content="Load Target Resources" 
+                                      Command="{Binding LoadTargetResourcesCommand}"
+                                      Icon="{ui:SymbolIcon Server24}"
+                                      IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
+                                      Appearance="Primary"
+                                      Margin="0,0,0,10" />
 
+                            <TextBlock Text="Target Cluster" Margin="0,0,0,5" />
+                            <ComboBox ItemsSource="{Binding TargetClusters}" 
+                                     SelectedItem="{Binding SelectedTargetCluster}"
+                                     DisplayMemberPath="Name"
+                                     IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </ui:CardControl>
+
+            <!-- VM List Section -->
+            <ui:CardControl Grid.Row="2" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Source Virtual Machines" FontWeight="Medium" FontSize="16" />
+                    <TextBlock Margin="0,5,0,15" 
+                              Text="Select VMs to migrate or backup" 
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                    <DataGrid ItemsSource="{Binding SourceVms}"
+                             AutoGenerateColumns="False"
+                             CanUserAddRows="False"
+                             CanUserDeleteRows="False"
+                             SelectionMode="Extended"
+                             GridLinesVisibility="Horizontal"
+                             HeadersVisibility="Column"
+                             MaxHeight="300">
+                        <DataGrid.Columns>
+                            <DataGridCheckBoxColumn Header="Select" 
+                                                   Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                                   Width="60" />
+                            <DataGridTextColumn Header="VM Name" 
+                                               Binding="{Binding Name}" 
+                                               Width="200" />
+                            <DataGridTextColumn Header="Power State" 
+                                               Binding="{Binding PowerState}" 
+                                               Width="100" />
+                            <DataGridTextColumn Header="ESXi Host" 
+                                               Binding="{Binding EsxiHost}" 
+                                               Width="150" />
+                            <DataGridTextColumn Header="Datastore" 
+                                               Binding="{Binding Datastore}" 
+                                               Width="150" />
+                            <DataGridTextColumn Header="Cluster" 
+                                               Binding="{Binding Cluster}" 
+                                               Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </ui:CardControl>
+
+            <!-- VM Configuration Backup Section -->
+            <ui:CardControl Grid.Row="3" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="VM Configuration Backup" FontWeight="Medium" FontSize="16" />
+                    <TextBlock Margin="0,5,0,15" 
+                              Text="Backup virtual machine configurations for disaster recovery and compliance" 
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left Column - Backup Configuration -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Backup Scope" FontWeight="Medium" Margin="0,0,0,8" />
+
+                            <RadioButton Content="Selected VMs (checked in VM list)" 
+                                       IsChecked="{Binding BackupSelectedVMs}"
+                                       Margin="0,0,0,5" />
+
+                            <RadioButton Content="All VMs in selected cluster" 
+                                       IsChecked="{Binding BackupAllVMsInCluster}"
+                                       IsEnabled="{Binding SelectedTargetCluster, Converter={StaticResource BoolToParameterConverter}}"
+                                       Margin="0,0,0,5" />
+
+                            <RadioButton Content="All VMs in vCenter" 
+                                       IsChecked="{Binding BackupAllVMsInVCenter}"
+                                       Margin="0,0,0,15" />
+
+                            <TextBlock Text="Backup Options" FontWeight="Medium" Margin="0,0,0,8" />
+
+                            <CheckBox Content="VM settings and configuration" 
+                                     IsChecked="{Binding IncludeVMSettings}"
+                                     Margin="0,0,0,3" />
+
+                            <CheckBox Content="VM annotations and notes" 
+                                     IsChecked="{Binding IncludeVMAnnotations}"
+                                     Margin="0,0,0,3" />
+
+                            <CheckBox Content="Custom attributes" 
+                                     IsChecked="{Binding IncludeVMCustomAttributes}"
+                                     Margin="0,0,0,3" />
+
+                            <CheckBox Content="Snapshot information" 
+                                     IsChecked="{Binding IncludeVMSnapshots}"
+                                     Margin="0,0,0,3" />
+
+                            <CheckBox Content="VM permissions (if accessible)" 
+                                     IsChecked="{Binding IncludeVMPermissions}"
+                                     Margin="0,0,0,3" />
+
+                            <CheckBox Content="Compress backup file" 
+                                     IsChecked="{Binding CompressBackup}"
+                                     Margin="0,0,0,15" />
+
+                            <TextBlock Text="Backup Location" FontWeight="Medium" Margin="0,0,0,5" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <ui:TextBox Grid.Column="0" 
+                                           Text="{Binding BackupLocation}" 
+                                           PlaceholderText="Select backup folder location"
+                                           Margin="0,0,5,0" />
+
+                                <ui:Button Grid.Column="1" 
+                                          Content="Browse" 
+                                          Command="{Binding BrowseBackupLocationCommand}"
+                                          Icon="{ui:SymbolIcon Folder24}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Right Column - Backup Actions and Status -->
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Backup Actions" FontWeight="Medium" Margin="0,0,0,8" />
+
+                            <ui:Button Content="Backup VM Configurations" 
+                                      Command="{Binding BackupVMConfigurationsCommand}"
+                                      Icon="{ui:SymbolIcon Save24}"
+                                      IsEnabled="{Binding IsBackupInProgress, Converter={StaticResource InverseBooleanConverter}}"
+                                      Appearance="Primary"
+                                      Margin="0,0,0,8" />
+
+                            <ui:Button Content="Validate Existing Backups" 
+                                      Command="{Binding ValidateBackupCommand}"
+                                      Icon="{ui:SymbolIcon CheckmarkCircle24}"
+                                      IsEnabled="{Binding IsBackupInProgress, Converter={StaticResource InverseBooleanConverter}}"
+                                      Margin="0,0,0,8" />
+
+                            <ui:Button Content="Restore Configuration..." 
+                                      Command="{Binding RestoreVMConfigurationCommand}"
+                                      Icon="{ui:SymbolIcon ArrowUndo24}"
+                                      IsEnabled="{Binding IsBackupInProgress, Converter={StaticResource InverseBooleanConverter}}"
+                                      Margin="0,0,0,15" />
+
+                            <!-- Backup Status -->
+                            <TextBlock Text="Backup Status" FontWeight="Medium" Margin="0,0,0,8" />
+
+                            <Grid Visibility="{Binding IsBackupInProgress, Converter={StaticResource BoolToVisibilityConverter}}"
+                                  Margin="0,0,0,10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <ProgressBar Grid.Row="0" 
+                                            Value="{Binding BackupProgress}" 
+                                            Maximum="100"
+                                            Height="6"
+                                            Margin="0,0,0,5" />
+
+                                <TextBlock Grid.Row="1" 
+                                          Text="{Binding BackupProgress, StringFormat='{}{0:F0}%'}" 
+                                          HorizontalAlignment="Center"
+                                          FontSize="12"
+                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+
+                            <TextBlock Text="{Binding BackupStatus}" 
+                                      Margin="0,0,0,10"
+                                      TextWrapping="Wrap" />
+
+                            <!-- Backup Results -->
+                            <TextBlock Text="Recent Activity" 
+                                      FontWeight="Medium" 
+                                      Margin="0,5,0,5"
+                                      Visibility="{Binding BackupResults.Count, Converter={StaticResource BoolToParameterConverter}}" />
+
+                            <ScrollViewer MaxHeight="120" 
+                                         VerticalScrollBarVisibility="Auto"
+                                         Visibility="{Binding BackupResults.Count, Converter={StaticResource BoolToParameterConverter}}">
+                                <ItemsControl ItemsSource="{Binding BackupResults}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" 
+                                                      FontSize="11"
+                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                      TextWrapping="Wrap"
+                                                      Margin="0,1" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <!-- Backup Progress Ring -->
+                            <ui:ProgressRing IsIndeterminate="True"
+                                            Visibility="{Binding IsBackupInProgress, Converter={StaticResource BoolToVisibilityConverter}}"
+                                            Width="32" Height="32"
+                                            Margin="0,10,0,0"
+                                            HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </ui:CardControl>
+
+            <!-- Migration Configuration Section -->
+            <ui:CardControl Grid.Row="4" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Migration Configuration" FontWeight="Medium" FontSize="16" />
+                    <TextBlock Margin="0,5,0,15" 
+                              Text="Configure VM migration options and network mapping" 
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left Column - Migration Options -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Migration Options" FontWeight="Medium" Margin="0,0,0,8" />
+
+                            <TextBlock Text="VM Name Suffix" Margin="0,0,0,3" />
+                            <ui:TextBox Text="{Binding NameSuffix}" 
+                                       PlaceholderText="e.g., -Imported"
+                                       Margin="0,0,0,10" />
+
+                            <TextBlock Text="Disk Format" Margin="0,0,0,3" />
+                            <ComboBox ItemsSource="{Binding AvailableDiskFormats}" 
+                                     SelectedItem="{Binding SelectedDiskFormat}"
+                                     Margin="0,0,0,10" />
+
+                            <TextBlock Text="Max Concurrent Migrations" Margin="0,0,0,3" />
+                            <ui:NumberBox Value="{Binding MaxConcurrentMigrations}" 
+                                         Minimum="1" 
+                                         Maximum="10"
+                                         Margin="0,0,0,10" />
+
+                            <CheckBox Content="Preserve MAC addresses" 
+                                     IsChecked="{Binding PreserveMAC}"
+                                     Margin="0,5,0,5" />
+
+                            <CheckBox Content="Sequential mode (one at a time)" 
+                                     IsChecked="{Binding SequentialMode}"
+                                     Margin="0,0,0,5" />
+
+                            <CheckBox Content="Enhanced network handling" 
+                                     IsChecked="{Binding EnhancedNetworkHandling}"
+                                     Margin="0,0,0,5" />
+
+                            <CheckBox Content="Ignore network errors" 
+                                     IsChecked="{Binding IgnoreNetworkErrors}"
+                                     Margin="0,0,0,5" />
+
+                            <CheckBox Content="Validation only (no migration)" 
+                                     IsChecked="{Binding ValidateOnly}"
+                                     Margin="0,0,0,5" />
+                        </StackPanel>
+
+                        <!-- Right Column - Network Mapping -->
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Network Mapping" FontWeight="Medium" Margin="0,0,0,8" />
+
+                            <ui:Button Content="Add Network Mapping" 
+                                      Command="{Binding AddNetworkMappingCommand}"
+                                      Icon="{ui:SymbolIcon Add24}"
+                                      Margin="0,0,0,10" />
+
+                            <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding NetworkMappings}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Grid Margin="0,0,0,5">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="30" />
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
 
-                                                <ui:TextBox Grid.Column="0" 
-                                                           Text="{Binding SourceNetwork}" 
+                                                <ui:TextBox Grid.Column="0"
+                                                           Text="{Binding SourceNetwork}"
                                                            PlaceholderText="Source Network" />
 
                                                 <TextBlock Grid.Column="1" 
                                                           Text="→" 
-                                                          Margin="5,0"
+                                                          HorizontalAlignment="Center"
                                                           VerticalAlignment="Center" />
 
-                                                <ui:TextBox Grid.Column="2" 
-                                                           Text="{Binding TargetNetwork}" 
+                                                <ui:TextBox Grid.Column="2"
+                                                           Text="{Binding TargetNetwork}"
                                                            PlaceholderText="Target Network" />
 
-                                                <ui:Button Grid.Column="3" 
+                                                <ui:Button Grid.Column="3"
+                                                          Content="×"
                                                           Command="{Binding DataContext.RemoveNetworkMappingCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                           CommandParameter="{Binding}"
-                                                          Icon="{ui:SymbolIcon Subtract24}"
+                                                          Width="30"
                                                           Margin="5,0,0,0" />
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </ui:CardControl>
 
-                                <ui:Button Content="Add Network Mapping" 
-                                          Command="{Binding AddNetworkMappingCommand}"
-                                          Icon="{ui:SymbolIcon Add24}"
-                                          Margin="0,10,0,0" />
-                            </StackPanel>
-                        </Expander>
+            <!-- Migration Actions Section -->
+            <ui:CardControl Grid.Row="5" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Migration Actions" FontWeight="Medium" FontSize="16" />
+                    <TextBlock Margin="0,5,0,15" 
+                              Text="Execute VM migrations and post-migration tasks" 
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
 
-                        <!-- VM List File Option -->
-                        <Expander Header="VM List File (Alternative)" Margin="0,0,0,15" IsExpanded="False">
-                            <StackPanel Margin="0,10,0,0">
-                                <TextBlock Text="Instead of selecting VMs above, you can specify a text file with VM names (one per line)" 
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left Column - Migration Actions -->
+                        <StackPanel Grid.Column="0">
+                            <ui:Button Content="Validate Migration" 
+                                      Command="{Binding ValidateMigrationCommand}"
+                                      Icon="{ui:SymbolIcon CheckmarkCircle24}"
+                                      IsEnabled="{Binding IsMigrating, Converter={StaticResource InverseBooleanConverter}}"
+                                      Margin="0,0,0,10" />
+
+                            <ui:Button Content="Start VM Migration" 
+                                      Command="{Binding StartVMMigrationCommand}"
+                                      Icon="{ui:SymbolIcon Play24}"
+                                      IsEnabled="{Binding IsMigrating, Converter={StaticResource InverseBooleanConverter}}"
+                                      Appearance="Primary"
+                                      Margin="0,0,0,10" />
+
+                            <ui:Button Content="Run Post-Migration Cleanup" 
+                                      Command="{Binding RunPostMigrationCleanupCommand}"
+                                      Icon="{ui:SymbolIcon Broom24}"
+                                      IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
+                                      Margin="0,0,0,10" />
+                        </StackPanel>
+
+                        <!-- Right Column - Migration Status -->
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Migration Status" FontWeight="Medium" Margin="0,0,0,8" />
+
+                            <Grid Visibility="{Binding IsMigrating, Converter={StaticResource BoolToVisibilityConverter}}"
+                                  Margin="0,0,0,10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <ProgressBar Grid.Row="0" 
+                                            Value="{Binding MigrationProgress}" 
+                                            Maximum="100"
+                                            Height="6"
+                                            Margin="0,0,0,5" />
+
+                                <TextBlock Grid.Row="1" 
+                                          Text="{Binding MigrationProgress, StringFormat='{}{0:F0}%'}" 
+                                          HorizontalAlignment="Center"
                                           FontSize="12"
-                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                          TextWrapping="Wrap"
-                                          Margin="0,0,0,10" />
+                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Grid>
 
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding MigrationStatus}" 
+                                      Margin="0,0,0,10"
+                                      TextWrapping="Wrap" />
 
-                                    <ui:TextBox Grid.Column="0" 
-                                               Text="{Binding VmListFile}" 
-                                               PlaceholderText="Select VM list file..." />
+                            <ui:ProgressRing IsIndeterminate="True"
+                                            Visibility="{Binding IsMigrating, Converter={StaticResource BoolToVisibilityConverter}}"
+                                            Width="32" Height="32"
+                                            HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </ui:CardControl>
 
-                                    <ui:Button Grid.Column="1" 
-                                              Content="Browse" 
-                                              Command="{Binding BrowseVMListFileCommand}" 
-                                              Margin="5,0,0,0"
-                                              Icon="{ui:SymbolIcon DocumentSearch24}" />
-                                </Grid>
-                            </StackPanel>
-                        </Expander>
+            <!-- Log Output Section -->
+            <ui:CardControl Grid.Row="6">
+                <StackPanel>
+                    <TextBlock Text="Activity Log" FontWeight="Medium" FontSize="16" />
+                    <TextBlock Margin="0,5,0,15" 
+                              Text="Real-time activity and operation logs" 
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
 
-                        <!-- Migration Summary -->
-                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" 
-                               CornerRadius="4" 
-                               Padding="10"
-                               Margin="0,15,0,15">
-                            <StackPanel>
-                                <TextBlock Text="Migration Summary" FontWeight="Medium" FontSize="12" />
-                                <TextBlock FontSize="12" Margin="0,5,0,0">
-                                    <TextBlock.Text>
-                                        <MultiBinding StringFormat="Selected VMs: {0}">
-                                            <Binding Path="SourceVms" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                                <TextBlock FontSize="12"
-                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                    <TextBlock.Text>
-                                        <MultiBinding StringFormat="Target Cluster: {0}">
-                                            <Binding Path="SelectedTargetCluster.Name" TargetNullValue="Not selected" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                                <TextBlock FontSize="12"
-                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                    <TextBlock.Text>
-                                        <MultiBinding StringFormat="Mode: {0}">
-                                            <Binding Path="SequentialMode" Converter="{StaticResource BoolToParameterConverter}" ConverterParameter="Sequential,Parallel" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Action Buttons -->
-                        <ui:Button Content="Start VM Migration" 
-                                  Command="{Binding StartVMMigrationCommand}"
-                                  Appearance="Primary"
-                                  Icon="{ui:SymbolIcon ArrowSwap24}"
-                                  Margin="0,0,0,10"
-                                  IsEnabled="{Binding IsMigrating, Converter={StaticResource InverseBooleanConverter}}" />
-
-                        <ui:Button Content="Post-Migration Cleanup" 
-                                  Command="{Binding RunPostMigrationCleanupCommand}"
-                                  Icon="{ui:SymbolIcon Broom24}"
-                                  ToolTip="Run cleanup to ensure proper VM placement"
-                                  IsEnabled="{Binding IsMigrating, Converter={StaticResource InverseBooleanConverter}}" />
-                    </StackPanel>
-                </ScrollViewer>
+                    <ScrollViewer Height="200" 
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto">
+                        <TextBox Text="{Binding LogOutput}"
+                                IsReadOnly="True"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                TextWrapping="Wrap"
+                                FontFamily="Consolas"
+                                FontSize="12" />
+                    </ScrollViewer>
+                </StackPanel>
             </ui:CardControl>
         </Grid>
-
-        <!-- Progress Section -->
-        <ui:CardControl Grid.Row="3" Margin="0,20,0,0">
-            <StackPanel>
-                <TextBlock Text="Migration Progress" FontWeight="Medium" />
-
-                <!-- Overall Progress -->
-                <Grid Margin="0,10,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <ProgressBar Grid.Column="0" 
-                                Value="{Binding MigrationProgress}" 
-                                Maximum="100"
-                                Height="8" />
-                    <TextBlock Grid.Column="1" 
-                              Margin="10,0,0,0"
-                              VerticalAlignment="Center"
-                              FontSize="12">
-                        <TextBlock.Text>
-                            <MultiBinding StringFormat="{}{0:F0}%">
-                                <Binding Path="MigrationProgress" />
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
-                </Grid>
-
-                <!-- Status and Controls -->
-                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                    <TextBlock Text="{Binding MigrationStatus}" 
-                              VerticalAlignment="Center"
-                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <ui:ProgressRing Width="20" Height="20" 
-                                    Margin="15,0,0,0"
-                                    Visibility="{Binding IsMigrating, Converter={StaticResource BoolToVisibilityConverter}}" />
-                </StackPanel>
-            </StackPanel>
-        </ui:CardControl>
-
-        <!-- Migration Log -->
-        <Grid Grid.Row="4" Margin="0,20,0,0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="Migration Log" FontWeight="Medium"/>
-            <ui:TextBox Grid.Row="1"
-                       Margin="0,10,0,0"
-                       Text="{Binding LogOutput, Mode=OneWay}"
-                       IsReadOnly="True"
-                       AcceptsReturn="True"
-                       VerticalScrollBarVisibility="Auto"
-                       FontFamily="Consolas"
-                       FontSize="12"/>
-        </Grid>
-    </Grid>
+    </ScrollViewer>
 </Page>

@@ -17,8 +17,12 @@
         <helpers:BoolToParameterConverter x:Key="BoolToParameterConverter" />
         <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
     </Page.Resources>
-
-    <Grid Margin="42">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                  HorizontalScrollBarVisibility="Disabled"
+                  PanningMode="VerticalOnly"
+                  CanContentScroll="True"
+                  helpers:ScrollBehavior.FixMouseWheel="True">
+        <Grid Margin="42">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -108,4 +112,5 @@
                 FontFamily="Consolas"/>
         </Grid>
     </Grid>
+    </ScrollViewer>
 </Page>

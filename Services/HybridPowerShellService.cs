@@ -200,7 +200,11 @@ public class HybridPowerShellService
             "Move-EsxiHost.ps1",
             "Move-VM.ps1",
             "Export-vCenterConfig.ps1",
-            "Test-VMNetwork.ps1"
+            "Test-VMNetwork.ps1",
+            // Add these new VM backup scripts
+            "BackupVMConfigurations.ps1",
+            "RestoreVMConfigurations.ps1",
+            "ValidateVMBackups.ps1"
         };
 
         var scriptName = Path.GetFileName(scriptPath);

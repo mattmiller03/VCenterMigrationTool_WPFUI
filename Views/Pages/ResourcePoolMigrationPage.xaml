@@ -19,7 +19,12 @@
         <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
     </Page.Resources>
 
-    <Grid Margin="42">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                  HorizontalScrollBarVisibility="Disabled"
+                  PanningMode="VerticalOnly"
+                  CanContentScroll="True"
+                  helpers:ScrollBehavior.FixMouseWheel="True">
+        <Grid Margin="42">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -367,4 +372,5 @@
                        FontSize="12"/>
         </Grid>
     </Grid>
+        </ScrollViewer>
 </Page>
