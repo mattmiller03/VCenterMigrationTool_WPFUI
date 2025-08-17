@@ -9,56 +9,74 @@ using VCenterMigrationTool.Services;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Collections.Generic;
+using System.IO;
 
 namespace VCenterMigrationTool.ViewModels;
 
 public partial class EsxiHostsViewModel : ObservableObject
     {
-    private readonly PersistentExternalConnectionService _persistentConnectionService;
-    private readonly SharedConnectionService _sharedConnectionService;
-    private readonly ILogger<EsxiHostsViewModel> _logger;
+        private readonly PersistentExternalConnectionService _persistentConnectionService;
+        private readonly SharedConnectionService _sharedConnectionService;
+        private readonly ConfigurationService _configurationService;
+        private readonly ILogger<EsxiHostsViewModel> _logger;
 
-    [ObservableProperty]
-    private ObservableCollection<ClusterInfo> _sourceClusters = new();
 
-    [ObservableProperty]
-    private ObservableCollection<ClusterInfo> _targetClusters = new();
+        [ObservableProperty]
+        private ObservableCollection<ClusterInfo> _sourceClusters = new();
 
-    [ObservableProperty]
-    private ClusterInfo? _selectedSourceCluster;
+        [ObservableProperty]
+        private ObservableCollection<ClusterInfo> _targetClusters = new();
 
-    [ObservableProperty]
-    private ClusterInfo? _selectedTargetCluster;
+        [ObservableProperty]
+        private ClusterInfo? _selectedSourceCluster;
 
-    [ObservableProperty]
-    private ObservableCollection<EsxiHost> _selectedSourceHosts = new();
+        [ObservableProperty]
+        private ClusterInfo? _selectedTargetCluster;
 
-    [ObservableProperty]
-    private ObservableCollection<EsxiHost> _availableTargetHosts = new();
+        [ObservableProperty]
+        private ObservableCollection<EsxiHost> _selectedSourceHosts = new();
 
-    [ObservableProperty]
-    private string _migrationStatus = "Ready to migrate hosts";
+        [ObservableProperty]
+        private ObservableCollection<EsxiHost> _availableTargetHosts = new();
 
-    [ObservableProperty]
-    private bool _isLoading;
+        [ObservableProperty]
+        private string _migrationStatus = "Ready";
 
-    [ObservableProperty]
-    private string _loadingMessage = "";
+        [ObservableProperty]
+        private bool _isLoading;
 
-    [ObservableProperty]
-    private string _sourceConnectionStatus = "Not connected";
+        [ObservableProperty]
+        private string _loadingMessage = "";
 
-    [ObservableProperty]
-    private string _targetConnectionStatus = "Not connected";
+        [ObservableProperty]
+        private string _sourceConnectionStatus = "Not connected";
 
-    public EsxiHostsViewModel (
-        PersistentExternalConnectionService persistentConnectionService,
-        SharedConnectionService sharedConnectionService,
-        ILogger<EsxiHostsViewModel> logger)
+        [ObservableProperty]
+        private string _targetConnectionStatus = "Not connected";
+
+        [ObservableProperty]
+        private bool _isSourceConnected;
+
+        [ObservableProperty]
+        private bool _isTargetConnected;
+
+        // Operation mode flags
+        [ObservableProperty]
+        private bool _isMigrationMode = true;
+
+        [ObservableProperty]
+        private bool _isBackupMode = false;
+
+        public EsxiHostsViewModel (
+            PersistentExternalConnectionService persistentConnectionService,
+            SharedConnectionService sharedConnectionService,
+            ConfigurationService configurationService,
+            ILogger<EsxiHostsViewModel> logger)
         {
-        _persistentConnectionService = persistentConnectionService;
-        _sharedConnectionService = sharedConnectionService;
-        _logger = logger;
+            _persistentConnectionService = persistentConnectionService;
+            _sharedConnectionService = sharedConnectionService;
+            _configurationService = configurationService;
+            _logger = logger;
         }
 
     /// <summary>
@@ -84,38 +102,41 @@ public partial class EsxiHostsViewModel : ObservableObject
             if (sourceConnected && _sharedConnectionService.SourceConnection != null)
                 {
                 var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("source");
+                IsSourceConnected = true;
                 SourceConnectionStatus = $"✅ {_sharedConnectionService.SourceConnection.ServerAddress}";
                 _logger.LogInformation("Source vCenter connected: {Server}", _sharedConnectionService.SourceConnection.ServerAddress);
+
+                // Load source data
+                await LoadSourceClusters();
                 }
             else
                 {
+                IsSourceConnected = false;
                 SourceConnectionStatus = "❌ Not connected";
                 _logger.LogWarning("Source vCenter not connected");
                 }
 
-            // Check target connection
+            // Check target connection (optional for migration mode)
             var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
             if (targetConnected && _sharedConnectionService.TargetConnection != null)
                 {
                 var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("target");
+                IsTargetConnected = true;
                 TargetConnectionStatus = $"✅ {_sharedConnectionService.TargetConnection.ServerAddress}";
                 _logger.LogInformation("Target vCenter connected: {Server}", _sharedConnectionService.TargetConnection.ServerAddress);
+
+                // Load target data
+                await LoadTargetClusters();
                 }
             else
                 {
+                IsTargetConnected = false;
                 TargetConnectionStatus = "❌ Not connected";
                 _logger.LogWarning("Target vCenter not connected");
                 }
 
-            // Load data if both connections are active
-            if (sourceConnected && targetConnected)
-                {
-                await LoadClustersAndHosts();
-                }
-            else
-                {
-                MigrationStatus = "⚠️ Please connect to both vCenters from the Dashboard";
-                }
+            // Update status based on what's connected
+            UpdateOperationStatus();
             }
         catch (Exception ex)
             {
@@ -128,6 +149,36 @@ public partial class EsxiHostsViewModel : ObservableObject
             LoadingMessage = "";
             }
         }
+
+
+    private void UpdateOperationStatus ()
+    {
+        if (!IsSourceConnected)
+        {
+            MigrationStatus = "⚠️ Please connect to source vCenter from the Dashboard";
+        }
+        else if (IsMigrationMode && !IsTargetConnected)
+        {
+            MigrationStatus = "ℹ️ Source connected - Backup operations available. Connect target for migration.";
+            // Switch to backup mode if only source is connected
+            IsBackupMode = true;
+            IsMigrationMode = false;
+        }
+        else if (IsSourceConnected && IsTargetConnected)
+        {
+            var sourceHostCount = SourceClusters.Sum(c => c.HostCount);
+            var targetHostCount = TargetClusters.Sum(c => c.HostCount);
+            MigrationStatus = $"✅ Ready • Source: {SourceClusters.Count} clusters, {sourceHostCount} hosts • Target: {TargetClusters.Count} clusters, {targetHostCount} hosts";
+            // Enable both modes
+            IsMigrationMode = true;
+            IsBackupMode = true;
+        }
+        else
+        {
+            var sourceHostCount = SourceClusters.Sum(c => c.HostCount);
+            MigrationStatus = $"✅ Backup Ready • Source: {SourceClusters.Count} clusters, {sourceHostCount} hosts";
+        }
+    }
 
     /// <summary>
     /// Load clusters and hosts from both vCenters
@@ -462,7 +513,74 @@ public partial class EsxiHostsViewModel : ObservableObject
                 }
             }
         }
+    [RelayCommand]
+    private async Task BackupSelectedHosts ()
+        {
+        if (SelectedSourceHosts.Count == 0)
+            {
+            MigrationStatus = "⚠️ Please select hosts to backup";
+            return;
+            }
 
+        IsLoading = true;
+        LoadingMessage = $"Backing up {SelectedSourceHosts.Count} hosts configuration...";
+
+        try
+            {
+            var backupPath = Path.Combine(
+                _configurationService.GetConfiguration().ExportPath ?? "Backups",
+                $"ESXi_Backup_{DateTime.Now:yyyyMMdd_HHmmss}"
+            );
+
+            Directory.CreateDirectory(backupPath);
+
+            foreach (var host in SelectedSourceHosts)
+                {
+                LoadingMessage = $"Backing up {host.Name}...";
+
+                var backupScript = $@"
+                    $vmhost = Get-VMHost -Name '{host.Name}' -ErrorAction Stop
+                    
+                    $hostConfig = @{{
+                        Name = $vmhost.Name
+                        Version = $vmhost.Version
+                        Build = $vmhost.Build
+                        NetworkInfo = Get-VirtualSwitch -VMHost $vmhost | Select-Object *
+                        StorageInfo = Get-Datastore -VMHost $vmhost | Select-Object *
+                        AdvancedSettings = Get-AdvancedSetting -Entity $vmhost | Select-Object Name, Value
+                        Services = Get-VMHostService -VMHost $vmhost | Select-Object *
+                        NtpServers = Get-VMHostNtpServer -VMHost $vmhost
+                        DnsServers = (Get-VMHostNetwork -VMHost $vmhost).DnsAddress
+                        BackupDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+                    }}
+                    
+                    $hostConfig | ConvertTo-Json -Depth 10
+                ";
+
+                var result = await _persistentConnectionService.ExecuteCommandAsync("source", backupScript);
+
+                if (!result.StartsWith("ERROR:"))
+                    {
+                    var fileName = Path.Combine(backupPath, $"{host.Name}_config.json");
+                    await File.WriteAllTextAsync(fileName, result);
+                    _logger.LogInformation("Backed up host {Host} to {File}", host.Name, fileName);
+                    }
+                }
+
+            MigrationStatus = $"✅ Successfully backed up {SelectedSourceHosts.Count} hosts to {backupPath}";
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error during host backup");
+            MigrationStatus = $"❌ Backup failed: {ex.Message}";
+            }
+        finally
+            {
+            IsLoading = false;
+            LoadingMessage = "";
+            }
+        }
+    
     [RelayCommand]
     private void ClearSourceHostSelection ()
         {
@@ -472,16 +590,22 @@ public partial class EsxiHostsViewModel : ObservableObject
     [RelayCommand]
     private async Task MigrateSelectedHosts ()
         {
-        if (SelectedSourceHosts.Count == 0)
+            if (!IsTargetConnected)
             {
-            MigrationStatus = "⚠️ Please select hosts to migrate";
-            return;
+                MigrationStatus = "⚠️ Please connect to target vCenter for migration";
+                return;
             }
 
-        if (SelectedTargetCluster == null)
+            if (SelectedSourceHosts.Count == 0)
             {
-            MigrationStatus = "⚠️ Please select a target cluster";
-            return;
+                MigrationStatus = "⚠️ Please select hosts to migrate";
+                return;
+            }
+
+            if (SelectedTargetCluster == null)
+            {
+                MigrationStatus = "⚠️ Please select a target cluster";
+                return;
             }
 
         IsLoading = true;

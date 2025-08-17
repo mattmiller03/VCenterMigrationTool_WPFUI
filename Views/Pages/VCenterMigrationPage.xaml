@@ -4,15 +4,14 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       mc:Ignorable="d"
-      d:DesignHeight="800" d:DesignWidth="1200"
-      ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
-      ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-      Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+      d:DesignHeight="800" d:DesignWidth="1200">
 
     <Page.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <helpers:NullToBooleanConverter x:Key="NullToBooleanConverter"/>
     </Page.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -119,7 +118,6 @@
                         <ComboBox Grid.Column="0"
                                  ItemsSource="{Binding ViewModel.SourceClusters}"
                                  SelectedItem="{Binding ViewModel.SelectedSourceCluster}"
-                                 DisplayMemberPath="Name"
                                  MinHeight="35">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
@@ -142,10 +140,10 @@
                                   Margin="20,0"/>
 
                         <Border Grid.Column="2" 
-                               BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                               BorderBrush="{DynamicResource ControlElevationBorderBrush}"
                                BorderThickness="1"
                                CornerRadius="4"
-                               Background="{DynamicResource ControlFillColorDefaultBrush}"
+                               Background="{DynamicResource ControlFillColorSecondaryBrush}"
                                MinHeight="35">
                             <TextBlock Text="Target: Same cluster name will be used" 
                                       VerticalAlignment="Center"
@@ -166,7 +164,7 @@
 
                     <!-- Header -->
                     <Border Grid.Row="0" 
-                           Background="{DynamicResource CardStrokeColorDefaultBrush}"
+                           Background="{DynamicResource ControlFillColorSecondaryBrush}"
                            Padding="20,12">
                         <Grid>
                             <TextBlock Text="Cluster Objects to Migrate" 
@@ -180,7 +178,7 @@
 
                     <!-- Loading indicator -->
                     <StackPanel Grid.Row="1" 
-                               Visibility="{Binding ViewModel.IsLoadingClusterItems, Converter={StaticResource BooleanToVisibilityConverter}}"
+                               Visibility="{Binding ViewModel.IsLoadingClusterItems, Converter={StaticResource BoolToVisibilityConverter}}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Margin="0,50">
@@ -199,7 +197,7 @@
                                      Margin="20,15">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                    <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}"
                                            BorderThickness="0,0,0,1"
                                            Padding="0,8">
                                         <Grid>
@@ -245,7 +243,7 @@
             <!-- Migration Progress -->
             <ui:Card Grid.Row="4" 
                     Margin="0,0,0,15"
-                    Visibility="{Binding ViewModel.IsMigrating, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    Visibility="{Binding ViewModel.IsMigrating, Converter={StaticResource BoolToVisibilityConverter}}">
                 <Grid Margin="20,15">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>

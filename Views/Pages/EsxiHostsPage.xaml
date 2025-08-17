@@ -65,8 +65,6 @@
         <Grid Grid.Row="3" Visibility="{Binding ViewModel.IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Rectangle Fill="{DynamicResource ApplicationBackgroundBrush}" Opacity="0.8"/>
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <ui:ProgressRing IsIndeterminate="True"
-                                Width="60" Height="60"/>
                 <TextBlock Text="{Binding ViewModel.LoadingMessage}"
                           HorizontalAlignment="Center"
                           Margin="0,10,0,0"/>
@@ -181,21 +179,33 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Migration Arrow -->
+            <!-- Migration/Backup Arrow -->
             <StackPanel Grid.Column="1" 
                        VerticalAlignment="Center"
-                       Margin="10,0">
+                       Margin="10,0,10,0" Height="261">
+                <!-- Migration Button (visible when target connected) -->
                 <ui:Button Content="Migrate →" 
                           Command="{Binding ViewModel.MigrateSelectedHostsCommand}"
                           Appearance="Primary"
                           FontSize="16"
-                          Padding="15,10"/>
+                          Padding="15,10"
+                          Visibility="{Binding ViewModel.IsTargetConnected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                <!-- Backup Button (always visible when source connected) -->
 
                 <TextBlock Text="{Binding ViewModel.SelectedSourceHosts.Count, StringFormat='{}{0} hosts selected'}"
                           HorizontalAlignment="Center"
                           Margin="0,5,0,0"
                           FontSize="11"
                           Opacity="0.7"/>
+                <ui:Button Content="Backup" 
+                          Command="{Binding ViewModel.BackupSelectedHostsCommand}"
+                          Appearance="Secondary"
+                          FontSize="14"
+                          Padding="15,8" Width="96"
+                          />
+                <ui:ProgressRing IsIndeterminate="True"
+                                Width="60" Height="67"/>
             </StackPanel>
 
             <!-- Target vCenter -->

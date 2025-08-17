@@ -9,7 +9,7 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=viewmodels:ViewProfilesViewModel, IsDesignTimeCreatable=False}">
     <UserControl.Resources>
-        <helpers:NullToBoolConverter x:Key="NullToBoolConverter" />
+        <helpers:NullToBooleanConverter x:Key="NullToBooleanConverter" />
     </UserControl.Resources>
 
     <StackPanel>
@@ -29,7 +29,7 @@
             <ui:Button Command="{Binding EditProfileCommand}" 
                        CommandParameter="{Binding SelectedProfile}" 
                        ToolTip="Edit selected profile" 
-                       IsEnabled="{Binding SelectedProfile, Converter={StaticResource NullToBoolConverter}}" 
+                       IsEnabled="{Binding SelectedProfile, Converter={StaticResource NullToBooleanConverter}}" 
                        Icon="{ui:SymbolIcon Edit24}" />
 
             <ui:Button Command="{Binding RemoveProfileCommand}" 
@@ -37,7 +37,7 @@
                        ToolTip="Remove selected profile" 
                        Appearance="Danger" 
                        Margin="10,0,0,0" 
-                       IsEnabled="{Binding SelectedProfile, Converter={StaticResource NullToBoolConverter}}" 
+                       IsEnabled="{Binding SelectedProfile, Converter={StaticResource NullToBooleanConverter}}" 
                        Icon="{ui:SymbolIcon Subtract24}" />
         </StackPanel>
         <Separator Margin="0,15,0,15"/>
@@ -47,7 +47,7 @@
             Content="Test Connection"
             Icon="PlugConnected24"
             Command="{Binding TestSelectedProfileCommand}"
-            IsEnabled="{Binding SelectedProfile, Converter={StaticResource NullToBoolConverter}}"/>
+            IsEnabled="{Binding SelectedProfile, Converter={StaticResource NullToBooleanConverter}}"/>
         <TextBlock Margin="0,5,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding ConnectionStatus}" TextWrapping="Wrap" FontWeight="SemiBold"/>
     </StackPanel>
 </UserControl>
