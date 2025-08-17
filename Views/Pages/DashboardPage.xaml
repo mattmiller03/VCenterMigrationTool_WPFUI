@@ -1,115 +1,322 @@
-﻿<Page
-    x:Class="VCenterMigrationTool.Views.Pages.DashboardPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
-    xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
-    mc:Ignorable="d"
-    d:DataContext="{d:DesignInstance viewmodels:DashboardViewModel, IsDesignTimeCreatable=False}"
-    Title="DashboardPage"
-    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
-    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page x:Class="VCenterMigrationTool.Views.Pages.DashboardPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      mc:Ignorable="d"
+      d:DesignHeight="700" d:DesignWidth="1200"
+      ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+      ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+      Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
     <Page.Resources>
-        <helpers:BoolToParameterConverter x:Key="BoolToParameterConverter" />
-        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Page.Resources>
-    <ScrollViewer VerticalScrollBarVisibility="Auto" 
-                  HorizontalScrollBarVisibility="Disabled"
-                  PanningMode="VerticalOnly"
-                  CanContentScroll="True">
-        <Grid Margin="42" helpers:ScrollBehavior.FixMouseWheel="True">
+
+    <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" FontSize="24" FontWeight="Medium" Text="Dashboard &amp; Status" />
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="vCenter Migration Dashboard" 
+                      FontSize="28" 
+                      FontWeight="SemiBold"/>
+            <TextBlock Text="Manage your vCenter connections and monitor migration status" 
+                      Opacity="0.7"
+                      FontSize="14"
+                      Margin="0,5,0,0"/>
+        </StackPanel>
 
-        <Grid Grid.Row="1" Margin="0,20,0,0">
+        <!-- Connection Cards -->
+        <Grid Grid.Row="1" Margin="0,0,0,20">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="20" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <ui:CardControl Grid.Column="0">
-                <StackPanel>
-                    <TextBlock Text="Source vCenter" FontWeight="Medium" />
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0">
-                        <ComboBox
-                            MinWidth="200"
-                            ItemsSource="{Binding Profiles}"
-                            SelectedItem="{Binding SelectedSourceProfile}"
-                            DisplayMemberPath="Name"
-                            IsEnabled="{Binding IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
-                        <ui:Button
-                            Margin="10,0,0,0"
-                            Content="Connect"
-                            Command="{Binding ConnectSourceCommand}"
-                            IsEnabled="{Binding IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
-                    </StackPanel>
-                    <TextBlock Margin="0,10,0,0" Text="{Binding SourceConnectionStatus}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                </StackPanel>
-            </ui:CardControl>
+            <!-- Source vCenter Card -->
+            <ui:Card Grid.Column="0">
+                <Grid Margin="20,15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-            <ui:CardControl Grid.Column="2">
-                <StackPanel>
-                    <TextBlock Text="Target vCenter" FontWeight="Medium" />
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0">
-                        <ComboBox
-                            MinWidth="200"
-                            ItemsSource="{Binding Profiles}"
-                            SelectedItem="{Binding SelectedTargetProfile}"
-                            DisplayMemberPath="Name"
-                            IsEnabled="{Binding IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
-                        <ui:Button
-                            Margin="10,0,0,0"
-                            Content="Connect"
-                            Command="{Binding ConnectTargetCommand}"
-                            IsEnabled="{Binding IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
-                    </StackPanel>
-                    <TextBlock Margin="0,10,0,0" Text="{Binding TargetConnectionStatus}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                </StackPanel>
-            </ui:CardControl>
-        </Grid>
+                    <!-- Card Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-        <ui:CardControl Grid.Row="2" Margin="0,20,0,0">
-            <StackPanel>
-                <TextBlock Text="Current Job Status" FontWeight="Medium" />
-                <TextBlock Margin="0,5,0,0" Text="{Binding CurrentJobText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                <Grid Margin="0,10,0,0" Visibility="{Binding IsJobRunning, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <ProgressBar Grid.Column="0" Value="{Binding JobProgress}" Maximum="100" />
-                    <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{Binding JobProgress, StringFormat={}{0}%}" />
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Server24" Margin="0,0,10,0"/>
+                            <TextBlock Text="Source vCenter" 
+                                      FontSize="18" 
+                                      FontWeight="SemiBold"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Disconnect Button - Only visible when connected -->
+                        <ui:Button Grid.Column="1" 
+                                  Content="Disconnect" 
+                                  Command="{Binding ViewModel.DisconnectSourceCommand}"
+                                  Appearance="Danger"
+                                  FontSize="12"
+                                  Padding="8,4"
+                                  Visibility="{Binding ViewModel.IsSourceConnected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    </Grid>
+
+                    <!-- Profile Selection -->
+                    <ComboBox Grid.Row="1" 
+                             ItemsSource="{Binding ViewModel.Profiles}"
+                             SelectedItem="{Binding ViewModel.SelectedSourceProfile}"
+                             DisplayMemberPath="Name"
+                             Margin="0,0,0,10"
+                             IsEnabled="{Binding ViewModel.IsSourceDisconnected}"/>
+
+                    <!-- Connection Status -->
+                    <Border Grid.Row="2" 
+                           Background="{DynamicResource ControlFillColorDefaultBrush}"
+                           BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                           BorderThickness="1"
+                           CornerRadius="4"
+                           Padding="10,8"
+                           Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Ellipse Grid.Column="0" 
+                                    Width="8" Height="8"
+                                    Margin="0,0,10,0"
+                                    VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ViewModel.IsSourceConnected}" Value="True">
+                                                <Setter Property="Fill" Value="#10b981"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ViewModel.IsSourceConnected}" Value="False">
+                                                <Setter Property="Fill" Value="#6b7280"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+
+                            <TextBlock Grid.Column="1" 
+                                      Text="{Binding ViewModel.SourceConnectionStatus}"
+                                      VerticalAlignment="Center"
+                                      TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Connect Button -->
+                    <ui:Button Grid.Row="3" 
+                              Content="Connect" 
+                              Command="{Binding ViewModel.ConnectSourceCommand}"
+                              HorizontalAlignment="Stretch"
+                              Appearance="Primary"
+                              IsEnabled="{Binding ViewModel.CanConnectSource}"/>
+
+                    <!-- Connection Details (shown when connected) -->
+                    <StackPanel Grid.Row="4" 
+                               Margin="0,10,0,0"
+                               Visibility="{Binding ViewModel.IsSourceConnected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Connection Details" 
+                                  FontWeight="SemiBold"
+                                  FontSize="12"
+                                  Opacity="0.7"
+                                  Margin="0,0,0,5"/>
+                        <TextBlock Text="{Binding ViewModel.SourceConnectionDetails}"
+                                  FontSize="11"
+                                  Opacity="0.6"
+                                  TextWrapping="Wrap"/>
+                    </StackPanel>
                 </Grid>
-                <ui:Button Margin="0,10,0,0" Content="Run Test Job" Command="{Binding RunTestJobCommand}" IsEnabled="{Binding IsJobRunning, Converter={StaticResource BoolToParameterConverter}, ConverterParameter=inverse}"/>
-            </StackPanel>
-        </ui:CardControl>
+            </ui:Card>
 
-        <Grid Grid.Row="3" Margin="0,20,0,0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="Detailed Log Output" FontWeight="Medium"/>
-            <ui:TextBox
-                Grid.Row="1"
-                Margin="0,10,0,0"
-                Text="{Binding ScriptOutput, Mode=OneWay}"
-                IsReadOnly="True"
-                AcceptsReturn="True"
-                VerticalScrollBarVisibility="Auto"
-                FontFamily="Consolas"/>
+            <!-- Target vCenter Card -->
+            <ui:Card Grid.Column="2">
+                <Grid Margin="20,15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Card Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ServerMultiple20" Margin="0,0,10,0"/>
+                            <TextBlock Text="Target vCenter" 
+                                      FontSize="18" 
+                                      FontWeight="SemiBold"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Disconnect Button - Only visible when connected -->
+                        <ui:Button Grid.Column="1" 
+                                  Content="Disconnect" 
+                                  Command="{Binding ViewModel.DisconnectTargetCommand}"
+                                  Appearance="Danger"
+                                  FontSize="12"
+                                  Padding="8,4"
+                                  Visibility="{Binding ViewModel.IsTargetConnected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    </Grid>
+
+                    <!-- Profile Selection -->
+                    <ComboBox Grid.Row="1" 
+                             ItemsSource="{Binding ViewModel.Profiles}"
+                             SelectedItem="{Binding ViewModel.SelectedTargetProfile}"
+                             DisplayMemberPath="Name"
+                             Margin="0,0,0,10"
+                             IsEnabled="{Binding ViewModel.IsTargetDisconnected}"/>
+
+                    <!-- Connection Status -->
+                    <Border Grid.Row="2" 
+                           Background="{DynamicResource ControlFillColorDefaultBrush}"
+                           BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                           BorderThickness="1"
+                           CornerRadius="4"
+                           Padding="10,8"
+                           Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Ellipse Grid.Column="0" 
+                                    Width="8" Height="8"
+                                    Margin="0,0,10,0"
+                                    VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ViewModel.IsTargetConnected}" Value="True">
+                                                <Setter Property="Fill" Value="#10b981"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ViewModel.IsTargetConnected}" Value="False">
+                                                <Setter Property="Fill" Value="#6b7280"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+
+                            <TextBlock Grid.Column="1" 
+                                      Text="{Binding ViewModel.TargetConnectionStatus}"
+                                      VerticalAlignment="Center"
+                                      TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Connect Button -->
+                    <ui:Button Grid.Row="3" 
+                              Content="Connect" 
+                              Command="{Binding ViewModel.ConnectTargetCommand}"
+                              HorizontalAlignment="Stretch"
+                              Appearance="Primary"
+                              IsEnabled="{Binding ViewModel.CanConnectTarget}"/>
+
+                    <!-- Connection Details (shown when connected) -->
+                    <StackPanel Grid.Row="4" 
+                               Margin="0,10,0,0"
+                               Visibility="{Binding ViewModel.IsTargetConnected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Connection Details" 
+                                  FontWeight="SemiBold"
+                                  FontSize="12"
+                                  Opacity="0.7"
+                                  Margin="0,0,0,5"/>
+                        <TextBlock Text="{Binding ViewModel.TargetConnectionDetails}"
+                                  FontSize="11"
+                                  Opacity="0.6"
+                                  TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Grid>
+            </ui:Card>
         </Grid>
+
+        <!-- Script Output Section -->
+        <ui:Card Grid.Row="2">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Border Grid.Row="0" 
+                       Background="{DynamicResource CardStrokeColorDefaultBrush}"
+                       Padding="20,12">
+                    <Grid>
+                        <TextBlock Text="Output Console" 
+                                  FontWeight="SemiBold"/>
+                        <ui:Button Content="Run Test Job" 
+                                  Command="{Binding ViewModel.RunTestJobCommand}"
+                                  HorizontalAlignment="Right"
+                                  Appearance="Secondary"
+                                  Padding="10,5"/>
+                    </Grid>
+                </Border>
+
+                <!-- Output -->
+                <ScrollViewer Grid.Row="1" 
+                             VerticalScrollBarVisibility="Auto"
+                             Padding="20,15">
+                    <TextBlock Text="{Binding ViewModel.ScriptOutput}"
+                              FontFamily="Consolas"
+                              FontSize="12"
+                              TextWrapping="Wrap"/>
+                </ScrollViewer>
+            </Grid>
+        </ui:Card>
+
+        <!-- Status Bar -->
+        <ui:Card Grid.Row="3" Margin="0,20,0,0">
+            <Grid Margin="15,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ui:SymbolIcon Symbol="Info24" 
+                              Margin="0,0,12,0"
+                              VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Column="1" 
+                          Text="{Binding ViewModel.CurrentJobText}"
+                          VerticalAlignment="Center"/>
+
+                <ProgressBar Grid.Column="2" 
+                               Value="{Binding ViewModel.JobProgress}"
+                               Maximum="100"
+                               Width="200"
+                               Visibility="{Binding ViewModel.IsJobRunning, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            </Grid>
+        </ui:Card>
     </Grid>
-    </ScrollViewer>
 </Page>

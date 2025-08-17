@@ -14,12 +14,10 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace VCenterMigrationTool.ViewModels;
 
-// Update your DashboardViewModel to use persistent connections
-
 public partial class DashboardViewModel : ObservableObject, INavigationAware
     {
     private readonly HybridPowerShellService _powerShellService;
-    private readonly PersistentExternalConnectionService _persistentConnectionService; // External process-based
+    private readonly PersistentExternalConnectionService _persistentConnectionService;
     private readonly ConnectionProfileService _profileService;
     private readonly CredentialService _credentialService;
     private readonly SharedConnectionService _sharedConnectionService;
@@ -54,10 +52,28 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private int _jobProgress;
 
-    // Constructor with PersistentExternalConnectionService
+    // Connection state properties
+    [ObservableProperty]
+    private bool _isSourceConnected;
+
+    [ObservableProperty]
+    private bool _isTargetConnected;
+
+    [ObservableProperty]
+    private string _sourceConnectionDetails = "";
+
+    [ObservableProperty]
+    private string _targetConnectionDetails = "";
+
+    // Computed properties for UI binding
+    public bool IsSourceDisconnected => !IsSourceConnected;
+    public bool IsTargetDisconnected => !IsTargetConnected;
+    public bool CanConnectSource => SelectedSourceProfile != null && !IsSourceConnected && !IsJobRunning;
+    public bool CanConnectTarget => SelectedTargetProfile != null && !IsTargetConnected && !IsJobRunning;
+
     public DashboardViewModel (
         HybridPowerShellService powerShellService,
-        PersistentExternalConnectionService persistentConnectionService, // External PowerShell processes
+        PersistentExternalConnectionService persistentConnectionService,
         ConnectionProfileService profileService,
         CredentialService credentialService,
         SharedConnectionService sharedConnectionService,
@@ -66,7 +82,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         ILogger<DashboardViewModel> logger)
         {
         _powerShellService = powerShellService;
-        _persistentConnectionService = persistentConnectionService; // Assign the external service
+        _persistentConnectionService = persistentConnectionService;
         _profileService = profileService;
         _credentialService = credentialService;
         _sharedConnectionService = sharedConnectionService;
@@ -76,363 +92,425 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
         Profiles = _profileService.Profiles;
         }
-        public async Task OnNavigatedToAsync ()
+
+    public async Task OnNavigatedToAsync ()
         {
-            // Optionally check connection status when navigating to the dashboard
-            await CheckConnectionStatus();
+        await CheckConnectionStatus();
         }
 
-        // Clean up connections when navigating away
-        public async Task OnNavigatedFromAsync ()
+    public async Task OnNavigatedFromAsync ()
         {
-            // Optionally disconnect when leaving dashboard
-            // await _persistentConnectionService.DisconnectAllAsync();
-            await Task.CompletedTask;
+        // Keep connections alive when navigating away
+        await Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Checks if persistent connections are still active
-        /// </summary>
-        private async Task CheckConnectionStatus ()
+    /// <summary>
+    /// Checks if persistent connections are still active
+    /// </summary>
+    private async Task CheckConnectionStatus ()
+        {
+        try
             {
-            try
+            // Check source connection
+            var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
+            if (sourceConnected)
                 {
-                // Check source connection
-                var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
-                if (sourceConnected)
+                var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("source");
+                if (isConnected && _sharedConnectionService.SourceConnection != null)
                     {
-                    var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("source");
-                    if (isConnected && _sharedConnectionService.SourceConnection != null)
-                        {
-                        SourceConnectionStatus = $"✅ Connected - {_sharedConnectionService.SourceConnection.ServerAddress} (v{version})";
-                        }
+                    IsSourceConnected = true;
+                    SourceConnectionStatus = $"✅ Connected - {_sharedConnectionService.SourceConnection.ServerAddress} (v{version})";
+                    SourceConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
                     }
-                else if (_sharedConnectionService.SourceConnection != null)
-                    {
-                    // Connection was lost
-                    SourceConnectionStatus = "⚠️ Connection lost - reconnect required";
-                    _sharedConnectionService.SourceConnection = null;
-                    }
+                }
+            else if (_sharedConnectionService.SourceConnection != null)
+                {
+                // Connection was lost
+                IsSourceConnected = false;
+                SourceConnectionStatus = "⚠️ Connection lost - reconnect required";
+                SourceConnectionDetails = "";
+                _sharedConnectionService.SourceConnection = null;
+                }
 
-                // Check target connection
-                var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
-                if (targetConnected)
-                    {
-                    var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("target");
-                    if (isConnected && _sharedConnectionService.TargetConnection != null)
-                        {
-                        TargetConnectionStatus = $"✅ Connected - {_sharedConnectionService.TargetConnection.ServerAddress} (v{version})";
-                        }
-                    }
-                else if (_sharedConnectionService.TargetConnection != null)
-                    {
-                    // Connection was lost
-                    TargetConnectionStatus = "⚠️ Connection lost - reconnect required";
-                    _sharedConnectionService.TargetConnection = null;
-                    }
-                }
-            catch (Exception ex)
+            // Check target connection
+            var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
+            if (targetConnected)
                 {
-                _logger.LogError(ex, "Error checking connection status");
+                var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("target");
+                if (isConnected && _sharedConnectionService.TargetConnection != null)
+                    {
+                    IsTargetConnected = true;
+                    TargetConnectionStatus = $"✅ Connected - {_sharedConnectionService.TargetConnection.ServerAddress} (v{version})";
+                    TargetConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
+                    }
                 }
+            else if (_sharedConnectionService.TargetConnection != null)
+                {
+                // Connection was lost
+                IsTargetConnected = false;
+                TargetConnectionStatus = "⚠️ Connection lost - reconnect required";
+                TargetConnectionDetails = "";
+                _sharedConnectionService.TargetConnection = null;
+                }
+
+            // Notify UI of property changes
+            OnPropertyChanged(nameof(IsSourceDisconnected));
+            OnPropertyChanged(nameof(IsTargetDisconnected));
+            OnPropertyChanged(nameof(CanConnectSource));
+            OnPropertyChanged(nameof(CanConnectTarget));
             }
-        
-        [RelayCommand]
-        private async Task OnConnectSource ()
+        catch (Exception ex)
             {
-            if (SelectedSourceProfile is null) return;
+            _logger.LogError(ex, "Error checking connection status");
+            }
+        }
 
-            IsJobRunning = true;
-            SourceConnectionStatus = "Establishing persistent connection...";
-            ScriptOutput = string.Empty;
+    [RelayCommand]
+    private async Task OnConnectSource ()
+        {
+        if (SelectedSourceProfile is null) return;
 
-            _logger.LogInformation("=== ESTABLISHING PERSISTENT SOURCE CONNECTION ===");
+        IsJobRunning = true;
+        SourceConnectionStatus = "Establishing persistent connection...";
+        ScriptOutput = string.Empty;
 
-            string? password = _credentialService.GetPassword(SelectedSourceProfile);
-            string finalPassword;
+        _logger.LogInformation("=== ESTABLISHING PERSISTENT SOURCE CONNECTION ===");
 
-            if (string.IsNullOrEmpty(password))
+        string? password = _credentialService.GetPassword(SelectedSourceProfile);
+        string finalPassword;
+
+        if (string.IsNullOrEmpty(password))
+            {
+            var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
+                "Password Required",
+                $"Enter password for {SelectedSourceProfile.Username}@{SelectedSourceProfile.ServerAddress}:"
+            );
+
+            if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
                 {
-                var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
-                    "Password Required",
-                    $"Enter password for {SelectedSourceProfile.Username}@{SelectedSourceProfile.ServerAddress}:"
-                );
+                SourceConnectionStatus = "Connection not active";
+                IsJobRunning = false;
+                return;
+                }
 
-                if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
-                    {
-                    SourceConnectionStatus = "Connection not active";
-                    IsJobRunning = false;
-                    return;
-                    }
+            finalPassword = promptedPassword;
+            }
+        else
+            {
+            finalPassword = password;
+            }
 
-                finalPassword = promptedPassword;
+        try
+            {
+            var (success, message, sessionId) = await _persistentConnectionService.ConnectAsync(
+                SelectedSourceProfile,
+                finalPassword,
+                isSource: true,
+                bypassModuleCheck: HybridPowerShellService.PowerCliConfirmedInstalled);
+
+            if (success)
+                {
+                _sharedConnectionService.SourceConnection = SelectedSourceProfile;
+
+                var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("source");
+
+                IsSourceConnected = true;
+                SourceConnectionStatus = $"✅ Connected - {SelectedSourceProfile.ServerAddress} (v{version})";
+                SourceConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
+
+                ScriptOutput = $"Persistent connection established!\n" +
+                              $"Server: {SelectedSourceProfile.ServerAddress}\n" +
+                              $"Session ID: {sessionId}\n" +
+                              $"Version: {version}\n\n" +
+                              $"Connection will remain active for all operations.\n" +
+                              $"Use 'Disconnect' button to close the connection.";
+
+                _logger.LogInformation("✅ Persistent source connection established (Session: {SessionId})", sessionId);
+
+                // Notify property changes
+                OnPropertyChanged(nameof(IsSourceDisconnected));
+                OnPropertyChanged(nameof(CanConnectSource));
                 }
             else
                 {
-                finalPassword = password;
-                }
+                IsSourceConnected = false;
+                SourceConnectionStatus = "❌ Connection failed";
+                SourceConnectionDetails = "";
+                ScriptOutput = $"Connection failed: {message}";
+                _sharedConnectionService.SourceConnection = null;
 
-            try
-                {
-                // Use the persistent external connection service
-                var (success, message, sessionId) = await _persistentConnectionService.ConnectAsync(
-                    SelectedSourceProfile,
-                    finalPassword,
-                    isSource: true,
-                    bypassModuleCheck: HybridPowerShellService.PowerCliConfirmedInstalled);
-
-                if (success)
-                    {
-                    _sharedConnectionService.SourceConnection = SelectedSourceProfile;
-
-                    // Get connection details
-                    var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("source");
-
-                    SourceConnectionStatus = $"✅ Connected - {SelectedSourceProfile.ServerAddress} (v{version})";
-                    ScriptOutput = $"Persistent connection established!\n" +
-                                  $"Server: {SelectedSourceProfile.ServerAddress}\n" +
-                                  $"Session ID: {sessionId}\n" +
-                                  $"Version: {version}\n\n" +
-                                  $"Connection will remain active for all operations.\n" +
-                                  $"Use 'Disconnect' to close the connection.";
-
-                    _logger.LogInformation("✅ Persistent source connection established (Session: {SessionId})", sessionId);
-                    }
-                else
-                    {
-                    SourceConnectionStatus = "❌ Connection failed";
-                    ScriptOutput = $"Connection failed: {message}";
-                    _sharedConnectionService.SourceConnection = null;
-
-                    _logger.LogError("Failed to establish persistent connection: {Message}", message);
-                    }
-                }
-            catch (Exception ex)
-                {
-                _logger.LogError(ex, "Error establishing persistent connection");
-                SourceConnectionStatus = "❌ Connection error";
-                ScriptOutput = $"Error: {ex.Message}";
-                }
-            finally
-                {
-                IsJobRunning = false;
+                _logger.LogError("Failed to establish persistent connection: {Message}", message);
                 }
             }
-
-        [RelayCommand]
-        private async Task OnConnectTarget ()
+        catch (Exception ex)
             {
-            if (SelectedTargetProfile is null) return;
+            _logger.LogError(ex, "Error establishing persistent connection");
+            IsSourceConnected = false;
+            SourceConnectionStatus = "❌ Connection error";
+            SourceConnectionDetails = "";
+            ScriptOutput = $"Error: {ex.Message}";
+            }
+        finally
+            {
+            IsJobRunning = false;
+            OnPropertyChanged(nameof(CanConnectSource));
+            OnPropertyChanged(nameof(CanConnectTarget));
+            }
+        }
 
-            IsJobRunning = true;
-            TargetConnectionStatus = "Establishing persistent connection...";
-            ScriptOutput = string.Empty;
+    [RelayCommand]
+    private async Task OnConnectTarget ()
+        {
+        if (SelectedTargetProfile is null) return;
 
-            _logger.LogInformation("=== ESTABLISHING PERSISTENT TARGET CONNECTION ===");
+        IsJobRunning = true;
+        TargetConnectionStatus = "Establishing persistent connection...";
+        ScriptOutput = string.Empty;
 
-            string? password = _credentialService.GetPassword(SelectedTargetProfile);
-            string finalPassword;
+        _logger.LogInformation("=== ESTABLISHING PERSISTENT TARGET CONNECTION ===");
 
-            if (string.IsNullOrEmpty(password))
+        string? password = _credentialService.GetPassword(SelectedTargetProfile);
+        string finalPassword;
+
+        if (string.IsNullOrEmpty(password))
+            {
+            var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
+                "Password Required",
+                $"Enter password for {SelectedTargetProfile.Username}@{SelectedTargetProfile.ServerAddress}:"
+            );
+
+            if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
                 {
-                var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
-                    "Password Required",
-                    $"Enter password for {SelectedTargetProfile.Username}@{SelectedTargetProfile.ServerAddress}:"
-                );
+                TargetConnectionStatus = "Connection not active";
+                IsJobRunning = false;
+                return;
+                }
 
-                if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
-                    {
-                    TargetConnectionStatus = "Connection not active";
-                    IsJobRunning = false;
-                    return;
-                    }
+            finalPassword = promptedPassword;
+            }
+        else
+            {
+            finalPassword = password;
+            }
 
-                finalPassword = promptedPassword;
+        try
+            {
+            var (success, message, sessionId) = await _persistentConnectionService.ConnectAsync(
+                SelectedTargetProfile,
+                finalPassword,
+                isSource: false,
+                bypassModuleCheck: HybridPowerShellService.PowerCliConfirmedInstalled);
+
+            if (success)
+                {
+                _sharedConnectionService.TargetConnection = SelectedTargetProfile;
+
+                var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("target");
+
+                IsTargetConnected = true;
+                TargetConnectionStatus = $"✅ Connected - {SelectedTargetProfile.ServerAddress} (v{version})";
+                TargetConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
+
+                ScriptOutput = $"Persistent connection established!\n" +
+                              $"Server: {SelectedTargetProfile.ServerAddress}\n" +
+                              $"Session ID: {sessionId}\n" +
+                              $"Version: {version}\n\n" +
+                              $"Connection will remain active for all operations.\n" +
+                              $"Use 'Disconnect' button to close the connection.";
+
+                _logger.LogInformation("✅ Persistent target connection established (Session: {SessionId})", sessionId);
+
+                // Notify property changes
+                OnPropertyChanged(nameof(IsTargetDisconnected));
+                OnPropertyChanged(nameof(CanConnectTarget));
                 }
             else
                 {
-                finalPassword = password;
-                }
+                IsTargetConnected = false;
+                TargetConnectionStatus = "❌ Connection failed";
+                TargetConnectionDetails = "";
+                ScriptOutput = $"Connection failed: {message}";
+                _sharedConnectionService.TargetConnection = null;
 
-            try
-                {
-                // Use the persistent external connection service
-                var (success, message, sessionId) = await _persistentConnectionService.ConnectAsync(
-                    SelectedTargetProfile,
-                    finalPassword,
-                    isSource: false,
-                    bypassModuleCheck: HybridPowerShellService.PowerCliConfirmedInstalled);
-
-                if (success)
-                    {
-                    _sharedConnectionService.TargetConnection = SelectedTargetProfile;
-
-                    // Get connection details
-                    var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("target");
-
-                    TargetConnectionStatus = $"✅ Connected - {SelectedTargetProfile.ServerAddress} (v{version})";
-                    ScriptOutput = $"Persistent connection established!\n" +
-                                  $"Server: {SelectedTargetProfile.ServerAddress}\n" +
-                                  $"Session ID: {sessionId}\n" +
-                                  $"Version: {version}\n\n" +
-                                  $"Connection will remain active for all operations.\n" +
-                                  $"Use 'Disconnect' to close the connection.";
-
-                    _logger.LogInformation("✅ Persistent target connection established (Session: {SessionId})", sessionId);
-                    }
-                else
-                    {
-                    TargetConnectionStatus = "❌ Connection failed";
-                    ScriptOutput = $"Connection failed: {message}";
-                    _sharedConnectionService.TargetConnection = null;
-
-                    _logger.LogError("Failed to establish persistent connection: {Message}", message);
-                    }
-                }
-            catch (Exception ex)
-                {
-                _logger.LogError(ex, "Error establishing persistent connection");
-                TargetConnectionStatus = "❌ Connection error";
-                ScriptOutput = $"Error: {ex.Message}";
-                }
-            finally
-                {
-                IsJobRunning = false;
+                _logger.LogError("Failed to establish persistent connection: {Message}", message);
                 }
             }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error establishing persistent connection");
+            IsTargetConnected = false;
+            TargetConnectionStatus = "❌ Connection error";
+            TargetConnectionDetails = "";
+            ScriptOutput = $"Error: {ex.Message}";
+            }
+        finally
+            {
+            IsJobRunning = false;
+            OnPropertyChanged(nameof(CanConnectSource));
+            OnPropertyChanged(nameof(CanConnectTarget));
+            }
+        }
 
-    // Add disconnect commands
     [RelayCommand]
     private async Task OnDisconnectSource ()
-    {
+        {
         IsJobRunning = true;
         SourceConnectionStatus = "Disconnecting...";
         ScriptOutput = string.Empty;
 
         try
-        {
+            {
             _logger.LogInformation("Disconnecting source vCenter connection...");
 
-            // Disconnect using the persistent connection service
             await _persistentConnectionService.DisconnectAsync("source");
 
-            // Clear the shared connection
             _sharedConnectionService.SourceConnection = null;
 
-            // Update UI
+            IsSourceConnected = false;
             SourceConnectionStatus = "Connection not active";
+            SourceConnectionDetails = "";
             ScriptOutput = "Source vCenter connection has been closed.";
 
             _logger.LogInformation("✅ Source vCenter connection disconnected successfully");
-        }
+
+            // Notify property changes
+            OnPropertyChanged(nameof(IsSourceDisconnected));
+            OnPropertyChanged(nameof(CanConnectSource));
+            }
         catch (Exception ex)
-        {
+            {
             _logger.LogError(ex, "Error disconnecting source vCenter");
             SourceConnectionStatus = "❌ Disconnect error";
             ScriptOutput = $"Failed to disconnect: {ex.Message}";
-        }
+            }
         finally
-        {
+            {
             IsJobRunning = false;
+            OnPropertyChanged(nameof(CanConnectSource));
+            OnPropertyChanged(nameof(CanConnectTarget));
+            }
         }
-    }
 
     [RelayCommand]
     private async Task OnDisconnectTarget ()
-    {
+        {
         IsJobRunning = true;
         TargetConnectionStatus = "Disconnecting...";
         ScriptOutput = string.Empty;
 
         try
-        {
+            {
             _logger.LogInformation("Disconnecting target vCenter connection...");
 
-            // Disconnect using the persistent connection service
             await _persistentConnectionService.DisconnectAsync("target");
 
-            // Clear the shared connection
             _sharedConnectionService.TargetConnection = null;
 
-            // Update UI
+            IsTargetConnected = false;
             TargetConnectionStatus = "Connection not active";
+            TargetConnectionDetails = "";
             ScriptOutput = "Target vCenter connection has been closed.";
 
             _logger.LogInformation("✅ Target vCenter connection disconnected successfully");
-        }
+
+            // Notify property changes
+            OnPropertyChanged(nameof(IsTargetDisconnected));
+            OnPropertyChanged(nameof(CanConnectTarget));
+            }
         catch (Exception ex)
-        {
+            {
             _logger.LogError(ex, "Error disconnecting target vCenter");
             TargetConnectionStatus = "❌ Disconnect error";
             ScriptOutput = $"Failed to disconnect: {ex.Message}";
-        }
+            }
         finally
-        {
-            IsJobRunning = false;
-        }
-    }
-
-    // Update test job to use persistent connection
-    [RelayCommand]
-        private async Task OnRunTestJob ()
             {
-            if (IsJobRunning) return;
+            IsJobRunning = false;
+            OnPropertyChanged(nameof(CanConnectSource));
+            OnPropertyChanged(nameof(CanConnectTarget));
+            }
+        }
 
-            var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("source");
-            if (!isConnected)
-                {
-                ScriptOutput = "Error: Please connect to source vCenter first.";
-                return;
-                }
+    [RelayCommand]
+    private async Task OnRunTestJob ()
+        {
+        if (IsJobRunning) return;
 
-            IsJobRunning = true;
-            JobProgress = 0;
-            CurrentJobText = $"Running commands on persistent connection...";
-            ScriptOutput = string.Empty;
+        var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("source");
+        if (!isConnected)
+            {
+            ScriptOutput = "Error: Please connect to source vCenter first.";
+            return;
+            }
 
-            try
-                {
-                _logger.LogInformation("Running test job on persistent connection (Session: {SessionId})", sessionId);
+        IsJobRunning = true;
+        JobProgress = 0;
+        CurrentJobText = $"Running commands on persistent connection...";
+        ScriptOutput = string.Empty;
 
-                // Run commands using the persistent connection
-                CurrentJobText = "Getting VM inventory...";
-                JobProgress = 25;
+        try
+            {
+            _logger.LogInformation("Running test job on persistent connection (Session: {SessionId})", sessionId);
 
-                var result = await _persistentConnectionService.ExecuteCommandAsync("source", @"
+            CurrentJobText = "Getting VM inventory...";
+            JobProgress = 25;
+
+            var result = await _persistentConnectionService.ExecuteCommandAsync("source", @"
                 Write-Output '=== VM Inventory ==='
-                $vms = Get-VM
+                $vms = Get-VM -ErrorAction SilentlyContinue
                 Write-Output ""Total VMs: $($vms.Count)""
                 Write-Output """"
                 Write-Output 'First 5 VMs:'
                 $vms | Select-Object -First 5 Name, PowerState, NumCpu, MemoryGB | Format-Table | Out-String
                 
                 Write-Output '=== Host Information ==='
-                $hosts = Get-VMHost
+                $hosts = Get-VMHost -ErrorAction SilentlyContinue
                 Write-Output ""Total Hosts: $($hosts.Count)""
                 $hosts | Select-Object Name, ConnectionState, PowerState | Format-Table | Out-String
                 
                 Write-Output '=== Datastore Summary ==='
-                $datastores = Get-Datastore
+                $datastores = Get-Datastore -ErrorAction SilentlyContinue
                 Write-Output ""Total Datastores: $($datastores.Count)""
                 $datastores | Select-Object Name, FreeSpaceGB, CapacityGB | Format-Table | Out-String
+                
+                Write-Output '=== Cluster Information ==='
+                $clusters = Get-Cluster -ErrorAction SilentlyContinue
+                Write-Output ""Total Clusters: $($clusters.Count)""
+                $clusters | Select-Object Name, HAEnabled, DrsEnabled | Format-Table | Out-String
             ");
 
-                JobProgress = 100;
-                ScriptOutput = result;
-                CurrentJobText = "Test job completed successfully.";
+            JobProgress = 100;
+            ScriptOutput = result;
+            CurrentJobText = "Test job completed successfully.";
 
-                _logger.LogInformation("Test job completed successfully");
-                }
-            catch (Exception ex)
-                {
-                _logger.LogError(ex, "Error running test job");
-                ScriptOutput = $"Error: {ex.Message}";
-                CurrentJobText = "Test job failed.";
-                }
-            finally
-                {
-                IsJobRunning = false;
-                }
+            _logger.LogInformation("Test job completed successfully");
             }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error running test job");
+            ScriptOutput = $"Error: {ex.Message}";
+            CurrentJobText = "Test job failed.";
+            }
+        finally
+            {
+            IsJobRunning = false;
+            }
+        }
 
+    // Property change handlers for selection changes
+    partial void OnSelectedSourceProfileChanged (VCenterConnection? value)
+        {
+        OnPropertyChanged(nameof(CanConnectSource));
+        }
+
+    partial void OnSelectedTargetProfileChanged (VCenterConnection? value)
+        {
+        OnPropertyChanged(nameof(CanConnectTarget));
+        }
+
+    partial void OnIsJobRunningChanged (bool value)
+        {
+        OnPropertyChanged(nameof(CanConnectSource));
+        OnPropertyChanged(nameof(CanConnectTarget));
+        }
     }

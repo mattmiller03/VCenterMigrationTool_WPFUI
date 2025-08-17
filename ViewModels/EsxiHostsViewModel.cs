@@ -120,7 +120,7 @@ public partial class EsxiHostsViewModel : ObservableObject
         catch (Exception ex)
             {
             _logger.LogError(ex, "Error checking connections");
-            MigrationStatus = $"Error: {ex.Message}";
+            MigrationStatus = $"❌ Error: {ex.Message}";
             }
         finally
             {
@@ -148,12 +148,16 @@ public partial class EsxiHostsViewModel : ObservableObject
 
             await Task.WhenAll(sourceClustersTask, targetClustersTask);
 
-            MigrationStatus = $"Loaded {SourceClusters.Count} source clusters and {TargetClusters.Count} target clusters";
+            // Format the status message with proper spacing
+            var sourceHostCount = SourceClusters.Sum(c => c.HostCount);
+            var targetHostCount = TargetClusters.Sum(c => c.HostCount);
+
+            MigrationStatus = $"Ready • Source: {SourceClusters.Count} clusters, {sourceHostCount} hosts • Target: {TargetClusters.Count} clusters, {targetHostCount} hosts";
             }
         catch (Exception ex)
             {
             _logger.LogError(ex, "Error loading clusters and hosts");
-            MigrationStatus = $"Error loading data: {ex.Message}";
+            MigrationStatus = $"❌ Error loading data: {ex.Message}";
             }
         }
 

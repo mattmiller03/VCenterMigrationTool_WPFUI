@@ -291,17 +291,20 @@
 
         <!-- Status Bar -->
         <ui:Card Grid.Row="4" Margin="0,10,0,0">
-            <Grid Margin="10">
+            <Grid Margin="15,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <ui:SymbolIcon Symbol="Info24" Margin="0,0,10,0"
+                <ui:SymbolIcon Symbol="Info24" 
+                              Margin="0,0,12,0"
                               VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="1" 
                           Text="{Binding ViewModel.MigrationStatus}"
-                          VerticalAlignment="Center"/>
+                          VerticalAlignment="Center"
+                          TextWrapping="Wrap"
+                          FontSize="13"/>
             </Grid>
         </ui:Card>
     </Grid>
