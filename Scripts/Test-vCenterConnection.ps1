@@ -2,8 +2,15 @@
     [Parameter(Mandatory = $true)]
     [string]$VCenterServer,
     
-    [Parameter(Mandatory = $true)]
+    # Accept EITHER a PSCredential OR Username/Password combination
+    [Parameter(Mandatory = $false)]
     [System.Management.Automation.PSCredential]$Credential,
+    
+    [Parameter(Mandatory = $false)]
+    [string]$Username,
+    
+    [Parameter(Mandatory = $false)]
+    [string]$Password,
     
     [bool]$BypassModuleCheck = $false,
     [string]$LogPath = ""
@@ -43,53 +50,6 @@ function Write-Log {
     }
 }
 
-# Function to get system information for debugging
-function Get-SystemDebugInfo {
-    try {
-        $psVersion = $PSVersionTable.PSVersion.ToString()
-        $psEdition = $PSVersionTable.PSEdition
-        $os = [System.Environment]::OSVersion.ToString()
-        $is64Bit = [System.Environment]::Is64BitProcess
-        
-        Write-Log "PowerShell Version: $psVersion ($psEdition)" "Debug"
-        Write-Log "Operating System: $os" "Debug"
-        Write-Log "Process Architecture: $(if ($is64Bit) { '64-bit' } else { '32-bit' })" "Debug"
-        Write-Log "Current User: $env:USERNAME" "Debug"
-        Write-Log "Computer Name: $env:COMPUTERNAME" "Debug"
-    }
-    catch {
-        Write-Log "Could not gather all system information: $_" "Debug"
-    }
-}
-
-# Function to check PowerCLI installation status
-function Test-PowerCLIInstallation {
-    Write-Log "Checking PowerCLI installation status..." "Debug"
-    
-    try {
-        $modules = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
-        
-        if ($modules) {
-            Write-Log "PowerCLI found at: $($modules[0].ModuleBase)" "Debug"
-            Write-Log "PowerCLI Version: $($modules[0].Version)" "Debug"
-            
-            # Check for all VMware modules
-            $vmwareModules = Get-Module -ListAvailable -Name "VMware.*" -ErrorAction SilentlyContinue
-            Write-Log "Found $($vmwareModules.Count) VMware modules installed" "Debug"
-            
-            return $true
-        }
-        else {
-            Write-Log "PowerCLI modules not found in available modules" "Warning"
-            return $false
-        }
-    }
-    catch {
-        Write-Log "Error checking PowerCLI installation: $_" "Warning"
-        return $false
-    }
-}
-
 # Function to measure operation duration
 function Measure-Duration {
     param(
@@ -111,27 +71,56 @@ function Measure-Duration {
     }
 }
 
-# Main script execution
 try {
     Write-Log "========================================" "Info"
-    Write-Log "Starting vCenter connection test" "Info"
+    Write-Log "Starting vCenter connection test (Direct Parameters)" "Info"
     Write-Log "========================================" "Info"
     
-    # Log parameters
+    # Determine credential source and create PSCredential if needed
+    if ($Credential) {
+        Write-Log "Using provided PSCredential object" "Debug"
+        Write-Log "Username from credential: $($Credential.UserName)" "Info"
+    }
+    elseif ($Username -and $Password) {
+        Write-Log "Creating PSCredential from Username/Password parameters" "Debug"
+        Write-Log "Username: $Username" "Info"
+        
+        # Convert plain text password to SecureString and create credential
+        $securePassword = ConvertTo-SecureString $Password -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
+        
+        Write-Log "PSCredential created successfully" "Debug"
+        
+        # Clear the plain text password from memory
+        $Password = $null
+    }
+    else {
+        throw "No valid credentials provided. Either provide -Credential or both -Username and -Password"
+    }
+    
+    # Log execution parameters
     Write-Log "Target vCenter Server: $VCenterServer" "Info"
-    Write-Log "Username: $($Credential.UserName)" "Info"
     Write-Log "BypassModuleCheck: $BypassModuleCheck" "Info"
+    Write-Log "Execution Method: Direct parameter passing (no temp files)" "Success"
     Write-Log "LogPath: $(if ([string]::IsNullOrEmpty($LogPath)) { 'Not specified' } else { $LogPath })" "Info"
     
-    # Log system information
-    Get-SystemDebugInfo
+    # Log system information for debugging
+    Write-Log "PowerShell Version: $($PSVersionTable.PSVersion.ToString())" "Debug"
+    Write-Log "PowerShell Edition: $($PSVersionTable.PSEdition)" "Debug"
     
-    # Check PowerCLI installation
-    $powerCLIInstalled = Test-PowerCLIInstallation
+    # Check PowerCLI installation status
+    Write-Log "Checking PowerCLI installation..." "Debug"
+    $powerCLIModules = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
+    if ($powerCLIModules) {
+        Write-Log "PowerCLI found: Version $($powerCLIModules[0].Version)" "Debug"
+    }
+    else {
+        Write-Log "PowerCLI modules not found in available modules" "Warning"
+    }
     
     # Import PowerCLI modules if not bypassing module check
     if (-not $BypassModuleCheck) {
-        Write-Log "Module bypass NOT enabled - will import PowerCLI modules" "Info"
+        Write-Log "Module bypass NOT enabled - importing PowerCLI modules" "Info"
         
         $importResult = Measure-Duration -OperationName "PowerCLI Module Import" -ScriptBlock {
             try {
@@ -144,14 +133,13 @@ try {
                 
                 # Log loaded VMware modules
                 $loadedModules = Get-Module -Name "VMware.*"
-                Write-Log "Loaded $($loadedModules.Count) VMware modules" "Debug"
+                Write-Log "Successfully loaded $($loadedModules.Count) VMware modules" "Debug"
                 
                 Write-Log "PowerCLI modules imported successfully" "Success"
                 return $true
             }
             catch {
                 Write-Log "Failed to import PowerCLI modules: $($_.Exception.Message)" "Error"
-                Write-Log "Stack Trace: $($_.ScriptStackTrace)" "Debug"
                 throw
             }
         }
@@ -162,18 +150,18 @@ try {
         }
     }
     else {
-        Write-Log "Module bypass ENABLED - skipping PowerCLI import (assumed already loaded)" "Info"
+        Write-Log "Module bypass ENABLED - skipping PowerCLI import" "Success"
+        Write-Log "Assuming PowerCLI modules are already loaded" "Info"
         
         # Verify modules are actually loaded when bypassing
         $loadedModules = Get-Module -Name "VMware.*"
         if ($loadedModules.Count -eq 0) {
             Write-Log "WARNING: BypassModuleCheck is true but no VMware modules are loaded!" "Warning"
-            Write-Log "Attempting to verify PowerCLI availability..." "Warning"
             
             # Check if Connect-VIServer command is available
             $cmdAvailable = Get-Command Connect-VIServer -ErrorAction SilentlyContinue
             if (-not $cmdAvailable) {
-                Write-Log "Connect-VIServer command not found - PowerCLI may not be properly initialized" "Error"
+                Write-Log "Connect-VIServer command not found - PowerCLI not properly initialized" "Error"
                 Write-Output "Failure: PowerCLI not available despite bypass flag"
                 exit 1
             }
@@ -182,7 +170,7 @@ try {
             }
         }
         else {
-            Write-Log "Verified: $($loadedModules.Count) VMware modules already loaded" "Debug"
+            Write-Log "Verified: $($loadedModules.Count) VMware modules already loaded" "Success"
         }
     }
     
@@ -191,62 +179,34 @@ try {
     
     # Test network connectivity first
     Write-Log "Testing network connectivity to $VCenterServer..." "Debug"
-    $pingResult = Test-Connection -ComputerName $VCenterServer -Count 1 -Quiet -ErrorAction SilentlyContinue
-    if ($pingResult) {
-        Write-Log "Network connectivity confirmed (ping successful)" "Debug"
-    }
-    else {
-        Write-Log "Ping failed - server may still be reachable on HTTPS port" "Warning"
-    }
-    
-    # Test HTTPS port (443)
     try {
         $tcpClient = New-Object System.Net.Sockets.TcpClient
         $connectTask = $tcpClient.ConnectAsync($VCenterServer, 443)
-        $waitResult = $connectTask.Wait(5000)  # 5 second timeout
-        
-        if ($waitResult -and $tcpClient.Connected) {
-            Write-Log "Port 443 is reachable on $VCenterServer" "Debug"
-            $tcpClient.Close()
+        if ($connectTask.Wait(3000)) {
+            if ($tcpClient.Connected) {
+                Write-Log "Port 443 is reachable on $VCenterServer" "Debug"
+                $tcpClient.Close()
+            }
         }
         else {
-            Write-Log "Cannot reach port 443 on $VCenterServer" "Warning"
+            Write-Log "Connection to port 443 timed out (may still work)" "Warning"
         }
     }
     catch {
-        Write-Log "Error testing port connectivity: $_" "Warning"
+        Write-Log "Could not test port connectivity: $_" "Debug"
     }
     
-    # Connect using the PSCredential object with timing
+    # Connect to vCenter with timing
     $connectionResult = Measure-Duration -OperationName "vCenter Connection" -ScriptBlock {
         Write-Log "Executing Connect-VIServer..." "Debug"
         
         try {
-            # Log the actual connection attempt
-            Write-Log "Connection Parameters:" "Debug"
-            Write-Log "  Server: $VCenterServer" "Debug"
-            Write-Log "  User: $($Credential.UserName)" "Debug"
-            Write-Log "  Force: True" "Debug"
-            
             $connection = Connect-VIServer -Server $VCenterServer -Credential $Credential -Force -ErrorAction Stop
-            
             return $connection
         }
         catch {
             Write-Log "Connection attempt failed: $($_.Exception.GetType().FullName)" "Error"
             Write-Log "Error Message: $($_.Exception.Message)" "Error"
-            
-            # Check for specific error types
-            if ($_.Exception.Message -match "Invalid username or password") {
-                Write-Log "Authentication failed - check credentials" "Error"
-            }
-            elseif ($_.Exception.Message -match "Could not resolve the requested service") {
-                Write-Log "DNS resolution failed - check server name" "Error"
-            }
-            elseif ($_.Exception.Message -match "The attempt to connect was unsuccessful") {
-                Write-Log "Network connection failed - check firewall and network connectivity" "Error"
-            }
-            
             throw
         }
     }
@@ -263,18 +223,6 @@ try {
         Write-Log "  Build: $($connectionResult.Build)" "Info"
         Write-Log "  Session ID: $($connectionResult.SessionId)" "Info"
         Write-Log "  User: $($connectionResult.User)" "Info"
-        Write-Log "  Connection Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" "Info"
-        
-        # Get additional vCenter information
-        try {
-            $vcAbout = $connectionResult.ExtensionData.Content.About
-            Write-Log "  Product: $($vcAbout.FullName)" "Debug"
-            Write-Log "  OS Type: $($vcAbout.OsType)" "Debug"
-            Write-Log "  API Version: $($vcAbout.ApiVersion)" "Debug"
-        }
-        catch {
-            Write-Log "Could not retrieve extended vCenter information" "Debug"
-        }
         
         # Disconnect cleanly
         Write-Log "Disconnecting from vCenter..." "Info"
@@ -315,6 +263,9 @@ catch {
     elseif ($errorMsg -match "PowerCLI") {
         Write-Output "Failure: PowerCLI module error"
     }
+    elseif ($errorMsg -match "No valid credentials") {
+        Write-Output "Failure: No credentials provided"
+    }
     else {
         Write-Output "Failure: $errorMsg"
     }
@@ -323,4 +274,8 @@ catch {
 }
 finally {
     Write-Log "Script execution completed at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff')" "Debug"
+    
+    # Clear any sensitive variables
+    if ($Password) { $Password = $null }
+    if ($securePassword) { $securePassword = $null }
 }

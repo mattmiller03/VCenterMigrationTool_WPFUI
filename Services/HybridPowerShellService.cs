@@ -1066,86 +1066,159 @@ public class HybridPowerShellService : IDisposable
         {
         return _activeProcesses.Count;
         }
-
-    /// <summary>
-    /// Build parameter string with proper escaping
+    // <summary>
+    /// Enhanced method specifically for vCenter connections using direct parameter passing
+    /// This avoids creating temporary script files
     /// </summary>
-    private StringBuilder BuildParameterString (Dictionary<string, object> parameters, string? logPath)
+    public async Task<string> RunVCenterScriptOptimizedAsync (string scriptPath, VCenterConnection connection, string password,
+        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
         {
-        var paramString = new StringBuilder();
-
-        foreach (var param in parameters)
+        try
             {
-            var value = param.Value?.ToString() ?? "";
+            _logger.LogInformation("Executing vCenter script with optimized credential handling: {ScriptPath}", scriptPath);
 
-            if (param.Value is System.Security.SecureString secureString)
+            // Build parameters for direct execution
+            var parameters = new Dictionary<string, object>();
+
+            // Add vCenter server
+            parameters["VCenterServer"] = connection.ServerAddress;
+
+            // Instead of creating a PSCredential in a temp script, we'll pass username and password
+            // as secure strings that the script can use to create its own PSCredential
+            parameters["Username"] = connection.Username;
+
+            // Convert password to SecureString for secure parameter passing
+            var securePassword = new System.Security.SecureString();
+            foreach (char c in password)
                 {
-                var ptr = System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(secureString);
-                try
+                securePassword.AppendChar(c);
+                }
+            securePassword.MakeReadOnly();
+            parameters["SecurePassword"] = securePassword;
+
+            // Add any additional parameters
+            if (additionalParameters != null)
+                {
+                foreach (var param in additionalParameters)
                     {
-                    value = System.Runtime.InteropServices.Marshal.PtrToStringUni(ptr) ?? "";
-                    }
-                finally
-                    {
-                    System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(ptr);
+                    parameters[param.Key] = param.Value;
                     }
                 }
 
-            if (param.Value is bool boolValue)
+            // Add BypassModuleCheck if PowerCLI is confirmed
+            if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
                 {
-                if (boolValue)
-                    {
-                    paramString.Append($" -{param.Key}");
-                    }
-                continue;
+                parameters["BypassModuleCheck"] = true;
+                _logger.LogInformation("Added BypassModuleCheck for vCenter script: {ScriptPath}", scriptPath);
                 }
 
-            var escapedValue = value.Replace("\"", "`\"");
-            paramString.Append($" -{param.Key} \"{escapedValue}\"");
+            // Use the standard RunScriptAsync which doesn't create temp files
+            return await RunScriptAsync(scriptPath, parameters, logPath);
             }
-
-        if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
+        catch (Exception ex)
             {
-            var escapedLogPath = logPath.Replace("\"", "`\"");
-            paramString.Append($" -LogPath \"{escapedLogPath}\"");
+            _logger.LogError(ex, "Error executing optimized vCenter script: {ScriptPath}", scriptPath);
+            return $"ERROR: {ex.Message}";
             }
-
-        return paramString;
         }
 
-    /// <summary>
-    /// Build safe parameter string for logging
+        /// <summary>
+        /// Build parameter string with proper escaping - CORRECTED VERSION
+        /// </summary>
+        private StringBuilder BuildParameterString (Dictionary<string, object> parameters, string? logPath)
+        {
+            var paramString = new StringBuilder();
+
+            foreach (var param in parameters)
+            {
+                // Skip null values
+                if (param.Value == null) continue;
+
+                // Handle SecureString
+                if (param.Value is System.Security.SecureString secureString)
+                {
+                    var ptr = System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(secureString);
+                    try
+                    {
+                        var value = System.Runtime.InteropServices.Marshal.PtrToStringUni(ptr) ?? "";
+                        var escapedValue = value.Replace("\"", "`\"");
+                        paramString.Append($" -{param.Key} \"{escapedValue}\"");
+                    }
+                    finally
+                    {
+                        System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(ptr);
+                    }
+                    continue;
+                }
+
+                // Handle boolean parameters - FIXED
+                if (param.Value is bool boolValue)
+                {
+                    // Pass boolean as PowerShell boolean literal without quotes
+                    // Use $true or $false which PowerShell understands
+                    paramString.Append($" -{param.Key}:${boolValue.ToString().ToLower()}");
+                    continue;
+                }
+
+                // Handle string and other types
+                var stringValue = param.Value?.ToString() ?? "";
+                var escaped = stringValue.Replace("\"", "`\"");
+                paramString.Append($" -{param.Key} \"{escaped}\"");
+            }
+
+            // Add LogPath if provided and not already in parameters
+            if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
+            {
+                var escapedLogPath = logPath.Replace("\"", "`\"");
+                paramString.Append($" -LogPath \"{escapedLogPath}\"");
+            }
+
+            return paramString;
+        }
+
+        /// <summary>
+    /// Build safe parameter string for logging - CORRECTED VERSION
     /// </summary>
     private StringBuilder BuildSafeParameterString (Dictionary<string, object> parameters, string? logPath)
-        {
+    {
         var safeParamString = new StringBuilder();
 
         foreach (var param in parameters)
+        {
+            // Skip null values
+            if (param.Value == null) continue;
+
+            // Handle boolean parameters - show the actual value
+            if (param.Value is bool boolValue)
             {
-            if (param.Value is bool boolValue && boolValue)
-                {
-                safeParamString.Append($" -{param.Key}");
-                }
-            else if (!IsSensitiveParameter(param.Key))
-                {
+                // Show the boolean value in logs for clarity
+                safeParamString.Append($" -{param.Key}:${boolValue.ToString().ToLower()}");
+                continue;
+            }
+
+            // Handle sensitive parameters
+            if (IsSensitiveParameter(param.Key))
+            {
+                safeParamString.Append($" -{param.Key} \"[REDACTED]\"");
+            }
+            else
+            {
                 var value = param.Value?.ToString() ?? "";
                 var escapedValue = value.Replace("\"", "`\"");
                 safeParamString.Append($" -{param.Key} \"{escapedValue}\"");
-                }
-            else
-                {
-                safeParamString.Append($" -{param.Key} \"[REDACTED]\"");
-                }
             }
+        }
 
+        // Add LogPath if provided
         if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
-            {
+        {
             var escapedLogPath = logPath.Replace("\"", "`\"");
             safeParamString.Append($" -LogPath \"{escapedLogPath}\"");
-            }
+        }
 
         return safeParamString;
-        }
+    }
+
 
     #region IDisposable Implementation
 
@@ -1178,6 +1251,114 @@ public class HybridPowerShellService : IDisposable
         {
         Dispose(false);
         }
+    // Add these methods to your existing HybridPowerShellService.cs
 
+    /// <summary>
+    /// Optimized vCenter script execution that passes credentials as direct parameters
+    /// Avoids creating temporary script files
+    /// </summary>
+    public async Task<string> RunVCenterScriptDirectAsync (string scriptPath, VCenterConnection connection, string password,
+        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
+        {
+        try
+            {
+            _logger.LogInformation("Executing vCenter script with direct parameter passing: {ScriptPath}", scriptPath);
+            _logger.LogInformation("This method avoids temporary file creation for better performance");
+
+            // Build parameters for direct execution
+            var parameters = new Dictionary<string, object>
+                {
+                ["VCenterServer"] = connection.ServerAddress,
+                ["Username"] = connection.Username,
+                ["Password"] = password  // Pass as plain text - script will convert to SecureString
+                };
+
+            // Add any additional parameters
+            if (additionalParameters != null)
+                {
+                foreach (var param in additionalParameters)
+                    {
+                    parameters[param.Key] = param.Value;
+                    }
+                }
+
+            // Add BypassModuleCheck if PowerCLI is confirmed
+            if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
+                {
+                parameters["BypassModuleCheck"] = true;
+                _logger.LogInformation("Added BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
+                }
+
+            // Add log path if provided
+            if (!string.IsNullOrEmpty(logPath))
+                {
+                parameters["LogPath"] = logPath;
+                }
+
+            // Use the optimized RunScriptAsync that passes parameters directly
+            // This avoids the temp file creation
+            return await RunScriptOptimizedAsync(scriptPath, parameters, logPath);
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error executing vCenter script with direct parameters: {ScriptPath}", scriptPath);
+            return $"ERROR: {ex.Message}";
+            }
+        }
+
+    /// <summary>
+    /// Optimized dual vCenter script execution with direct parameters
+    /// </summary>
+    public async Task<string> RunDualVCenterScriptDirectAsync (string scriptPath,
+        VCenterConnection sourceConnection, string sourcePassword,
+        VCenterConnection targetConnection, string targetPassword,
+        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
+        {
+        try
+            {
+            _logger.LogInformation("Executing dual vCenter script with direct parameters: {ScriptPath}", scriptPath);
+
+            // Build parameters for direct execution
+            var parameters = new Dictionary<string, object>
+                {
+                ["SourceVCenter"] = sourceConnection.ServerAddress,
+                ["SourceUsername"] = sourceConnection.Username,
+                ["SourcePassword"] = sourcePassword,
+                ["TargetVCenter"] = targetConnection.ServerAddress,
+                ["TargetUsername"] = targetConnection.Username,
+                ["TargetPassword"] = targetPassword
+                };
+
+            // Add any additional parameters
+            if (additionalParameters != null)
+                {
+                foreach (var param in additionalParameters)
+                    {
+                    parameters[param.Key] = param.Value;
+                    }
+                }
+
+            // Add BypassModuleCheck if PowerCLI is confirmed
+            if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
+                {
+                parameters["BypassModuleCheck"] = true;
+                _logger.LogInformation("Added BypassModuleCheck=true for dual vCenter script");
+                }
+
+            // Add log path if provided
+            if (!string.IsNullOrEmpty(logPath))
+                {
+                parameters["LogPath"] = logPath;
+                }
+
+            // Direct execution without temp file
+            return await RunScriptOptimizedAsync(scriptPath, parameters, logPath);
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error executing dual vCenter script: {ScriptPath}", scriptPath);
+            return $"ERROR: {ex.Message}";
+            }
+        }
     #endregion
     }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Security;
 using System.Threading.Tasks;
@@ -147,8 +148,9 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         SourceConnectionStatus = "Connecting...";
         ScriptOutput = string.Empty;
 
-        _logger.LogInformation("=== DASHBOARD SOURCE CONNECTION DEBUG START ===");
-        _logger.LogInformation("DEBUG: [Dashboard] PowerCliConfirmedInstalled = {PowerCliConfirmed}",
+        _logger.LogInformation("=== DASHBOARD SOURCE CONNECTION (DIRECT) START ===");
+        _logger.LogInformation("Using direct parameter passing - no temp files");
+        _logger.LogInformation("PowerCliConfirmedInstalled = {PowerCliConfirmed}",
             HybridPowerShellService.PowerCliConfirmedInstalled);
 
         string? password = _credentialService.GetPassword(SelectedSourceProfile);
@@ -175,29 +177,19 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             finalPassword = password;
             }
 
-        _logger.LogInformation("DEBUG: [Dashboard] About to call RunVCenterScriptAsync");
+            string logFilePath = CreateLogFilePath("Test-vCenterConnection", "Source");
 
-        string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
+            string result = await _powerShellService.RunVCenterScriptDirectAsync(
+                ".\\Scripts\\Test-vCenterConnection.ps1",
+                SelectedSourceProfile,
+                finalPassword,
+                null,
+                logFilePath);
 
-        // FIX: Explicitly add BypassModuleCheck when PowerCLI is confirmed
-        var additionalParams = new Dictionary<string, object>();
-        if (HybridPowerShellService.PowerCliConfirmedInstalled)
-            {
-            additionalParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: [Dashboard] Explicitly adding BypassModuleCheck=true for connection test");
-            }
-
-        // Use the credential-based method with explicit bypass parameter
-        string result = await _powerShellService.RunVCenterScriptAsync(
-            ".\\Scripts\\Test-vCenterConnection.ps1",
-            SelectedSourceProfile,
-            finalPassword,
-            additionalParams, // Pass the additional parameters including BypassModuleCheck
-            logPath);
-
-        _logger.LogInformation("DEBUG: [Dashboard] Script execution completed");
-        _logger.LogInformation("DEBUG: [Dashboard] Result: {Result}", result?.Substring(0, Math.Min(result.Length, 100)));
-        _logger.LogInformation("=== DASHBOARD SOURCE CONNECTION DEBUG END ===");
+        _logger.LogInformation("Script execution completed");
+        _logger.LogInformation("Result preview: {Result}",
+            result?.Substring(0, Math.Min(result.Length, 100)));
+        _logger.LogInformation("=== DASHBOARD SOURCE CONNECTION (DIRECT) END ===");
 
         // Use simplified status messages
         SourceConnectionStatus = GetSimpleConnectionStatus(result, SelectedSourceProfile.ServerAddress);
@@ -225,8 +217,9 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         TargetConnectionStatus = "Connecting...";
         ScriptOutput = string.Empty;
 
-        _logger.LogInformation("=== TARGET CONNECTION DEBUG START ===");
-        _logger.LogInformation("DEBUG: [Target] PowerCliConfirmedInstalled = {PowerCliConfirmed}",
+        _logger.LogInformation("=== TARGET CONNECTION (DIRECT) START ===");
+        _logger.LogInformation("Using direct parameter passing - no temp files");
+        _logger.LogInformation("PowerCliConfirmedInstalled = {PowerCliConfirmed}",
             HybridPowerShellService.PowerCliConfirmedInstalled);
 
         string? password = _credentialService.GetPassword(SelectedTargetProfile);
@@ -253,27 +246,19 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             finalPassword = password;
             }
 
-        string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
+            string logFilePath = CreateLogFilePath("Test-vCenterConnection", "Target");
 
-        // FIX: Explicitly add BypassModuleCheck when PowerCLI is confirmed
-        var additionalParams = new Dictionary<string, object>();
-        if (HybridPowerShellService.PowerCliConfirmedInstalled)
-            {
-            additionalParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: [Target] Explicitly adding BypassModuleCheck=true for connection test");
-            }
+            string result = await _powerShellService.RunVCenterScriptDirectAsync(
+                ".\\Scripts\\Test-vCenterConnection.ps1",
+                SelectedTargetProfile,
+                finalPassword,
+                null,
+                logFilePath);
 
-        // Use the credential-based method with explicit bypass parameter
-        string result = await _powerShellService.RunVCenterScriptAsync(
-            ".\\Scripts\\Test-vCenterConnection.ps1",
-            SelectedTargetProfile,
-            finalPassword,
-            additionalParams, // Pass the additional parameters including BypassModuleCheck
-            logPath);
-
-        _logger.LogInformation("DEBUG: [Target] Script execution completed");
-        _logger.LogInformation("DEBUG: [Target] Result: {Result}", result?.Substring(0, Math.Min(result.Length, 100)));
-        _logger.LogInformation("=== TARGET CONNECTION DEBUG END ===");
+        _logger.LogInformation("Script execution completed");
+        _logger.LogInformation("Result preview: {Result}",
+            result?.Substring(0, Math.Min(result.Length, 100)));
+        _logger.LogInformation("=== TARGET CONNECTION (DIRECT) END ===");
 
         // Use simplified status messages
         TargetConnectionStatus = GetSimpleConnectionStatus(result, SelectedTargetProfile.ServerAddress);
@@ -291,7 +276,56 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         ScriptOutput = result;
         IsJobRunning = false;
         }
+        /// <summary>
+        /// Creates a properly formatted log file path for PowerShell scripts
+        /// </summary>
+        private string CreateLogFilePath (string scriptName, string suffix = "")
+        {
+            // Get the base log directory from configuration
+            string logDirectory = _configurationService.GetConfiguration().LogPath ?? "Logs";
 
+            // Make it an absolute path if it's relative
+            if (!Path.IsPathRooted(logDirectory))
+            {
+                logDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, logDirectory);
+            }
+
+            // Ensure the directory exists
+            if (!Directory.Exists(logDirectory))
+            {
+                try
+                {
+                    Directory.CreateDirectory(logDirectory);
+                    _logger.LogInformation("Created log directory: {LogDirectory}", logDirectory);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to create log directory: {LogDirectory}", logDirectory);
+                    // Fall back to temp directory
+                    logDirectory = Path.GetTempPath();
+                }
+            }
+
+            // Clean up the script name for use in filename
+            string cleanScriptName = Path.GetFileNameWithoutExtension(scriptName)
+                .Replace("-", "_")
+                .Replace(" ", "_");
+
+            // Create timestamp
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+            // Build the filename
+            string fileName = string.IsNullOrEmpty(suffix)
+                ? $"{cleanScriptName}_{timestamp}.log"
+                : $"{cleanScriptName}_{suffix}_{timestamp}.log";
+
+            // Combine to get full path
+            string fullPath = Path.Combine(logDirectory, fileName);
+
+            _logger.LogDebug("Generated log file path: {LogPath}", fullPath);
+
+            return fullPath;
+        }
     [RelayCommand]
     private async Task OnRunTestJob ()
         {
@@ -333,9 +367,12 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             HybridPowerShellService.PowerCliConfirmedInstalled);
 
         // Use the optimized version which automatically adds BypassModuleCheck when appropriate
+        string logFilePath = CreateLogFilePath("Export-vCenterConfig", source.ServerAddress);
+
         var result = await _powerShellService.RunScriptOptimizedAsync(
             ".\\Scripts\\Export-vCenterConfig.ps1",
-            scriptParams);
+            scriptParams,
+            logFilePath);
 
         ScriptOutput = result;
         CurrentJobText = "Test job completed.";
