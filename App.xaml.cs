@@ -74,6 +74,7 @@ public partial class App
             services.AddSingleton<IThemeService, ThemeService>();
             services.AddSingleton<ITaskBarService, TaskBarService>();
             services.AddSingleton<INavigationService, NavigationService>();
+            services.AddSingleton<PowerShellLoggingService>();
 
             // Custom Application Services
             services.AddSingleton<ConnectionProfileService>();

@@ -4,14 +4,12 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       mc:Ignorable="d"
       d:DesignHeight="800" d:DesignWidth="1200">
 
     <Page.Resources>
-        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <helpers:NullToBooleanConverter x:Key="NullToBooleanConverter"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Page.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -178,7 +176,7 @@
 
                     <!-- Loading indicator -->
                     <StackPanel Grid.Row="1" 
-                               Visibility="{Binding ViewModel.IsLoadingClusterItems, Converter={StaticResource BoolToVisibilityConverter}}"
+                               Visibility="{Binding ViewModel.IsLoadingClusterItems, Converter={StaticResource BooleanToVisibilityConverter}}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Margin="0,50">
@@ -243,7 +241,7 @@
             <!-- Migration Progress -->
             <ui:Card Grid.Row="4" 
                     Margin="0,0,0,15"
-                    Visibility="{Binding ViewModel.IsMigrating, Converter={StaticResource BoolToVisibilityConverter}}">
+                    Visibility="{Binding ViewModel.IsMigrating, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid Margin="20,15">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -283,7 +281,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <ui:SymbolIcon Grid.Column="0" 
-                                                  Symbol="{Binding StatusIcon}"
+                                                  Symbol="CheckmarkCircle24"
                                                   Margin="0,0,10,0"/>
 
                                     <TextBlock Grid.Column="1" 

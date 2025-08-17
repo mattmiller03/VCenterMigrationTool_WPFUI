@@ -70,7 +70,11 @@ function Measure-Duration {
         throw
     }
 }
-
+# At the start of any script
+. "$PSScriptRoot\Write-ScriptLog.ps1"
+Start-ScriptLogging -ScriptName "Test-vCenterConnection"
+    
+ 
 try {
     Write-Log "========================================" "Info"
     Write-Log "Starting vCenter connection test (Direct Parameters)" "Info"
@@ -274,7 +278,7 @@ catch {
 }
 finally {
     Write-Log "Script execution completed at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff')" "Debug"
-    
+    Stop-ScriptLogging -Success $true
     # Clear any sensitive variables
     if ($Password) { $Password = $null }
     if ($securePassword) { $securePassword = $null }

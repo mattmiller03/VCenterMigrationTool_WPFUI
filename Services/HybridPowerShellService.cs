@@ -22,16 +22,21 @@ public class HybridPowerShellService : IDisposable
     private readonly ConcurrentDictionary<int, Process> _activeProcesses = new();
     private readonly Timer _cleanupTimer;
     private bool _disposed = false;
+    private readonly PowerShellLoggingService _psLoggingService;
 
     /// <summary>
     /// Static flag to track PowerCLI availability (set by settings page)
     /// </summary>
     public static bool PowerCliConfirmedInstalled { get; set; } = false;
 
-    public HybridPowerShellService (ILogger<HybridPowerShellService> logger, ConfigurationService configurationService)
+    public HybridPowerShellService (
+        ILogger<HybridPowerShellService> logger, 
+        ConfigurationService configurationService,
+        PowerShellLoggingService psLoggingService)
         {
         _logger = logger;
         _configurationService = configurationService;
+        _psLoggingService = psLoggingService;
 
         // FIXED: Load PowerCLI status from persistent storage on startup
         LoadPowerCliStatus();
@@ -181,8 +186,9 @@ public class HybridPowerShellService : IDisposable
     /// <summary>
     /// Enhanced method for collection deserialization with bypass optimization  
     /// </summary>
-    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsOptimizedAsync<T> (string scriptPath,
-        Dictionary<string, object> parameters, string? logPath = null)
+    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsOptimizedAsync<T> (string scriptPath, 
+        Dictionary<string, object> parameters,
+        string? logPath = null)
         {
         // Clone parameters to avoid modifying the original
         var optimizedParameters = new Dictionary<string, object>(parameters);
@@ -219,7 +225,12 @@ public class HybridPowerShellService : IDisposable
             // Add these new VM backup scripts
             "BackupVMConfigurations.ps1",
             "RestoreVMConfigurations.ps1",
-            "ValidateVMBackups.ps1"
+            "ValidateVMBackups.ps1",
+            "Get-VMsForBackup.ps1",
+            "Get-VMNetworkAdapters.ps1",
+            "write-scriptlog.ps1",
+            "Backup-ESXiHostConfig.ps1"
+
         };
 
         var scriptName = Path.GetFileName(scriptPath);
@@ -235,19 +246,30 @@ public class HybridPowerShellService : IDisposable
         return sensitiveParams.Any(s => parameterName.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
-    /// <summary>
-    /// Enhanced external PowerShell execution with proper cleanup - FIXED VERSION
-    /// </summary>
+    // Enhanced RunScriptExternalAsync with logging
     private async Task<string> RunScriptExternalAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
         {
-        _logger.LogInformation("DEBUG: Starting external PowerShell execution for script: {ScriptPath}", scriptPath);
         string fullScriptPath = Path.GetFullPath(scriptPath);
+        string scriptName = Path.GetFileName(scriptPath);
+
+        // Start PowerShell logging session
+        var sessionId = _psLoggingService.StartScriptLogging(scriptName);
 
         _logger.LogDebug("Starting external PowerShell script execution: {ScriptPath}", fullScriptPath);
+        _psLoggingService.WriteLog(new PowerShellLoggingService.LogEntry
+            {
+            Timestamp = DateTime.Now,
+            Level = "INFO",
+            Source = "SYSTEM",
+            ScriptName = scriptName,
+            SessionId = sessionId,
+            Message = $"Script path: {fullScriptPath}"
+            });
 
         if (!File.Exists(fullScriptPath))
             {
             _logger.LogError("Script not found at path: {ScriptPath}", fullScriptPath);
+            _psLoggingService.EndScriptLogging(sessionId, scriptName, false, "Script file not found");
             return $"ERROR: Script not found at {fullScriptPath}";
             }
 
@@ -257,20 +279,27 @@ public class HybridPowerShellService : IDisposable
             {
             // Build parameter string with proper escaping
             var paramString = BuildParameterString(parameters, logPath);
-
-            // Create safe parameter string for logging
             var safeParamString = BuildSafeParameterString(parameters, logPath);
-            _logger.LogInformation("DEBUG: Safe parameter string: {SafeParamString}", safeParamString);
+
+            _psLoggingService.WriteLog(new PowerShellLoggingService.LogEntry
+                {
+                Timestamp = DateTime.Now,
+                Level = "DEBUG",
+                Source = "SYSTEM",
+                ScriptName = scriptName,
+                SessionId = sessionId,
+                Message = $"Parameters: {safeParamString}"
+                });
 
             // Try different PowerShell executables
             var powershellPaths = new[]
             {
-                "pwsh.exe",  // PowerShell 7 in PATH (most common)
-                @"C:\Program Files\PowerShell\7\pwsh.exe",  // Standard PowerShell 7 install
-                @"C:\Program Files (x86)\PowerShell\7\pwsh.exe",  // 32-bit PowerShell 7
-                @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe",  // Store install
-                "powershell.exe"  // Windows PowerShell (last resort)
-            };
+            "pwsh.exe",
+            @"C:\Program Files\PowerShell\7\pwsh.exe",
+            @"C:\Program Files (x86)\PowerShell\7\pwsh.exe",
+            @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe",
+            "powershell.exe"
+        };
 
             Exception? lastException = null;
 
@@ -280,12 +309,15 @@ public class HybridPowerShellService : IDisposable
                     {
                     _logger.LogInformation("Trying PowerShell executable: {PowerShell}", psPath);
 
-                    // For full paths, verify the executable exists
                     if (psPath.Contains("\\") && !File.Exists(psPath))
                         {
                         _logger.LogDebug("PowerShell executable not found at: {PowerShell}", psPath);
                         continue;
                         }
+
+                    // Add logging module import to the command
+                    var loggingPrefix = @"-Command ""& { . '" + Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Write-ScriptLog.ps1") + "'; ";
+                    var loggingSuffix = @" }""";
 
                     var psi = new ProcessStartInfo
                         {
@@ -297,7 +329,7 @@ public class HybridPowerShellService : IDisposable
                         CreateNoWindow = true
                         };
 
-                    _logger.LogInformation("DEBUG: Creating PowerShell process with command: {FileName}", psPath);
+                    _logger.LogInformation("Creating PowerShell process with command: {FileName}", psPath);
 
                     process = new Process { StartInfo = psi };
 
@@ -310,6 +342,9 @@ public class HybridPowerShellService : IDisposable
                             {
                             outputBuilder.AppendLine(args.Data);
                             _logger.LogDebug("PS Output: {Output}", args.Data);
+
+                            // Log to PowerShell logging service
+                            _psLoggingService.WriteScriptOutput(sessionId, scriptName, args.Data, "OUTPUT");
                             }
                     };
 
@@ -319,17 +354,28 @@ public class HybridPowerShellService : IDisposable
                             {
                             errorBuilder.AppendLine(args.Data);
                             _logger.LogWarning("PS Error: {Error}", args.Data);
+
+                            // Log errors to PowerShell logging service
+                            _psLoggingService.WriteScriptError(sessionId, scriptName, args.Data);
                             }
                     };
 
                     // Start the process
                     process.Start();
 
-                    // FIXED: Only track the process AFTER it has started successfully
                     int processId = process.Id;
                     _activeProcesses.TryAdd(processId, process);
 
                     _logger.LogInformation("Successfully started PowerShell process: {PowerShell} (PID: {ProcessId})", psPath, processId);
+                    _psLoggingService.WriteLog(new PowerShellLoggingService.LogEntry
+                        {
+                        Timestamp = DateTime.Now,
+                        Level = "INFO",
+                        Source = "SYSTEM",
+                        ScriptName = scriptName,
+                        SessionId = sessionId,
+                        Message = $"Process started: {psPath} (PID: {processId})"
+                        });
 
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
@@ -339,11 +385,20 @@ public class HybridPowerShellService : IDisposable
                     try
                         {
                         await process.WaitForExitAsync(cts.Token);
-                        _logger.LogInformation("DEBUG: PowerShell process completed with exit code: {ExitCode}", process.ExitCode);
+                        _logger.LogInformation("PowerShell process completed with exit code: {ExitCode}", process.ExitCode);
                         }
                     catch (OperationCanceledException)
                         {
-                        _logger.LogError("DEBUG: PowerShell process timed out after 10 minutes");
+                        _logger.LogError("PowerShell process timed out after 10 minutes");
+                        _psLoggingService.WriteLog(new PowerShellLoggingService.LogEntry
+                            {
+                            Timestamp = DateTime.Now,
+                            Level = "ERROR",
+                            Source = "SYSTEM",
+                            ScriptName = scriptName,
+                            SessionId = sessionId,
+                            Message = "Script execution timed out after 10 minutes"
+                            });
                         KillProcessSafely(process);
                         throw new TimeoutException("PowerShell script execution timed out after 10 minutes");
                         }
@@ -363,15 +418,17 @@ public class HybridPowerShellService : IDisposable
                     // Clean up this specific process
                     CleanupProcess(process, processId);
 
+                    // End logging session
+                    _psLoggingService.EndScriptLogging(sessionId, scriptName, process.ExitCode == 0,
+                        $"Exit code: {process.ExitCode}");
+
                     return output;
                     }
                 catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
                     {
-                    // File not found - try next PowerShell version
                     _logger.LogDebug("PowerShell executable not found: {PowerShell}", psPath);
                     lastException = ex;
 
-                    // Clean up if process was created but failed to start
                     if (process != null)
                         {
                         SafeCleanupProcess(process);
@@ -384,7 +441,6 @@ public class HybridPowerShellService : IDisposable
                     _logger.LogWarning(ex, "Failed to execute with {PowerShell}, trying next option", psPath);
                     lastException = ex;
 
-                    // Clean up if process was created but failed
                     if (process != null)
                         {
                         SafeCleanupProcess(process);
@@ -394,13 +450,14 @@ public class HybridPowerShellService : IDisposable
                     }
                 }
 
+            _psLoggingService.EndScriptLogging(sessionId, scriptName, false, "No suitable PowerShell executable found");
             throw new InvalidOperationException("No suitable PowerShell executable found", lastException);
             }
         catch (Exception ex)
             {
             _logger.LogError(ex, "Error executing external PowerShell script: {Script}", scriptPath);
+            _psLoggingService.EndScriptLogging(sessionId, scriptName, false, ex.Message);
 
-            // Ensure process cleanup even on exception
             if (process != null)
                 {
                 SafeCleanupProcess(process);
