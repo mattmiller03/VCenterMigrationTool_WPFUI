@@ -94,8 +94,8 @@ public partial class App
             services.AddSingleton<DashboardViewModel>();
             services.AddSingleton<VCenterMigrationPage>();
             services.AddSingleton<VCenterMigrationViewModel>();
-            services.AddSingleton<HostMigrationPage>();
-            services.AddSingleton<HostMigrationViewModel>();
+            services.AddTransient<EsxiHostsViewModel>();
+            services.AddTransient<EsxiHostsPage>();
             services.AddSingleton<VmMigrationPage>();
             services.AddSingleton<VmMigrationViewModel>();
             services.AddSingleton<NetworkMigrationPage>();
