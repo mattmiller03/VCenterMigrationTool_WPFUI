@@ -111,6 +111,7 @@ public partial class App
             services.AddTransient<FilePathsSettingsViewModel>();
             services.AddTransient<ViewProfilesViewModel>();
             services.AddTransient<ProfileEditorViewModel>();
+            services.AddSingleton<PersistentExternalConnectionService>();
 
             // Dialogs
             services.AddTransient<PasswordPromptDialog>();
