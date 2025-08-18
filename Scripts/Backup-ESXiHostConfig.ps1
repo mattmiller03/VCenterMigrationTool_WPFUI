@@ -21,6 +21,12 @@ param(
 # Start logging
 Start-ScriptLogging -ScriptName "Backup-ESXiHostConfig"
 
+# Initialize variables for the finally block
+$scriptSuccess = $false
+$finalSummary = ""
+$finalStats = @{}
+$result = @{}
+
 try {
     Write-LogInfo "Starting backup of ESXi host: $HostName"
     Write-LogInfo "Backup destination: $BackupPath"
@@ -289,7 +295,7 @@ try {
         Write-LogInfo "  File created: $($fileInfo.CreationTime)"
     }
     
-    # Return success
+    # Prepare success result
     $result = @{
         Success = $true
         Message = "Backup completed successfully"
@@ -301,8 +307,8 @@ try {
     
     Write-LogSuccess "Backup operation completed successfully for host: $HostName"
     
-    # Create statistics for logging
-    $stats = @{
+    # Prepare statistics for logging
+    $finalStats = @{
         "Host" = $HostName
         "FileSize" = "$($jsonSize)MB"
         "NetworkComponents" = if ($IncludeNetworkConfig) { $backup.NetworkConfig.VirtualSwitches.Count + $backup.NetworkConfig.PortGroups.Count } else { 0 }
@@ -311,9 +317,8 @@ try {
         "AdvancedSettings" = if ($IncludeAdvancedSettings) { $backup.AdvancedSettings.Count } else { 0 }
     }
     
-    Stop-ScriptLogging -Success $true -Summary "Host $HostName backed up to $fileName" -Statistics $stats
-    
-    $result | ConvertTo-Json -Compress
+    $finalSummary = "Host $HostName backed up to $fileName"
+    $scriptSuccess = $true
     
 } catch {
     Write-LogCritical "Backup operation failed: $($_.Exception.Message)"
@@ -326,8 +331,15 @@ try {
         Error = $_.Exception.Message
     }
     
-    Stop-ScriptLogging -Success $false -Summary "Failed to backup host $HostName: $($_.Exception.Message)"
+    $finalSummary = "Failed to backup host $HostName: $($_.Exception.Message)"
+    $scriptSuccess = $false
     
-    $result | ConvertTo-Json -Compress
+    # Re-throw the exception to ensure the calling process knows about the failure
     throw $_
+}
+finally {
+    Stop-ScriptLogging -Success $scriptSuccess -Summary $finalSummary -Statistics $finalStats
+    
+    # Output the final result as JSON
+    $result | ConvertTo-Json -Compress
 }

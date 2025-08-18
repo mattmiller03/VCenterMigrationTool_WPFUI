@@ -548,187 +548,31 @@ public partial class EsxiHostsViewModel : ObservableObject
 
             Directory.CreateDirectory(backupPath);
 
+            // Get the absolute path to the script file
+            var scriptPath = Path.Combine(AppContext.BaseDirectory, "Scripts", "Backup-ESXiHostConfig.ps1");
+
+            if (!File.Exists(scriptPath))
+            {
+                _logger.LogError("Backup script not found at {Path}", scriptPath);
+                MigrationStatus = "❌ Backup script not found. Please ensure it's in the Scripts folder.";
+                return;
+            }
+
             int completed = 0;
             foreach (var host in SelectedSourceHosts)
                 {
                 completed++;
                 BackupProgress = $"Backing up {host.Name} ({completed}/{SelectedSourceHosts.Count})...";
 
+                // Build the command to execute the external script
                 var backupScript = $@"
-                try {{
-                    $vmhost = Get-VMHost -Name '{host.Name}' -ErrorAction Stop
-                    
-                    # Network Configuration - Convert to simple objects
-                    $virtualSwitches = @()
-                    $vSwitches = Get-VirtualSwitch -VMHost $vmhost -ErrorAction SilentlyContinue
-                    foreach ($vSwitch in $vSwitches) {{
-                        $virtualSwitches += @{{
-                            Name = $vSwitch.Name
-                            NumPorts = $vSwitch.NumPorts
-                            NumPortsAvailable = $vSwitch.NumPortsAvailable
-                            Mtu = $vSwitch.Mtu
-                            Nic = ($vSwitch.Nic -join ',')
-                        }}
-                    }}
-                    
-                    # Port Groups
-                    $portGroups = @()
-                    $pgs = Get-VirtualPortGroup -VMHost $vmhost -ErrorAction SilentlyContinue
-                    foreach ($pg in $pgs) {{
-                        $portGroups += @{{
-                            Name = $pg.Name
-                            VirtualSwitchName = $pg.VirtualSwitchName
-                            VLanId = $pg.VLanId
-                        }}
-                    }}
-                    
-                    # VMKernel Adapters
-                    $vmkernelAdapters = @()
-                    $vmks = Get-VMHostNetworkAdapter -VMHost $vmhost -VMKernel -ErrorAction SilentlyContinue
-                    foreach ($vmk in $vmks) {{
-                        $vmkernelAdapters += @{{
-                            Name = $vmk.Name
-                            IP = $vmk.IP
-                            SubnetMask = $vmk.SubnetMask
-                            Mac = $vmk.Mac
-                            PortGroupName = $vmk.PortGroupName
-                            DhcpEnabled = $vmk.DhcpEnabled
-                            ManagementTrafficEnabled = $vmk.ManagementTrafficEnabled
-                            VMotionEnabled = $vmk.VMotionEnabled
-                            FaultToleranceLoggingEnabled = $vmk.FaultToleranceLoggingEnabled
-                            VsanTrafficEnabled = $vmk.VsanTrafficEnabled
-                        }}
-                    }}
-                    
-                    # Storage Configuration
-                    $datastores = @()
-                    $ds = Get-Datastore -VMHost $vmhost -ErrorAction SilentlyContinue
-                    foreach ($datastore in $ds) {{
-                        $datastores += @{{
-                            Name = $datastore.Name
-                            CapacityGB = [math]::Round($datastore.CapacityGB, 2)
-                            FreeSpaceGB = [math]::Round($datastore.FreeSpaceGB, 2)
-                            Type = $datastore.Type
-                            FileSystemVersion = $datastore.FileSystemVersion
-                            Accessible = $datastore.Accessible
-                            State = $datastore.State.ToString()
-                        }}
-                    }}
-                    
-                    # Storage Adapters
-                    $storageAdapters = @()
-                    $hbas = Get-VMHostHba -VMHost $vmhost -ErrorAction SilentlyContinue
-                    foreach ($hba in $hbas) {{
-                        $storageAdapters += @{{
-                            Device = $hba.Device
-                            Type = $hba.Type
-                            Model = $hba.Model
-                            Driver = $hba.Driver
-                            Status = $hba.Status.ToString()
-                        }}
-                    }}
-                    
-                    # Advanced Settings
-                    $advancedSettings = @{{}}
-                    $advSettings = Get-AdvancedSetting -Entity $vmhost -ErrorAction SilentlyContinue
-                    foreach ($setting in $advSettings) {{
-                        $advancedSettings[$setting.Name] = $setting.Value
-                    }}
-                    
-                    # Services
-                    $services = @()
-                    $hostServices = Get-VMHostService -VMHost $vmhost -ErrorAction SilentlyContinue
-                    foreach ($service in $hostServices) {{
-                        $services += @{{
-                            Key = $service.Key
-                            Label = $service.Label
-                            Running = $service.Running
-                            Required = $service.Required
-                            Policy = $service.Policy.ToString()
-                        }}
-                    }}
-                    
-                    # NTP Servers
-                    $ntpServers = @()
-                    $ntps = Get-VMHostNtpServer -VMHost $vmhost -ErrorAction SilentlyContinue
-                    if ($ntps) {{
-                        $ntpServers = $ntps
-                    }}
-                    
-                    # DNS Configuration
-                    $dnsConfig = @{{}}
                     try {{
-                        $network = Get-VMHostNetwork -VMHost $vmhost -ErrorAction SilentlyContinue
-                        if ($network) {{
-                            $dnsConfig = @{{
-                                DnsAddress = $network.DnsAddress
-                                SearchDomain = $network.SearchDomain
-                                HostName = $network.HostName
-                                DomainName = $network.DomainName
-                            }}
-                        }}
+                        # Execute the external backup script and pass parameters
+                        & '{scriptPath}' -HostName '{host.Name}' -BackupPath '{backupPath}' -BypassModuleCheck $true | ConvertTo-Json -Depth 10 -Compress
                     }} catch {{
-                        $dnsConfig = @{{ Error = 'Unable to retrieve DNS configuration' }}
+                        Write-Output ""ERROR: $($_.Exception.Message)""
                     }}
-                    
-                    # Syslog Configuration
-                    $syslogConfig = @{{}}
-                    try {{
-                        $syslogSetting = Get-AdvancedSetting -Entity $vmhost -Name 'Syslog.global.logHost' -ErrorAction SilentlyContinue
-                        if ($syslogSetting) {{
-                            $syslogConfig = @{{
-                                LogHost = $syslogSetting.Value
-                            }}
-                        }}
-                    }} catch {{
-                        $syslogConfig = @{{ LogHost = '' }}
-                    }}
-                    
-                    # Create the final configuration object
-                    $hostConfig = @{{
-                        HostInfo = @{{
-                            Name = $vmhost.Name
-                            Version = $vmhost.Version
-                            Build = $vmhost.Build
-                            Model = $vmhost.Model
-                            Manufacturer = $vmhost.Manufacturer
-                            ProcessorType = $vmhost.ProcessorType
-                            ConnectionState = $vmhost.ConnectionState.ToString()
-                            PowerState = $vmhost.PowerState.ToString()
-                            CpuCores = $vmhost.NumCpu
-                            CpuMhz = $vmhost.CpuTotalMhz
-                            MemoryGB = [math]::Round($vmhost.MemoryTotalGB, 2)
-                        }}
-                        NetworkConfiguration = @{{
-                            VirtualSwitches = $virtualSwitches
-                            PortGroups = $portGroups
-                            VMKernelAdapters = $vmkernelAdapters
-                            DnsConfiguration = $dnsConfig
-                        }}
-                        StorageConfiguration = @{{
-                            Datastores = $datastores
-                            StorageAdapters = $storageAdapters
-                        }}
-                        AdvancedSettings = $advancedSettings
-                        Services = $services
-                        NtpServers = $ntpServers
-                        SyslogConfiguration = $syslogConfig
-                        BackupMetadata = @{{
-                            BackupDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-                            BackupUser = $env:USERNAME
-                            PowerCLIVersion = (Get-Module VMware.PowerCLI).Version.ToString()
-                            ScriptVersion = '2.0'
-                        }}
-                    }}
-                    
-                    # Convert to JSON with error handling
-                    $json = $hostConfig | ConvertTo-Json -Depth 15 -Compress
-                    Write-Output $json
-                    
-                }} catch {{
-                    Write-Output ""ERROR: $($_.Exception.Message)""
-                }}
-            ";
+                ";
 
                 var result = await _persistentConnectionService.ExecuteCommandAsync("source", backupScript);
 
@@ -736,22 +580,25 @@ public partial class EsxiHostsViewModel : ObservableObject
                     {
                     try
                         {
-                        // Validate JSON before saving
-                        var testJson = JsonSerializer.Deserialize<JsonElement>(result);
+                        // The script now outputs JSON, so we can parse it for details
+                        var backupResult = JsonSerializer.Deserialize<JsonElement>(result);
 
-                        var fileName = Path.Combine(backupPath, $"{host.Name}_config_{DateTime.Now:yyyyMMdd_HHmmss}.json");
-                        await File.WriteAllTextAsync(fileName, result);
-
-                        _logger.LogInformation("Successfully backed up host {Host} to {File}", host.Name, fileName);
+                        if (backupResult.TryGetProperty("Success", out var success) && success.GetBoolean())
+                        {
+                            var filePath = backupResult.GetProperty("FilePath").GetString();
+                            _logger.LogInformation("Successfully backed up host {Host} to {File}", host.Name, filePath);
                         }
+                        else
+                        {
+                            var errorMessage = backupResult.TryGetProperty("Message", out var msg) ? msg.GetString() : "Unknown error from script.";
+                            throw new InvalidOperationException($"Backup script failed for host {host.Name}: {errorMessage}");
+                        }
+                    }
                     catch (JsonException ex)
                         {
                         _logger.LogError("JSON validation failed for host {Host}: {Error}", host.Name, ex.Message);
-
-                        // Save the raw result for debugging
                         var debugFileName = Path.Combine(backupPath, $"{host.Name}_debug_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
                         await File.WriteAllTextAsync(debugFileName, result);
-
                         throw new InvalidOperationException($"JSON validation failed for host {host.Name}: {ex.Message}");
                         }
                     }
