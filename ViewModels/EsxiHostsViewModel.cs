@@ -564,19 +564,22 @@ public partial class EsxiHostsViewModel : ObservableObject
                 completed++;
                 BackupProgress = $"Backing up {host.Name} ({completed}/{SelectedSourceHosts.Count})...";
 
-                // Build the command to execute the external script
+                // Build the command to execute the external script, redirecting verbose and information streams
                 var backupScript = $@"
                     try {{
-                        # Execute the external backup script and pass parameters
-                        & '{scriptPath}' -HostName '{host.Name}' -BackupPath '{backupPath}' -BypassModuleCheck $true | ConvertTo-Json -Depth 10 -Compress
+                        # Execute the external backup script and pass parameters.
+                        # Redirect Information (6) and Verbose (4) streams to null to keep stdout clean for JSON.
+                        & '{scriptPath}' -HostName '{host.Name}' -BackupPath '{backupPath}' -BypassModuleCheck $true 6> $null 4> $null
                     }} catch {{
-                        Write-Output ""ERROR: $($_.Exception.Message)""
+                        # Ensure errors are still captured and sent to the output stream.
+                        $errorJson = @{{ Success = $false; Message = ""PowerShell Error: $($_.Exception.Message)"" }} | ConvertTo-Json -Compress
+                        Write-Output $errorJson
                     }}
                 ";
 
                 var result = await _persistentConnectionService.ExecuteCommandAsync("source", backupScript);
 
-                if (!result.StartsWith("ERROR:"))
+                if (!string.IsNullOrWhiteSpace(result))
                     {
                     try
                         {
@@ -596,16 +599,16 @@ public partial class EsxiHostsViewModel : ObservableObject
                     }
                     catch (JsonException ex)
                         {
-                        _logger.LogError("JSON validation failed for host {Host}: {Error}", host.Name, ex.Message);
+                        _logger.LogError(ex, "JSON validation failed for host {Host}. Raw output: {Result}", host.Name, result);
                         var debugFileName = Path.Combine(backupPath, $"{host.Name}_debug_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
                         await File.WriteAllTextAsync(debugFileName, result);
-                        throw new InvalidOperationException($"JSON validation failed for host {host.Name}: {ex.Message}");
+                        throw new InvalidOperationException($"JSON validation failed for host {host.Name}. See debug file for details.");
                         }
                     }
                 else
                     {
-                    _logger.LogError("PowerShell error for host {Host}: {Error}", host.Name, result);
-                    throw new InvalidOperationException($"PowerShell error for host {host.Name}: {result}");
+                    _logger.LogError("PowerShell script returned empty result for host {Host}", host.Name);
+                    throw new InvalidOperationException($"PowerShell script returned no output for host {host.Name}.");
                     }
                 }
 
