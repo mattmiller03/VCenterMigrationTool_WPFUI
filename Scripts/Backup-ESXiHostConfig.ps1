@@ -28,9 +28,9 @@ $finalStats = @{}
 $result = @{}
 
 try {
-    Write-LogInfo "Starting backup of ESXi host: $HostName"
-    Write-LogInfo "Backup destination: $BackupPath"
-    Write-LogInfo "Options: AdvancedSettings=$IncludeAdvancedSettings, Network=$IncludeNetworkConfig, Storage=$IncludeStorageConfig, Services=$IncludeServices"
+    Write-LogInfo "Starting backup of ESXi host: $($HostName)"
+    Write-LogInfo "Backup destination: $($BackupPath)"
+    Write-LogInfo "Options: AdvancedSettings=$($IncludeAdvancedSettings), Network=$($IncludeNetworkConfig), Storage=$($IncludeStorageConfig), Services=$($IncludeServices)"
     
     # Import PowerCLI modules if not bypassing module check
     if (-not $BypassModuleCheck) {
@@ -58,12 +58,12 @@ try {
     Write-LogInfo "Connected to vCenter: $($global:DefaultVIServer.Name)"
     
     # Get the VMHost object
-    Write-LogInfo "Retrieving VMHost object for: $HostName"
+    Write-LogInfo "Retrieving VMHost object for: $($HostName)"
     $vmhost = Get-VMHost -Name $HostName -ErrorAction Stop
     
     if (-not $vmhost) {
-        Write-LogError "Host $HostName not found in vCenter"
-        throw "Host $HostName not found"
+        Write-LogError "Host $($HostName) not found in vCenter"
+        throw "Host $($HostName) not found"
     }
     
     Write-LogSuccess "Found host: $($vmhost.Name)"
@@ -239,7 +239,7 @@ try {
             $settingCount++
             
             if ($settingCount % 100 -eq 0) {
-                Write-LogDebug "    Processed $settingCount advanced settings..."
+                Write-LogDebug "    Processed $($settingCount) advanced settings..."
             }
         }
         
@@ -266,22 +266,22 @@ try {
     
     # Create backup directory if it doesn't exist
     if (-not (Test-Path $BackupPath)) {
-        Write-LogInfo "Creating backup directory: $BackupPath"
+        Write-LogInfo "Creating backup directory: $($BackupPath)"
         New-Item -ItemType Directory -Path $BackupPath -Force | Out-Null
     }
     
     # Generate filename with timestamp
     $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-    $fileName = "$($vmhost.Name)_backup_$timestamp.json"
+    $fileName = "$($vmhost.Name)_backup_$($timestamp).json"
     $fullPath = Join-Path $BackupPath $fileName
     
     # Convert to JSON and save
-    Write-LogInfo "Saving backup to: $fullPath"
+    Write-LogInfo "Saving backup to: $($fullPath)"
     $jsonStartTime = Get-Date
     
     $jsonContent = $backup | ConvertTo-Json -Depth 10
     $jsonSize = [math]::Round($jsonContent.Length / 1MB, 2)
-    Write-LogInfo "  JSON size: ${jsonSize}MB"
+    Write-LogInfo "  JSON size: $($jsonSize)MB"
     
     $jsonContent | Out-File -FilePath $fullPath -Encoding UTF8
     
@@ -305,7 +305,7 @@ try {
         FileSize = $jsonSize
     }
     
-    Write-LogSuccess "Backup operation completed successfully for host: $HostName"
+    Write-LogSuccess "Backup operation completed successfully for host: $($HostName)"
     
     # Prepare statistics for logging
     $finalStats = @{
@@ -317,7 +317,7 @@ try {
         "AdvancedSettings" = if ($IncludeAdvancedSettings) { $backup.AdvancedSettings.Count } else { 0 }
     }
     
-    $finalSummary = "Host $HostName backed up to $fileName"
+    $finalSummary = "Host $($HostName) backed up to $($fileName)"
     $scriptSuccess = $true
     
 } catch {
@@ -331,7 +331,7 @@ try {
         Error = $_.Exception.Message
     }
     
-    $finalSummary = "Failed to backup host $HostName: $($_.Exception.Message)"
+    $finalSummary = "Failed to backup host $($HostName): $($_.Exception.Message)"
     $scriptSuccess = $false
     
     # Re-throw the exception to ensure the calling process knows about the failure
