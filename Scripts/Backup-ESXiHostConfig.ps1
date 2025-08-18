@@ -1,5 +1,5 @@
 # Backup-ESXiHostConfig.ps1
-# Enhanced with detailed logging and integrated logging system
+# Enhanced ESXi host configuration backup with integrated logging system
 
 param(
     [Parameter(Mandatory = $true)]
@@ -55,10 +55,10 @@ try {
         throw "No vCenter connection"
     }
     
-    Write-LogInfo "Connected to vCenter: $($global:DefaultVIServer.Name)"
+    Write-LogInfo "Connected to vCenter: $($global:DefaultVIServer.Name)" -Category "Connection"
     
     # Get the VMHost object
-    Write-LogInfo "Retrieving VMHost object for: $($HostName)"
+    Write-LogInfo "Retrieving VMHost object for: $($HostName)" -Category "Discovery"
     $vmhost = Get-VMHost -Name $HostName -ErrorAction Stop
     
     if (-not $vmhost) {
@@ -66,14 +66,13 @@ try {
         throw "Host $($HostName) not found"
     }
     
-    Write-LogSuccess "Found host: $($vmhost.Name)"
-    Write-LogInfo "  Version: $($vmhost.Version)"
-    Write-LogInfo "  Build: $($vmhost.Build)"
-    Write-LogInfo "  Model: $($vmhost.Model)"
-    Write-LogInfo "  Connection State: $($vmhost.ConnectionState)"
+    Write-LogSuccess "Found host: $($vmhost.Name)" -Category "Discovery"
+    Write-LogInfo "  Version: $($vmhost.Version) Build: $($vmhost.Build)" -Category "Discovery"
+    Write-LogInfo "  Model: $($vmhost.Model) Manufacturer: $($vmhost.Manufacturer)" -Category "Discovery"
+    Write-LogInfo "  Connection State: $($vmhost.ConnectionState)" -Category "Discovery"
     
     # Initialize backup object
-    Write-LogInfo "Initializing backup data structure"
+    Write-LogInfo "Initializing backup data structure" -Category "Backup"
     $backup = @{
         HostName = $vmhost.Name
         Version = $vmhost.Version
@@ -83,6 +82,14 @@ try {
         ProcessorType = $vmhost.ProcessorType
         BackupDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
         BackupUser = $env:USERNAME
+    }
+    
+    # Track backup components
+    $componentStats = @{
+        NetworkItems = 0
+        StorageItems = 0
+        ServiceItems = 0
+        AdvancedSettings = 0
     }
     
     # Network Configuration
@@ -98,59 +105,68 @@ try {
             DNSConfig = @{}
         }
         
-        # Virtual Switches
-        Write-LogDebug "  Retrieving virtual switches..."
-        $vSwitches = Get-VirtualSwitch -VMHost $vmhost -ErrorAction SilentlyContinue
-        Write-LogInfo "  Found $($vSwitches.Count) virtual switches"
-        
-        foreach ($vSwitch in $vSwitches) {
-            Write-LogVerbose "    Processing vSwitch: $($vSwitch.Name)"
-            $backup.NetworkConfig.VirtualSwitches += @{
-                Name = $vSwitch.Name
-                NumPorts = $vSwitch.NumPorts
-                NumPortsAvailable = $vSwitch.NumPortsAvailable
-                Mtu = $vSwitch.Mtu
-                Nic = $vSwitch.Nic -join ","
+        try {
+            # Virtual Switches
+            Write-LogDebug "  Retrieving virtual switches..." -Category "Network"
+            $vSwitches = Get-VirtualSwitch -VMHost $vmhost -ErrorAction SilentlyContinue
+            Write-LogInfo "  Found $($vSwitches.Count) virtual switches" -Category "Network"
+            
+            foreach ($vSwitch in $vSwitches) {
+                Write-LogVerbose "    Processing vSwitch: $($vSwitch.Name)" -Category "Network"
+                $backup.NetworkConfig.VirtualSwitches += @{
+                    Name = $vSwitch.Name
+                    NumPorts = $vSwitch.NumPorts
+                    NumPortsAvailable = $vSwitch.NumPortsAvailable
+                    Mtu = $vSwitch.Mtu
+                    Nic = $vSwitch.Nic -join ","
+                }
+                $componentStats.NetworkItems++
             }
-        }
-        
-        # Port Groups
-        Write-LogDebug "  Retrieving port groups..."
-        $portGroups = Get-VirtualPortGroup -VMHost $vmhost -ErrorAction SilentlyContinue
-        Write-LogInfo "  Found $($portGroups.Count) port groups"
-        
-        foreach ($pg in $portGroups) {
-            Write-LogVerbose "    Processing port group: $($pg.Name)"
-            $backup.NetworkConfig.PortGroups += @{
-                Name = $pg.Name
-                VirtualSwitch = $pg.VirtualSwitchName
-                VLanId = $pg.VLanId
+            
+            # Port Groups
+            Write-LogDebug "  Retrieving port groups..." -Category "Network"
+            $portGroups = Get-VirtualPortGroup -VMHost $vmhost -ErrorAction SilentlyContinue
+            Write-LogInfo "  Found $($portGroups.Count) port groups" -Category "Network"
+            
+            foreach ($pg in $portGroups) {
+                Write-LogVerbose "    Processing port group: $($pg.Name)" -Category "Network"
+                $backup.NetworkConfig.PortGroups += @{
+                    Name = $pg.Name
+                    VirtualSwitch = $pg.VirtualSwitchName
+                    VLanId = $pg.VLanId
+                }
+                $componentStats.NetworkItems++
             }
-        }
-        
-        # VMKernel Adapters
-        Write-LogDebug "  Retrieving VMKernel adapters..."
-        $vmkAdapters = Get-VMHostNetworkAdapter -VMHost $vmhost -VMKernel -ErrorAction SilentlyContinue
-        Write-LogInfo "  Found $($vmkAdapters.Count) VMKernel adapters"
-        
-        foreach ($vmk in $vmkAdapters) {
-            Write-LogVerbose "    Processing VMK: $($vmk.Name) - IP: $($vmk.IP)"
-            $backup.NetworkConfig.VMKernelAdapters += @{
-                Name = $vmk.Name
-                IP = $vmk.IP
-                SubnetMask = $vmk.SubnetMask
-                Mac = $vmk.Mac
-                PortGroupName = $vmk.PortGroupName
-                DhcpEnabled = $vmk.DhcpEnabled
-                ManagementTrafficEnabled = $vmk.ManagementTrafficEnabled
-                VMotionEnabled = $vmk.VMotionEnabled
-                FaultToleranceLoggingEnabled = $vmk.FaultToleranceLoggingEnabled
-                VsanTrafficEnabled = $vmk.VsanTrafficEnabled
+            
+            # VMKernel Adapters
+            Write-LogDebug "  Retrieving VMKernel adapters..." -Category "Network"
+            $vmkAdapters = Get-VMHostNetworkAdapter -VMHost $vmhost -VMKernel -ErrorAction SilentlyContinue
+            Write-LogInfo "  Found $($vmkAdapters.Count) VMKernel adapters" -Category "Network"
+            
+            foreach ($vmk in $vmkAdapters) {
+                Write-LogVerbose "    Processing VMK: $($vmk.Name) - IP: $($vmk.IP)" -Category "Network"
+                $backup.NetworkConfig.VMKernelAdapters += @{
+                    Name = $vmk.Name
+                    IP = $vmk.IP
+                    SubnetMask = $vmk.SubnetMask
+                    Mac = $vmk.Mac
+                    PortGroupName = $vmk.PortGroupName
+                    DhcpEnabled = $vmk.DhcpEnabled
+                    ManagementTrafficEnabled = $vmk.ManagementTrafficEnabled
+                    VMotionEnabled = $vmk.VMotionEnabled
+                    FaultToleranceLoggingEnabled = $vmk.FaultToleranceLoggingEnabled
+                    VsanTrafficEnabled = $vmk.VsanTrafficEnabled
+                }
+                $componentStats.NetworkItems++
             }
+            
+            $networkTime = (Get-Date) - $networkStartTime
+            Write-LogSuccess "Network configuration backed up in $($networkTime.TotalSeconds.ToString('F2')) seconds ($($componentStats.NetworkItems) items)" -Category "Network"
         }
-        
-        $networkTime = (Get-Date) - $networkStartTime
-        Write-LogSuccess "Network configuration backed up in $($networkTime.TotalSeconds) seconds" -Category "Network"
+        catch {
+            Write-LogError "Failed to backup network configuration: $($_.Exception.Message)" -Category "Network"
+            throw $_
+        }
     }
     
     # Storage Configuration
@@ -163,41 +179,49 @@ try {
             StorageAdapters = @()
         }
         
-        # Datastores
-        Write-LogDebug "  Retrieving datastores..."
-        $datastores = Get-Datastore -VMHost $vmhost -ErrorAction SilentlyContinue
-        Write-LogInfo "  Found $($datastores.Count) datastores"
-        
-        foreach ($ds in $datastores) {
-            Write-LogVerbose "    Processing datastore: $($ds.Name) - Capacity: $([math]::Round($ds.CapacityGB, 2))GB"
-            $backup.StorageConfig.Datastores += @{
-                Name = $ds.Name
-                CapacityGB = [math]::Round($ds.CapacityGB, 2)
-                FreeSpaceGB = [math]::Round($ds.FreeSpaceGB, 2)
-                Type = $ds.Type
-                FileSystemVersion = $ds.FileSystemVersion
-                Accessible = $ds.Accessible
+        try {
+            # Datastores
+            Write-LogDebug "  Retrieving datastores..." -Category "Storage"
+            $datastores = Get-Datastore -VMHost $vmhost -ErrorAction SilentlyContinue
+            Write-LogInfo "  Found $($datastores.Count) datastores" -Category "Storage"
+            
+            foreach ($ds in $datastores) {
+                Write-LogVerbose "    Processing datastore: $($ds.Name) - Capacity: $([math]::Round($ds.CapacityGB, 2))GB" -Category "Storage"
+                $backup.StorageConfig.Datastores += @{
+                    Name = $ds.Name
+                    CapacityGB = [math]::Round($ds.CapacityGB, 2)
+                    FreeSpaceGB = [math]::Round($ds.FreeSpaceGB, 2)
+                    Type = $ds.Type
+                    FileSystemVersion = $ds.FileSystemVersion
+                    Accessible = $ds.Accessible
+                }
+                $componentStats.StorageItems++
             }
-        }
-        
-        # Storage Adapters
-        Write-LogDebug "  Retrieving storage adapters..."
-        $hbas = Get-VMHostHba -VMHost $vmhost -ErrorAction SilentlyContinue
-        Write-LogInfo "  Found $($hbas.Count) storage adapters"
-        
-        foreach ($hba in $hbas) {
-            Write-LogVerbose "    Processing HBA: $($hba.Device) - Type: $($hba.Type)"
-            $backup.StorageConfig.StorageAdapters += @{
-                Device = $hba.Device
-                Type = $hba.Type
-                Model = $hba.Model
-                Driver = $hba.Driver
-                Status = $hba.Status
+            
+            # Storage Adapters
+            Write-LogDebug "  Retrieving storage adapters..." -Category "Storage"
+            $hbas = Get-VMHostHba -VMHost $vmhost -ErrorAction SilentlyContinue
+            Write-LogInfo "  Found $($hbas.Count) storage adapters" -Category "Storage"
+            
+            foreach ($hba in $hbas) {
+                Write-LogVerbose "    Processing HBA: $($hba.Device) - Type: $($hba.Type)" -Category "Storage"
+                $backup.StorageConfig.StorageAdapters += @{
+                    Device = $hba.Device
+                    Type = $hba.Type
+                    Model = $hba.Model
+                    Driver = $hba.Driver
+                    Status = $hba.Status
+                }
+                $componentStats.StorageItems++
             }
+            
+            $storageTime = (Get-Date) - $storageStartTime
+            Write-LogSuccess "Storage configuration backed up in $($storageTime.TotalSeconds.ToString('F2')) seconds ($($componentStats.StorageItems) items)" -Category "Storage"
         }
-        
-        $storageTime = (Get-Date) - $storageStartTime
-        Write-LogSuccess "Storage configuration backed up in $($storageTime.TotalSeconds) seconds" -Category "Storage"
+        catch {
+            Write-LogError "Failed to backup storage configuration: $($_.Exception.Message)" -Category "Storage"
+            throw $_
+        }
     }
     
     # Services
@@ -205,23 +229,30 @@ try {
         Write-LogInfo "Backing up services configuration..." -Category "Services"
         $servicesStartTime = Get-Date
         
-        $backup.Services = @()
-        $services = Get-VMHostService -VMHost $vmhost -ErrorAction SilentlyContinue
-        Write-LogInfo "  Found $($services.Count) services"
-        
-        foreach ($service in $services) {
-            Write-LogVerbose "    Service: $($service.Label) - Running: $($service.Running)"
-            $backup.Services += @{
-                Key = $service.Key
-                Label = $service.Label
-                Running = $service.Running
-                Required = $service.Required
-                Policy = $service.Policy
+        try {
+            $backup.Services = @()
+            $services = Get-VMHostService -VMHost $vmhost -ErrorAction SilentlyContinue
+            Write-LogInfo "  Found $($services.Count) services" -Category "Services"
+            
+            foreach ($service in $services) {
+                Write-LogVerbose "    Service: $($service.Label) - Running: $($service.Running)" -Category "Services"
+                $backup.Services += @{
+                    Key = $service.Key
+                    Label = $service.Label
+                    Running = $service.Running
+                    Required = $service.Required
+                    Policy = $service.Policy
+                }
+                $componentStats.ServiceItems++
             }
+            
+            $servicesTime = (Get-Date) - $servicesStartTime
+            Write-LogSuccess "Services configuration backed up in $($servicesTime.TotalSeconds.ToString('F2')) seconds ($($componentStats.ServiceItems) items)" -Category "Services"
         }
-        
-        $servicesTime = (Get-Date) - $servicesStartTime
-        Write-LogSuccess "Services configuration backed up in $($servicesTime.TotalSeconds) seconds" -Category "Services"
+        catch {
+            Write-LogError "Failed to backup services configuration: $($_.Exception.Message)" -Category "Services"
+            throw $_
+        }
     }
     
     # Advanced Settings
@@ -229,45 +260,83 @@ try {
         Write-LogInfo "Backing up advanced settings..." -Category "Advanced"
         $advStartTime = Get-Date
         
-        $backup.AdvancedSettings = @{}
-        $advSettings = Get-AdvancedSetting -Entity $vmhost -ErrorAction SilentlyContinue
-        Write-LogInfo "  Found $($advSettings.Count) advanced settings"
-        
-        $settingCount = 0
-        foreach ($setting in $advSettings) {
-            $backup.AdvancedSettings[$setting.Name] = $setting.Value
-            $settingCount++
+        try {
+            $backup.AdvancedSettings = @{}
+            $advSettings = Get-AdvancedSetting -Entity $vmhost -ErrorAction SilentlyContinue
+            Write-LogInfo "  Found $($advSettings.Count) advanced settings" -Category "Advanced"
             
-            if ($settingCount % 100 -eq 0) {
-                Write-LogDebug "    Processed $($settingCount) advanced settings..."
+            $settingCount = 0
+            foreach ($setting in $advSettings) {
+                $backup.AdvancedSettings[$setting.Name] = $setting.Value
+                $settingCount++
+                $componentStats.AdvancedSettings++
+                
+                if ($settingCount % 250 -eq 0) {
+                    Write-LogDebug "    Processed $($settingCount)/$($advSettings.Count) advanced settings..." -Category "Advanced"
+                }
             }
+            
+            $advTime = (Get-Date) - $advStartTime
+            Write-LogSuccess "Advanced settings backed up in $($advTime.TotalSeconds.ToString('F2')) seconds ($($componentStats.AdvancedSettings) items)" -Category "Advanced"
         }
-        
-        $advTime = (Get-Date) - $advStartTime
-        Write-LogSuccess "Advanced settings backed up in $($advTime.TotalSeconds) seconds" -Category "Advanced"
+        catch {
+            Write-LogError "Failed to backup advanced settings: $($_.Exception.Message)" -Category "Advanced"
+            throw $_
+        }
     }
     
     # Additional configurations
     Write-LogInfo "Backing up additional configurations..." -Category "Additional"
     
-    # NTP Servers
-    Write-LogDebug "  Retrieving NTP servers..."
-    $ntpServers = Get-VMHostNtpServer -VMHost $vmhost -ErrorAction SilentlyContinue
-    $backup.NtpServers = $ntpServers
-    Write-LogInfo "  NTP Servers: $($ntpServers -join ', ')"
-    
-    # Syslog Configuration
-    Write-LogDebug "  Retrieving syslog configuration..."
-    $syslog = Get-AdvancedSetting -Entity $vmhost -Name "Syslog.global.logHost" -ErrorAction SilentlyContinue
-    if ($syslog) {
-        $backup.SyslogServer = $syslog.Value
-        Write-LogInfo "  Syslog Server: $($syslog.Value)"
+    try {
+        # NTP Servers
+        Write-LogDebug "  Retrieving NTP servers..." -Category "Additional"
+        $ntpServers = Get-VMHostNtpServer -VMHost $vmhost -ErrorAction SilentlyContinue
+        $backup.NtpServers = $ntpServers
+        if ($ntpServers.Count -gt 0) {
+            Write-LogInfo "  NTP Servers: $($ntpServers -join ', ')" -Category "Additional"
+        } else {
+            Write-LogWarning "  No NTP servers configured" -Category "Additional"
+        }
+        
+        # Syslog Configuration
+        Write-LogDebug "  Retrieving syslog configuration..." -Category "Additional"
+        $syslog = Get-AdvancedSetting -Entity $vmhost -Name "Syslog.global.logHost" -ErrorAction SilentlyContinue
+        if ($syslog -and $syslog.Value) {
+            $backup.SyslogServer = $syslog.Value
+            Write-LogInfo "  Syslog Server: $($syslog.Value)" -Category "Additional"
+        } else {
+            Write-LogWarning "  No syslog server configured" -Category "Additional"
+        }
+        
+        # DNS Configuration
+        Write-LogDebug "  Retrieving DNS configuration..." -Category "Additional"
+        $dnsConfig = Get-VMHostNetwork -VMHost $vmhost -ErrorAction SilentlyContinue
+        if ($dnsConfig) {
+            $backup.DNSConfig = @{
+                HostName = $dnsConfig.HostName
+                DomainName = $dnsConfig.DomainName
+                DnsAddress = $dnsConfig.DnsAddress
+                SearchDomain = $dnsConfig.SearchDomain
+            }
+            Write-LogInfo "  DNS: $($dnsConfig.DnsAddress -join ', ') Domain: $($dnsConfig.DomainName)" -Category "Additional"
+        }
+    }
+    catch {
+        Write-LogWarning "Some additional configurations could not be retrieved: $($_.Exception.Message)" -Category "Additional"
     }
     
     # Create backup directory if it doesn't exist
     if (-not (Test-Path $BackupPath)) {
-        Write-LogInfo "Creating backup directory: $($BackupPath)"
-        New-Item -ItemType Directory -Path $BackupPath -Force | Out-Null
+        Write-LogInfo "Creating backup directory: $($BackupPath)" -Category "FileSystem"
+        try {
+            New-Item -ItemType Directory -Path $BackupPath -Force | Out-Null
+            Write-LogSuccess "Backup directory created successfully" -Category "FileSystem"
+        }
+        catch {
+            Write-LogError "Failed to create backup directory: $($_.Exception.Message)" -Category "FileSystem"
+            throw $_
+        }
     }
     
     # Generate filename with timestamp
@@ -276,24 +345,35 @@ try {
     $fullPath = Join-Path $BackupPath $fileName
     
     # Convert to JSON and save
-    Write-LogInfo "Saving backup to: $($fullPath)"
+    Write-LogInfo "Saving backup to: $($fullPath)" -Category "Export"
     $jsonStartTime = Get-Date
     
-    $jsonContent = $backup | ConvertTo-Json -Depth 10
-    $jsonSize = [math]::Round($jsonContent.Length / 1MB, 2)
-    Write-LogInfo "  JSON size: $($jsonSize)MB"
-    
-    $jsonContent | Out-File -FilePath $fullPath -Encoding UTF8
-    
-    $jsonTime = (Get-Date) - $jsonStartTime
-    Write-LogSuccess "Backup saved successfully in $($jsonTime.TotalSeconds) seconds"
-    
-    # Verify file was created
-    if (Test-Path $fullPath) {
-        $fileInfo = Get-Item $fullPath
-        Write-LogInfo "  File size: $([math]::Round($fileInfo.Length / 1MB, 2))MB"
-        Write-LogInfo "  File created: $($fileInfo.CreationTime)"
+    try {
+        $jsonContent = $backup | ConvertTo-Json -Depth 10
+        $jsonSize = [math]::Round($jsonContent.Length / 1MB, 2)
+        Write-LogInfo "  JSON size: $($jsonSize)MB" -Category "Export"
+        
+        $jsonContent | Out-File -FilePath $fullPath -Encoding UTF8
+        
+        $jsonTime = (Get-Date) - $jsonStartTime
+        Write-LogSuccess "Backup saved successfully in $($jsonTime.TotalSeconds.ToString('F2')) seconds" -Category "Export"
+        
+        # Verify file was created
+        if (Test-Path $fullPath) {
+            $fileInfo = Get-Item $fullPath
+            Write-LogInfo "  File size: $([math]::Round($fileInfo.Length / 1MB, 2))MB" -Category "Export"
+            Write-LogInfo "  File created: $($fileInfo.CreationTime)" -Category "Export"
+        } else {
+            throw "Backup file was not created successfully"
+        }
     }
+    catch {
+        Write-LogError "Failed to save backup file: $($_.Exception.Message)" -Category "Export"
+        throw $_
+    }
+    
+    # Calculate total items backed up
+    $totalItems = $componentStats.NetworkItems + $componentStats.StorageItems + $componentStats.ServiceItems + $componentStats.AdvancedSettings
     
     # Prepare success result
     $result = @{
@@ -303,21 +383,28 @@ try {
         HostName = $vmhost.Name
         BackupDate = $backup.BackupDate
         FileSize = $jsonSize
+        TotalItems = $totalItems
+        ComponentStats = $componentStats
     }
     
     Write-LogSuccess "Backup operation completed successfully for host: $($HostName)"
     
-    # Prepare statistics for logging
+    # Prepare statistics for final logging
     $finalStats = @{
         "Host" = $HostName
+        "Version" = $vmhost.Version
+        "Build" = $vmhost.Build
         "FileSize" = "$($jsonSize)MB"
-        "NetworkComponents" = if ($IncludeNetworkConfig) { $backup.NetworkConfig.VirtualSwitches.Count + $backup.NetworkConfig.PortGroups.Count } else { 0 }
-        "StorageComponents" = if ($IncludeStorageConfig) { $backup.StorageConfig.Datastores.Count + $backup.StorageConfig.StorageAdapters.Count } else { 0 }
-        "Services" = if ($IncludeServices) { $backup.Services.Count } else { 0 }
-        "AdvancedSettings" = if ($IncludeAdvancedSettings) { $backup.AdvancedSettings.Count } else { 0 }
+        "TotalItems" = $totalItems
+        "NetworkItems" = $componentStats.NetworkItems
+        "StorageItems" = $componentStats.StorageItems
+        "ServiceItems" = $componentStats.ServiceItems
+        "AdvancedSettings" = $componentStats.AdvancedSettings
+        "NTPServers" = if ($backup.NtpServers) { $backup.NtpServers.Count } else { 0 }
+        "SyslogConfigured" = if ($backup.SyslogServer) { "Yes" } else { "No" }
     }
     
-    $finalSummary = "Host $($HostName) backed up to $($fileName)"
+    $finalSummary = "Host $($HostName) backed up successfully to $($fileName) ($($totalItems) items, $($jsonSize)MB)"
     $scriptSuccess = $true
     
 } catch {
@@ -329,6 +416,7 @@ try {
         Message = "Backup failed: $($_.Exception.Message)"
         HostName = $HostName
         Error = $_.Exception.Message
+        ErrorType = $_.Exception.GetType().Name
     }
     
     $finalSummary = "Failed to backup host $($HostName): $($_.Exception.Message)"
@@ -338,8 +426,17 @@ try {
     throw $_
 }
 finally {
+    # Calculate total execution time
+    $totalTime = if ($Script:LoggingConfig.StartTime) {
+        ((Get-Date) - $Script:LoggingConfig.StartTime).TotalSeconds.ToString('F2')
+    } else {
+        "Unknown"
+    }
+    
+    $finalStats["ExecutionTime"] = "$($totalTime)s"
+    
     Stop-ScriptLogging -Success $scriptSuccess -Summary $finalSummary -Statistics $finalStats
     
-    # Output the final result as JSON
+    # Output the final result as JSON for consumption by calling scripts
     $result | ConvertTo-Json -Compress
 }
