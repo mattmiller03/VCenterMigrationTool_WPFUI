@@ -11,86 +11,81 @@ param(
     [bool]$IncludeCustomAttributes = $true,
     [bool]$IncludePermissions = $false,
     [bool]$CompressOutput = $true,
-    [bool]$BypassModuleCheck = $false,
-    [string]$LogPath = ""
+    [bool]$BypassModuleCheck = $false
 )
 
-# Function to write log messages
-function Write-Log {
-    param([string]$Message, [string]$Level = "Info")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] [$Level] $Message"
-    Write-Host $logMessage
-    
-    if (-not [string]::IsNullOrEmpty($LogPath)) {
-        try {
-            $logMessage | Out-File -FilePath $LogPath -Append -Encoding UTF8
-        }
-        catch {
-            # Ignore log file errors
-        }
-    }
-}
+# Import logging functions
+. "$PSScriptRoot\Write-ScriptLog.ps1"
+
+# Start logging
+Start-ScriptLogging -ScriptName "BackupVMConfigurations"
 
 try {
-    Write-Log "Starting VM configuration backup..." "Info"
+    Write-LogInfo "Starting VM configuration backup..."
+    Write-LogInfo "Backup file path: $BackupFilePath"
+    Write-LogInfo "Options: Settings=$IncludeSettings, Snapshots=$IncludeSnapshots, Annotations=$IncludeAnnotations, CustomAttributes=$IncludeCustomAttributes, Permissions=$IncludePermissions, Compress=$CompressOutput"
     
     # Import PowerCLI modules if not bypassing module check
     if (-not $BypassModuleCheck) {
-        Write-Log "Importing PowerCLI modules..." "Info"
+        Write-LogInfo "Importing PowerCLI modules..."
         try {
             Import-Module VMware.PowerCLI -Force -ErrorAction Stop
             Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-            Write-Log "PowerCLI modules imported successfully" "Info"
+            Write-LogSuccess "PowerCLI modules imported successfully"
         }
         catch {
-            Write-Error "Failed to import PowerCLI modules: $($_.Exception.Message)"
-            exit 1
+            Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)"
+            throw $_
         }
     }
     else {
-        Write-Log "Bypassing PowerCLI module check (already confirmed installed)" "Info"
+        Write-LogInfo "Bypassing PowerCLI module check (already confirmed installed)"
     }
     
     # Check vCenter connection
     if (-not $global:DefaultVIServer -or $global:DefaultVIServer.IsConnected -eq $false) {
-        Write-Error "No active vCenter connection found. Please connect to vCenter first."
-        exit 1
+        Write-LogCritical "No active vCenter connection found. Please connect to vCenter first."
+        throw "No vCenter connection"
     }
     
-    Write-Log "Connected to vCenter: $($global:DefaultVIServer.Name)" "Info"
+    Write-LogInfo "Connected to vCenter: $($global:DefaultVIServer.Name)"
     
     # Determine which VMs to backup
+    Write-LogInfo "Determining VMs to backup..." -Category "Scope"
     if ($VMNames.Count -gt 0) {
         $vms = @()
         foreach ($vmName in $VMNames) {
             try {
                 $vm = Get-VM -Name $vmName -ErrorAction Stop
                 $vms += $vm
+                Write-LogDebug "Added VM: $vmName"
             }
             catch {
-                Write-Log "VM '$vmName' not found" "Warning"
+                Write-LogWarning "VM '$vmName' not found"
             }
         }
-        Write-Log "Backing up $($vms.Count) selected VMs" "Info"
+        Write-LogInfo "Backing up $($vms.Count) selected VMs" -Category "Scope"
     } 
     elseif (-not [string]::IsNullOrEmpty($ClusterName)) {
         $vms = Get-Cluster -Name $ClusterName | Get-VM
-        Write-Log "Backing up all VMs from cluster: $ClusterName ($($vms.Count) VMs)" "Info"
+        Write-LogInfo "Backing up all VMs from cluster: $ClusterName ($($vms.Count) VMs)" -Category "Scope"
     } 
     elseif ($BackupAllVMs) {
         $vms = Get-VM
-        Write-Log "Backing up all VMs from vCenter ($($vms.Count) VMs)" "Info"
+        Write-LogInfo "Backing up all VMs from vCenter ($($vms.Count) VMs)" -Category "Scope"
     }
     else {
+        Write-LogCritical "No backup scope specified"
         throw "No backup scope specified"
     }
     
     if ($vms.Count -eq 0) {
+        Write-LogCritical "No VMs found to backup"
         throw "No VMs found to backup"
     }
     
     # Create backup data structure
+    Write-LogInfo "Creating backup data structure..."
     $backupData = @{
         BackupInfo = @{
             Timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -112,10 +107,13 @@ try {
     
     # Process each VM
     $vmCount = 0
+    $successCount = 0
+    $errorCount = 0
+    
     foreach ($vm in $vms) {
         $vmCount++
-        Write-Progress -Activity 'Backing up VM configurations' -Status "Processing $($vm.Name)" -PercentComplete (($vmCount / $vms.Count) * 100)
-        Write-Log "Processing VM: $($vm.Name)" "Info"
+        $percent = [math]::Round(($vmCount / $vms.Count) * 100, 1)
+        Write-LogInfo "Processing VM: $($vm.Name) ($vmCount/$($vms.Count) - $percent%)" -Category "Progress"
         
         try {
             $vmConfig = @{
@@ -140,6 +138,8 @@ try {
             
             # Include detailed hardware configuration
             if ($IncludeSettings) {
+                Write-LogDebug "  Collecting hardware settings for $($vm.Name)"
+                
                 # Network adapters
                 $vmConfig.NetworkAdapters = @()
                 foreach ($nic in ($vm | Get-NetworkAdapter)) {
@@ -189,7 +189,7 @@ try {
                             }
                         }
                         catch {
-                            Write-Log "Could not get datastore info for disk $($disk.Name)" "Warning"
+                            Write-LogWarning "Could not get datastore info for disk $($disk.Name)"
                         }
                     }
                     
@@ -216,16 +216,20 @@ try {
                     BootDelay = $vm.ExtensionData.Config.BootOptions.BootDelay
                     EnterBIOSSetup = $vm.ExtensionData.Config.BootOptions.EnterBIOSSetup
                 }
+                
+                Write-LogDebug "  Hardware settings collected: $($vmConfig.NetworkAdapters.Count) NICs, $($vmConfig.HardDisks.Count) disks"
             }
             
             # VM annotations and notes
             if ($IncludeAnnotations) {
+                Write-LogDebug "  Collecting annotations for $($vm.Name)"
                 $vmConfig.Notes = $vm.Notes
                 $vmConfig.Description = $vm.Description
             }
             
             # Custom attributes
             if ($IncludeCustomAttributes) {
+                Write-LogDebug "  Collecting custom attributes for $($vm.Name)"
                 $vmConfig.CustomFields = @{}
                 try {
                     foreach ($field in ($vm | Get-Annotation -ErrorAction SilentlyContinue)) {
@@ -233,12 +237,13 @@ try {
                     }
                 }
                 catch {
-                    Write-Log "Could not retrieve custom attributes for $($vm.Name)" "Warning"
+                    Write-LogWarning "Could not retrieve custom attributes for $($vm.Name)"
                 }
             }
             
             # Snapshot information
             if ($IncludeSnapshots) {
+                Write-LogDebug "  Collecting snapshots for $($vm.Name)"
                 $vmConfig.Snapshots = @()
                 try {
                     foreach ($snapshot in ($vm | Get-Snapshot -ErrorAction SilentlyContinue)) {
@@ -258,14 +263,19 @@ try {
                         
                         $vmConfig.Snapshots += $snapConfig
                     }
+                    
+                    if ($vmConfig.Snapshots.Count -gt 0) {
+                        Write-LogDebug "  Found $($vmConfig.Snapshots.Count) snapshots"
+                    }
                 }
                 catch {
-                    Write-Log "Could not retrieve snapshots for $($vm.Name)" "Warning"
+                    Write-LogWarning "Could not retrieve snapshots for $($vm.Name)"
                 }
             }
             
             # VM permissions (requires elevated privileges)
             if ($IncludePermissions) {
+                Write-LogDebug "  Collecting permissions for $($vm.Name)"
                 $vmConfig.Permissions = @()
                 try {
                     $permissions = Get-VIPermission -Entity $vm -ErrorAction SilentlyContinue
@@ -277,35 +287,46 @@ try {
                             Propagate = $perm.Propagate
                         }
                     }
+                    
+                    if ($vmConfig.Permissions.Count -gt 0) {
+                        Write-LogDebug "  Found $($vmConfig.Permissions.Count) permissions"
+                    }
                 }
                 catch {
-                    Write-Log "Could not retrieve permissions for $($vm.Name)" "Warning"
+                    Write-LogWarning "Could not retrieve permissions for $($vm.Name)"
                 }
             }
             
             $backupData.VMs += $vmConfig
-            Write-Log "Successfully processed VM: $($vm.Name)" "Info"
+            $successCount++
+            Write-LogSuccess "Successfully processed VM: $($vm.Name)"
         }
         catch {
-            Write-Log "Failed to backup VM $($vm.Name): $($_.Exception.Message)" "Error"
+            $errorCount++
+            Write-LogError "Failed to backup VM $($vm.Name): $($_.Exception.Message)"
         }
     }
+    
+    Write-LogInfo "VM processing completed: $successCount successful, $errorCount failed" -Category "Summary"
     
     # Create backup directory if needed
     $backupDir = Split-Path -Parent $BackupFilePath
     if (-not (Test-Path $backupDir)) {
         New-Item -Path $backupDir -ItemType Directory -Force | Out-Null
-        Write-Log "Created backup directory: $backupDir" "Info"
+        Write-LogInfo "Created backup directory: $backupDir"
     }
     
     # Save backup data to JSON
-    Write-Log "Saving backup data to: $BackupFilePath" "Info"
+    Write-LogInfo "Saving backup data to: $BackupFilePath"
+    $jsonStartTime = Get-Date
     $jsonOutput = $backupData | ConvertTo-Json -Depth 15
     $jsonOutput | Out-File -FilePath $BackupFilePath -Encoding UTF8
+    $jsonTime = (Get-Date) - $jsonStartTime
+    Write-LogInfo "JSON serialization completed in $($jsonTime.TotalSeconds) seconds"
     
     # Compress if requested
     if ($CompressOutput) {
-        Write-Log "Compressing backup file..." "Info"
+        Write-LogInfo "Compressing backup file..."
         $zipPath = [System.IO.Path]::ChangeExtension($BackupFilePath, '.zip')
         
         try {
@@ -321,26 +342,56 @@ try {
             Remove-Item $BackupFilePath -Force
             $BackupFilePath = $zipPath
             
-            Write-Log "Backup compressed to: $zipPath" "Info"
+            Write-LogSuccess "Backup compressed to: $zipPath"
         }
         catch {
-            Write-Log "Compression failed: $($_.Exception.Message)" "Warning"
+            Write-LogWarning "Compression failed: $($_.Exception.Message)"
         }
     }
     
     $fileSize = [math]::Round((Get-Item $BackupFilePath).Length / 1KB, 0)
-    Write-Host "SUCCESS: VM backup completed"
-    Write-Host "Backup file: $BackupFilePath"
-    Write-Host "VMs backed up: $($backupData.VMs.Count)"
-    Write-Host "File size: $fileSize KB"
-    Write-Log "VM backup completed successfully - $($backupData.VMs.Count) VMs, $fileSize KB" "Info"
+    Write-LogSuccess "VM backup completed successfully"
+    Write-LogInfo "Backup file: $BackupFilePath"
+    Write-LogInfo "VMs backed up: $($backupData.VMs.Count)"
+    Write-LogInfo "File size: $fileSize KB"
+    
+    # Create statistics for logging
+    $stats = @{
+        "VMsProcessed" = $vmCount
+        "VMsSuccessful" = $successCount
+        "VMsWithErrors" = $errorCount
+        "FileSizeKB" = $fileSize
+        "BackupScope" = $backupData.BackupInfo.BackupScope
+        "Compressed" = $CompressOutput
+    }
+    
+    Stop-ScriptLogging -Success $true -Summary "VM backup completed - $successCount VMs, $fileSize KB" -Statistics $stats
+    
+    # Return success result
+    $result = @{
+        Success = $true
+        Message = "VM backup completed successfully"
+        FilePath = $BackupFilePath
+        VMCount = $backupData.VMs.Count
+        FileSize = $fileSize
+    }
+    
+    $result | ConvertTo-Json -Compress
 }
 catch {
     $errorMsg = "VM backup failed: $($_.Exception.Message)"
-    Write-Log $errorMsg "Error"
-    Write-Error $errorMsg
-    exit 1
-}
-finally {
-    Write-Progress -Activity 'Backing up VM configurations' -Completed
+    Write-LogCritical $errorMsg
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)"
+    
+    Stop-ScriptLogging -Success $false -Summary $errorMsg
+    
+    # Return error result
+    $result = @{
+        Success = $false
+        Message = $errorMsg
+        Error = $_.Exception.Message
+    }
+    
+    $result | ConvertTo-Json -Compress
+    throw $_
 }

@@ -181,7 +181,16 @@ param(
     [switch]$DisconnectNetworkDuringMigration,
     
     [Parameter()]
-    [switch]$EnhancedNetworkHandling
+    [switch]$EnhancedNetworkHandling,
+        
+[ValidateSet('Debug', 'Verbose', 'Info', 'Warning', 'Error', 'Critical')]
+    [string]$LogLevel = 'Normal',  # Map existing LogLevel values
+    
+    [switch]$DisableConsoleOutput,
+    
+    [switch]$IncludeStackTrace,
+    
+    [string]$CustomLogPath
 )
 
 # Initialize failed VMs tracking

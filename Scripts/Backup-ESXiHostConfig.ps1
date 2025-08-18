@@ -1,5 +1,5 @@
 # Backup-ESXiHostConfig.ps1
-# Enhanced with detailed logging
+# Enhanced with detailed logging and integrated logging system
 
 param(
     [Parameter(Mandatory = $true)]
@@ -11,7 +11,8 @@ param(
     [bool]$IncludeAdvancedSettings = $true,
     [bool]$IncludeNetworkConfig = $true,
     [bool]$IncludeStorageConfig = $true,
-    [bool]$IncludeServices = $true
+    [bool]$IncludeServices = $true,
+    [bool]$BypassModuleCheck = $false
 )
 
 # Import logging functions
@@ -24,6 +25,31 @@ try {
     Write-LogInfo "Starting backup of ESXi host: $HostName"
     Write-LogInfo "Backup destination: $BackupPath"
     Write-LogInfo "Options: AdvancedSettings=$IncludeAdvancedSettings, Network=$IncludeNetworkConfig, Storage=$IncludeStorageConfig, Services=$IncludeServices"
+    
+    # Import PowerCLI modules if not bypassing module check
+    if (-not $BypassModuleCheck) {
+        Write-LogInfo "Importing PowerCLI modules..."
+        try {
+            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+            Write-LogSuccess "PowerCLI modules imported successfully"
+        }
+        catch {
+            Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)"
+            throw $_
+        }
+    }
+    else {
+        Write-LogInfo "Bypassing PowerCLI module check (already confirmed installed)"
+    }
+    
+    # Check vCenter connection
+    if (-not $global:DefaultVIServer -or $global:DefaultVIServer.IsConnected -eq $false) {
+        Write-LogCritical "No active vCenter connection found. Please connect to vCenter first."
+        throw "No vCenter connection"
+    }
+    
+    Write-LogInfo "Connected to vCenter: $($global:DefaultVIServer.Name)"
     
     # Get the VMHost object
     Write-LogInfo "Retrieving VMHost object for: $HostName"
@@ -55,7 +81,7 @@ try {
     
     # Network Configuration
     if ($IncludeNetworkConfig) {
-        Write-LogInfo "Backing up network configuration..."
+        Write-LogInfo "Backing up network configuration..." -Category "Network"
         $networkStartTime = Get-Date
         
         $backup.NetworkConfig = @{
@@ -118,12 +144,12 @@ try {
         }
         
         $networkTime = (Get-Date) - $networkStartTime
-        Write-LogSuccess "Network configuration backed up in $($networkTime.TotalSeconds) seconds"
+        Write-LogSuccess "Network configuration backed up in $($networkTime.TotalSeconds) seconds" -Category "Network"
     }
     
     # Storage Configuration
     if ($IncludeStorageConfig) {
-        Write-LogInfo "Backing up storage configuration..."
+        Write-LogInfo "Backing up storage configuration..." -Category "Storage"
         $storageStartTime = Get-Date
         
         $backup.StorageConfig = @{
@@ -165,12 +191,12 @@ try {
         }
         
         $storageTime = (Get-Date) - $storageStartTime
-        Write-LogSuccess "Storage configuration backed up in $($storageTime.TotalSeconds) seconds"
+        Write-LogSuccess "Storage configuration backed up in $($storageTime.TotalSeconds) seconds" -Category "Storage"
     }
     
     # Services
     if ($IncludeServices) {
-        Write-LogInfo "Backing up services configuration..."
+        Write-LogInfo "Backing up services configuration..." -Category "Services"
         $servicesStartTime = Get-Date
         
         $backup.Services = @()
@@ -189,12 +215,12 @@ try {
         }
         
         $servicesTime = (Get-Date) - $servicesStartTime
-        Write-LogSuccess "Services configuration backed up in $($servicesTime.TotalSeconds) seconds"
+        Write-LogSuccess "Services configuration backed up in $($servicesTime.TotalSeconds) seconds" -Category "Services"
     }
     
     # Advanced Settings
     if ($IncludeAdvancedSettings) {
-        Write-LogInfo "Backing up advanced settings..."
+        Write-LogInfo "Backing up advanced settings..." -Category "Advanced"
         $advStartTime = Get-Date
         
         $backup.AdvancedSettings = @{}
@@ -212,11 +238,11 @@ try {
         }
         
         $advTime = (Get-Date) - $advStartTime
-        Write-LogSuccess "Advanced settings backed up in $($advTime.TotalSeconds) seconds"
+        Write-LogSuccess "Advanced settings backed up in $($advTime.TotalSeconds) seconds" -Category "Advanced"
     }
     
     # Additional configurations
-    Write-LogInfo "Backing up additional configurations..."
+    Write-LogInfo "Backing up additional configurations..." -Category "Additional"
     
     # NTP Servers
     Write-LogDebug "  Retrieving NTP servers..."
@@ -274,12 +300,23 @@ try {
     }
     
     Write-LogSuccess "Backup operation completed successfully for host: $HostName"
-    Stop-ScriptLogging -Success $true -Summary "Host $HostName backed up to $fileName"
+    
+    # Create statistics for logging
+    $stats = @{
+        "Host" = $HostName
+        "FileSize" = "$($jsonSize)MB"
+        "NetworkComponents" = if ($IncludeNetworkConfig) { $backup.NetworkConfig.VirtualSwitches.Count + $backup.NetworkConfig.PortGroups.Count } else { 0 }
+        "StorageComponents" = if ($IncludeStorageConfig) { $backup.StorageConfig.Datastores.Count + $backup.StorageConfig.StorageAdapters.Count } else { 0 }
+        "Services" = if ($IncludeServices) { $backup.Services.Count } else { 0 }
+        "AdvancedSettings" = if ($IncludeAdvancedSettings) { $backup.AdvancedSettings.Count } else { 0 }
+    }
+    
+    Stop-ScriptLogging -Success $true -Summary "Host $HostName backed up to $fileName" -Statistics $stats
     
     $result | ConvertTo-Json -Compress
     
 } catch {
-    Write-LogError "Backup operation failed: $($_.Exception.Message)"
+    Write-LogCritical "Backup operation failed: $($_.Exception.Message)"
     Write-LogError "Stack trace: $($_.ScriptStackTrace)"
     
     $result = @{
@@ -289,8 +326,8 @@ try {
         Error = $_.Exception.Message
     }
     
-    Stop-ScriptLogging -Success $false -Summary "Failed to backup host $HostName"
+    Stop-ScriptLogging -Success $false -Summary "Failed to backup host $HostName: $($_.Exception.Message)"
     
     $result | ConvertTo-Json -Compress
-    Write-Error $_
+    throw $_
 }

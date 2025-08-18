@@ -1,95 +1,81 @@
-# Install-PowerCli.ps1 - Fixed version that doesn't create subprocess
+# Install-PowerCli.ps1 - Fixed version with integrated logging
 param(
-    [string]$LogPath = "Logs"
+    [bool]$BypassModuleCheck = $false
 )
 
-# Function to write to both console and log file
-function Write-Log {
-    param(
-        [string]$Message,
-        [string]$Level = "INFO"
-    )
-    
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] [$Level] $Message"
-    
-    # Write to console for UI display
-    Write-Output $logMessage
-    
-    # Ensure log directory exists
-    if (-not (Test-Path $LogPath)) {
-        try {
-            New-Item -ItemType Directory -Path $LogPath -Force | Out-Null
-        }
-        catch {
-            # Continue if can't create log directory
-        }
-    }
-    
-    try {
-        # Write to log file
-        $logFile = Join-Path $LogPath "PowerCLI-Install-$(Get-Date -Format 'yyyy-MM-dd').log"
-        Add-Content -Path $logFile -Value $logMessage -ErrorAction SilentlyContinue
-    }
-    catch {
-        # Continue if logging fails
-    }
-}
+# Import logging functions
+. "$PSScriptRoot\Write-ScriptLog.ps1"
+
+# Start logging
+Start-ScriptLogging -ScriptName "Install-PowerCli"
 
 try {
-    Write-Log "Starting PowerCLI installation process" "INFO"
-    Write-Log "Log path: $LogPath" "INFO"
-    Write-Log "PowerShell version: $($PSVersionTable.PSVersion.ToString())" "INFO"
+    Write-LogInfo "Starting PowerCLI installation process"
+    Write-LogInfo "PowerShell version: $($PSVersionTable.PSVersion.ToString())" -Category "System"
     
     # Check if running as administrator
     try {
         $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
         $isAdmin = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-        Write-Log "Running as administrator: $isAdmin" "INFO"
+        Write-LogInfo "Running as administrator: $isAdmin" -Category "System"
     }
     catch {
         $isAdmin = $false
-        Write-Log "Could not determine admin status, assuming non-admin" "WARN"
+        Write-LogWarning "Could not determine admin status, assuming non-admin"
     }
     
     # Check if PowerCLI is already installed
-    Write-Log "Checking if PowerCLI is already installed..." "INFO"
+    Write-LogInfo "Checking if PowerCLI is already installed..." -Category "Check"
     try {
         $existingModule = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
         
         if ($existingModule) {
-            Write-Log "PowerCLI is already installed. Version: $($existingModule.Version)" "INFO"
-            Write-Output "Success: PowerCLI is already installed. Version: $($existingModule.Version)"
-            return
+            $version = $existingModule[0].Version.ToString()
+            Write-LogSuccess "PowerCLI is already installed. Version: $version" -Category "Check"
+            
+            # Test import to make sure it works
+            try {
+                Import-Module -Name "VMware.PowerCLI" -Force -ErrorAction Stop
+                Write-LogSuccess "PowerCLI import test successful"
+                Remove-Module -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
+                
+                Stop-ScriptLogging -Success $true -Summary "PowerCLI already installed and working - Version: $version" -Statistics @{"Version" = $version; "AlreadyInstalled" = $true}
+                Write-Output "Success: PowerCLI is already installed and working. Version: $version"
+                return
+            }
+            catch {
+                Write-LogWarning "PowerCLI is installed but import test failed: $($_.Exception.Message)"
+                Write-LogInfo "Attempting reinstallation..."
+            }
         }
         else {
-            Write-Log "PowerCLI not found. Starting installation..." "INFO"
+            Write-LogInfo "PowerCLI not found. Starting installation..." -Category "Check"
         }
     }
     catch {
-        Write-Log "Error checking existing PowerCLI installation: $($_.Exception.Message)" "WARN"
-        Write-Log "Proceeding with installation attempt..." "INFO"
+        Write-LogWarning "Error checking existing PowerCLI installation: $($_.Exception.Message)"
+        Write-LogInfo "Proceeding with installation attempt..."
     }
     
     # Determine scope
     $scope = if ($isAdmin) { "AllUsers" } else { "CurrentUser" }
-    Write-Log "Installing for scope: $scope" "INFO"
+    Write-LogInfo "Installing for scope: $scope" -Category "Install"
     
     # DIRECT INSTALLATION - No external process
-    Write-Log "Starting direct PowerCLI installation in current PowerShell session..." "INFO"
+    Write-LogInfo "Starting direct PowerCLI installation in current PowerShell session..." -Category "Install"
     
     try {
         # Check if PowerShellGet is available
         if (Get-Command "Get-PSRepository" -ErrorAction SilentlyContinue) {
-            Write-Log "PowerShellGet commands are available" "INFO"
+            Write-LogSuccess "PowerShellGet commands are available"
             
             # Check repository
             try {
                 $repo = Get-PSRepository -Name "PSGallery" -ErrorAction Stop
-                Write-Log "PSGallery repository found. Trust: $($repo.InstallationPolicy)" "INFO"
+                Write-LogInfo "PSGallery repository found. Trust: $($repo.InstallationPolicy)" -Category "Repository"
             }
             catch {
-                Write-Log "ERROR: Cannot access PSGallery repository: $($_.Exception.Message)" "ERROR"
+                Write-LogCritical "Cannot access PSGallery repository: $($_.Exception.Message)" -Category "Repository"
                 Write-Output "Failure: Cannot access PowerShell Gallery. Check internet connection."
                 return
             }
@@ -97,10 +83,10 @@ try {
             # Set repository to trusted
             try {
                 Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted -ErrorAction Stop
-                Write-Log "Repository set to trusted" "INFO"
+                Write-LogSuccess "Repository set to trusted" -Category "Repository"
             }
             catch {
-                Write-Log "ERROR: Cannot set repository trust: $($_.Exception.Message)" "ERROR"
+                Write-LogCritical "Cannot set repository trust: $($_.Exception.Message)" -Category "Repository"
                 Write-Output "Failure: Cannot configure PowerShell Gallery trust settings."
                 return
             }
@@ -109,84 +95,126 @@ try {
             try {
                 $testConnection = Test-NetConnection -ComputerName "www.powershellgallery.com" -Port 443 -ErrorAction Stop
                 if ($testConnection.TcpTestSucceeded) {
-                    Write-Log "Internet connectivity to PowerShell Gallery: OK" "INFO"
+                    Write-LogSuccess "Internet connectivity to PowerShell Gallery: OK" -Category "Connectivity"
                 } else {
-                    Write-Log "ERROR: Cannot connect to PowerShell Gallery" "ERROR"
+                    Write-LogCritical "Cannot connect to PowerShell Gallery" -Category "Connectivity"
                     Write-Output "Failure: Cannot connect to PowerShell Gallery"
                     return
                 }
             }
             catch {
-                Write-Log "WARNING: Could not test connectivity: $($_.Exception.Message)" "WARN"
+                Write-LogWarning "Could not test connectivity: $($_.Exception.Message)" -Category "Connectivity"
             }
             
             # Attempt installation
             try {
-                Write-Log "Starting VMware.PowerCLI installation..." "INFO"
+                Write-LogInfo "Starting VMware.PowerCLI installation..." -Category "Install"
+                $installStartTime = Get-Date
+                
                 Install-Module -Name 'VMware.PowerCLI' -Scope $scope -Force -AllowClobber -SkipPublisherCheck -ErrorAction Stop
-                Write-Log "Installation command completed" "INFO"
+                
+                $installTime = (Get-Date) - $installStartTime
+                Write-LogSuccess "Installation command completed in $($installTime.TotalSeconds) seconds" -Category "Install"
             }
             catch {
-                Write-Log "ERROR: Install-Module failed: $($_.Exception.Message)" "ERROR"
-                Write-Log "Exception Type: $($_.Exception.GetType().Name)" "ERROR"
+                Write-LogCritical "Install-Module failed: $($_.Exception.Message)" -Category "Install"
+                Write-LogError "Exception Type: $($_.Exception.GetType().Name)"
+                
+                Stop-ScriptLogging -Success $false -Summary "PowerCLI installation failed: $($_.Exception.Message)"
                 Write-Output "Failure: PowerCLI installation failed. Details: $($_.Exception.Message)"
                 return
             }
             
             # Verify installation
             try {
+                Write-LogInfo "Verifying installation..." -Category "Verify"
                 $module = Get-Module -ListAvailable -Name 'VMware.PowerCLI' -ErrorAction Stop
+                
                 if ($module) {
-                    Write-Log "SUCCESS: Module found after installation. Version: $($module.Version)" "INFO"
+                    $installedVersion = $module[0].Version.ToString()
+                    Write-LogSuccess "Module found after installation. Version: $installedVersion" -Category "Verify"
                     
                     # Test import
                     try {
+                        Write-LogInfo "Testing module import..." -Category "Verify"
                         Import-Module -Name 'VMware.PowerCLI' -Force -ErrorAction Stop
-                        Write-Log "SUCCESS: Module import test passed" "INFO"
+                        Write-LogSuccess "Module import test passed" -Category "Verify"
+                        
+                        # Test a basic command
+                        try {
+                            $null = Get-Command "Connect-VIServer" -ErrorAction Stop
+                            Write-LogSuccess "PowerCLI commands are available" -Category "Verify"
+                        }
+                        catch {
+                            Write-LogWarning "PowerCLI commands not found: $($_.Exception.Message)" -Category "Verify"
+                        }
+                        
                         Remove-Module -Name 'VMware.PowerCLI' -ErrorAction SilentlyContinue
-                        Write-Output "Success: VMware.PowerCLI installed successfully. Version: $($module.Version)"
+                        Write-LogDebug "Test module removed"
+                        
+                        # Create success statistics
+                        $stats = @{
+                            "Version" = $installedVersion
+                            "Scope" = $scope
+                            "InstallTimeSeconds" = [math]::Round($installTime.TotalSeconds, 2)
+                            "IsAdmin" = $isAdmin
+                            "PowerShellVersion" = $PSVersionTable.PSVersion.ToString()
+                        }
+                        
+                        Stop-ScriptLogging -Success $true -Summary "VMware.PowerCLI installed successfully - Version: $installedVersion" -Statistics $stats
+                        Write-Output "Success: VMware.PowerCLI installed successfully. Version: $installedVersion"
                     }
                     catch {
-                        Write-Log "WARNING: Module installed but import failed: $($_.Exception.Message)" "WARN"
+                        Write-LogWarning "Module installed but import failed: $($_.Exception.Message)" -Category "Verify"
+                        Stop-ScriptLogging -Success $false -Summary "PowerCLI installed but import test failed"
                         Write-Output "Partial Success: PowerCLI installed but import test failed."
                     }
                 } else {
-                    Write-Log "ERROR: Module not found after installation" "ERROR"
+                    Write-LogCritical "Module not found after installation" -Category "Verify"
+                    Stop-ScriptLogging -Success $false -Summary "Module not found after installation"
                     Write-Output "Failure: Module not found after installation"
                 }
             }
             catch {
-                Write-Log "ERROR: Module verification failed: $($_.Exception.Message)" "ERROR"
+                Write-LogCritical "Module verification failed: $($_.Exception.Message)" -Category "Verify"
+                Stop-ScriptLogging -Success $false -Summary "Module verification failed"
                 Write-Output "Failure: Module verification failed"
             }
         }
         else {
-            Write-Log "ERROR: PowerShellGet commands not available" "ERROR"
+            Write-LogCritical "PowerShellGet commands not available" -Category "System"
+            Stop-ScriptLogging -Success $false -Summary "PowerShellGet module not available"
             Write-Output "Failure: PowerShellGet module not available"
         }
     }
     catch {
-        Write-Log "FATAL ERROR: $($_.Exception.Message)" "ERROR"
-        Write-Log "Exception Type: $($_.Exception.GetType().Name)" "ERROR"
+        Write-LogCritical "FATAL ERROR: $($_.Exception.Message)"
+        Write-LogError "Exception Type: $($_.Exception.GetType().Name)"
+        Write-LogError "Stack trace: $($_.ScriptStackTrace)"
+        
+        Stop-ScriptLogging -Success $false -Summary "Fatal error during installation: $($_.Exception.Message)"
         Write-Output "Failure: An unexpected error occurred during installation. Details: $($_.Exception.Message)"
     }
     finally {
         # Reset repository settings
         try {
             Set-PSRepository -Name 'PSGallery' -InstallationPolicy Untrusted -ErrorAction SilentlyContinue
-            Write-Log "Repository trust settings reset" "INFO"
+            Write-LogInfo "Repository trust settings reset" -Category "Cleanup"
         } catch {
-            Write-Log "Could not reset repository settings" "WARN"
+            Write-LogWarning "Could not reset repository settings"
         }
     }
 }
 catch {
     $errorMessage = "Failure: An unexpected error occurred during installation. Details: $($_.Exception.Message)"
-    Write-Log $errorMessage "ERROR"
+    Write-LogCritical $errorMessage
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)"
+    
+    Stop-ScriptLogging -Success $false -Summary $errorMessage
     Write-Output $errorMessage
 }
 finally {
-    Write-Log "PowerCLI installation script completed" "INFO"
+    Write-LogInfo "PowerCLI installation script completed"
     
     # Always suggest manual installation as backup
     Write-Output ""

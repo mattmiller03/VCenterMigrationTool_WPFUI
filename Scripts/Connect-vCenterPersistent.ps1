@@ -14,119 +14,170 @@ param(
     [Parameter(Mandatory = $false)]
     [string]$Password,
     
-    [bool]$BypassModuleCheck = $false,
-    [string]$LogPath = ""
+    [bool]$BypassModuleCheck = $false
 )
 
-# Function to write log messages
-function Write-Log {
-    param(
-        [string]$Message, 
-        [string]$Level = "Info"
-    )
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
-    $logMessage = "[$timestamp] [$Level] [Connect-Persistent] $Message"
-    
-    switch ($Level) {
-        "Error" { Write-Host $logMessage -ForegroundColor Red }
-        "Warning" { Write-Host $logMessage -ForegroundColor Yellow }
-        "Debug" { Write-Host $logMessage -ForegroundColor Gray }
-        "Success" { Write-Host $logMessage -ForegroundColor Green }
-        default { Write-Host $logMessage }
-    }
-    
-    if (-not [string]::IsNullOrEmpty($LogPath)) {
-        try {
-            $logMessage | Out-File -FilePath $LogPath -Append -Encoding UTF8
-        }
-        catch {
-            # Ignore log errors
-        }
-    }
-}
+# Import logging functions
+. "$PSScriptRoot\Write-ScriptLog.ps1"
+
+# Start logging
+Start-ScriptLogging -ScriptName "Connect-vCenterPersistent"
 
 try {
-    Write-Log "========================================" "Info"
-    Write-Log "Establishing PERSISTENT vCenter connection" "Info"
-    Write-Log "========================================" "Info"
+    Write-LogInfo "========================================" 
+    Write-LogInfo "Establishing PERSISTENT vCenter connection"
+    Write-LogInfo "========================================"
     
     # Create PSCredential if not provided
     if (-not $Credential) {
         if ($Username -and $Password) {
-            Write-Log "Creating PSCredential from Username/Password" "Debug"
+            Write-LogDebug "Creating PSCredential from Username/Password"
             $securePassword = ConvertTo-SecureString $Password -AsPlainText -Force
             $Credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
             $Password = $null # Clear from memory
         }
         else {
+            Write-LogCritical "No valid credentials provided"
             throw "No valid credentials provided"
         }
     }
     
-    Write-Log "Target: $VCenterServer" "Info"
-    Write-Log "User: $($Credential.UserName)" "Info"
+    Write-LogInfo "Target: $VCenterServer" -Category "Connection"
+    Write-LogInfo "User: $($Credential.UserName)" -Category "Connection"
     
     # Import PowerCLI if needed
     if (-not $BypassModuleCheck) {
-        Write-Log "Importing PowerCLI modules..." "Info"
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+        Write-LogInfo "Importing PowerCLI modules..."
+        try {
+            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+            Write-LogSuccess "PowerCLI modules imported successfully"
+        }
+        catch {
+            Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)"
+            throw $_
+        }
     }
     else {
-        Write-Log "Bypassing module import (already loaded)" "Debug"
+        Write-LogInfo "Bypassing module import (already loaded)"
     }
     
     # Configure PowerCLI
+    Write-LogDebug "Configuring PowerCLI settings..."
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+    Write-LogDebug "PowerCLI configuration completed"
     
     # Check if already connected
     $existingConnection = $global:DefaultVIServer | Where-Object { $_.Name -eq $VCenterServer }
     if ($existingConnection -and $existingConnection.IsConnected) {
-        Write-Log "Already connected to $VCenterServer" "Warning"
-        Write-Log "Disconnecting existing connection..." "Info"
-        Disconnect-VIServer -Server $VCenterServer -Force -Confirm:$false
+        Write-LogWarning "Already connected to $VCenterServer"
+        Write-LogInfo "Disconnecting existing connection..."
+        try {
+            Disconnect-VIServer -Server $VCenterServer -Force -Confirm:$false
+            Write-LogInfo "Existing connection disconnected"
+        }
+        catch {
+            Write-LogWarning "Could not disconnect existing connection: $($_.Exception.Message)"
+        }
     }
     
     # Connect to vCenter
-    Write-Log "Connecting to vCenter..." "Info"
-    $connection = Connect-VIServer -Server $VCenterServer -Credential $Credential -Force -ErrorAction Stop
+    Write-LogInfo "Connecting to vCenter..." -Category "Connection"
+    $connectionStartTime = Get-Date
+    
+    try {
+        $connection = Connect-VIServer -Server $VCenterServer -Credential $Credential -Force -ErrorAction Stop
+        $connectionTime = (Get-Date) - $connectionStartTime
+        Write-LogSuccess "Connection established in $($connectionTime.TotalSeconds) seconds" -Category "Connection"
+    }
+    catch {
+        Write-LogCritical "Connection failed: $($_.Exception.Message)" -Category "Connection"
+        throw $_
+    }
     
     if ($connection -and $connection.IsConnected) {
-        Write-Log "========================================" "Success"
-        Write-Log "PERSISTENT CONNECTION ESTABLISHED!" "Success"
-        Write-Log "========================================" "Success"
+        Write-LogInfo "========================================" 
+        Write-LogSuccess "PERSISTENT CONNECTION ESTABLISHED!"
+        Write-LogInfo "========================================"
         
-        Write-Log "Connection Details:" "Info"
-        Write-Log "  Server: $($connection.Name)" "Info"
-        Write-Log "  Version: $($connection.Version)" "Info"
-        Write-Log "  Build: $($connection.Build)" "Info"
-        Write-Log "  Session ID: $($connection.SessionId)" "Info"
-        Write-Log "  User: $($connection.User)" "Info"
-        Write-Log "  Port: $($connection.Port)" "Info"
+        Write-LogInfo "Connection Details:" -Category "Details"
+        Write-LogInfo "  Server: $($connection.Name)"
+        Write-LogInfo "  Version: $($connection.Version)"
+        Write-LogInfo "  Build: $($connection.Build)"
+        Write-LogInfo "  Session ID: $($connection.SessionId)"
+        Write-LogInfo "  User: $($connection.User)"
+        Write-LogInfo "  Port: $($connection.Port)"
         
         # Store in global scope for persistence
         $global:DefaultVIServer = $connection
-        Write-Log "Connection stored in global scope" "Debug"
+        Write-LogDebug "Connection stored in global scope"
         
         # Test the connection
-        $vmCount = (Get-VM -ErrorAction SilentlyContinue).Count
-        Write-Log "Connection test: Can see $vmCount VMs" "Info"
+        Write-LogInfo "Testing connection..." -Category "Test"
+        try {
+            $vmCount = (Get-VM -ErrorAction SilentlyContinue).Count
+            Write-LogSuccess "Connection test: Can see $vmCount VMs" -Category "Test"
+        }
+        catch {
+            Write-LogWarning "Connection test failed: $($_.Exception.Message)" -Category "Test"
+        }
         
-        Write-Log "========================================" "Success"
-        Write-Log "Connection will remain active for operations" "Success"
-        Write-Log "========================================" "Success"
+        Write-LogInfo "========================================" 
+        Write-LogSuccess "Connection will remain active for operations"
+        Write-LogInfo "========================================" 
+        
+        # Create statistics for logging
+        $stats = @{
+            "Server" = $VCenterServer
+            "Version" = $connection.Version
+            "Build" = $connection.Build
+            "SessionId" = $connection.SessionId
+            "ConnectionTimeSeconds" = [math]::Round($connectionTime.TotalSeconds, 2)
+            "VMsVisible" = $vmCount
+        }
+        
+        Stop-ScriptLogging -Success $true -Summary "Persistent connection established to $VCenterServer" -Statistics $stats
         
         # Return success with connection details
-        Write-Output "SUCCESS:PERSISTENT:$($connection.SessionId)"
+        $result = @{
+            Success = $true
+            Message = "Persistent connection established"
+            Server = $VCenterServer
+            SessionId = $connection.SessionId
+            Version = $connection.Version
+            VMCount = $vmCount
+        }
+        
+        $result | ConvertTo-Json -Compress
     }
     else {
-        Write-Output "FAILURE:Connection not established"
-        exit 1
+        Write-LogCritical "Connection not established - unknown error"
+        Stop-ScriptLogging -Success $false -Summary "Connection failed - unknown error"
+        
+        $result = @{
+            Success = $false
+            Message = "Connection not established"
+            Server = $VCenterServer
+        }
+        
+        $result | ConvertTo-Json -Compress
+        throw "Connection not established"
     }
 }
 catch {
-    Write-Log "CONNECTION FAILED" "Error"
-    Write-Log "Error: $($_.Exception.Message)" "Error"
-    Write-Output "FAILURE:$($_.Exception.Message)"
-    exit 1
+    Write-LogCritical "CONNECTION FAILED"
+    Write-LogError "Error: $($_.Exception.Message)" -Category "Connection"
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)"
+    
+    Stop-ScriptLogging -Success $false -Summary "Connection failed: $($_.Exception.Message)"
+    
+    $result = @{
+        Success = $false
+        Message = "Connection failed: $($_.Exception.Message)"
+        Server = $VCenterServer
+        Error = $_.Exception.Message
+    }
+    
+    $result | ConvertTo-Json -Compress
+    throw $_
 }

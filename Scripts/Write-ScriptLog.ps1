@@ -1,55 +1,60 @@
-# Write-ScriptLog.ps1
-# Common logging function for all PowerShell scripts
+# Write-ScriptLog.ps1 - PowerShell Script Logging Functions
+# Fixed version without Export-ModuleMember for dot-sourcing
 
+# Global variables for session tracking
+$Global:ScriptLogFile = $null
+$Global:ScriptSessionId = $null
+$Global:ScriptStartTime = $null
+
+# Main logging function
 function Write-ScriptLog {
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Message,
         
-        [Parameter(Mandatory=$false)]
-        [ValidateSet('Info', 'Warning', 'Error', 'Debug', 'Success', 'Verbose')]
+        [ValidateSet('Info', 'Warning', 'Error', 'Success', 'Debug', 'Verbose', 'Critical')]
         [string]$Level = 'Info',
         
-        [Parameter(Mandatory=$false)]
-        [string]$LogFile = $null,
+        [string]$Category = '',
         
-        [Parameter(Mandatory=$false)]
         [switch]$NoConsole,
         
-        [Parameter(Mandatory=$false)]
         [switch]$NoFile
     )
     
-    # Format timestamp
-    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
-    
-    # Determine log file path
-    if (-not $LogFile) {
-        # Use default log directory
+    # Use global log file or create a default one
+    if (-not $Global:ScriptLogFile) {
         $logDir = Join-Path $PSScriptRoot "..\Logs\PowerShell"
-        if (-not (Test-Path $logDir)) {
-            New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-        }
-        
-        $dateStamp = Get-Date -Format 'yyyy-MM-dd'
-        $scriptName = if ($MyInvocation.ScriptName) { 
-            [System.IO.Path]::GetFileNameWithoutExtension($MyInvocation.ScriptName) 
-        } else { 
-            "PowerShell" 
-        }
-        $LogFile = Join-Path $logDir "${scriptName}_${dateStamp}.log"
+        if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+        $Global:ScriptLogFile = Join-Path $logDir "powershell_$(Get-Date -Format 'yyyy-MM-dd').log"
     }
     
-    # Format log entry
-    $logEntry = "[$timestamp] [$($Level.ToUpper().PadRight(7))] $Message"
+    # Create timestamp
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
     
-    # Write to console with color coding (unless suppressed)
+    # Build log entry
+    $sessionPart = if ($Global:ScriptSessionId) { "[$Global:ScriptSessionId]" } else { "[UNKNOWN]" }
+    $categoryPart = if ($Category) { "[$Category]" } else { "" }
+    $scriptName = if ($MyInvocation.ScriptName) { Split-Path $MyInvocation.ScriptName -Leaf } else { "Console" }
+    
+    $logEntry = "$timestamp [$Level] $sessionPart [$scriptName] $categoryPart $Message"
+    
+    # Write to console (unless suppressed)
     if (-not $NoConsole) {
         switch ($Level) {
+            'Info' { Write-Host $logEntry -ForegroundColor White }
             'Error' { 
-                Write-Host $logEntry -ForegroundColor Red 
+                Write-Host $logEntry -ForegroundColor Red
+                # Add exception details if available
                 if ($Error[0]) {
-                    Write-Host "  Exception: $($Error[0].Exception.Message)" -ForegroundColor Red
+                    Write-Host "  Exception: $($Error[0].Exception.Message)" -ForegroundColor DarkRed
+                    Write-Host "  Stack: $($Error[0].ScriptStackTrace)" -ForegroundColor DarkRed
+                }
+            }
+            'Critical' {
+                Write-Host $logEntry -ForegroundColor Magenta
+                if ($Error[0]) {
+                    Write-Host "  Exception: $($Error[0].Exception.Message)" -ForegroundColor DarkRed
                     Write-Host "  Stack: $($Error[0].ScriptStackTrace)" -ForegroundColor DarkRed
                 }
             }
@@ -64,12 +69,12 @@ function Write-ScriptLog {
     # Write to file (unless suppressed)
     if (-not $NoFile) {
         try {
-            $logEntry | Out-File -FilePath $LogFile -Append -Encoding UTF8
+            $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
             
             # Also write exception details for errors
             if ($Level -eq 'Error' -and $Error[0]) {
-                "  Exception: $($Error[0].Exception.Message)" | Out-File -FilePath $LogFile -Append -Encoding UTF8
-                "  Stack: $($Error[0].ScriptStackTrace)" | Out-File -FilePath $LogFile -Append -Encoding UTF8
+                "  Exception: $($Error[0].Exception.Message)" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+                "  Stack: $($Error[0].ScriptStackTrace)" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
             }
         } catch {
             Write-Host "Failed to write to log file: $_" -ForegroundColor Yellow
@@ -81,36 +86,92 @@ function Write-ScriptLog {
 }
 
 # Helper functions for common log levels
-function Write-LogInfo { Write-ScriptLog -Message $args[0] -Level Info }
-function Write-LogWarning { Write-ScriptLog -Message $args[0] -Level Warning }
-function Write-LogError { Write-ScriptLog -Message $args[0] -Level Error }
-function Write-LogSuccess { Write-ScriptLog -Message $args[0] -Level Success }
-function Write-LogDebug { Write-ScriptLog -Message $args[0] -Level Debug }
-function Write-LogVerbose { Write-ScriptLog -Message $args[0] -Level Verbose }
+function Write-LogInfo { 
+    param([string]$Message, [string]$Category = '')
+    Write-ScriptLog -Message $Message -Level Info -Category $Category 
+}
+
+function Write-LogWarning { 
+    param([string]$Message, [string]$Category = '')
+    Write-ScriptLog -Message $Message -Level Warning -Category $Category 
+}
+
+function Write-LogError { 
+    param([string]$Message, [string]$Category = '')
+    Write-ScriptLog -Message $Message -Level Error -Category $Category 
+}
+
+function Write-LogCritical { 
+    param([string]$Message, [string]$Category = '')
+    Write-ScriptLog -Message $Message -Level Critical -Category $Category 
+}
+
+function Write-LogSuccess { 
+    param([string]$Message, [string]$Category = '')
+    Write-ScriptLog -Message $Message -Level Success -Category $Category 
+}
+
+function Write-LogDebug { 
+    param([string]$Message, [string]$Category = '')
+    Write-ScriptLog -Message $Message -Level Debug -Category $Category 
+}
+
+function Write-LogVerbose { 
+    param([string]$Message, [string]$Category = '')
+    Write-ScriptLog -Message $Message -Level Verbose -Category $Category 
+}
 
 # Initialize script logging
 function Start-ScriptLogging {
     param(
-        [string]$ScriptName = $MyInvocation.ScriptName,
+        [string]$ScriptName = '',
         [string]$LogFile = $null
     )
     
-    Write-ScriptLog -Message "=" * 80 -NoConsole
+    # Generate session ID
+    $Global:ScriptSessionId = [System.Guid]::NewGuid().ToString("N").Substring(0, 8)
+    $Global:ScriptStartTime = Get-Date
+    
+    # Set custom log file if provided
+    if ($LogFile) {
+        $Global:ScriptLogFile = $LogFile
+    }
+    
+    # Get script name
+    if (-not $ScriptName) {
+        $ScriptName = if ($MyInvocation.ScriptName) { 
+            Split-Path $MyInvocation.ScriptName -Leaf 
+        } else { 
+            "PowerShell-Session" 
+        }
+    }
+    
+    $separator = "=" * 80
+    Write-ScriptLog -Message $separator -NoConsole
     Write-ScriptLog -Message "SCRIPT START: $ScriptName"
+    Write-ScriptLog -Message "Session ID: $Global:ScriptSessionId"
     Write-ScriptLog -Message "User: $env:USERNAME@$env:COMPUTERNAME"
     Write-ScriptLog -Message "PowerShell Version: $($PSVersionTable.PSVersion)"
     Write-ScriptLog -Message "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
-    Write-ScriptLog -Message "=" * 80 -NoConsole
+    Write-ScriptLog -Message $separator -NoConsole
 }
 
 # Finalize script logging
 function Stop-ScriptLogging {
     param(
         [bool]$Success = $true,
-        [string]$Summary = ""
+        [string]$Summary = "",
+        [hashtable]$Statistics = @{}
     )
     
-    Write-ScriptLog -Message "=" * 80 -NoConsole
+    $duration = if ($Global:ScriptStartTime) { 
+        (Get-Date) - $Global:ScriptStartTime 
+    } else { 
+        [TimeSpan]::Zero 
+    }
+    
+    $separator = "=" * 80
+    Write-ScriptLog -Message $separator -NoConsole
     if ($Success) {
         Write-ScriptLog -Message "SCRIPT COMPLETED SUCCESSFULLY" -Level Success
     } else {
@@ -121,9 +182,15 @@ function Stop-ScriptLogging {
         Write-ScriptLog -Message "Summary: $Summary"
     }
     
+    if ($Statistics.Count -gt 0) {
+        Write-ScriptLog -Message "Statistics:"
+        foreach ($key in $Statistics.Keys) {
+            Write-ScriptLog -Message "  $key = $($Statistics[$key])"
+        }
+    }
+    
+    Write-ScriptLog -Message "Duration: $($duration.ToString('hh\:mm\:ss\.fff'))"
     Write-ScriptLog -Message "End Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
-    Write-ScriptLog -Message "=" * 80 -NoConsole
+    Write-ScriptLog -Message "Session ID: $Global:ScriptSessionId"
+    Write-ScriptLog -Message $separator -NoConsole
 }
-
-# Export functions for use in other scripts
-Export-ModuleMember -Function Write-ScriptLog, Write-LogInfo, Write-LogWarning, Write-LogError, Write-LogSuccess, Write-LogDebug, Write-LogVerbose, Start-ScriptLogging, Stop-ScriptLogging

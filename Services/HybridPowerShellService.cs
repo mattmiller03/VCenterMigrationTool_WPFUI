@@ -19,10 +19,78 @@ public class HybridPowerShellService : IDisposable
     {
     private readonly ILogger<HybridPowerShellService> _logger;
     private readonly ConfigurationService _configurationService;
+    private readonly PowerShellLoggingService _psLoggingService;
     private readonly ConcurrentDictionary<int, Process> _activeProcesses = new();
     private readonly Timer _cleanupTimer;
     private bool _disposed = false;
-    private readonly PowerShellLoggingService _psLoggingService;
+
+    /// <summary>
+    /// Validate that PowerShell 7+ is available on the system
+    /// </summary>
+    private void ValidatePowerShell7Available ()
+        {
+        try
+            {
+            var powershell7Paths = new[]
+            {
+                "pwsh.exe",
+                @"C:\Program Files\PowerShell\7\pwsh.exe",
+                @"C:\Program Files (x86)\PowerShell\7\pwsh.exe",
+                @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe",
+                @"C:\Program Files\PowerShell\7-preview\pwsh.exe"
+            };
+
+            foreach (var psPath in powershell7Paths)
+                {
+                try
+                    {
+                    if (psPath.Contains("\\") && File.Exists(psPath))
+                        {
+                        _logger.LogInformation("PowerShell 7+ found at: {Path}", psPath);
+                        return;
+                        }
+                    else if (!psPath.Contains("\\"))
+                        {
+                        // Check PATH for pwsh.exe
+                        var pathVariable = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+                        var paths = pathVariable.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+                        foreach (var path in paths)
+                            {
+                            try
+                                {
+                                var fullPath = Path.Combine(path, psPath);
+                                if (File.Exists(fullPath))
+                                    {
+                                    _logger.LogInformation("PowerShell 7+ found in PATH: {Path}", fullPath);
+                                    return;
+                                    }
+                                }
+                            catch
+                                {
+                                // Skip invalid paths
+                                }
+                            }
+                        }
+                    }
+                catch (Exception ex)
+                    {
+                    _logger.LogDebug(ex, "Error checking PowerShell 7+ path: {Path}", psPath);
+                    }
+                }
+
+            // If we get here, no PowerShell 7+ was found
+            var errorMessage = "PowerShell 7+ is required but not found on this system. " +
+                              "Please install PowerShell 7+ from: https://github.com/PowerShell/PowerShell/releases";
+            _logger.LogError(errorMessage);
+            throw new InvalidOperationException(errorMessage);
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Failed to validate PowerShell 7+ availability");
+            throw;
+            }
+        }
 
     /// <summary>
     /// Static flag to track PowerCLI availability (set by settings page)
@@ -30,7 +98,7 @@ public class HybridPowerShellService : IDisposable
     public static bool PowerCliConfirmedInstalled { get; set; } = false;
 
     public HybridPowerShellService (
-        ILogger<HybridPowerShellService> logger, 
+        ILogger<HybridPowerShellService> logger,
         ConfigurationService configurationService,
         PowerShellLoggingService psLoggingService)
         {
@@ -40,6 +108,10 @@ public class HybridPowerShellService : IDisposable
 
         // FIXED: Load PowerCLI status from persistent storage on startup
         LoadPowerCliStatus();
+
+        // Validate PowerShell 7+ is available
+        ValidatePowerShell7Available();
+
         _cleanupTimer = new Timer(CleanupOrphanedProcesses, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
         }
 
@@ -55,7 +127,7 @@ public class HybridPowerShellService : IDisposable
             // We'll add a PowerCliConfirmed property to the config
             // For now, check if we can detect it automatically on startup
 
-            // Quick check: if PowerCLI module is available, set the flag
+            // Quick check: if PowerCLI module is available in PowerShell 7+, set the flag
             Task.Run(async () =>
             {
                 try
@@ -124,8 +196,17 @@ public class HybridPowerShellService : IDisposable
             return await RunCommandAsync(scriptPath, parameters);
             }
 
+        // Auto-generate log path if not provided
+        if (string.IsNullOrEmpty(logPath))
+            {
+            var scriptName = Path.GetFileNameWithoutExtension(scriptPath);
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            logPath = Path.Combine("Logs", $"{scriptName}_{timestamp}.log");
+            }
+
         // Always use external PowerShell due to SDK issues
         _logger.LogDebug("Using external PowerShell for script: {ScriptPath}", scriptPath);
+        _logger.LogDebug("Script log will be written to: {LogPath}", logPath);
         return await RunScriptExternalAsync(scriptPath, parameters, logPath);
         }
 
@@ -186,7 +267,7 @@ public class HybridPowerShellService : IDisposable
     /// <summary>
     /// Enhanced method for collection deserialization with bypass optimization  
     /// </summary>
-    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsOptimizedAsync<T> (string scriptPath, 
+    public async Task<ObservableCollection<T>> RunScriptAndGetObjectsOptimizedAsync<T> (string scriptPath,
         Dictionary<string, object> parameters,
         string? logPath = null)
         {
@@ -230,7 +311,6 @@ public class HybridPowerShellService : IDisposable
             "Get-VMNetworkAdapters.ps1",
             "write-scriptlog.ps1",
             "Backup-ESXiHostConfig.ps1"
-
         };
 
         var scriptName = Path.GetFileName(scriptPath);
@@ -246,32 +326,23 @@ public class HybridPowerShellService : IDisposable
         return sensitiveParams.Any(s => parameterName.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
-    // Enhanced RunScriptExternalAsync with logging
+    // Enhanced RunScriptExternalAsync with PowerShell Logging Integration
     private async Task<string> RunScriptExternalAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
         {
         string fullScriptPath = Path.GetFullPath(scriptPath);
         string scriptName = Path.GetFileName(scriptPath);
 
-        // Start PowerShell logging session
-        var sessionId = _psLoggingService.StartScriptLogging(scriptName);
-
         _logger.LogDebug("Starting external PowerShell script execution: {ScriptPath}", fullScriptPath);
-        _psLoggingService.WriteLog(new PowerShellLoggingService.LogEntry
-            {
-            Timestamp = DateTime.Now,
-            Level = "INFO",
-            Source = "SYSTEM",
-            ScriptName = scriptName,
-            SessionId = sessionId,
-            Message = $"Script path: {fullScriptPath}"
-            });
 
         if (!File.Exists(fullScriptPath))
             {
             _logger.LogError("Script not found at path: {ScriptPath}", fullScriptPath);
-            _psLoggingService.EndScriptLogging(sessionId, scriptName, false, "Script file not found");
             return $"ERROR: Script not found at {fullScriptPath}";
             }
+
+        // Start PowerShell logging session
+        var sessionId = _psLoggingService.StartScriptLogging(scriptName);
+        _psLoggingService.LogParameters(sessionId, scriptName, parameters);
 
         Process? process = null;
 
@@ -281,25 +352,19 @@ public class HybridPowerShellService : IDisposable
             var paramString = BuildParameterString(parameters, logPath);
             var safeParamString = BuildSafeParameterString(parameters, logPath);
 
-            _psLoggingService.WriteLog(new PowerShellLoggingService.LogEntry
-                {
-                Timestamp = DateTime.Now,
-                Level = "DEBUG",
-                Source = "SYSTEM",
-                ScriptName = scriptName,
-                SessionId = sessionId,
-                Message = $"Parameters: {safeParamString}"
-                });
+            _logger.LogDebug("Parameters: {Parameters}", safeParamString);
+            _psLoggingService.LogScriptOutput(sessionId, scriptName, $"Script parameters: {safeParamString}", "DEBUG");
 
-            // Try different PowerShell executables
+            // Try PowerShell 7+ executables ONLY - never use PowerShell 5.x
             var powershellPaths = new[]
             {
-            "pwsh.exe",
-            @"C:\Program Files\PowerShell\7\pwsh.exe",
-            @"C:\Program Files (x86)\PowerShell\7\pwsh.exe",
-            @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe",
-            "powershell.exe"
-        };
+                "pwsh.exe",
+                @"C:\Program Files\PowerShell\7\pwsh.exe",
+                @"C:\Program Files (x86)\PowerShell\7\pwsh.exe",
+                @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe",
+                @"C:\Program Files\PowerShell\7-preview\pwsh.exe"
+                // REMOVED: "powershell.exe" - Never use PowerShell 5.x
+            };
 
             Exception? lastException = null;
 
@@ -308,6 +373,7 @@ public class HybridPowerShellService : IDisposable
                 try
                     {
                     _logger.LogInformation("Trying PowerShell executable: {PowerShell}", psPath);
+                    _psLoggingService.LogScriptOutput(sessionId, scriptName, $"Trying PowerShell: {psPath}", "INFO");
 
                     if (psPath.Contains("\\") && !File.Exists(psPath))
                         {
@@ -315,14 +381,19 @@ public class HybridPowerShellService : IDisposable
                         continue;
                         }
 
-                    // Add logging module import to the command
-                    var loggingPrefix = @"-Command ""& { . '" + Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Write-ScriptLog.ps1") + "'; ";
-                    var loggingSuffix = @" }""";
+                    // Create PowerShell process with logging script integration
+                    // Use the Scripts directory for Write-ScriptLog.ps1, not the script's directory
+                    var scriptsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts");
+                    var loggingScriptPath = Path.Combine(scriptsDirectory, "Write-ScriptLog.ps1");
 
                     var psi = new ProcessStartInfo
                         {
                         FileName = psPath,
-                        Arguments = $"-NoProfile -ExecutionPolicy Unrestricted -File \"{fullScriptPath}\"{paramString}",
+                        Arguments = File.Exists(loggingScriptPath)
+                            ? $"-NoProfile -ExecutionPolicy Unrestricted -Command \"" +
+                              $". '{loggingScriptPath}'; " +
+                              $"& '{fullScriptPath}'{paramString}\""
+                            : $"-NoProfile -ExecutionPolicy Unrestricted -File \"{fullScriptPath}\"{paramString}",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
@@ -330,6 +401,7 @@ public class HybridPowerShellService : IDisposable
                         };
 
                     _logger.LogInformation("Creating PowerShell process with command: {FileName}", psPath);
+                    _psLoggingService.LogScriptOutput(sessionId, scriptName, $"Starting PowerShell process: {psPath}", "INFO");
 
                     process = new Process { StartInfo = psi };
 
@@ -342,9 +414,7 @@ public class HybridPowerShellService : IDisposable
                             {
                             outputBuilder.AppendLine(args.Data);
                             _logger.LogDebug("PS Output: {Output}", args.Data);
-
-                            // Log to PowerShell logging service
-                            _psLoggingService.WriteScriptOutput(sessionId, scriptName, args.Data, "OUTPUT");
+                            _psLoggingService.LogScriptOutput(sessionId, scriptName, args.Data, "OUTPUT");
                             }
                     };
 
@@ -354,9 +424,7 @@ public class HybridPowerShellService : IDisposable
                             {
                             errorBuilder.AppendLine(args.Data);
                             _logger.LogWarning("PS Error: {Error}", args.Data);
-
-                            // Log errors to PowerShell logging service
-                            _psLoggingService.WriteScriptError(sessionId, scriptName, args.Data);
+                            _psLoggingService.LogScriptError(sessionId, scriptName, args.Data);
                             }
                     };
 
@@ -367,38 +435,23 @@ public class HybridPowerShellService : IDisposable
                     _activeProcesses.TryAdd(processId, process);
 
                     _logger.LogInformation("Successfully started PowerShell process: {PowerShell} (PID: {ProcessId})", psPath, processId);
-                    _psLoggingService.WriteLog(new PowerShellLoggingService.LogEntry
-                        {
-                        Timestamp = DateTime.Now,
-                        Level = "INFO",
-                        Source = "SYSTEM",
-                        ScriptName = scriptName,
-                        SessionId = sessionId,
-                        Message = $"Process started: {psPath} (PID: {processId})"
-                        });
+                    _psLoggingService.LogScriptOutput(sessionId, scriptName, $"Process started with PID: {processId}", "INFO");
 
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
 
-                    // Wait with timeout and cancellation support
+                    // Wait with timeout and cancellation support - FIXED VERSION
                     using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
                     try
                         {
                         await process.WaitForExitAsync(cts.Token);
                         _logger.LogInformation("PowerShell process completed with exit code: {ExitCode}", process.ExitCode);
+                        _psLoggingService.LogScriptOutput(sessionId, scriptName, $"Process completed with exit code: {process.ExitCode}", "INFO");
                         }
                     catch (OperationCanceledException)
                         {
                         _logger.LogError("PowerShell process timed out after 10 minutes");
-                        _psLoggingService.WriteLog(new PowerShellLoggingService.LogEntry
-                            {
-                            Timestamp = DateTime.Now,
-                            Level = "ERROR",
-                            Source = "SYSTEM",
-                            ScriptName = scriptName,
-                            SessionId = sessionId,
-                            Message = "Script execution timed out after 10 minutes"
-                            });
+                        _psLoggingService.LogScriptError(sessionId, scriptName, "Script execution timed out after 10 minutes");
                         KillProcessSafely(process);
                         throw new TimeoutException("PowerShell script execution timed out after 10 minutes");
                         }
@@ -415,18 +468,20 @@ public class HybridPowerShellService : IDisposable
                         output += "\nSTDERR:\n" + errors;
                         }
 
+                    // End PowerShell logging session
+                    var success = process.ExitCode == 0 && !output.Contains("ERROR:");
+                    var summary = $"Exit code: {process.ExitCode}, Output length: {output.Length} chars";
+                    _psLoggingService.EndScriptLogging(sessionId, scriptName, success, summary);
+
                     // Clean up this specific process
                     CleanupProcess(process, processId);
-
-                    // End logging session
-                    _psLoggingService.EndScriptLogging(sessionId, scriptName, process.ExitCode == 0,
-                        $"Exit code: {process.ExitCode}");
 
                     return output;
                     }
                 catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
                     {
                     _logger.LogDebug("PowerShell executable not found: {PowerShell}", psPath);
+                    _psLoggingService.LogScriptError(sessionId, scriptName, $"PowerShell executable not found: {psPath}");
                     lastException = ex;
 
                     if (process != null)
@@ -439,6 +494,7 @@ public class HybridPowerShellService : IDisposable
                 catch (Exception ex)
                     {
                     _logger.LogWarning(ex, "Failed to execute with {PowerShell}, trying next option", psPath);
+                    _psLoggingService.LogScriptError(sessionId, scriptName, $"Failed with {psPath}: {ex.Message}");
                     lastException = ex;
 
                     if (process != null)
@@ -450,12 +506,18 @@ public class HybridPowerShellService : IDisposable
                     }
                 }
 
-            _psLoggingService.EndScriptLogging(sessionId, scriptName, false, "No suitable PowerShell executable found");
-            throw new InvalidOperationException("No suitable PowerShell executable found", lastException);
+            // End logging session with failure
+            _psLoggingService.EndScriptLogging(sessionId, scriptName, false, "No PowerShell 7+ executable found");
+
+            throw new InvalidOperationException(
+                "No PowerShell 7+ executable found. This application requires PowerShell 7 or later. " +
+                "Please install PowerShell 7+ from: https://github.com/PowerShell/PowerShell/releases",
+                lastException);
             }
         catch (Exception ex)
             {
             _logger.LogError(ex, "Error executing external PowerShell script: {Script}", scriptPath);
+            _psLoggingService.LogScriptError(sessionId, scriptName, $"Script execution failed: {ex.Message}");
             _psLoggingService.EndScriptLogging(sessionId, scriptName, false, ex.Message);
 
             if (process != null)
@@ -464,110 +526,6 @@ public class HybridPowerShellService : IDisposable
                 }
 
             return $"ERROR: {ex.Message}";
-            }
-        }
-
-    /// <summary>
-    /// Clean up a specific process
-    /// </summary>
-    private void CleanupProcess (Process process, int processId)
-        {
-        try
-            {
-            if (process == null) return;
-
-            // Remove from tracking
-            _activeProcesses.TryRemove(processId, out _);
-
-            // Ensure process is terminated
-            try
-                {
-                if (!process.HasExited)
-                    {
-                    KillProcessSafely(process);
-                    }
-                }
-            catch (InvalidOperationException)
-                {
-                // Process was never started or already exited
-                _logger.LogDebug("Process {ProcessId} was already exited during cleanup", processId);
-                }
-
-            // Dispose the process object
-            try
-                {
-                process.Dispose();
-                }
-            catch (Exception ex)
-                {
-                _logger.LogDebug(ex, "Error disposing process {ProcessId}", processId);
-                }
-
-            _logger.LogDebug("Cleaned up PowerShell process {ProcessId}", processId);
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error during process cleanup for {ProcessId}", processId);
-            }
-        }
-
-    /// <summary>
-    /// Safe cleanup method that handles all edge cases
-    /// </summary>
-    private void SafeCleanupProcess (Process? process)
-        {
-        if (process == null) return;
-
-        try
-            {
-            // Try to get the process ID if possible
-            int? processId = null;
-            try
-                {
-                processId = process.Id;
-                }
-            catch (InvalidOperationException)
-                {
-                // Process was never started
-                }
-
-            // Remove from tracking if we have an ID
-            if (processId.HasValue)
-                {
-                _activeProcesses.TryRemove(processId.Value, out _);
-                }
-
-            // Try to kill if not exited
-            try
-                {
-                if (!process.HasExited)
-                    {
-                    process.Kill(entireProcessTree: true);
-                    process.WaitForExit(5000); // Wait up to 5 seconds
-                    }
-                }
-            catch (InvalidOperationException)
-                {
-                // Process was never started or already exited
-                }
-            catch (Exception ex)
-                {
-                _logger.LogDebug(ex, "Error killing process during safe cleanup");
-                }
-
-            // Dispose the process object
-            try
-                {
-                process.Dispose();
-                }
-            catch (Exception ex)
-                {
-                _logger.LogDebug(ex, "Error disposing process during safe cleanup");
-                }
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Unexpected error during safe process cleanup");
             }
         }
 
@@ -1012,6 +970,315 @@ public class HybridPowerShellService : IDisposable
         }
 
     /// <summary>
+    /// Optimized vCenter script execution that passes credentials as direct parameters
+    /// Avoids creating temporary script files
+    /// </summary>
+    public async Task<string> RunVCenterScriptDirectAsync (string scriptPath, VCenterConnection connection, string password,
+        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
+        {
+        try
+            {
+            _logger.LogInformation("Executing vCenter script with direct parameter passing: {ScriptPath}", scriptPath);
+            _logger.LogInformation("This method avoids temporary file creation for better performance");
+
+            // Build parameters for direct execution
+            var parameters = new Dictionary<string, object>
+                {
+                ["VCenterServer"] = connection.ServerAddress,
+                ["Username"] = connection.Username,
+                ["Password"] = password  // Pass as plain text - script will convert to SecureString
+                };
+
+            // Add any additional parameters
+            if (additionalParameters != null)
+                {
+                foreach (var param in additionalParameters)
+                    {
+                    parameters[param.Key] = param.Value;
+                    }
+                }
+
+            // Add BypassModuleCheck if PowerCLI is confirmed
+            if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
+                {
+                parameters["BypassModuleCheck"] = true;
+                _logger.LogInformation("Added BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
+                }
+
+            // Add log path if provided
+            if (!string.IsNullOrEmpty(logPath))
+                {
+                parameters["LogPath"] = logPath;
+                }
+
+            // Use the optimized RunScriptAsync that passes parameters directly
+            // This avoids the temp file creation
+            return await RunScriptOptimizedAsync(scriptPath, parameters, logPath);
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error executing vCenter script with direct parameters: {ScriptPath}", scriptPath);
+            return $"ERROR: {ex.Message}";
+            }
+        }
+
+    /// <summary>
+    /// Optimized dual vCenter script execution with direct parameters
+    /// </summary>
+    public async Task<string> RunDualVCenterScriptDirectAsync (string scriptPath,
+        VCenterConnection sourceConnection, string sourcePassword,
+        VCenterConnection targetConnection, string targetPassword,
+        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
+        {
+        try
+            {
+            _logger.LogInformation("Executing dual vCenter script with direct parameters: {ScriptPath}", scriptPath);
+
+            // Build parameters for direct execution
+            var parameters = new Dictionary<string, object>
+                {
+                ["SourceVCenter"] = sourceConnection.ServerAddress,
+                ["SourceUsername"] = sourceConnection.Username,
+                ["SourcePassword"] = sourcePassword,
+                ["TargetVCenter"] = targetConnection.ServerAddress,
+                ["TargetUsername"] = targetConnection.Username,
+                ["TargetPassword"] = targetPassword
+                };
+
+            // Add any additional parameters
+            if (additionalParameters != null)
+                {
+                foreach (var param in additionalParameters)
+                    {
+                    parameters[param.Key] = param.Value;
+                    }
+                }
+
+            // Add BypassModuleCheck if PowerCLI is confirmed
+            if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
+                {
+                parameters["BypassModuleCheck"] = true;
+                _logger.LogInformation("Added BypassModuleCheck=true for dual vCenter script");
+                }
+
+            // Add log path if provided
+            if (!string.IsNullOrEmpty(logPath))
+                {
+                parameters["LogPath"] = logPath;
+                }
+
+            // Direct execution without temp file
+            return await RunScriptOptimizedAsync(scriptPath, parameters, logPath);
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error executing dual vCenter script: {ScriptPath}", scriptPath);
+            return $"ERROR: {ex.Message}";
+            }
+        }
+
+    /// <summary>
+    /// Build parameter string with proper escaping - CORRECTED VERSION
+    /// </summary>
+    private string BuildParameterString (Dictionary<string, object> parameters, string? logPath)
+        {
+        var paramString = new StringBuilder();
+
+        foreach (var param in parameters)
+            {
+            // Skip null values
+            if (param.Value == null) continue;
+
+            // Handle SecureString
+            if (param.Value is System.Security.SecureString secureString)
+                {
+                var ptr = System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(secureString);
+                try
+                    {
+                    var value = System.Runtime.InteropServices.Marshal.PtrToStringUni(ptr) ?? "";
+                    var escapedValue = value.Replace("\"", "`\"");
+                    paramString.Append($" -{param.Key} \"{escapedValue}\"");
+                    }
+                finally
+                    {
+                    System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(ptr);
+                    }
+                continue;
+                }
+
+            // Handle boolean parameters - FIXED
+            if (param.Value is bool boolValue)
+                {
+                // Pass boolean as PowerShell boolean literal without quotes
+                // Use $true or $false which PowerShell understands
+                paramString.Append($" -{param.Key}:${boolValue.ToString().ToLower()}");
+                continue;
+                }
+
+            // Handle string and other types
+            var stringValue = param.Value?.ToString() ?? "";
+            var escaped = stringValue.Replace("\"", "`\"");
+            paramString.Append($" -{param.Key} \"{escaped}\"");
+            }
+
+        // Add LogPath if provided and not already in parameters
+        if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
+            {
+            var escapedLogPath = logPath.Replace("\"", "`\"");
+            paramString.Append($" -LogPath \"{escapedLogPath}\"");
+            }
+
+        return paramString.ToString();
+        }
+
+    /// <summary>
+    /// Build safe parameter string for logging - CORRECTED VERSION
+    /// </summary>
+    private string BuildSafeParameterString (Dictionary<string, object> parameters, string? logPath)
+        {
+        var safeParamString = new StringBuilder();
+
+        foreach (var param in parameters)
+            {
+            // Skip null values
+            if (param.Value == null) continue;
+
+            // Handle boolean parameters - show the actual value
+            if (param.Value is bool boolValue)
+                {
+                // Show the boolean value in logs for clarity
+                safeParamString.Append($" -{param.Key}:${boolValue.ToString().ToLower()}");
+                continue;
+                }
+
+            // Handle sensitive parameters
+            if (IsSensitiveParameter(param.Key))
+                {
+                safeParamString.Append($" -{param.Key} \"[REDACTED]\"");
+                }
+            else
+                {
+                var value = param.Value?.ToString() ?? "";
+                var escapedValue = value.Replace("\"", "`\"");
+                safeParamString.Append($" -{param.Key} \"{escapedValue}\"");
+                }
+            }
+
+        // Add LogPath if provided
+        if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
+            {
+            var escapedLogPath = logPath.Replace("\"", "`\"");
+            safeParamString.Append($" -LogPath \"{escapedLogPath}\"");
+            }
+
+        return safeParamString.ToString();
+        }
+
+    /// <summary>
+    /// Clean up a specific process
+    /// </summary>
+    private void CleanupProcess (Process process, int processId)
+        {
+        try
+            {
+            if (process == null) return;
+
+            // Remove from tracking
+            _activeProcesses.TryRemove(processId, out _);
+
+            // Ensure process is terminated
+            try
+                {
+                if (!process.HasExited)
+                    {
+                    KillProcessSafely(process);
+                    }
+                }
+            catch (InvalidOperationException)
+                {
+                // Process was never started or already exited
+                _logger.LogDebug("Process {ProcessId} was already exited during cleanup", processId);
+                }
+
+            // Dispose the process object
+            try
+                {
+                process.Dispose();
+                }
+            catch (Exception ex)
+                {
+                _logger.LogDebug(ex, "Error disposing process {ProcessId}", processId);
+                }
+
+            _logger.LogDebug("Cleaned up PowerShell process {ProcessId}", processId);
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error during process cleanup for {ProcessId}", processId);
+            }
+        }
+
+    /// <summary>
+    /// Safe cleanup method that handles all edge cases
+    /// </summary>
+    private void SafeCleanupProcess (Process? process)
+        {
+        if (process == null) return;
+
+        try
+            {
+            // Try to get the process ID if possible
+            int? processId = null;
+            try
+                {
+                processId = process.Id;
+                }
+            catch (InvalidOperationException)
+                {
+                // Process was never started
+                }
+
+            // Remove from tracking if we have an ID
+            if (processId.HasValue)
+                {
+                _activeProcesses.TryRemove(processId.Value, out _);
+                }
+
+            // Try to kill if not exited
+            try
+                {
+                if (!process.HasExited)
+                    {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit(5000); // Wait up to 5 seconds
+                    }
+                }
+            catch (InvalidOperationException)
+                {
+                // Process was never started or already exited
+                }
+            catch (Exception ex)
+                {
+                _logger.LogDebug(ex, "Error killing process during safe cleanup");
+                }
+
+            // Dispose the process object
+            try
+                {
+                process.Dispose();
+                }
+            catch (Exception ex)
+                {
+                _logger.LogDebug(ex, "Error disposing process during safe cleanup");
+                }
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Unexpected error during safe process cleanup");
+            }
+        }
+
+    /// <summary>
     /// Safely kill a PowerShell process
     /// </summary>
     private void KillProcessSafely (Process process)
@@ -1123,159 +1390,6 @@ public class HybridPowerShellService : IDisposable
         {
         return _activeProcesses.Count;
         }
-    // <summary>
-    /// Enhanced method specifically for vCenter connections using direct parameter passing
-    /// This avoids creating temporary script files
-    /// </summary>
-    public async Task<string> RunVCenterScriptOptimizedAsync (string scriptPath, VCenterConnection connection, string password,
-        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
-        {
-        try
-            {
-            _logger.LogInformation("Executing vCenter script with optimized credential handling: {ScriptPath}", scriptPath);
-
-            // Build parameters for direct execution
-            var parameters = new Dictionary<string, object>();
-
-            // Add vCenter server
-            parameters["VCenterServer"] = connection.ServerAddress;
-
-            // Instead of creating a PSCredential in a temp script, we'll pass username and password
-            // as secure strings that the script can use to create its own PSCredential
-            parameters["Username"] = connection.Username;
-
-            // Convert password to SecureString for secure parameter passing
-            var securePassword = new System.Security.SecureString();
-            foreach (char c in password)
-                {
-                securePassword.AppendChar(c);
-                }
-            securePassword.MakeReadOnly();
-            parameters["SecurePassword"] = securePassword;
-
-            // Add any additional parameters
-            if (additionalParameters != null)
-                {
-                foreach (var param in additionalParameters)
-                    {
-                    parameters[param.Key] = param.Value;
-                    }
-                }
-
-            // Add BypassModuleCheck if PowerCLI is confirmed
-            if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
-                {
-                parameters["BypassModuleCheck"] = true;
-                _logger.LogInformation("Added BypassModuleCheck for vCenter script: {ScriptPath}", scriptPath);
-                }
-
-            // Use the standard RunScriptAsync which doesn't create temp files
-            return await RunScriptAsync(scriptPath, parameters, logPath);
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error executing optimized vCenter script: {ScriptPath}", scriptPath);
-            return $"ERROR: {ex.Message}";
-            }
-        }
-
-        /// <summary>
-        /// Build parameter string with proper escaping - CORRECTED VERSION
-        /// </summary>
-        private StringBuilder BuildParameterString (Dictionary<string, object> parameters, string? logPath)
-        {
-            var paramString = new StringBuilder();
-
-            foreach (var param in parameters)
-            {
-                // Skip null values
-                if (param.Value == null) continue;
-
-                // Handle SecureString
-                if (param.Value is System.Security.SecureString secureString)
-                {
-                    var ptr = System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(secureString);
-                    try
-                    {
-                        var value = System.Runtime.InteropServices.Marshal.PtrToStringUni(ptr) ?? "";
-                        var escapedValue = value.Replace("\"", "`\"");
-                        paramString.Append($" -{param.Key} \"{escapedValue}\"");
-                    }
-                    finally
-                    {
-                        System.Runtime.InteropServices.Marshal.ZeroFreeGlobalAllocUnicode(ptr);
-                    }
-                    continue;
-                }
-
-                // Handle boolean parameters - FIXED
-                if (param.Value is bool boolValue)
-                {
-                    // Pass boolean as PowerShell boolean literal without quotes
-                    // Use $true or $false which PowerShell understands
-                    paramString.Append($" -{param.Key}:${boolValue.ToString().ToLower()}");
-                    continue;
-                }
-
-                // Handle string and other types
-                var stringValue = param.Value?.ToString() ?? "";
-                var escaped = stringValue.Replace("\"", "`\"");
-                paramString.Append($" -{param.Key} \"{escaped}\"");
-            }
-
-            // Add LogPath if provided and not already in parameters
-            if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
-            {
-                var escapedLogPath = logPath.Replace("\"", "`\"");
-                paramString.Append($" -LogPath \"{escapedLogPath}\"");
-            }
-
-            return paramString;
-        }
-
-        /// <summary>
-    /// Build safe parameter string for logging - CORRECTED VERSION
-    /// </summary>
-    private StringBuilder BuildSafeParameterString (Dictionary<string, object> parameters, string? logPath)
-    {
-        var safeParamString = new StringBuilder();
-
-        foreach (var param in parameters)
-        {
-            // Skip null values
-            if (param.Value == null) continue;
-
-            // Handle boolean parameters - show the actual value
-            if (param.Value is bool boolValue)
-            {
-                // Show the boolean value in logs for clarity
-                safeParamString.Append($" -{param.Key}:${boolValue.ToString().ToLower()}");
-                continue;
-            }
-
-            // Handle sensitive parameters
-            if (IsSensitiveParameter(param.Key))
-            {
-                safeParamString.Append($" -{param.Key} \"[REDACTED]\"");
-            }
-            else
-            {
-                var value = param.Value?.ToString() ?? "";
-                var escapedValue = value.Replace("\"", "`\"");
-                safeParamString.Append($" -{param.Key} \"{escapedValue}\"");
-            }
-        }
-
-        // Add LogPath if provided
-        if (!string.IsNullOrEmpty(logPath) && !parameters.ContainsKey("LogPath"))
-        {
-            var escapedLogPath = logPath.Replace("\"", "`\"");
-            safeParamString.Append($" -LogPath \"{escapedLogPath}\"");
-        }
-
-        return safeParamString;
-    }
-
 
     #region IDisposable Implementation
 
@@ -1298,6 +1412,9 @@ public class HybridPowerShellService : IDisposable
 
                 // Cleanup all active processes
                 CleanupAllProcesses();
+
+                // Dispose PowerShell logging service
+                _psLoggingService?.Dispose();
                 }
 
             _disposed = true;
@@ -1308,114 +1425,6 @@ public class HybridPowerShellService : IDisposable
         {
         Dispose(false);
         }
-    // Add these methods to your existing HybridPowerShellService.cs
 
-    /// <summary>
-    /// Optimized vCenter script execution that passes credentials as direct parameters
-    /// Avoids creating temporary script files
-    /// </summary>
-    public async Task<string> RunVCenterScriptDirectAsync (string scriptPath, VCenterConnection connection, string password,
-        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
-        {
-        try
-            {
-            _logger.LogInformation("Executing vCenter script with direct parameter passing: {ScriptPath}", scriptPath);
-            _logger.LogInformation("This method avoids temporary file creation for better performance");
-
-            // Build parameters for direct execution
-            var parameters = new Dictionary<string, object>
-                {
-                ["VCenterServer"] = connection.ServerAddress,
-                ["Username"] = connection.Username,
-                ["Password"] = password  // Pass as plain text - script will convert to SecureString
-                };
-
-            // Add any additional parameters
-            if (additionalParameters != null)
-                {
-                foreach (var param in additionalParameters)
-                    {
-                    parameters[param.Key] = param.Value;
-                    }
-                }
-
-            // Add BypassModuleCheck if PowerCLI is confirmed
-            if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
-                {
-                parameters["BypassModuleCheck"] = true;
-                _logger.LogInformation("Added BypassModuleCheck=true for script: {ScriptPath}", scriptPath);
-                }
-
-            // Add log path if provided
-            if (!string.IsNullOrEmpty(logPath))
-                {
-                parameters["LogPath"] = logPath;
-                }
-
-            // Use the optimized RunScriptAsync that passes parameters directly
-            // This avoids the temp file creation
-            return await RunScriptOptimizedAsync(scriptPath, parameters, logPath);
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error executing vCenter script with direct parameters: {ScriptPath}", scriptPath);
-            return $"ERROR: {ex.Message}";
-            }
-        }
-
-    /// <summary>
-    /// Optimized dual vCenter script execution with direct parameters
-    /// </summary>
-    public async Task<string> RunDualVCenterScriptDirectAsync (string scriptPath,
-        VCenterConnection sourceConnection, string sourcePassword,
-        VCenterConnection targetConnection, string targetPassword,
-        Dictionary<string, object>? additionalParameters = null, string? logPath = null)
-        {
-        try
-            {
-            _logger.LogInformation("Executing dual vCenter script with direct parameters: {ScriptPath}", scriptPath);
-
-            // Build parameters for direct execution
-            var parameters = new Dictionary<string, object>
-                {
-                ["SourceVCenter"] = sourceConnection.ServerAddress,
-                ["SourceUsername"] = sourceConnection.Username,
-                ["SourcePassword"] = sourcePassword,
-                ["TargetVCenter"] = targetConnection.ServerAddress,
-                ["TargetUsername"] = targetConnection.Username,
-                ["TargetPassword"] = targetPassword
-                };
-
-            // Add any additional parameters
-            if (additionalParameters != null)
-                {
-                foreach (var param in additionalParameters)
-                    {
-                    parameters[param.Key] = param.Value;
-                    }
-                }
-
-            // Add BypassModuleCheck if PowerCLI is confirmed
-            if (PowerCliConfirmedInstalled && IsPowerCliScript(scriptPath))
-                {
-                parameters["BypassModuleCheck"] = true;
-                _logger.LogInformation("Added BypassModuleCheck=true for dual vCenter script");
-                }
-
-            // Add log path if provided
-            if (!string.IsNullOrEmpty(logPath))
-                {
-                parameters["LogPath"] = logPath;
-                }
-
-            // Direct execution without temp file
-            return await RunScriptOptimizedAsync(scriptPath, parameters, logPath);
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error executing dual vCenter script: {ScriptPath}", scriptPath);
-            return $"ERROR: {ex.Message}";
-            }
-        }
     #endregion
     }

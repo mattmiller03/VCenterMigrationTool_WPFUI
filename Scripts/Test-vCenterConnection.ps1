@@ -1,8 +1,10 @@
-﻿param(
+﻿# Test-vCenterConnection.ps1
+# Enhanced with standardized logging framework
+
+param(
     [Parameter(Mandatory = $true)]
     [string]$VCenterServer,
     
-    # Accept EITHER a PSCredential OR Username/Password combination
     [Parameter(Mandatory = $false)]
     [System.Management.Automation.PSCredential]$Credential,
     
@@ -13,273 +15,246 @@
     [string]$Password,
     
     [bool]$BypassModuleCheck = $false,
-    [string]$LogPath = ""
+    [string]$LogPath = "",
+    
+    # Enhanced logging parameters
+    [ValidateSet('Debug', 'Verbose', 'Info', 'Warning', 'Error', 'Critical')]
+    [string]$LogLevel = 'Info',
+    
+    [switch]$DisableConsoleOutput,
+    [switch]$IncludeStackTrace
 )
 
-# Function to write log messages
-function Write-Log {
-    param(
-        [string]$Message, 
-        [string]$Level = "Info"
-    )
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
-    $logMessage = "[$timestamp] [$Level] [Test-vCenterConnection] $Message"
-    
-    # Color-code console output based on level
-    switch ($Level) {
-        "Error" { Write-Host $logMessage -ForegroundColor Red }
-        "Warning" { Write-Host $logMessage -ForegroundColor Yellow }
-        "Debug" { Write-Host $logMessage -ForegroundColor Gray }
-        "Success" { Write-Host $logMessage -ForegroundColor Green }
-        default { Write-Host $logMessage }
-    }
-    
-    if (-not [string]::IsNullOrEmpty($LogPath)) {
-        try {
-            # Ensure log directory exists
-            $logDir = Split-Path -Path $LogPath -Parent
-            if (-not [string]::IsNullOrEmpty($logDir) -and -not (Test-Path $logDir)) {
-                New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-            }
-            
-            $logMessage | Out-File -FilePath $LogPath -Append -Encoding UTF8
-        }
-        catch {
-            Write-Host "Failed to write to log file: $_" -ForegroundColor Yellow
-        }
-    }
+# Import the enhanced logging framework
+. "$PSScriptRoot\Write-ScriptLog.ps1"
+
+# Initialize logging
+$loggingParams = @{
+    ScriptName = 'Test-vCenterConnection'
+    LogLevel = $LogLevel
+    IncludeStackTrace = $IncludeStackTrace
 }
 
-# Function to measure operation duration
-function Measure-Duration {
-    param(
-        [scriptblock]$ScriptBlock,
-        [string]$OperationName
-    )
-    
-    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-    try {
-        $result = & $ScriptBlock
-        $stopwatch.Stop()
-        Write-Log "$OperationName completed in $($stopwatch.ElapsedMilliseconds)ms" "Debug"
-        return $result
-    }
-    catch {
-        $stopwatch.Stop()
-        Write-Log "$OperationName failed after $($stopwatch.ElapsedMilliseconds)ms" "Error"
-        throw
-    }
+if ($LogPath) {
+    $loggingParams.LogFile = $LogPath
 }
-# At the start of any script
-. "$PSScriptRoot\Write-ScriptLog.ps1"
-Start-ScriptLogging -ScriptName "Test-vCenterConnection"
-    
- 
+
+if ($DisableConsoleOutput) {
+    $loggingParams.DisableConsole = $true
+}
+
+Start-ScriptLogging @loggingParams
+
+# Track statistics
+$script:Statistics = @{
+    'Connection Tests' = 0
+    'Successful Connections' = 0
+    'Failed Connections' = 0
+    'Module Import Time' = 0
+    'Connection Time' = 0
+}
+
 try {
-    Write-Log "========================================" "Info"
-    Write-Log "Starting vCenter connection test (Direct Parameters)" "Info"
-    Write-Log "========================================" "Info"
+    Write-LogInfo "Starting vCenter connection test" -Category "Initialization"
+    Write-LogInfo "Target vCenter Server: $VCenterServer" -Category "Configuration"
+    Write-LogInfo "Bypass Module Check: $BypassModuleCheck" -Category "Configuration"
+    Write-LogDebug "PowerShell Version: $($PSVersionTable.PSVersion)" -Category "Environment"
+    Write-LogDebug "PowerShell Edition: $($PSVersionTable.PSEdition)" -Category "Environment"
     
     # Determine credential source and create PSCredential if needed
+    Write-LogDebug "Processing authentication credentials" -Category "Authentication"
+    
     if ($Credential) {
-        Write-Log "Using provided PSCredential object" "Debug"
-        Write-Log "Username from credential: $($Credential.UserName)" "Info"
+        Write-LogDebug "Using provided PSCredential object" -Category "Authentication"
+        Write-LogInfo "Username from credential: $($Credential.UserName)" -Category "Authentication"
     }
     elseif ($Username -and $Password) {
-        Write-Log "Creating PSCredential from Username/Password parameters" "Debug"
-        Write-Log "Username: $Username" "Info"
+        Write-LogDebug "Creating PSCredential from Username/Password parameters" -Category "Authentication"
+        Write-LogInfo "Username: $Username" -Category "Authentication"
         
         # Convert plain text password to SecureString and create credential
         $securePassword = ConvertTo-SecureString $Password -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
         
-        Write-Log "PSCredential created successfully" "Debug"
+        Write-LogSuccess "PSCredential created successfully" -Category "Authentication"
         
         # Clear the plain text password from memory
         $Password = $null
     }
     else {
-        throw "No valid credentials provided. Either provide -Credential or both -Username and -Password"
+        $errorMsg = "No valid credentials provided. Either provide -Credential or both -Username and -Password"
+        Write-LogError $errorMsg -Category "Authentication"
+        throw $errorMsg
     }
-    
-    # Log execution parameters
-    Write-Log "Target vCenter Server: $VCenterServer" "Info"
-    Write-Log "BypassModuleCheck: $BypassModuleCheck" "Info"
-    Write-Log "Execution Method: Direct parameter passing (no temp files)" "Success"
-    Write-Log "LogPath: $(if ([string]::IsNullOrEmpty($LogPath)) { 'Not specified' } else { $LogPath })" "Info"
-    
-    # Log system information for debugging
-    Write-Log "PowerShell Version: $($PSVersionTable.PSVersion.ToString())" "Debug"
-    Write-Log "PowerShell Edition: $($PSVersionTable.PSEdition)" "Debug"
     
     # Check PowerCLI installation status
-    Write-Log "Checking PowerCLI installation..." "Debug"
+    Write-LogDebug "Checking PowerCLI installation..." -Category "PowerCLI"
     $powerCLIModules = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
+    
     if ($powerCLIModules) {
-        Write-Log "PowerCLI found: Version $($powerCLIModules[0].Version)" "Debug"
+        Write-LogSuccess "PowerCLI found: Version $($powerCLIModules[0].Version)" -Category "PowerCLI"
     }
     else {
-        Write-Log "PowerCLI modules not found in available modules" "Warning"
+        Write-LogWarning "PowerCLI modules not found in available modules" -Category "PowerCLI"
     }
     
     # Import PowerCLI modules if not bypassing module check
     if (-not $BypassModuleCheck) {
-        Write-Log "Module bypass NOT enabled - importing PowerCLI modules" "Info"
+        Write-LogInfo "Module bypass NOT enabled - importing PowerCLI modules" -Category "PowerCLI"
         
-        $importResult = Measure-Duration -OperationName "PowerCLI Module Import" -ScriptBlock {
-            try {
-                Write-Log "Importing VMware.PowerCLI module..." "Info"
-                Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-                
-                Write-Log "Setting PowerCLI configuration..." "Info"
-                Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-                Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
-                
-                # Log loaded VMware modules
-                $loadedModules = Get-Module -Name "VMware.*"
-                Write-Log "Successfully loaded $($loadedModules.Count) VMware modules" "Debug"
-                
-                Write-Log "PowerCLI modules imported successfully" "Success"
-                return $true
-            }
-            catch {
-                Write-Log "Failed to import PowerCLI modules: $($_.Exception.Message)" "Error"
-                throw
-            }
+        $moduleImportResult = Measure-ScriptBlock -Name "PowerCLI Module Import" -Category "PowerCLI" -ScriptBlock {
+            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+            
+            Write-LogDebug "Setting PowerCLI configuration..." -Category "PowerCLI"
+            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+            Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+            
+            # Log loaded VMware modules
+            $loadedModules = Get-Module -Name "VMware.*"
+            Write-LogSuccess "Successfully loaded $($loadedModules.Count) VMware modules" -Category "PowerCLI"
+            
+            return $true
         }
         
-        if (-not $importResult) {
+        $script:Statistics['Module Import Time'] = 1
+        
+        if (-not $moduleImportResult) {
+            Write-LogCritical "PowerCLI module import failed" -Category "PowerCLI"
             Write-Output "Failure: PowerCLI module import failed"
             exit 1
         }
     }
     else {
-        Write-Log "Module bypass ENABLED - skipping PowerCLI import" "Success"
-        Write-Log "Assuming PowerCLI modules are already loaded" "Info"
+        Write-LogInfo "Module bypass ENABLED - skipping PowerCLI import" -Category "PowerCLI"
+        Write-LogDebug "Assuming PowerCLI modules are already loaded" -Category "PowerCLI"
         
         # Verify modules are actually loaded when bypassing
         $loadedModules = Get-Module -Name "VMware.*"
         if ($loadedModules.Count -eq 0) {
-            Write-Log "WARNING: BypassModuleCheck is true but no VMware modules are loaded!" "Warning"
+            Write-LogWarning "BypassModuleCheck is true but no VMware modules are loaded!" -Category "PowerCLI"
             
             # Check if Connect-VIServer command is available
             $cmdAvailable = Get-Command Connect-VIServer -ErrorAction SilentlyContinue
             if (-not $cmdAvailable) {
-                Write-Log "Connect-VIServer command not found - PowerCLI not properly initialized" "Error"
+                $errorMsg = "Connect-VIServer command not found - PowerCLI not properly initialized"
+                Write-LogError $errorMsg -Category "PowerCLI"
                 Write-Output "Failure: PowerCLI not available despite bypass flag"
                 exit 1
             }
             else {
-                Write-Log "Connect-VIServer command is available" "Debug"
+                Write-LogDebug "Connect-VIServer command is available" -Category "PowerCLI"
             }
         }
         else {
-            Write-Log "Verified: $($loadedModules.Count) VMware modules already loaded" "Success"
+            Write-LogSuccess "Verified: $($loadedModules.Count) VMware modules already loaded" -Category "PowerCLI"
         }
     }
     
-    Write-Log "========================================" "Info"
-    Write-Log "Attempting connection to vCenter..." "Info"
+    Write-LogInfo "Attempting connection to vCenter..." -Category "Connection"
     
     # Test network connectivity first
-    Write-Log "Testing network connectivity to $VCenterServer..." "Debug"
+    Write-LogDebug "Testing network connectivity to $VCenterServer..." -Category "Network"
     try {
-        $tcpClient = New-Object System.Net.Sockets.TcpClient
-        $connectTask = $tcpClient.ConnectAsync($VCenterServer, 443)
-        if ($connectTask.Wait(3000)) {
-            if ($tcpClient.Connected) {
-                Write-Log "Port 443 is reachable on $VCenterServer" "Debug"
-                $tcpClient.Close()
+        $connectivityResult = Measure-ScriptBlock -Name "Network Connectivity Test" -Category "Network" -ScriptBlock {
+            $tcpClient = New-Object System.Net.Sockets.TcpClient
+            $connectTask = $tcpClient.ConnectAsync($VCenterServer, 443)
+            if ($connectTask.Wait(3000)) {
+                if ($tcpClient.Connected) {
+                    $tcpClient.Close()
+                    return $true
+                }
             }
+            return $false
         }
-        else {
-            Write-Log "Connection to port 443 timed out (may still work)" "Warning"
+        
+        if ($connectivityResult) {
+            Write-LogSuccess "Port 443 is reachable on $VCenterServer" -Category "Network"
+        } else {
+            Write-LogWarning "Connection to port 443 timed out (may still work)" -Category "Network"
         }
     }
     catch {
-        Write-Log "Could not test port connectivity: $_" "Debug"
+        Write-LogDebug "Could not test port connectivity: $_" -Category "Network"
     }
     
     # Connect to vCenter with timing
-    $connectionResult = Measure-Duration -OperationName "vCenter Connection" -ScriptBlock {
-        Write-Log "Executing Connect-VIServer..." "Debug"
+    $script:Statistics['Connection Tests']++
+    
+    $connectionResult = Measure-ScriptBlock -Name "vCenter Connection" -Category "Connection" -ScriptBlock {
+        Write-LogDebug "Executing Connect-VIServer..." -Category "Connection"
         
-        try {
-            $connection = Connect-VIServer -Server $VCenterServer -Credential $Credential -Force -ErrorAction Stop
-            return $connection
-        }
-        catch {
-            Write-Log "Connection attempt failed: $($_.Exception.GetType().FullName)" "Error"
-            Write-Log "Error Message: $($_.Exception.Message)" "Error"
-            throw
-        }
+        $connection = Connect-VIServer -Server $VCenterServer -Credential $Credential -Force -ErrorAction Stop
+        return $connection
     }
     
+    $script:Statistics['Connection Time'] = 1
+    
     if ($connectionResult -and $connectionResult.IsConnected) {
-        Write-Log "========================================" "Success"
-        Write-Log "CONNECTION SUCCESSFUL!" "Success"
-        Write-Log "========================================" "Success"
+        $script:Statistics['Successful Connections']++
+        
+        Write-LogSuccess "CONNECTION SUCCESSFUL!" -Category "Connection"
         
         # Log connection details
-        Write-Log "vCenter Details:" "Info"
-        Write-Log "  Server: $($connectionResult.Name)" "Info"
-        Write-Log "  Version: $($connectionResult.Version)" "Info"
-        Write-Log "  Build: $($connectionResult.Build)" "Info"
-        Write-Log "  Session ID: $($connectionResult.SessionId)" "Info"
-        Write-Log "  User: $($connectionResult.User)" "Info"
+        Write-LogInfo "vCenter Details:" -Category "Connection" -Data @{
+            Server = $connectionResult.Name
+            Version = $connectionResult.Version
+            Build = $connectionResult.Build
+            SessionId = $connectionResult.SessionId
+            User = $connectionResult.User
+        }
         
         # Disconnect cleanly
-        Write-Log "Disconnecting from vCenter..." "Info"
+        Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
         Disconnect-VIServer -Server $VCenterServer -Force -Confirm:$false
-        Write-Log "Disconnected successfully" "Info"
+        Write-LogSuccess "Disconnected successfully" -Category "Connection"
         
-        Write-Log "========================================" "Success"
-        Write-Log "Test completed successfully" "Success"
-        Write-Log "========================================" "Success"
+        Write-LogSuccess "Test completed successfully" -Category "Summary"
         
         # Return success in a format the app expects
         Write-Output "Success"
         exit 0
     } 
     else {
-        Write-Log "Connection object was created but IsConnected is false" "Error"
+        $script:Statistics['Failed Connections']++
+        $errorMsg = "Connection object was created but IsConnected is false"
+        Write-LogError $errorMsg -Category "Connection"
         Write-Output "Failure: Connection not established"
         exit 1
     }
 }
 catch {
-    Write-Log "========================================" "Error"
-    Write-Log "CONNECTION TEST FAILED" "Error"
-    Write-Log "========================================" "Error"
+    $script:Statistics['Failed Connections']++
+    
+    Write-LogCritical "CONNECTION TEST FAILED" -Category "Connection" -ErrorRecord $_
     
     $errorMsg = $_.Exception.Message
-    Write-Log "Exception Type: $($_.Exception.GetType().FullName)" "Error"
-    Write-Log "Error Message: $errorMsg" "Error"
-    Write-Log "Stack Trace: $($_.ScriptStackTrace)" "Debug"
+    Write-LogError "Exception Type: $($_.Exception.GetType().FullName)" -Category "Error"
+    Write-LogError "Error Message: $errorMsg" -Category "Error"
     
     # Provide user-friendly error message
-    if ($errorMsg -match "Invalid username or password") {
-        Write-Output "Failure: Authentication failed - Invalid credentials"
-    }
-    elseif ($errorMsg -match "Could not resolve") {
-        Write-Output "Failure: Could not resolve server address"
-    }
-    elseif ($errorMsg -match "PowerCLI") {
-        Write-Output "Failure: PowerCLI module error"
-    }
-    elseif ($errorMsg -match "No valid credentials") {
-        Write-Output "Failure: No credentials provided"
-    }
-    else {
-        Write-Output "Failure: $errorMsg"
+    $userFriendlyMessage = switch -Regex ($errorMsg) {
+        "Invalid username or password" { "Failure: Authentication failed - Invalid credentials" }
+        "Could not resolve" { "Failure: Could not resolve server address" }
+        "PowerCLI" { "Failure: PowerCLI module error" }
+        "No valid credentials" { "Failure: No credentials provided" }
+        default { "Failure: $errorMsg" }
     }
     
+    Write-Output $userFriendlyMessage
     exit 1
 }
 finally {
-    Write-Log "Script execution completed at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff')" "Debug"
-    Stop-ScriptLogging -Success $true
     # Clear any sensitive variables
     if ($Password) { $Password = $null }
     if ($securePassword) { $securePassword = $null }
+    
+    # Finalize logging with statistics
+    $success = $script:Statistics['Successful Connections'] -gt 0
+    $summary = if ($success) {
+        "Connection test passed"
+    } else {
+        "Connection test failed"
+    }
+    
+    Stop-ScriptLogging -Success $success -Summary $summary -Statistics $script:Statistics
 }

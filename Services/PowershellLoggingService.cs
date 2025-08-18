@@ -1,14 +1,16 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Linq;
+using VCenterMigrationTool.Services;
 
 namespace VCenterMigrationTool.Services;
 
-public class PowerShellLoggingService
+public class PowerShellLoggingService : IDisposable
     {
     private readonly ILogger<PowerShellLoggingService> _logger;
     private readonly string _logDirectory;
@@ -29,16 +31,20 @@ public class PowerShellLoggingService
 
     public event EventHandler<LogEntry> LogEntryAdded;
 
-    public PowerShellLoggingService (ILogger<PowerShellLoggingService> logger)
+    public PowerShellLoggingService (ILogger<PowerShellLoggingService> logger, ConfigurationService configurationService)
         {
         _logger = logger;
 
-        // Create PowerShell logs directory
-        _logDirectory = Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory,
-            "Logs",
-            "PowerShell"
-        );
+        // Create PowerShell logs directory using the same logic as App.xaml.cs
+        var appConfig = configurationService.GetConfiguration();
+
+        // Use the configured log path or fallback to default (same logic as App.xaml.cs)
+        var baseLogPath = !string.IsNullOrEmpty(appConfig.LogPath)
+            ? appConfig.LogPath
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VCenterMigrationTool", "Logs");
+
+        // Create PowerShell subdirectory within the configured log path
+        _logDirectory = Path.Combine(baseLogPath, "PowerShell");
 
         if (!Directory.Exists(_logDirectory))
             {
@@ -121,11 +127,6 @@ public class PowerShellLoggingService
             Message = $"Script execution completed: {scriptName} - {(success ? "SUCCESS" : "FAILED")}"
             };
 
-        if (!string.IsNullOrEmpty(summary))
-            {
-            entry.Message += $" - {summary}";
-            }
-
         WriteLog(entry);
 
         // Write session footer to file
@@ -133,7 +134,7 @@ public class PowerShellLoggingService
             {
             _currentStreamWriter.WriteLine($"----------------------------------------");
             _currentStreamWriter.WriteLine($"[SESSION END] {sessionId} - {scriptName}");
-            _currentStreamWriter.WriteLine($"Status: {(success ? "SUCCESS" : "FAILED")}");
+            _currentStreamWriter.WriteLine($"Result: {(success ? "SUCCESS" : "FAILED")}");
             if (!string.IsNullOrEmpty(summary))
                 {
                 _currentStreamWriter.WriteLine($"Summary: {summary}");
@@ -145,10 +146,10 @@ public class PowerShellLoggingService
 
     public void WriteLog (LogEntry entry)
         {
-        // Add to buffer for activity viewer
+        // Add to buffer for real-time viewing
         _logBuffer.Enqueue(entry);
 
-        // Keep buffer size manageable (last 1000 entries)
+        // Keep buffer size reasonable
         while (_logBuffer.Count > 1000)
             {
             _logBuffer.TryDequeue(out _);
@@ -157,109 +158,116 @@ public class PowerShellLoggingService
         // Write to file
         lock (_fileLock)
             {
-            // Check if we need to roll over to a new daily file
+            // Check if we need a new daily file
             var currentDate = DateTime.Now.ToString("yyyy-MM-dd");
             if (!_currentLogFile.Contains(currentDate))
                 {
                 InitializeDailyLogFile();
                 }
 
-            // Format: [TIMESTAMP] [LEVEL] [SESSION] [SOURCE] Message
-            var logLine = $"[{entry.Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{entry.Level,-5}] [{entry.SessionId}] [{entry.Source}] {entry.Message}";
+            var logLine = $"{entry.Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{entry.Level}] [{entry.SessionId}] [{entry.ScriptName}] {entry.Message}";
             _currentStreamWriter.WriteLine(logLine);
             }
 
-        // Also log to application logger for debugging
-        _logger.LogDebug("PS Script Log: {Message}", entry.Message);
+        // Also log to application logger for critical entries
+        if (entry.Level == "ERROR" || entry.Level == "CRITICAL")
+            {
+            _logger.LogError("[PowerShell] [{SessionId}] [{ScriptName}] {Message}",
+                entry.SessionId, entry.ScriptName, entry.Message);
+            }
 
         // Raise event for real-time monitoring
         LogEntryAdded?.Invoke(this, entry);
         }
 
-    public void WriteScriptOutput (string sessionId, string scriptName, string output, string level = "OUTPUT")
+    public void LogScriptOutput (string sessionId, string scriptName, string output, string level = "INFO")
         {
         if (string.IsNullOrWhiteSpace(output)) return;
 
-        var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        var entry = new LogEntry
+            {
+            Timestamp = DateTime.Now,
+            Level = level,
+            Source = "SCRIPT",
+            ScriptName = scriptName,
+            SessionId = sessionId,
+            Message = output.Trim()
+            };
 
-        foreach (var line in lines)
+        WriteLog(entry);
+        }
+
+    public void LogScriptError (string sessionId, string scriptName, string error)
+        {
+        var entry = new LogEntry
+            {
+            Timestamp = DateTime.Now,
+            Level = "ERROR",
+            Source = "SCRIPT",
+            ScriptName = scriptName,
+            SessionId = sessionId,
+            Message = error.Trim()
+            };
+
+        WriteLog(entry);
+        }
+
+    public void LogParameters (string sessionId, string scriptName, Dictionary<string, object> parameters)
+        {
+        var safeParams = parameters.Where(p => !IsSensitiveParameter(p.Key))
+                                 .Select(p => $"{p.Key}={p.Value}")
+                                 .ToList();
+
+        if (safeParams.Any())
             {
             var entry = new LogEntry
                 {
                 Timestamp = DateTime.Now,
-                Level = level,
-                Source = "SCRIPT",
+                Level = "DEBUG",
+                Source = "PARAMS",
                 ScriptName = scriptName,
                 SessionId = sessionId,
-                Message = line
+                Message = $"Parameters: {string.Join(", ", safeParams)}"
                 };
 
             WriteLog(entry);
             }
         }
 
-    public void WriteScriptError (string sessionId, string scriptName, string error)
+    private bool IsSensitiveParameter (string paramName)
         {
-        WriteScriptOutput(sessionId, scriptName, error, "ERROR");
+        var sensitiveParams = new[] { "password", "pwd", "secret", "key", "token", "credential" };
+        return sensitiveParams.Any(s => paramName.ToLower().Contains(s));
         }
 
-    public ConcurrentQueue<LogEntry> GetRecentLogs ()
+    // Methods for future Activity Page
+    public List<LogEntry> GetTodaysLogs ()
         {
-        return _logBuffer;
+        return _logBuffer.Where(e => e.Timestamp.Date == DateTime.Today).ToList();
         }
 
-    public async Task<string> GetTodaysLogContent ()
+    public List<LogEntry> GetRecentLogs (int count = 100)
         {
-        try
-            {
-            lock (_fileLock)
-                {
-                _currentStreamWriter?.Flush();
-                }
-
-            // Read file with sharing enabled
-            using var fileStream = new FileStream(_currentLogFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(fileStream);
-            return await reader.ReadToEndAsync();
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error reading log file");
-            return $"Error reading log file: {ex.Message}";
-            }
+        return _logBuffer.TakeLast(count).ToList();
         }
 
-    public string[] GetAvailableLogFiles ()
+    public string GetCurrentLogFilePath ()
         {
-        try
-            {
-            return Directory.GetFiles(_logDirectory, "powershell_*.log")
-                .OrderByDescending(f => f)
-                .ToArray();
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error getting log files");
-            return Array.Empty<string>();
-            }
+        return _currentLogFile;
         }
 
-    public async Task<string> GetLogFileContent (string fileName)
+    public List<string> GetAvailableLogFiles ()
         {
-        try
-            {
-            var filePath = Path.Combine(_logDirectory, fileName);
-            if (!File.Exists(filePath)) return "File not found";
+        return Directory.GetFiles(_logDirectory, "powershell_*.log")
+                       .OrderByDescending(f => f)
+                       .ToList();
+        }
 
-            using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(fileStream);
-            return await reader.ReadToEndAsync();
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error reading log file {FileName}", fileName);
-            return $"Error reading file: {ex.Message}";
-            }
+    public async Task<string> ReadLogFileAsync (string filePath)
+        {
+        if (!File.Exists(filePath)) return string.Empty;
+
+        return await File.ReadAllTextAsync(filePath);
         }
 
     public void Dispose ()
