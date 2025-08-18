@@ -1,13 +1,14 @@
 ﻿# Get-Prerequisites.ps1 - Complete working version with integrated logging
 param(
-    [bool]$BypassModuleCheck = $false
+    [bool]$BypassModuleCheck = $false,
+    [string]$LogPath = ""
 )
 
 # Import logging functions
 . "$PSScriptRoot\Write-ScriptLog.ps1"
 
-# Start logging
-Start-ScriptLogging -ScriptName "Get-Prerequisites"
+# Start logging with LogPath parameter
+Start-ScriptLogging -ScriptName "Get-Prerequisites" -LogPath $LogPath
 
 # Initialize result object with default values
 $result = [PSCustomObject]@{
