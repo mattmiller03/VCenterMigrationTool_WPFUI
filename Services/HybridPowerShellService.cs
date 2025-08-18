@@ -187,6 +187,32 @@ public class HybridPowerShellService : IDisposable
         return true;
         }
 
+    // Helper method to extract a meaningful name from a command
+    private string ExtractCommandName (string command)
+    {
+        if (string.IsNullOrWhiteSpace(command))
+            return "Unknown-Command";
+
+        // Get the first line and first few words
+        var firstLine = command.Split('\n', '\r')[0].Trim();
+        var words = firstLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (words.Length > 0)
+        {
+            // For cmdlets like Get-Module, Test-Connection, etc.
+            var firstWord = words[0];
+            if (firstWord.Contains('-'))
+            {
+                return firstWord;
+            }
+
+            // For other commands, take first 2-3 words
+            return string.Join("-", words.Take(Math.Min(3, words.Length)));
+        }
+
+        return "PowerShell-Command";
+    }
+
     public async Task<string> RunScriptAsync (string scriptPath, Dictionary<string, object> parameters,
         string? logPath = null)
         {
@@ -329,8 +355,11 @@ public class HybridPowerShellService : IDisposable
     // Enhanced RunScriptExternalAsync with PowerShell Logging Integration
     private async Task<string> RunScriptExternalAsync (string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
         {
-        string fullScriptPath = Path.GetFullPath(scriptPath);
-        string scriptName = Path.GetFileName(scriptPath);
+            // Ensure LogPath is always provided from configuration
+            parameters = EnsureLogPathInParameters(parameters);
+
+            string fullScriptPath = Path.GetFullPath(scriptPath);
+            string scriptName = Path.GetFileName(scriptPath);
 
         _logger.LogDebug("Starting external PowerShell script execution: {ScriptPath}", fullScriptPath);
 
@@ -340,7 +369,7 @@ public class HybridPowerShellService : IDisposable
             return $"ERROR: Script not found at {fullScriptPath}";
             }
 
-        // Start PowerShell logging session
+        // Start PowerShell logging session with proper script name
         var sessionId = _psLoggingService.StartScriptLogging(scriptName);
         _psLoggingService.LogParameters(sessionId, scriptName, parameters);
 
@@ -358,13 +387,12 @@ public class HybridPowerShellService : IDisposable
             // Try PowerShell 7+ executables ONLY - never use PowerShell 5.x
             var powershellPaths = new[]
             {
-                "pwsh.exe",
-                @"C:\Program Files\PowerShell\7\pwsh.exe",
-                @"C:\Program Files (x86)\PowerShell\7\pwsh.exe",
-                @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe",
-                @"C:\Program Files\PowerShell\7-preview\pwsh.exe"
-                // REMOVED: "powershell.exe" - Never use PowerShell 5.x
-            };
+            "pwsh.exe",
+            @"C:\Program Files\PowerShell\7\pwsh.exe",
+            @"C:\Program Files (x86)\PowerShell\7\pwsh.exe",
+            @"C:\Users\" + Environment.UserName + @"\AppData\Local\Microsoft\WindowsApps\pwsh.exe",
+            @"C:\Program Files\PowerShell\7-preview\pwsh.exe"
+        };
 
             Exception? lastException = null;
 
@@ -382,7 +410,6 @@ public class HybridPowerShellService : IDisposable
                         }
 
                     // Create PowerShell process with logging script integration
-                    // Use the Scripts directory for Write-ScriptLog.ps1, not the script's directory
                     var scriptsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts");
                     var loggingScriptPath = Path.Combine(scriptsDirectory, "Write-ScriptLog.ps1");
 
@@ -440,7 +467,7 @@ public class HybridPowerShellService : IDisposable
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
 
-                    // Wait with timeout and cancellation support - FIXED VERSION
+                    // Wait with timeout and cancellation support
                     using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
                     try
                         {
@@ -529,12 +556,19 @@ public class HybridPowerShellService : IDisposable
             }
         }
 
-    /// <summary>
-    /// Execute simple PowerShell commands using external PowerShell (due to SDK issues)
-    /// </summary>
+    // Updated RunCommandAsync to also use proper logging
     public async Task<string> RunCommandAsync (string command, Dictionary<string, object>? parameters = null)
         {
         _logger.LogDebug("Executing PowerShell command via external process: {Command}", command);
+
+        // Extract a meaningful name for the command
+        var commandName = ExtractCommandName(command);
+        var sessionId = _psLoggingService.StartScriptLogging(commandName);
+
+        if (parameters?.Count > 0)
+            {
+            _psLoggingService.LogParameters(sessionId, commandName, parameters);
+            }
 
         try
             {
@@ -568,6 +602,9 @@ public class HybridPowerShellService : IDisposable
                 // Execute the temp script
                 var result = await RunScriptExternalAsync(tempScriptPath, new Dictionary<string, object>());
 
+                _psLoggingService.EndScriptLogging(sessionId, commandName, !result.StartsWith("ERROR:"),
+                    $"Command execution completed");
+
                 return result;
                 }
             finally
@@ -589,6 +626,8 @@ public class HybridPowerShellService : IDisposable
         catch (Exception ex)
             {
             _logger.LogError(ex, "Error executing PowerShell command: {Command}", command);
+            _psLoggingService.LogScriptError(sessionId, commandName, $"Command execution failed: {ex.Message}");
+            _psLoggingService.EndScriptLogging(sessionId, commandName, false, ex.Message);
             return $"COMMAND ERROR: {ex.Message}";
             }
         }
@@ -664,6 +703,44 @@ public class HybridPowerShellService : IDisposable
             }
         }
 
+    public async Task<string> CheckPrerequisitesAsync (string logPath = null)
+    {
+        var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-Prerequisites.ps1");
+        var parameters = new Dictionary<string, object>();
+
+        // Use the configured log path if not provided
+        if (string.IsNullOrEmpty(logPath))
+        {
+            var configuredLogPath = _configurationService.GetConfiguration().LogPath;
+            logPath = configuredLogPath;
+        }
+
+        if (!string.IsNullOrEmpty(logPath))
+        {
+            parameters["LogPath"] = logPath;
+        }
+
+        // Execute with proper script name for logging
+        return await RunScriptExternalAsync(scriptPath, parameters, logPath);
+    }
+    // Add this helper method to your HybridPowerShellService class
+    private Dictionary<string, object> EnsureLogPathInParameters (Dictionary<string, object> parameters)
+    {
+        var updatedParameters = new Dictionary<string, object>(parameters);
+
+        // If LogPath is not already specified, add the configured one
+        if (!updatedParameters.ContainsKey("LogPath"))
+        {
+            var configuredLogPath = _configurationService.GetConfiguration().LogPath;
+            if (!string.IsNullOrEmpty(configuredLogPath))
+            {
+                updatedParameters["LogPath"] = configuredLogPath;
+                _logger.LogDebug("Auto-added configured LogPath: {LogPath}", configuredLogPath);
+            }
+        }
+
+        return updatedParameters;
+    }
     /// <summary>
     /// Extract JSON from mixed script output - IMPROVED VERSION
     /// </summary>

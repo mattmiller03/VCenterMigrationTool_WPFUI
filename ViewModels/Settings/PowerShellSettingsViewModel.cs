@@ -107,29 +107,28 @@ namespace VCenterMigrationTool.ViewModels.Settings
             // You could also update a UI property to show this info
             PrerequisiteCheckStatus = $"Debug: PowerCLI bypass = {HybridPowerShellService.PowerCliConfirmedInstalled}, Script would bypass = {wouldBypass}";
         }
-        
+
         [RelayCommand]
         private async Task OnCheckPrerequisites ()
-            {
+        {
             IsCheckingPrerequisites = true;
             PrerequisiteCheckStatus = "Running prerequisite check script...";
 
             try
-                {
-                string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-                var parameters = new Dictionary<string, object> { { "LogPath", logPath } };
+            {
+                // Use the new CheckPrerequisitesAsync method which automatically uses the configured log path
+                string rawOutput = await _powerShellService.CheckPrerequisitesAsync();
 
-                // Try to get structured result first
-                var result = await _powerShellService.RunScriptAndGetObjectAsync<PrerequisitesResult>(
-                    ".\\Scripts\\Get-Prerequisites.ps1",
-                    parameters);
+                // Try to parse as JSON first
+                var result = TryParsePrerequisitesJson(rawOutput);
 
                 if (result != null)
-                    {
+                {
+                    // Successfully parsed JSON
                     PowerShellVersion = result.PowerShellVersion;
                     IsPowerCliInstalled = result.IsPowerCliInstalled;
 
-                    // FIXED: Save the PowerCLI status persistently
+                    // Save the PowerCLI status persistently
                     _powerShellService.SavePowerCliStatus(result.IsPowerCliInstalled);
 
                     PrerequisiteCheckStatus = IsPowerCliInstalled ?
@@ -137,40 +136,69 @@ namespace VCenterMigrationTool.ViewModels.Settings
                         "Prerequisites check completed. PowerCLI module not found.";
 
                     if (IsPowerCliInstalled)
-                        {
-                        _logger.LogInformation("PowerCLI confirmed installed - status saved persistently");
-                        }
-                    }
-                else
                     {
-                    // Fallback: get raw output and parse manually
-                    string rawOutput = await _powerShellService.RunScriptAsync(
-                        ".\\Scripts\\Get-Prerequisites.ps1",
-                        parameters);
-
-                    await ParseManualOutput(rawOutput);
+                        _logger.LogInformation("PowerCLI confirmed installed - status saved persistently");
                     }
                 }
-            catch (Exception ex)
+                else
                 {
+                    // Fallback: parse manually from raw output
+                    await ParseManualOutput(rawOutput);
+                }
+            }
+            catch (Exception ex)
+            {
                 PowerShellVersion = "Error during check";
                 IsPowerCliInstalled = false;
 
-                // FIXED: Clear and save bypass flag on error
+                // Clear and save bypass flag on error
                 _powerShellService.SavePowerCliStatus(false);
 
                 PrerequisiteCheckStatus = $"Error during prerequisites check: {ex.Message}";
 
                 // Try a simple fallback check
                 await TrySimpleFallbackCheck();
-                }
+            }
             finally
-                {
+            {
                 IsCheckingPrerequisites = false;
                 DebugBypassStatus = $"Debug: PowerCLI bypass = {HybridPowerShellService.PowerCliConfirmedInstalled}";
-                }
             }
+        }
 
+        // Helper method to try parsing JSON from the output
+        private PrerequisitesResult? TryParsePrerequisitesJson (string output)
+        {
+            try
+            {
+                // Look for JSON in the output
+                var lines = output.Split('\n', '\r', StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (var line in lines)
+                {
+                    var trimmedLine = line.Trim();
+                    if (trimmedLine.StartsWith("{") && trimmedLine.EndsWith("}"))
+                    {
+                        try
+                        {
+                            var result = JsonSerializer.Deserialize<PrerequisitesResult>(trimmedLine,
+                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                            return result;
+                        }
+                        catch
+                        {
+                            continue; // Try next line
+                        }
+                    }
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         [RelayCommand]
         private void CleanupProcesses ()
@@ -187,7 +215,7 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 ProcessMonitoringStatus = "Error during cleanup";
             }
         }
-        
+
         [RelayCommand]
         private async Task OnInstallPowerCli ()
             {
@@ -196,8 +224,14 @@ namespace VCenterMigrationTool.ViewModels.Settings
 
             try
                 {
-                string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-                var parameters = new Dictionary<string, object> { { "LogPath", logPath } };
+                // Get the configured log path
+                string logPath = _configurationService.GetConfiguration().LogPath;
+                var parameters = new Dictionary<string, object>();
+
+                if (!string.IsNullOrEmpty(logPath))
+                    {
+                    parameters["LogPath"] = logPath;
+                    }
 
                 // Update status during different phases
                 PowerCliInstallStatus = "Connecting to PowerShell Gallery...";
@@ -205,8 +239,10 @@ namespace VCenterMigrationTool.ViewModels.Settings
 
                 PowerCliInstallStatus = "Downloading VMware.PowerCLI module... (This may take 3-5 minutes)";
 
-                // The hybrid service will automatically use external PowerShell for Install-PowerCli.ps1
-                string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Install-PowerCli.ps1", parameters);
+                // Use RunScriptOptimizedAsync with the parameters (this will auto-add LogPath if needed)
+                string result = await _powerShellService.RunScriptOptimizedAsync(
+                    ".\\Scripts\\Install-PowerCli.ps1",
+                    parameters);
 
                 // Parse the result to determine success/failure
                 if (result.Contains("Success:"))
@@ -308,56 +344,56 @@ namespace VCenterMigrationTool.ViewModels.Settings
                 }
             }
 
-            private async Task TryDirectVersionCheck ()
+        private async Task TryDirectVersionCheck ()
+        {
+            try
             {
-                try
-                {
-                    var versionResult = await _powerShellService.RunCommandAsync("$PSVersionTable.PSVersion.ToString()");
+                var versionResult = await _powerShellService.RunCommandAsync("$PSVersionTable.PSVersion.ToString()");
 
-                    if (!string.IsNullOrWhiteSpace(versionResult))
+                if (!string.IsNullOrWhiteSpace(versionResult))
+                {
+                    var cleanVersion = versionResult.Trim().Split('\n')[0].Trim();
+                    if (!string.IsNullOrWhiteSpace(cleanVersion) && !cleanVersion.Contains("ERROR"))
                     {
-                        var cleanVersion = versionResult.Trim().Split('\n')[0].Trim();
-                        if (!string.IsNullOrWhiteSpace(cleanVersion) && !cleanVersion.Contains("ERROR"))
-                        {
-                            PowerShellVersion = cleanVersion;
-                        }
+                        PowerShellVersion = cleanVersion;
                     }
                 }
-                catch
-                {
-                    // If direct check fails, leave as is
-                }
             }
-
-            private async Task TrySimpleFallbackCheck ()
+            catch
             {
-                try
-                {
-                    await TryDirectVersionCheck();
-
-                    if (PowerShellVersion == "Checking...")
-                    {
-                        PowerShellVersion = "Unable to determine";
-                    }
-
-                    var powerCliResult = await _powerShellService.RunCommandAsync(
-                        "if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }");
-
-                    IsPowerCliInstalled = powerCliResult?.Trim().ToLower() == "true";
-
-                    // FIXED: Save bypass flag based on result
-                    _powerShellService.SavePowerCliStatus(IsPowerCliInstalled);
-
-                    PrerequisiteCheckStatus = "Fallback check completed.";
-                }
-                catch
-                {
-                    PowerShellVersion = "Error occurred";
-                    IsPowerCliInstalled = false;
-                    _powerShellService.SavePowerCliStatus(false);
-                    PrerequisiteCheckStatus = "Could not determine prerequisites.";
-                }
+                // If direct check fails, leave as is
             }
+        }
+
+        private async Task TrySimpleFallbackCheck ()
+        {
+            try
+            {
+                await TryDirectVersionCheck();
+
+                if (PowerShellVersion == "Checking...")
+                {
+                    PowerShellVersion = "Unable to determine";
+                }
+
+                var powerCliResult = await _powerShellService.RunCommandAsync(
+                    "if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }");
+
+                IsPowerCliInstalled = powerCliResult?.Trim().ToLower() == "true";
+
+                // FIXED: Save bypass flag based on result
+                _powerShellService.SavePowerCliStatus(IsPowerCliInstalled);
+
+                PrerequisiteCheckStatus = "Fallback check completed.";
+            }
+            catch
+            {
+                PowerShellVersion = "Error occurred";
+                IsPowerCliInstalled = false;
+                _powerShellService.SavePowerCliStatus(false);
+                PrerequisiteCheckStatus = "Could not determine prerequisites.";
+            }
+        }
 
         /// <summary>
         /// Optional: Add a method to provide real-time updates during installation

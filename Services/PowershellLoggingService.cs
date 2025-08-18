@@ -13,6 +13,7 @@ namespace VCenterMigrationTool.Services;
 public class PowerShellLoggingService : IDisposable
     {
     private readonly ILogger<PowerShellLoggingService> _logger;
+    private readonly ConfigurationService _configurationService;
     private readonly string _logDirectory;
     private readonly ConcurrentQueue<LogEntry> _logBuffer = new();
     private readonly object _fileLock = new();
@@ -34,21 +35,58 @@ public class PowerShellLoggingService : IDisposable
     public PowerShellLoggingService (ILogger<PowerShellLoggingService> logger, ConfigurationService configurationService)
         {
         _logger = logger;
+        _configurationService = configurationService;
 
-        // Create PowerShell logs directory using the same logic as App.xaml.cs
-        var appConfig = configurationService.GetConfiguration();
+        // Get the configured log path from ConfigurationService
+        var configuredLogPath = _configurationService.GetConfiguration().LogPath;
+        string baseLogDirectory;
 
-        // Use the configured log path or fallback to default (same logic as App.xaml.cs)
-        var baseLogPath = !string.IsNullOrEmpty(appConfig.LogPath)
-            ? appConfig.LogPath
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VCenterMigrationTool", "Logs");
+        try
+            {
+            // Check if the configured path is a directory or file path
+            if (Directory.Exists(configuredLogPath))
+                {
+                // It's already a directory
+                baseLogDirectory = configuredLogPath;
+                _logger.LogDebug("Using configured log directory: {LogPath}", configuredLogPath);
+                }
+            else if (File.Exists(configuredLogPath) || Path.HasExtension(configuredLogPath))
+                {
+                // It's a file path, extract the directory
+                baseLogDirectory = Path.GetDirectoryName(configuredLogPath);
+                _logger.LogDebug("Extracted directory from configured log file path: {LogPath} -> {Directory}",
+                    configuredLogPath, baseLogDirectory);
+                }
+            else
+                {
+                // Treat it as a directory path (even if it doesn't exist yet)
+                baseLogDirectory = configuredLogPath;
+                _logger.LogDebug("Treating configured path as directory: {LogPath}", configuredLogPath);
+                }
+
+            if (string.IsNullOrEmpty(baseLogDirectory))
+                {
+                throw new InvalidOperationException("Could not determine base log directory");
+                }
+            }
+        catch (Exception ex)
+            {
+            _logger.LogWarning(ex, "Could not determine log directory from configured path: {LogPath}, using fallback", configuredLogPath);
+            // Fallback to default
+            baseLogDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VCenterMigrationTool", "Logs");
+            }
 
         // Create PowerShell subdirectory within the configured log path
-        _logDirectory = Path.Combine(baseLogPath, "PowerShell");
+        _logDirectory = Path.Combine(baseLogDirectory, "PowerShell");
+
+        _logger.LogInformation("Configured log path: {ConfiguredPath}", configuredLogPath);
+        _logger.LogInformation("Base log directory: {BaseDirectory}", baseLogDirectory);
+        _logger.LogInformation("PowerShell logs will be written to: {LogDirectory}", _logDirectory);
 
         if (!Directory.Exists(_logDirectory))
             {
             Directory.CreateDirectory(_logDirectory);
+            _logger.LogInformation("Created PowerShell log directory: {LogDirectory}", _logDirectory);
             }
 
         // Initialize daily log file
@@ -227,10 +265,29 @@ public class PowerShellLoggingService : IDisposable
                 Source = "PARAMS",
                 ScriptName = scriptName,
                 SessionId = sessionId,
-                Message = $"Parameters: {string.Join(", ", safeParams)}"
+                Message = $"Script parameters: {string.Join(", ", safeParams)}"
                 };
 
             WriteLog(entry);
+            }
+
+        // Always log that parameters were provided (even if all sensitive)
+        var totalParams = parameters.Count;
+        var sensitiveParams = parameters.Count(p => IsSensitiveParameter(p.Key));
+
+        if (sensitiveParams > 0)
+            {
+            var paramSummary = new LogEntry
+                {
+                Timestamp = DateTime.Now,
+                Level = "DEBUG",
+                Source = "PARAMS",
+                ScriptName = scriptName,
+                SessionId = sessionId,
+                Message = $"Script parameters: {totalParams} total ({sensitiveParams} redacted for security)"
+                };
+
+            WriteLog(paramSummary);
             }
         }
 

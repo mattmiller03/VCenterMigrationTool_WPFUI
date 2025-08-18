@@ -71,7 +71,7 @@ public partial class ViewProfilesViewModel : ObservableObject
         {
         if (SelectedProfile is null)
             {
-            ConnectionStatus = "Please select a profile from the list to test.";
+            ConnectionStatus = "Please select a profile to test.";
             return;
             }
 
@@ -79,12 +79,16 @@ public partial class ViewProfilesViewModel : ObservableObject
         string? password = _credentialService.GetPassword(SelectedProfile);
         if (string.IsNullOrEmpty(password))
             {
-            ConnectionStatus = "Password not saved for this profile. Cannot test.";
+            ConnectionStatus = "No saved password for this profile.";
+            _logger.LogWarning("Connection test failed for {ServerAddress}: No password saved",
+                SelectedProfile.ServerAddress);
             IsBusy = false;
             return;
             }
 
-        ConnectionStatus = $"Testing connection to {SelectedProfile.ServerAddress}...";
+        ConnectionStatus = $"Testing {SelectedProfile.ServerAddress}...";
+        _logger.LogInformation("Starting connection test for {ServerAddress} with user {Username}",
+            SelectedProfile.ServerAddress, SelectedProfile.Username);
 
         var scriptParams = new System.Collections.Generic.Dictionary<string, object>
         {
@@ -93,31 +97,55 @@ public partial class ViewProfilesViewModel : ObservableObject
             { "Password", password }
         };
 
-        // FIXED: Add BypassModuleCheck manually when PowerCLI is confirmed installed
+        // Add BypassModuleCheck when PowerCLI is confirmed installed
         if (HybridPowerShellService.PowerCliConfirmedInstalled)
             {
             scriptParams["BypassModuleCheck"] = true;
-            _logger.LogInformation("DEBUG: [Settings Test] Added BypassModuleCheck=true for profile test");
+            _logger.LogInformation("Added BypassModuleCheck=true for connection test (PowerCLI confirmed installed)");
             }
         else
             {
-            _logger.LogInformation("DEBUG: [Settings Test] PowerCLI not confirmed installed, not adding bypass");
+            _logger.LogInformation("PowerCLI not confirmed installed, performing full module check");
             }
 
-        // Enhanced debug logging for settings page testing (SECURE - no passwords)
-        _logger.LogInformation("DEBUG: [Settings Test] PowerCliConfirmedInstalled = {PowerCliConfirmed}",
-            HybridPowerShellService.PowerCliConfirmedInstalled);
-
-        // SECURE: Log parameters excluding sensitive data
+        // Log test parameters (excluding password)
         var safeParams = scriptParams
             .Where(p => !p.Key.ToLower().Contains("password"))
             .Select(p => $"{p.Key}={p.Value}");
-        _logger.LogInformation("DEBUG: [Settings Test] Safe parameters: {Parameters}", string.Join(", ", safeParams));
+        _logger.LogDebug("Connection test parameters: {Parameters}", string.Join(", ", safeParams));
 
-        string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-        string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams, logPath);
+        try
+            {
+            string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
+            string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams, logPath);
 
-        ConnectionStatus = result.Trim() == "Success" ? "Connection successful!" : $"Failed: {result.Replace("Failure:", "").Trim()}";
-        IsBusy = false;
+            // Parse the result and set simple status message
+            if (result.Contains("Success"))
+                {
+                ConnectionStatus = "✅ Connection successful";
+                _logger.LogInformation("Connection test PASSED for {ServerAddress}", SelectedProfile.ServerAddress);
+                }
+            else
+                {
+                ConnectionStatus = "❌ Connection failed";
+
+                // Log the detailed error to console/logs
+                var errorDetails = result.Replace("Failure:", "").Trim();
+                _logger.LogError("Connection test FAILED for {ServerAddress}: {ErrorDetails}",
+                    SelectedProfile.ServerAddress, errorDetails);
+
+                // Also log the full result for debugging
+                _logger.LogDebug("Full PowerShell result: {FullResult}", result);
+                }
+            }
+        catch (System.Exception ex)
+            {
+            ConnectionStatus = "❌ Test error";
+            _logger.LogError(ex, "Exception during connection test for {ServerAddress}", SelectedProfile.ServerAddress);
+            }
+        finally
+            {
+            IsBusy = false;
+            }
         }
     }

@@ -28,19 +28,14 @@ param(
 # Import the enhanced logging framework
 . "$PSScriptRoot\Write-ScriptLog.ps1"
 
-# Initialize logging
+# Initialize logging with proper LogPath parameter
 $loggingParams = @{
     ScriptName = 'Test-vCenterConnection'
-    LogLevel = $LogLevel
-    IncludeStackTrace = $IncludeStackTrace
 }
 
+# Pass the LogPath if provided (this is the key fix)
 if ($LogPath) {
-    $loggingParams.LogFile = $LogPath
-}
-
-if ($DisableConsoleOutput) {
-    $loggingParams.DisableConsole = $true
+    $loggingParams.LogPath = $LogPath
 }
 
 Start-ScriptLogging @loggingParams
@@ -102,7 +97,8 @@ try {
     if (-not $BypassModuleCheck) {
         Write-LogInfo "Module bypass NOT enabled - importing PowerCLI modules" -Category "PowerCLI"
         
-        $moduleImportResult = Measure-ScriptBlock -Name "PowerCLI Module Import" -Category "PowerCLI" -ScriptBlock {
+        $moduleImportStart = Get-Date
+        try {
             Import-Module VMware.PowerCLI -Force -ErrorAction Stop
             
             Write-LogDebug "Setting PowerCLI configuration..." -Category "PowerCLI"
@@ -113,13 +109,11 @@ try {
             $loadedModules = Get-Module -Name "VMware.*"
             Write-LogSuccess "Successfully loaded $($loadedModules.Count) VMware modules" -Category "PowerCLI"
             
-            return $true
+            $moduleImportTime = (Get-Date) - $moduleImportStart
+            $script:Statistics['Module Import Time'] = [math]::Round($moduleImportTime.TotalSeconds, 2)
         }
-        
-        $script:Statistics['Module Import Time'] = 1
-        
-        if (-not $moduleImportResult) {
-            Write-LogCritical "PowerCLI module import failed" -Category "PowerCLI"
+        catch {
+            Write-LogCritical "PowerCLI module import failed: $($_.Exception.Message)" -Category "PowerCLI"
             Write-Output "Failure: PowerCLI module import failed"
             exit 1
         }
@@ -155,20 +149,13 @@ try {
     # Test network connectivity first
     Write-LogDebug "Testing network connectivity to $VCenterServer..." -Category "Network"
     try {
-        $connectivityResult = Measure-ScriptBlock -Name "Network Connectivity Test" -Category "Network" -ScriptBlock {
-            $tcpClient = New-Object System.Net.Sockets.TcpClient
-            $connectTask = $tcpClient.ConnectAsync($VCenterServer, 443)
-            if ($connectTask.Wait(3000)) {
-                if ($tcpClient.Connected) {
-                    $tcpClient.Close()
-                    return $true
-                }
+        $tcpClient = New-Object System.Net.Sockets.TcpClient
+        $connectTask = $tcpClient.ConnectAsync($VCenterServer, 443)
+        if ($connectTask.Wait(3000)) {
+            if ($tcpClient.Connected) {
+                $tcpClient.Close()
+                Write-LogSuccess "Port 443 is reachable on $VCenterServer" -Category "Network"
             }
-            return $false
-        }
-        
-        if ($connectivityResult) {
-            Write-LogSuccess "Port 443 is reachable on $VCenterServer" -Category "Network"
         } else {
             Write-LogWarning "Connection to port 443 timed out (may still work)" -Category "Network"
         }
@@ -180,56 +167,64 @@ try {
     # Connect to vCenter with timing
     $script:Statistics['Connection Tests']++
     
-    $connectionResult = Measure-ScriptBlock -Name "vCenter Connection" -Category "Connection" -ScriptBlock {
+    $connectionStart = Get-Date
+    try {
         Write-LogDebug "Executing Connect-VIServer..." -Category "Connection"
         
         $connection = Connect-VIServer -Server $VCenterServer -Credential $Credential -Force -ErrorAction Stop
-        return $connection
-    }
-    
-    $script:Statistics['Connection Time'] = 1
-    
-    if ($connectionResult -and $connectionResult.IsConnected) {
-        $script:Statistics['Successful Connections']++
         
-        Write-LogSuccess "CONNECTION SUCCESSFUL!" -Category "Connection"
+        $connectionTime = (Get-Date) - $connectionStart
+        $script:Statistics['Connection Time'] = [math]::Round($connectionTime.TotalSeconds, 2)
         
-        # Log connection details
-        Write-LogInfo "vCenter Details:" -Category "Connection" -Data @{
-            Server = $connectionResult.Name
-            Version = $connectionResult.Version
-            Build = $connectionResult.Build
-            SessionId = $connectionResult.SessionId
-            User = $connectionResult.User
+        if ($connection -and $connection.IsConnected) {
+            $script:Statistics['Successful Connections']++
+            
+            Write-LogSuccess "CONNECTION SUCCESSFUL!" -Category "Connection"
+            
+            # Log connection details
+            Write-LogInfo "vCenter Server: $($connection.Name)" -Category "Connection"
+            Write-LogInfo "vCenter Version: $($connection.Version)" -Category "Connection"
+            Write-LogInfo "vCenter Build: $($connection.Build)" -Category "Connection"
+            Write-LogInfo "Session ID: $($connection.SessionId)" -Category "Connection"
+            Write-LogInfo "Connected User: $($connection.User)" -Category "Connection"
+            
+            # Disconnect cleanly
+            Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
+            Disconnect-VIServer -Server $VCenterServer -Force -Confirm:$false
+            Write-LogSuccess "Disconnected successfully" -Category "Connection"
+            
+            Write-LogSuccess "Test completed successfully" -Category "Summary"
+            
+            # Return success in a format the app expects
+            Write-Output "Success: Connection test passed"
+            exit 0
+        } 
+        else {
+            $script:Statistics['Failed Connections']++
+            $errorMsg = "Connection object was created but IsConnected is false"
+            Write-LogError $errorMsg -Category "Connection"
+            Write-Output "Failure: Connection not established"
+            exit 1
         }
-        
-        # Disconnect cleanly
-        Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
-        Disconnect-VIServer -Server $VCenterServer -Force -Confirm:$false
-        Write-LogSuccess "Disconnected successfully" -Category "Connection"
-        
-        Write-LogSuccess "Test completed successfully" -Category "Summary"
-        
-        # Return success in a format the app expects
-        Write-Output "Success"
-        exit 0
-    } 
-    else {
-        $script:Statistics['Failed Connections']++
-        $errorMsg = "Connection object was created but IsConnected is false"
-        Write-LogError $errorMsg -Category "Connection"
-        Write-Output "Failure: Connection not established"
-        exit 1
+    }
+    catch {
+        $connectionTime = (Get-Date) - $connectionStart
+        $script:Statistics['Connection Time'] = [math]::Round($connectionTime.TotalSeconds, 2)
+        throw
     }
 }
 catch {
     $script:Statistics['Failed Connections']++
     
-    Write-LogCritical "CONNECTION TEST FAILED" -Category "Connection" -ErrorRecord $_
+    Write-LogCritical "CONNECTION TEST FAILED" -Category "Connection"
     
     $errorMsg = $_.Exception.Message
     Write-LogError "Exception Type: $($_.Exception.GetType().FullName)" -Category "Error"
     Write-LogError "Error Message: $errorMsg" -Category "Error"
+    
+    if ($IncludeStackTrace) {
+        Write-LogDebug "Stack Trace: $($_.ScriptStackTrace)" -Category "Error"
+    }
     
     # Provide user-friendly error message
     $userFriendlyMessage = switch -Regex ($errorMsg) {
@@ -237,6 +232,8 @@ catch {
         "Could not resolve" { "Failure: Could not resolve server address" }
         "PowerCLI" { "Failure: PowerCLI module error" }
         "No valid credentials" { "Failure: No credentials provided" }
+        "timeout|timed out" { "Failure: Connection timeout" }
+        "certificate" { "Failure: SSL certificate error" }
         default { "Failure: $errorMsg" }
     }
     
@@ -251,9 +248,9 @@ finally {
     # Finalize logging with statistics
     $success = $script:Statistics['Successful Connections'] -gt 0
     $summary = if ($success) {
-        "Connection test passed"
+        "Connection test passed - Connected successfully to $VCenterServer"
     } else {
-        "Connection test failed"
+        "Connection test failed for $VCenterServer"
     }
     
     Stop-ScriptLogging -Success $success -Summary $summary -Statistics $script:Statistics

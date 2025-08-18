@@ -31,7 +31,8 @@ namespace VCenterMigrationTool.ViewModels
                 new NavigationViewItem("ESXi Hosts", SymbolRegular.Server24, typeof(Views.Pages.EsxiHostsPage)),
                 new NavigationViewItem("Virtual Machines", SymbolRegular.Desktop24, typeof(Views.Pages.VmMigrationPage)),
                 new NavigationViewItem("Resource Pools", SymbolRegular.DatabaseStack16, typeof(Views.Pages.ResourcePoolMigrationPage)),
-                new NavigationViewItem("Network", SymbolRegular.NetworkCheck24, typeof(Views.Pages.NetworkMigrationPage))
+                new NavigationViewItem("Network", SymbolRegular.NetworkCheck24, typeof(Views.Pages.NetworkMigrationPage)),
+                new NavigationViewItem("Activity Logs", SymbolRegular.List24, typeof(Views.Pages.ActivityLogsPage))
             };
 
             NavigationFooter = new ObservableCollection<object>

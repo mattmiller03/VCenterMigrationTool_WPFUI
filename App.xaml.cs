@@ -12,6 +12,7 @@ using System.Windows.Threading;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using VCenterMigrationTool.ViewModels;
+using VCenterMigrationTool.ViewModels.Pages;
 using VCenterMigrationTool.ViewModels.Settings;
 using VCenterMigrationTool.Views.Dialogs;
 using VCenterMigrationTool.Views.Pages;
@@ -103,6 +104,8 @@ public partial class App
             services.AddSingleton<NetworkMigrationViewModel>();
             services.AddSingleton<ResourcePoolMigrationPage>();
             services.AddSingleton<ResourcePoolMigrationViewModel>();
+            services.AddSingleton<ActivityLogsViewModel>();
+            services.AddSingleton<ActivityLogsPage>();
 
             // Settings Page and its sub-ViewModels
             services.AddSingleton<SettingsPage>();
