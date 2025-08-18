@@ -296,7 +296,7 @@ try {
         if ($ntpServers.Count -gt 0) {
             Write-LogInfo "  NTP Servers: $($ntpServers -join ', ')" -Category "Additional"
         } else {
-            Write-LogWarning "  No NTP servers configured" -Category "Additional"
+            Write-LogInfo "  No NTP servers configured" -Category "Additional"
         }
         
         # Syslog Configuration
@@ -306,7 +306,7 @@ try {
             $backup.SyslogServer = $syslog.Value
             Write-LogInfo "  Syslog Server: $($syslog.Value)" -Category "Additional"
         } else {
-            Write-LogWarning "  No syslog server configured" -Category "Additional"
+            Write-LogInfo "  No syslog server configured" -Category "Additional"
         }
         
         # DNS Configuration
@@ -439,4 +439,4 @@ finally {
     
     # Output the final result as JSON for consumption by calling scripts
     $result | ConvertTo-Json -Compress
-}
+}   
