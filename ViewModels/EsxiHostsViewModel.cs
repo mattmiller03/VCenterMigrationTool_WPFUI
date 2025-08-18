@@ -555,31 +555,210 @@ public partial class EsxiHostsViewModel : ObservableObject
                 BackupProgress = $"Backing up {host.Name} ({completed}/{SelectedSourceHosts.Count})...";
 
                 var backupScript = $@"
-                $vmhost = Get-VMHost -Name '{host.Name}' -ErrorAction Stop
-                
-                $hostConfig = @{{
-                    Name = $vmhost.Name
-                    Version = $vmhost.Version
-                    Build = $vmhost.Build
-                    NetworkInfo = Get-VirtualSwitch -VMHost $vmhost | Select-Object *
-                    StorageInfo = Get-Datastore -VMHost $vmhost | Select-Object *
-                    AdvancedSettings = Get-AdvancedSetting -Entity $vmhost | Select-Object Name, Value
-                    Services = Get-VMHostService -VMHost $vmhost | Select-Object *
-                    NtpServers = Get-VMHostNtpServer -VMHost $vmhost
-                    DnsServers = (Get-VMHostNetwork -VMHost $vmhost).DnsAddress
-                    BackupDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+                try {{
+                    $vmhost = Get-VMHost -Name '{host.Name}' -ErrorAction Stop
+                    
+                    # Network Configuration - Convert to simple objects
+                    $virtualSwitches = @()
+                    $vSwitches = Get-VirtualSwitch -VMHost $vmhost -ErrorAction SilentlyContinue
+                    foreach ($vSwitch in $vSwitches) {{
+                        $virtualSwitches += @{{
+                            Name = $vSwitch.Name
+                            NumPorts = $vSwitch.NumPorts
+                            NumPortsAvailable = $vSwitch.NumPortsAvailable
+                            Mtu = $vSwitch.Mtu
+                            Nic = ($vSwitch.Nic -join ',')
+                        }}
+                    }}
+                    
+                    # Port Groups
+                    $portGroups = @()
+                    $pgs = Get-VirtualPortGroup -VMHost $vmhost -ErrorAction SilentlyContinue
+                    foreach ($pg in $pgs) {{
+                        $portGroups += @{{
+                            Name = $pg.Name
+                            VirtualSwitchName = $pg.VirtualSwitchName
+                            VLanId = $pg.VLanId
+                        }}
+                    }}
+                    
+                    # VMKernel Adapters
+                    $vmkernelAdapters = @()
+                    $vmks = Get-VMHostNetworkAdapter -VMHost $vmhost -VMKernel -ErrorAction SilentlyContinue
+                    foreach ($vmk in $vmks) {{
+                        $vmkernelAdapters += @{{
+                            Name = $vmk.Name
+                            IP = $vmk.IP
+                            SubnetMask = $vmk.SubnetMask
+                            Mac = $vmk.Mac
+                            PortGroupName = $vmk.PortGroupName
+                            DhcpEnabled = $vmk.DhcpEnabled
+                            ManagementTrafficEnabled = $vmk.ManagementTrafficEnabled
+                            VMotionEnabled = $vmk.VMotionEnabled
+                            FaultToleranceLoggingEnabled = $vmk.FaultToleranceLoggingEnabled
+                            VsanTrafficEnabled = $vmk.VsanTrafficEnabled
+                        }}
+                    }}
+                    
+                    # Storage Configuration
+                    $datastores = @()
+                    $ds = Get-Datastore -VMHost $vmhost -ErrorAction SilentlyContinue
+                    foreach ($datastore in $ds) {{
+                        $datastores += @{{
+                            Name = $datastore.Name
+                            CapacityGB = [math]::Round($datastore.CapacityGB, 2)
+                            FreeSpaceGB = [math]::Round($datastore.FreeSpaceGB, 2)
+                            Type = $datastore.Type
+                            FileSystemVersion = $datastore.FileSystemVersion
+                            Accessible = $datastore.Accessible
+                            State = $datastore.State.ToString()
+                        }}
+                    }}
+                    
+                    # Storage Adapters
+                    $storageAdapters = @()
+                    $hbas = Get-VMHostHba -VMHost $vmhost -ErrorAction SilentlyContinue
+                    foreach ($hba in $hbas) {{
+                        $storageAdapters += @{{
+                            Device = $hba.Device
+                            Type = $hba.Type
+                            Model = $hba.Model
+                            Driver = $hba.Driver
+                            Status = $hba.Status.ToString()
+                        }}
+                    }}
+                    
+                    # Advanced Settings
+                    $advancedSettings = @{{}}
+                    $advSettings = Get-AdvancedSetting -Entity $vmhost -ErrorAction SilentlyContinue
+                    foreach ($setting in $advSettings) {{
+                        $advancedSettings[$setting.Name] = $setting.Value
+                    }}
+                    
+                    # Services
+                    $services = @()
+                    $hostServices = Get-VMHostService -VMHost $vmhost -ErrorAction SilentlyContinue
+                    foreach ($service in $hostServices) {{
+                        $services += @{{
+                            Key = $service.Key
+                            Label = $service.Label
+                            Running = $service.Running
+                            Required = $service.Required
+                            Policy = $service.Policy.ToString()
+                        }}
+                    }}
+                    
+                    # NTP Servers
+                    $ntpServers = @()
+                    $ntps = Get-VMHostNtpServer -VMHost $vmhost -ErrorAction SilentlyContinue
+                    if ($ntps) {{
+                        $ntpServers = $ntps
+                    }}
+                    
+                    # DNS Configuration
+                    $dnsConfig = @{{}}
+                    try {{
+                        $network = Get-VMHostNetwork -VMHost $vmhost -ErrorAction SilentlyContinue
+                        if ($network) {{
+                            $dnsConfig = @{{
+                                DnsAddress = $network.DnsAddress
+                                SearchDomain = $network.SearchDomain
+                                HostName = $network.HostName
+                                DomainName = $network.DomainName
+                            }}
+                        }}
+                    }} catch {{
+                        $dnsConfig = @{{ Error = 'Unable to retrieve DNS configuration' }}
+                    }}
+                    
+                    # Syslog Configuration
+                    $syslogConfig = @{{}}
+                    try {{
+                        $syslogSetting = Get-AdvancedSetting -Entity $vmhost -Name 'Syslog.global.logHost' -ErrorAction SilentlyContinue
+                        if ($syslogSetting) {{
+                            $syslogConfig = @{{
+                                LogHost = $syslogSetting.Value
+                            }}
+                        }}
+                    }} catch {{
+                        $syslogConfig = @{{ LogHost = '' }}
+                    }}
+                    
+                    # Create the final configuration object
+                    $hostConfig = @{{
+                        HostInfo = @{{
+                            Name = $vmhost.Name
+                            Version = $vmhost.Version
+                            Build = $vmhost.Build
+                            Model = $vmhost.Model
+                            Manufacturer = $vmhost.Manufacturer
+                            ProcessorType = $vmhost.ProcessorType
+                            ConnectionState = $vmhost.ConnectionState.ToString()
+                            PowerState = $vmhost.PowerState.ToString()
+                            CpuCores = $vmhost.NumCpu
+                            CpuMhz = $vmhost.CpuTotalMhz
+                            MemoryGB = [math]::Round($vmhost.MemoryTotalGB, 2)
+                        }}
+                        NetworkConfiguration = @{{
+                            VirtualSwitches = $virtualSwitches
+                            PortGroups = $portGroups
+                            VMKernelAdapters = $vmkernelAdapters
+                            DnsConfiguration = $dnsConfig
+                        }}
+                        StorageConfiguration = @{{
+                            Datastores = $datastores
+                            StorageAdapters = $storageAdapters
+                        }}
+                        AdvancedSettings = $advancedSettings
+                        Services = $services
+                        NtpServers = $ntpServers
+                        SyslogConfiguration = $syslogConfig
+                        BackupMetadata = @{{
+                            BackupDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+                            BackupUser = $env:USERNAME
+                            PowerCLIVersion = (Get-Module VMware.PowerCLI).Version.ToString()
+                            ScriptVersion = '2.0'
+                        }}
+                    }}
+                    
+                    # Convert to JSON with error handling
+                    $json = $hostConfig | ConvertTo-Json -Depth 15 -Compress
+                    Write-Output $json
+                    
+                }} catch {{
+                    Write-Output ""ERROR: $($_.Exception.Message)""
                 }}
-                
-                $hostConfig | ConvertTo-Json -Depth 10
             ";
 
                 var result = await _persistentConnectionService.ExecuteCommandAsync("source", backupScript);
 
                 if (!result.StartsWith("ERROR:"))
                     {
-                    var fileName = Path.Combine(backupPath, $"{host.Name}_config.json");
-                    await File.WriteAllTextAsync(fileName, result);
-                    _logger.LogInformation("Backed up host {Host} to {File}", host.Name, fileName);
+                    try
+                        {
+                        // Validate JSON before saving
+                        var testJson = JsonSerializer.Deserialize<JsonElement>(result);
+
+                        var fileName = Path.Combine(backupPath, $"{host.Name}_config_{DateTime.Now:yyyyMMdd_HHmmss}.json");
+                        await File.WriteAllTextAsync(fileName, result);
+
+                        _logger.LogInformation("Successfully backed up host {Host} to {File}", host.Name, fileName);
+                        }
+                    catch (JsonException ex)
+                        {
+                        _logger.LogError("JSON validation failed for host {Host}: {Error}", host.Name, ex.Message);
+
+                        // Save the raw result for debugging
+                        var debugFileName = Path.Combine(backupPath, $"{host.Name}_debug_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+                        await File.WriteAllTextAsync(debugFileName, result);
+
+                        throw new InvalidOperationException($"JSON validation failed for host {host.Name}: {ex.Message}");
+                        }
+                    }
+                else
+                    {
+                    _logger.LogError("PowerShell error for host {Host}: {Error}", host.Name, result);
+                    throw new InvalidOperationException($"PowerShell error for host {host.Name}: {result}");
                     }
                 }
 
