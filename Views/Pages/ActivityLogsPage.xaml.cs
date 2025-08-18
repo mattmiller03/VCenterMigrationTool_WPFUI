@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using VCenterMigrationTool.ViewModels.Pages;
+using VCenterMigrationTool.ViewModels;
 using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Controls;
 
@@ -54,7 +54,15 @@ public partial class ActivityLogsPage : Page, INavigableView<ActivityLogsViewMod
             });
             }
         }
-
+    private void RefreshOptionsButton_Click (object sender, RoutedEventArgs e)
+        {
+        if (sender is Wpf.Ui.Controls.Button button && button.ContextMenu != null)
+        {
+            button.ContextMenu.PlacementTarget = button;
+            button.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            button.ContextMenu.IsOpen = true;
+        }
+    }
     private void CopyMessage_Click (object sender, RoutedEventArgs e)
         {
         if (ViewModel.SelectedLogEntry != null)

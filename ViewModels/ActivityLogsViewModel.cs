@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Data;
 using VCenterMigrationTool.Services;
 
-namespace VCenterMigrationTool.ViewModels.Pages;
+namespace VCenterMigrationTool.ViewModels;
 
 public partial class ActivityLogsViewModel : ObservableObject, IDisposable
     {
@@ -37,6 +37,15 @@ public partial class ActivityLogsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _logStats = "";
+
+    [ObservableProperty]
+    private bool _isRefreshing;
+
+    [ObservableProperty]
+    private DateTime _lastRefreshTime = DateTime.Now;
+
+    [ObservableProperty]
+    private string _refreshStatus = "Ready";
 
     private readonly object _logEntriesLock = new object();
     private ICollectionView? _filteredView;
@@ -135,6 +144,81 @@ public partial class ActivityLogsViewModel : ObservableObject, IDisposable
         }
 
     [RelayCommand]
+    private async Task RefreshLogs ()
+        {
+        if (IsRefreshing) return; // Prevent multiple simultaneous refreshes
+
+        IsRefreshing = true;
+        RefreshStatus = "Refreshing logs...";
+
+        try
+            {
+            _logger.LogInformation("Manual refresh of activity logs requested");
+
+            // Clear current logs if desired (optional - you might want to keep them)
+            // Uncomment the next line if you want to clear logs before refresh
+            // LogEntries.Clear();
+
+            // Load fresh logs from the service
+            var recentLogs = _powerShellLoggingService.GetRecentLogs(MaxLogEntries);
+
+            await App.Current.Dispatcher.InvokeAsync(() =>
+            {
+                lock (_logEntriesLock)
+                    {
+                    // Option 1: Clear and reload all logs
+                    LogEntries.Clear();
+
+                    foreach (var log in recentLogs)
+                        {
+                        var displayEntry = new LogEntryDisplay
+                            {
+                            Timestamp = log.Timestamp,
+                            Level = log.Level,
+                            Source = log.Source,
+                            ScriptName = log.ScriptName,
+                            SessionId = log.SessionId,
+                            Message = log.Message,
+                            FullText = $"{log.Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{log.Level}] [{log.SessionId}] [{log.ScriptName}] {log.Message}"
+                            };
+
+                        LogEntries.Add(displayEntry);
+                        }
+
+                    // Option 2: Only add new logs (alternative approach)
+                    // You could implement logic here to only add logs newer than the latest timestamp
+                    // var latestTimestamp = LogEntries.LastOrDefault()?.Timestamp ?? DateTime.MinValue;
+                    // var newLogs = recentLogs.Where(l => l.Timestamp > latestTimestamp);
+                    // foreach (var log in newLogs) { /* add logic */ }
+                    }
+
+                UpdateLogStats();
+                LastRefreshTime = DateTime.Now;
+                RefreshStatus = $"Refreshed {recentLogs.Count} log entries";
+            });
+
+            _logger.LogInformation("Activity logs refreshed successfully. Loaded {Count} entries", recentLogs.Count);
+
+            // Clear the status message after a delay
+            await Task.Delay(2000);
+            RefreshStatus = "Ready";
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Failed to refresh activity logs");
+            RefreshStatus = $"Refresh failed: {ex.Message}";
+
+            // Clear error message after a delay
+            await Task.Delay(3000);
+            RefreshStatus = "Ready";
+            }
+        finally
+            {
+            IsRefreshing = false;
+            }
+        }
+
+    [RelayCommand]
     private void OnClearLogs ()
         {
         lock (_logEntriesLock)
@@ -223,7 +307,117 @@ public partial class ActivityLogsViewModel : ObservableObject, IDisposable
         _filteredView?.Refresh();
         }
 
+    [RelayCommand]
+    private async Task RefreshAndClear ()
+        {
+        if (IsRefreshing) return;
 
+        IsRefreshing = true;
+        RefreshStatus = "Clearing and refreshing logs...";
+
+        try
+            {
+            // Clear logs first
+            lock (_logEntriesLock)
+                {
+                LogEntries.Clear();
+                }
+
+            // Then refresh
+            await RefreshLogs();
+
+            _logger.LogInformation("Activity logs cleared and refreshed");
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Failed to clear and refresh activity logs");
+            RefreshStatus = $"Clear and refresh failed: {ex.Message}";
+
+            await Task.Delay(3000);
+            RefreshStatus = "Ready";
+            }
+        finally
+            {
+            IsRefreshing = false;
+            }
+        }
+
+    // Enhanced method to get logs with different time ranges
+    [RelayCommand]
+    private async Task RefreshLogsWithTimeRange (string timeRange)
+        {
+        if (IsRefreshing) return;
+
+        IsRefreshing = true;
+
+        try
+            {
+            var logCount = timeRange switch
+                {
+                    "LastHour" => 500,
+                    "Last4Hours" => 1000,
+                    "Last24Hours" => 2000,
+                    "All" => 5000,
+                    _ => MaxLogEntries
+                    };
+
+            RefreshStatus = $"Loading {timeRange.ToLower()} logs...";
+
+            var recentLogs = _powerShellLoggingService.GetRecentLogs(logCount);
+
+            // Filter by time range if needed
+            var filteredLogs = timeRange switch
+                {
+                    "LastHour" => recentLogs.Where(l => l.Timestamp > DateTime.Now.AddHours(-1)),
+                    "Last4Hours" => recentLogs.Where(l => l.Timestamp > DateTime.Now.AddHours(-4)),
+                    "Last24Hours" => recentLogs.Where(l => l.Timestamp > DateTime.Now.AddDays(-1)),
+                    _ => recentLogs
+                    };
+
+            await App.Current.Dispatcher.InvokeAsync(() =>
+            {
+                lock (_logEntriesLock)
+                    {
+                    LogEntries.Clear();
+
+                    foreach (var log in filteredLogs)
+                        {
+                        var displayEntry = new LogEntryDisplay
+                            {
+                            Timestamp = log.Timestamp,
+                            Level = log.Level,
+                            Source = log.Source,
+                            ScriptName = log.ScriptName,
+                            SessionId = log.SessionId,
+                            Message = log.Message,
+                            FullText = $"{log.Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{log.Level}] [{log.SessionId}] [{log.ScriptName}] {log.Message}"
+                            };
+
+                        LogEntries.Add(displayEntry);
+                        }
+                    }
+
+                UpdateLogStats();
+                LastRefreshTime = DateTime.Now;
+                RefreshStatus = $"Loaded {filteredLogs.Count()} entries from {timeRange.ToLower()}";
+            });
+
+            await Task.Delay(2000);
+            RefreshStatus = "Ready";
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Failed to refresh logs with time range {TimeRange}", timeRange);
+            RefreshStatus = $"Failed to load {timeRange.ToLower()} logs";
+
+            await Task.Delay(3000);
+            RefreshStatus = "Ready";
+            }
+        finally
+            {
+            IsRefreshing = false;
+            }
+        }
 
     public void SetCollectionView (ICollectionView collectionView)
         {

@@ -8,6 +8,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:local="clr-namespace:VCenterMigrationTool.Views.Pages"
     xmlns:models="clr-namespace:VCenterMigrationTool.Models"
+    xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
     mc:Ignorable="d"
     d:DesignHeight="700" d:DesignWidth="1200"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
@@ -15,7 +16,10 @@
     Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
     <Page.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        <helpers:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <helpers:BooleanAndConverter x:Key="BooleanAndConverter"/>
     </Page.Resources>
 
     <Grid Margin="20">
@@ -179,33 +183,71 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Migration/Backup Arrow -->
+            <!-- Fixed Migration/Backup section - Replace the StackPanel in Grid.Column="1" -->
             <StackPanel Grid.Column="1" 
-                       VerticalAlignment="Center"
-                       Margin="10,0,10,0" Height="261">
-                <!-- Migration Button (visible when target connected) -->
+           VerticalAlignment="Center"
+           Margin="10,0,10,0">
+
+                <!-- Migration Button (visible when target connected and not migrating) -->
                 <ui:Button Content="Migrate →" 
-                          Command="{Binding ViewModel.MigrateSelectedHostsCommand}"
-                          Appearance="Primary"
-                          FontSize="16"
-                          Padding="15,10"
-                          Visibility="{Binding ViewModel.IsTargetConnected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+              Command="{Binding ViewModel.MigrateSelectedHostsCommand}"
+              Appearance="Primary"
+              FontSize="16"
+              Padding="15,10"
+              Margin="0,0,0,10"
+              IsEnabled="{Binding ViewModel.IsMigrating, Converter={StaticResource InverseBooleanConverter}}"
+              Visibility="{Binding ViewModel.IsTargetConnected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-                <!-- Backup Button (always visible when source connected) -->
+                <!-- Migration Progress (visible when migrating) -->
+                <StackPanel Orientation="Horizontal" 
+               HorizontalAlignment="Center"
+               Margin="0,0,0,10"
+               Visibility="{Binding ViewModel.IsMigrating, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <ui:ProgressRing IsIndeterminate="True"
+                        Width="30" 
+                        Height="30"
+                        Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding ViewModel.MigrationProgress}"
+                  VerticalAlignment="Center"
+                  FontSize="12"
+                  MaxWidth="200"
+                  TextWrapping="Wrap"/>
+                </StackPanel>
 
+                <!-- Backup Button (visible when source connected and not backing up) -->
+                <ui:Button Content="📋 Backup" 
+              Command="{Binding ViewModel.BackupSelectedHostsCommand}"
+              Appearance="Secondary"
+              FontSize="14"
+              Padding="15,8"
+              Width="120"
+              Margin="0,0,0,10"
+              IsEnabled="{Binding ViewModel.IsBackingUp, Converter={StaticResource InverseBooleanConverter}}"
+              Visibility="{Binding ViewModel.IsSourceConnected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                <!-- Backup Progress (visible when backing up) -->
+                <StackPanel Orientation="Horizontal" 
+               HorizontalAlignment="Center"
+               Margin="0,0,0,10"
+               Visibility="{Binding ViewModel.IsBackingUp, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <ui:ProgressRing IsIndeterminate="True"
+                        Width="30" 
+                        Height="30"
+                        Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding ViewModel.BackupProgress}"
+                  VerticalAlignment="Center"
+                  FontSize="12"
+                  MaxWidth="200"
+                  TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <!-- Host counter (always visible when hosts are selected) -->
                 <TextBlock Text="{Binding ViewModel.SelectedSourceHosts.Count, StringFormat='{}{0} hosts selected'}"
-                          HorizontalAlignment="Center"
-                          Margin="0,5,0,0"
-                          FontSize="11"
-                          Opacity="0.7"/>
-                <ui:Button Content="Backup" 
-                          Command="{Binding ViewModel.BackupSelectedHostsCommand}"
-                          Appearance="Secondary"
-                          FontSize="14"
-                          Padding="15,8" Width="96"
-                          />
-                <ui:ProgressRing IsIndeterminate="True"
-                                Width="60" Height="67"/>
+              HorizontalAlignment="Center"
+              FontSize="11"
+              Opacity="0.7"
+              Visibility="{Binding ViewModel.SelectedSourceHosts.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+
             </StackPanel>
 
             <!-- Target vCenter -->

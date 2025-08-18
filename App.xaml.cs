@@ -12,7 +12,6 @@ using System.Windows.Threading;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using VCenterMigrationTool.ViewModels;
-using VCenterMigrationTool.ViewModels.Pages;
 using VCenterMigrationTool.ViewModels.Settings;
 using VCenterMigrationTool.Views.Dialogs;
 using VCenterMigrationTool.Views.Pages;

@@ -66,8 +66,21 @@ public partial class EsxiHostsViewModel : ObservableObject
 
         [ObservableProperty]
         private bool _isBackupMode = false;
+        
+        [ObservableProperty]
+        private bool _isMigrating;
 
-        public EsxiHostsViewModel (
+        [ObservableProperty]
+        private bool _isBackingUp;
+
+        [ObservableProperty]
+        private string _migrationProgress = "";
+
+        [ObservableProperty]
+        private string _backupProgress = "";
+
+
+    public EsxiHostsViewModel (
             PersistentExternalConnectionService persistentConnectionService,
             SharedConnectionService sharedConnectionService,
             ConfigurationService configurationService,
@@ -342,6 +355,7 @@ public partial class EsxiHostsViewModel : ObservableObject
                         }
 
                     SourceClusters.Add(clusterInfo);
+                    SubscribeToHostSelectionEvents(SourceClusters);
                     }
 
                 _logger.LogInformation("Loaded {Count} source clusters", SourceClusters.Count);
@@ -497,22 +511,22 @@ public partial class EsxiHostsViewModel : ObservableObject
 
     [RelayCommand]
     private async Task RefreshData ()
-        {
+    {
+        // Use the general IsLoading for refresh operations
         await CheckConnectionsAndLoadData();
-        }
+    }
 
     [RelayCommand]
     private void SelectAllSourceHosts ()
-        {
+    {
         if (SelectedSourceCluster != null)
-            {
-            SelectedSourceHosts.Clear();
+        {
             foreach (var host in SelectedSourceCluster.Hosts)
-                {
-                SelectedSourceHosts.Add(host);
-                }
+            {
+                host.IsSelected = true; // This will trigger the selection event
             }
         }
+    }
     [RelayCommand]
     private async Task BackupSelectedHosts ()
         {
@@ -522,8 +536,8 @@ public partial class EsxiHostsViewModel : ObservableObject
             return;
             }
 
-        IsLoading = true;
-        LoadingMessage = $"Backing up {SelectedSourceHosts.Count} hosts configuration...";
+        IsBackingUp = true;
+        BackupProgress = $"Starting backup of {SelectedSourceHosts.Count} hosts...";
 
         try
             {
@@ -534,28 +548,30 @@ public partial class EsxiHostsViewModel : ObservableObject
 
             Directory.CreateDirectory(backupPath);
 
+            int completed = 0;
             foreach (var host in SelectedSourceHosts)
                 {
-                LoadingMessage = $"Backing up {host.Name}...";
+                completed++;
+                BackupProgress = $"Backing up {host.Name} ({completed}/{SelectedSourceHosts.Count})...";
 
                 var backupScript = $@"
-                    $vmhost = Get-VMHost -Name '{host.Name}' -ErrorAction Stop
-                    
-                    $hostConfig = @{{
-                        Name = $vmhost.Name
-                        Version = $vmhost.Version
-                        Build = $vmhost.Build
-                        NetworkInfo = Get-VirtualSwitch -VMHost $vmhost | Select-Object *
-                        StorageInfo = Get-Datastore -VMHost $vmhost | Select-Object *
-                        AdvancedSettings = Get-AdvancedSetting -Entity $vmhost | Select-Object Name, Value
-                        Services = Get-VMHostService -VMHost $vmhost | Select-Object *
-                        NtpServers = Get-VMHostNtpServer -VMHost $vmhost
-                        DnsServers = (Get-VMHostNetwork -VMHost $vmhost).DnsAddress
-                        BackupDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-                    }}
-                    
-                    $hostConfig | ConvertTo-Json -Depth 10
-                ";
+                $vmhost = Get-VMHost -Name '{host.Name}' -ErrorAction Stop
+                
+                $hostConfig = @{{
+                    Name = $vmhost.Name
+                    Version = $vmhost.Version
+                    Build = $vmhost.Build
+                    NetworkInfo = Get-VirtualSwitch -VMHost $vmhost | Select-Object *
+                    StorageInfo = Get-Datastore -VMHost $vmhost | Select-Object *
+                    AdvancedSettings = Get-AdvancedSetting -Entity $vmhost | Select-Object Name, Value
+                    Services = Get-VMHostService -VMHost $vmhost | Select-Object *
+                    NtpServers = Get-VMHostNtpServer -VMHost $vmhost
+                    DnsServers = (Get-VMHostNetwork -VMHost $vmhost).DnsAddress
+                    BackupDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+                }}
+                
+                $hostConfig | ConvertTo-Json -Depth 10
+            ";
 
                 var result = await _persistentConnectionService.ExecuteCommandAsync("source", backupScript);
 
@@ -568,70 +584,86 @@ public partial class EsxiHostsViewModel : ObservableObject
                 }
 
             MigrationStatus = $"✅ Successfully backed up {SelectedSourceHosts.Count} hosts to {backupPath}";
+            BackupProgress = "Backup completed successfully!";
+
+            // Keep the success message visible for a moment
+            await Task.Delay(2000);
             }
         catch (Exception ex)
             {
             _logger.LogError(ex, "Error during host backup");
             MigrationStatus = $"❌ Backup failed: {ex.Message}";
+            BackupProgress = $"Backup failed: {ex.Message}";
+
+            // Keep the error message visible for a moment
+            await Task.Delay(3000);
             }
         finally
             {
-            IsLoading = false;
-            LoadingMessage = "";
+            IsBackingUp = false;
+            BackupProgress = "";
             }
         }
-    
+
     [RelayCommand]
     private void ClearSourceHostSelection ()
+    {
+        if (SelectedSourceCluster != null)
         {
-        SelectedSourceHosts.Clear();
+            foreach (var host in SelectedSourceCluster.Hosts)
+            {
+                host.IsSelected = false; // This will trigger the selection event
+            }
         }
+    }
 
     [RelayCommand]
     private async Task MigrateSelectedHosts ()
         {
-            if (!IsTargetConnected)
+        if (!IsTargetConnected)
             {
-                MigrationStatus = "⚠️ Please connect to target vCenter for migration";
-                return;
+            MigrationStatus = "⚠️ Please connect to target vCenter for migration";
+            return;
             }
 
-            if (SelectedSourceHosts.Count == 0)
+        if (SelectedSourceHosts.Count == 0)
             {
-                MigrationStatus = "⚠️ Please select hosts to migrate";
-                return;
+            MigrationStatus = "⚠️ Please select hosts to migrate";
+            return;
             }
 
-            if (SelectedTargetCluster == null)
+        if (SelectedTargetCluster == null)
             {
-                MigrationStatus = "⚠️ Please select a target cluster";
-                return;
+            MigrationStatus = "⚠️ Please select a target cluster";
+            return;
             }
 
-        IsLoading = true;
-        LoadingMessage = $"Migrating {SelectedSourceHosts.Count} hosts to {SelectedTargetCluster.Name}...";
+        IsMigrating = true;
+        MigrationProgress = $"Starting migration of {SelectedSourceHosts.Count} hosts...";
 
         try
             {
+            int completed = 0;
             foreach (var host in SelectedSourceHosts)
                 {
-                LoadingMessage = $"Migrating {host.Name}...";
+                completed++;
+                MigrationProgress = $"Migrating {host.Name} ({completed}/{SelectedSourceHosts.Count})...";
 
                 // Build migration script
                 var migrateScript = $@"
-                    $sourceHost = Get-VMHost -Name '{host.Name}' -ErrorAction Stop
-                    
-                    # Put host in maintenance mode
-                    Write-Output 'Entering maintenance mode...'
-                    Set-VMHost -VMHost $sourceHost -State Maintenance -Evacuate:$true -Confirm:$false
-                    
-                    # Disconnect from source vCenter
-                    Write-Output 'Disconnecting from source vCenter...'
-                    Disconnect-VIServer -Server $sourceHost -Confirm:$false
-                    
-                    Write-Output 'Host ready for migration to target vCenter'
-                    'SUCCESS'
-                ";
+                $sourceHost = Get-VMHost -Name '{host.Name}' -ErrorAction Stop
+                
+                # Put host in maintenance mode
+                Write-Output 'Entering maintenance mode...'
+                Set-VMHost -VMHost $sourceHost -State Maintenance -Evacuate:$true -Confirm:$false
+                
+                # Disconnect from source vCenter
+                Write-Output 'Disconnecting from source vCenter...'
+                Disconnect-VIServer -Server $sourceHost -Confirm:$false
+                
+                Write-Output 'Host ready for migration to target vCenter'
+                'SUCCESS'
+            ";
 
                 var result = await _persistentConnectionService.ExecuteCommandAsync("source", migrateScript);
 
@@ -641,15 +673,15 @@ public partial class EsxiHostsViewModel : ObservableObject
 
                     // Now add to target cluster
                     var addScript = $@"
-                        $targetCluster = Get-Cluster -Name '{SelectedTargetCluster.Name}' -ErrorAction Stop
-                        
-                        # Add host to target cluster
-                        Write-Output 'Adding host to target cluster...'
-                        Add-VMHost -Name '{host.Name}' -Location $targetCluster -User 'root' -Password 'YourPassword' -Force -Confirm:$false
-                        
-                        Write-Output 'Host successfully migrated'
-                        'SUCCESS'
-                    ";
+                    $targetCluster = Get-Cluster -Name '{SelectedTargetCluster.Name}' -ErrorAction Stop
+                    
+                    # Add host to target cluster
+                    Write-Output 'Adding host to target cluster...'
+                    Add-VMHost -Name '{host.Name}' -Location $targetCluster -User 'root' -Password 'YourPassword' -Force -Confirm:$false
+                    
+                    Write-Output 'Host successfully migrated'
+                    'SUCCESS'
+                ";
 
                     // Note: You'll need to handle host credentials properly here
                     result = await _persistentConnectionService.ExecuteCommandAsync("target", addScript);
@@ -663,31 +695,83 @@ public partial class EsxiHostsViewModel : ObservableObject
                 }
 
             MigrationStatus = $"✅ Successfully migrated {SelectedSourceHosts.Count} hosts";
+            MigrationProgress = "Migration completed successfully!";
 
             // Refresh the data
             await RefreshData();
+
+            // Keep the success message visible for a moment
+            await Task.Delay(2000);
             }
         catch (Exception ex)
             {
             _logger.LogError(ex, "Error during host migration");
             MigrationStatus = $"❌ Migration failed: {ex.Message}";
+            MigrationProgress = $"Migration failed: {ex.Message}";
+
+            // Keep the error message visible for a moment
+            await Task.Delay(3000);
             }
         finally
             {
-            IsLoading = false;
-            LoadingMessage = "";
+            IsMigrating = false;
+            MigrationProgress = "";
             }
         }
 
-    partial void OnSelectedSourceClusterChanged (ClusterInfo? value)
+    /// <summary>
+    /// Handle host selection changes
+    /// </summary>
+    private void OnHostSelectionChanged (EsxiHost host, bool isSelected)
+    {
+        if (isSelected && !SelectedSourceHosts.Contains(host))
         {
-        if (value != null)
+            SelectedSourceHosts.Add(host);
+        }
+        else if (!isSelected && SelectedSourceHosts.Contains(host))
+        {
+            SelectedSourceHosts.Remove(host);
+        }
+    }
+    /// <summary>
+    /// Subscribe to host selection events when clusters are loaded
+    /// </summary>
+    private void SubscribeToHostSelectionEvents (IEnumerable<ClusterInfo> clusters)
+    {
+        foreach (var cluster in clusters)
+        {
+            foreach (var host in cluster.Hosts)
             {
+                // Unsubscribe first to avoid duplicate subscriptions
+                host.SelectionChanged -= OnHostSelectionChanged;
+                // Subscribe to selection changes
+                host.SelectionChanged += OnHostSelectionChanged;
+            }
+        }
+    }
+    partial void OnSelectedSourceClusterChanged (ClusterInfo? value)
+    {
+        if (value != null)
+        {
             _logger.LogInformation("Selected source cluster: {Cluster} with {Count} hosts",
                 value.Name, value.Hosts.Count);
-            }
-        SelectedSourceHosts.Clear();
         }
+
+        // Clear selection from all hosts in all clusters
+        foreach (var cluster in SourceClusters)
+        {
+            foreach (var host in cluster.Hosts)
+            {
+                if (host.IsSelected)
+                {
+                    host.IsSelected = false;
+                }
+            }
+        }
+
+        // Clear the selected hosts collection
+        SelectedSourceHosts.Clear();
+    }
 
     partial void OnSelectedTargetClusterChanged (ClusterInfo? value)
         {

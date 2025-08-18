@@ -5,8 +5,9 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
-      xmlns:pages="clr-namespace:VCenterMigrationTool.ViewModels.Pages"
-      d:DataContext="{d:DesignInstance pages:ActivityLogsViewModel, IsDesignTimeCreatable=False}"
+      xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
+      xmlns:models="clr-namespace:VCenterMigrationTool.Models"
+      d:DataContext="{d:DesignInstance viewmodels:ActivityLogsViewModel, IsDesignTimeCreatable=False}"
       mc:Ignorable="d"
       d:DesignHeight="700" d:DesignWidth="1200"
       Title="Activity Logs"
@@ -16,6 +17,7 @@
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <helpers:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </Page.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <Grid Margin="20">
@@ -35,24 +37,80 @@
 
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="Activity Logs" 
-                          FontSize="24" 
-                          FontWeight="Bold" 
-                          Margin="0,0,0,5"/>
-                    <TextBlock Text="Real-time PowerShell script execution and application logs" 
-                          FontSize="14" 
-                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                  FontSize="24" 
+                  FontWeight="Bold" 
+                  Margin="0,0,0,5"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Real-time PowerShell script execution and application logs" 
+                      FontSize="14" 
+                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                      Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding LastRefreshTime, StringFormat='Last refresh: {0:HH:mm:ss}'}"
+                      FontSize="12"
+                      Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                      VerticalAlignment="Center"/>
+                    </StackPanel>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                    <!-- Refresh Button -->
+                    <ui:Button Content="Refresh" 
+                  Command="{Binding RefreshLogsCommand}"
+                  Icon="{ui:SymbolIcon ArrowSync24}"
+                  Name="LogRefreshButton"
+                  Appearance="Primary"
+                  Margin="0,0,10,0"
+                  IsEnabled="{Binding IsRefreshing, Converter={StaticResource InverseBooleanConverter}}">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRefreshing}" Value="True">
+                                        <Setter Property="Content" Value="Refreshing..."/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+
+                    <!-- Refresh Options Dropdown -->
+                    <ui:Button x:Name="RefreshOptionsButton" 
+                  Content="⌄"
+                  Appearance="Secondary"
+                  Width="30"
+                  Margin="0,0,10,0"
+                  Click="RefreshOptionsButton_Click">
+                        <ui:Button.ContextMenu>
+                            <ContextMenu x:Name="RefreshContextMenu">
+                                <MenuItem Header="🔄 Refresh Current View" 
+                             Command="{Binding RefreshLogsCommand}"/>
+                                <MenuItem Header="🗑️ Clear and Refresh" 
+                             Command="{Binding RefreshAndClearCommand}"/>
+                                <Separator/>
+                                <MenuItem Header="⏰ Last Hour" 
+                             Command="{Binding RefreshLogsWithTimeRangeCommand}"
+                             CommandParameter="LastHour"/>
+                                <MenuItem Header="⏰ Last 4 Hours" 
+                             Command="{Binding RefreshLogsWithTimeRangeCommand}"
+                             CommandParameter="Last4Hours"/>
+                                <MenuItem Header="⏰ Last 24 Hours" 
+                             Command="{Binding RefreshLogsWithTimeRangeCommand}"
+                             CommandParameter="Last24Hours"/>
+                                <MenuItem Header="⏰ All Available" 
+                             Command="{Binding RefreshLogsWithTimeRangeCommand}"
+                             CommandParameter="All"/>
+                            </ContextMenu>
+                        </ui:Button.ContextMenu>
+                    </ui:Button>
+
                     <ui:Button Content="Clear Logs" 
-                          Command="{Binding ClearLogsCommand}"
-                          Icon="{ui:SymbolIcon Delete24}"
-                          Appearance="Secondary"
-                          Margin="0,0,10,0"/>
+                  Command="{Binding ClearLogsCommand}"
+                  Icon="{ui:SymbolIcon Delete24}"
+                  Appearance="Secondary"
+                  Margin="0,0,10,0"/>
                     <ui:Button Content="Export" 
-                          Command="{Binding ExportLogsCommand}"
-                          Icon="{ui:SymbolIcon Save24}"
-                          Appearance="Secondary"/>
+                  Command="{Binding ExportLogsCommand}"
+                  Icon="{ui:SymbolIcon Save24}"
+                  Appearance="Secondary"/>
                 </StackPanel>
             </Grid>
 
@@ -219,23 +277,40 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Grid.Column="0" 
-                          Text="{Binding LogStats}" 
-                          VerticalAlignment="Center"
-                          FontSize="12"
-                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                               Text="{Binding LogStats}" 
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <!-- Refresh Status -->
+                    <StackPanel Grid.Column="1" 
+                                Orientation="Horizontal" 
+                                Margin="0,0,15,0"
+                                Visibility="{Binding IsRefreshing, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ui:ProgressRing IsIndeterminate="True"
+                                         Width="16" 
+                                         Height="16"
+                                         Margin="0,0,5,0"/>
+                        <TextBlock Text="{Binding RefreshStatus}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Live Feed Status -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
                         <Ellipse Width="8" Height="8" 
-                            Fill="#51CF66" 
-                            Margin="0,0,5,0" 
-                            VerticalAlignment="Center"/>
+                                 Fill="#51CF66" 
+                                 Margin="0,0,5,0" 
+                                 VerticalAlignment="Center"/>
                         <TextBlock Text="Live Feed Active" 
-                              FontSize="12" 
-                              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                              VerticalAlignment="Center"/>
+                                   FontSize="12" 
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </ui:Card>
