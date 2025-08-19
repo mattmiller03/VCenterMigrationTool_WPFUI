@@ -576,7 +576,7 @@ public partial class EsxiHostsViewModel : ObservableObject
                         
                         # Execute the external backup script with console output suppressed
                         # This ensures only JSON is returned to stdout
-                        & '{scriptPath}' -HostName '{host.Name}' -BackupPath '{backupPath}' -BypassModuleCheck $true -SuppressConsoleOutput $true
+                        & '{scriptPath}' -HostName '{host.Name}' -BackupPath '{backupPath}' -LogPath '{backupPath}' -BypassModuleCheck $true -SuppressConsoleOutput $true
                     }} catch {{
                         # Ensure errors are still captured and sent to the output stream.
                         $errorJson = @{{ Success = $false; Message = ""PowerShell Error: $($_.Exception.Message)"" }} | ConvertTo-Json -Compress
