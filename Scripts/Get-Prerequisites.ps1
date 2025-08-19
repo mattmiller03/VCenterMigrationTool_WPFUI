@@ -1,4 +1,7 @@
-﻿# Get-Prerequisites.ps1 - Complete working version with integrated logging
+﻿# Get-Prerequisites.ps1 - Enhanced prerequisites check with integrated logging
+# This script checks for PowerShell version and PowerCLI installation status
+# Returns JSON result for C# application consumption
+
 param(
     [bool]$BypassModuleCheck = $false,
     [string]$LogPath = ""
@@ -16,23 +19,35 @@ $result = [PSCustomObject]@{
     IsPowerCliInstalled = $false
 }
 
+# Track if an error occurred
+$scriptSucceeded = $true
+
 try {
-    Write-LogInfo "Starting PowerShell prerequisites check"
+    Write-LogInfo "Starting PowerShell prerequisites check" -Category "Initialization"
+    Write-LogInfo "Script parameters: BypassModuleCheck=$BypassModuleCheck, LogPath=$LogPath" -Category "Initialization"
 
     # 1. Get PowerShell Version - this should always work
     try {
+        Write-LogInfo "Checking PowerShell version..." -Category "PowerShell"
         if ($PSVersionTable -and $PSVersionTable.PSVersion) {
             $result.PowerShellVersion = $PSVersionTable.PSVersion.ToString()
-            Write-LogInfo "PowerShell Version: $($result.PowerShellVersion)" -Category "Version"
+            Write-LogSuccess "PowerShell Version: $($result.PowerShellVersion)" -Category "PowerShell"
+            
+            # Check minimum version requirement (5.1 recommended for PowerCLI)
+            $majorVersion = $PSVersionTable.PSVersion.Major
+            $minorVersion = $PSVersionTable.PSVersion.Minor
+            if ($majorVersion -lt 5 -or ($majorVersion -eq 5 -and $minorVersion -lt 1)) {
+                Write-LogWarning "PowerShell version $($result.PowerShellVersion) is below recommended 5.1" -Category "PowerShell"
+            }
         }
         else {
             $result.PowerShellVersion = "Unable to determine"
-            Write-LogWarning "Could not determine PowerShell version"
+            Write-LogWarning "Could not determine PowerShell version" -Category "PowerShell"
         }
     }
     catch {
         $result.PowerShellVersion = "Error: $($_.Exception.Message)"
-        Write-LogError "Error getting PowerShell version: $($_.Exception.Message)"
+        Write-LogError "Error getting PowerShell version: $($_.Exception.Message)" -Category "PowerShell"
     }
 
     # 2. Check for PowerCLI Module using multiple methods
@@ -122,29 +137,66 @@ try {
     
     # Additional system information
     Write-LogInfo "Collecting additional system information..." -Category "System"
-    Write-LogInfo "  OS: $($env:OS)"
-    Write-LogInfo "  Computer: $($env:COMPUTERNAME)"
-    Write-LogInfo "  User: $($env:USERNAME)"
-    Write-LogInfo "  PowerShell Execution Policy: $(Get-ExecutionPolicy -Scope CurrentUser)"
+    
+    # OS Information
+    try {
+        $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
+        if ($osInfo) {
+            Write-LogInfo "Operating System: $($osInfo.Caption) $($osInfo.Version)" -Category "System"
+            Write-LogInfo "Architecture: $($osInfo.OSArchitecture)" -Category "System"
+        } else {
+            Write-LogInfo "OS: $($env:OS)" -Category "System"
+        }
+    }
+    catch {
+        Write-LogInfo "OS: $($env:OS)" -Category "System"
+    }
+    
+    Write-LogInfo "Computer Name: $($env:COMPUTERNAME)" -Category "System"
+    Write-LogInfo "User: $($env:USERNAME)" -Category "System"
+    Write-LogInfo "Domain: $($env:USERDOMAIN)" -Category "System"
+    
+    # Execution Policy
+    try {
+        $execPolicy = Get-ExecutionPolicy -Scope CurrentUser -ErrorAction SilentlyContinue
+        Write-LogInfo "PowerShell Execution Policy (CurrentUser): $execPolicy" -Category "System"
+        
+        # Warn if execution policy might block scripts
+        if ($execPolicy -eq "Restricted" -or $execPolicy -eq "AllSigned") {
+            Write-LogWarning "Execution policy '$execPolicy' may prevent script execution" -Category "System"
+        }
+    }
+    catch {
+        Write-LogDebug "Could not determine execution policy: $($_.Exception.Message)" -Category "System"
+    }
     
     # Create statistics for logging
     $stats = @{
         "PowerShellVersion" = $result.PowerShellVersion
         "PowerCLIInstalled" = $powerCliFound
-        "PowerCLIVersion" = $powerCliVersion
-        "ExecutionPolicy" = (Get-ExecutionPolicy -Scope CurrentUser).ToString()
+        "PowerCLIVersion" = if ($powerCliFound) { $powerCliVersion } else { "Not Installed" }
+        "ExecutionPolicy" = try { (Get-ExecutionPolicy -Scope CurrentUser -ErrorAction SilentlyContinue).ToString() } catch { "Unknown" }
         "OS" = $env:OS
         "Computer" = $env:COMPUTERNAME
+        "User" = $env:USERNAME
+        "Domain" = $env:USERDOMAIN
+    }
+    
+    # Log success
+    Write-LogSuccess "Prerequisites check completed successfully" -Category "Summary"
+    Write-LogInfo "  PowerShell Version: $($result.PowerShellVersion)" -Category "Summary"
+    Write-LogInfo "  PowerCLI Installed: $powerCliFound" -Category "Summary"
+    if ($powerCliFound) {
+        Write-LogInfo "  PowerCLI Version: $powerCliVersion" -Category "Summary"
     }
     
     Stop-ScriptLogging -Success $true -Summary "Prerequisites check completed - PowerShell: $($result.PowerShellVersion), PowerCLI: $powerCliFound" -Statistics $stats
-    
-    Write-LogInfo "Prerequisites check completed successfully"
 }
 catch {
+    $scriptSucceeded = $false
     $errorMessage = "Fatal error during prerequisites check: $($_.Exception.Message)"
-    Write-LogCritical $errorMessage
-    Write-LogError "Stack trace: $($_.ScriptStackTrace)"
+    Write-LogCritical $errorMessage -Category "Error"
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)" -Category "Error"
     
     # Ensure we have some values even on error
     if ($result.PowerShellVersion -eq "Unknown") {
@@ -155,19 +207,33 @@ catch {
     Stop-ScriptLogging -Success $false -Summary $errorMessage
 }
 finally {
-    # Always output JSON result
+    # Always output JSON result for C# consumption
     try {
-        # Output the JSON result for the C# application
-        $jsonResult = $result | ConvertTo-Json -Compress
-        Write-LogDebug "Returning result: $jsonResult"
+        # Prepare final result object with additional metadata
+        $finalResult = [PSCustomObject]@{
+            Success = $scriptSucceeded
+            PowerShellVersion = $result.PowerShellVersion
+            IsPowerCliInstalled = $result.IsPowerCliInstalled
+            Timestamp = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+        }
         
-        # This is the ONLY output that C# should capture
+        # Add PowerCLI version if found
+        if ($powerCliFound -and $powerCliVersion -ne "Unknown") {
+            $finalResult | Add-Member -NotePropertyName "PowerCliVersion" -NotePropertyValue $powerCliVersion
+        }
+        
+        # Convert to JSON
+        $jsonResult = $finalResult | ConvertTo-Json -Compress
+        Write-LogDebug "Outputting JSON result: $jsonResult" -Category "Output"
+        
+        # This is the ONLY output that C# should capture (stdout)
         Write-Output $jsonResult
     }
     catch {
-        # Fallback if ConvertTo-Json fails
-        $manualJson = "{`"PowerShellVersion`":`"$($result.PowerShellVersion)`",`"IsPowerCliInstalled`":$($result.IsPowerCliInstalled.ToString().ToLower())}"
-        Write-LogWarning "ConvertTo-Json failed, using manual JSON: $manualJson"
-        Write-Output $manualJson
+        # Fallback if ConvertTo-Json fails - create minimal valid JSON
+        $fallbackJson = "{`"Success`":false,`"PowerShellVersion`":`"$($result.PowerShellVersion -replace '"','\"')`",`"IsPowerCliInstalled`":$($result.IsPowerCliInstalled.ToString().ToLower())}"
+        Write-LogError "ConvertTo-Json failed: $($_.Exception.Message)" -Category "Output"
+        Write-LogDebug "Using fallback JSON: $fallbackJson" -Category "Output"
+        Write-Output $fallbackJson
     }
 }

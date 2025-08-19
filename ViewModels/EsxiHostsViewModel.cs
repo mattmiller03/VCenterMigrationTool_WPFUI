@@ -565,8 +565,15 @@ public partial class EsxiHostsViewModel : ObservableObject
                 BackupProgress = $"Backing up {host.Name} ({completed}/{SelectedSourceHosts.Count})...";
 
                 // Build the command to execute the external script, redirecting verbose and information streams
+                // Clear any previous script-level and global variables to ensure clean state for each host
                 var backupScript = $@"
                     try {{
+                        # Clear any previous logging-related global variables to ensure clean state
+                        Remove-Variable -Name 'ScriptLogFile' -Scope Global -ErrorAction SilentlyContinue
+                        Remove-Variable -Name 'ScriptSessionId' -Scope Global -ErrorAction SilentlyContinue
+                        Remove-Variable -Name 'ScriptStartTime' -Scope Global -ErrorAction SilentlyContinue
+                        Remove-Variable -Name 'ConfiguredLogPath' -Scope Global -ErrorAction SilentlyContinue
+                        
                         # Execute the external backup script and pass parameters.
                         # Redirect Information (6) and Verbose (4) streams to null to keep stdout clean for JSON.
                         & '{scriptPath}' -HostName '{host.Name}' -BackupPath '{backupPath}' -BypassModuleCheck $true 6> $null 4> $null

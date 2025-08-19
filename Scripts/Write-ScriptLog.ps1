@@ -270,17 +270,4 @@ function Stop-ScriptLogging {
     Write-ScriptLog -Message "End Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
     Write-ScriptLog -Message "Session ID: $Global:ScriptSessionId"
     Write-ScriptLog -Message $separator -NoConsole
-    Write-ScriptLog -Message "Prerequisites check completed successfully"
-    
-    # Debug output to show the result being returned
-    if ($Statistics.Count -gt 0) {
-        $result = @{
-            PowerShellVersion = $Statistics["PowerShellVersion"]
-            IsPowerCliInstalled = $Statistics["PowerCLIInstalled"]
-        }
-        $resultJson = $result | ConvertTo-Json -Compress
-        Write-ScriptLog -Message "Returning result: $resultJson" -Level Debug
-        # Output the JSON to stdout so the C# service can capture it
-        Write-Output $resultJson
-    }
 }

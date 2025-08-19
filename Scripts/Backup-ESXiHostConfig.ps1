@@ -427,8 +427,8 @@ try {
 }
 finally {
     # Calculate total execution time
-    $totalTime = if ($Script:LoggingConfig.StartTime) {
-        ((Get-Date) - $Script:LoggingConfig.StartTime).TotalSeconds.ToString('F2')
+    $totalTime = if ($Global:ScriptStartTime) {
+        ((Get-Date) - $Global:ScriptStartTime).TotalSeconds.ToString('F2')
     } else {
         "Unknown"
     }
