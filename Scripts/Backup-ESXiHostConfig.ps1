@@ -13,7 +13,8 @@ param(
     [bool]$IncludeStorageConfig = $true,
     [bool]$IncludeServices = $true,
     [bool]$BypassModuleCheck = $false,
-    [bool]$SuppressConsoleOutput = $false
+    [bool]$SuppressConsoleOutput = $false,
+    [string]$LogPath = ""
 )
 
 # Import logging functions
@@ -27,7 +28,7 @@ if ($SuppressConsoleOutput) {
 }
 
 # Start logging (suppress console output if requested)
-Start-ScriptLogging -ScriptName "Backup-ESXiHostConfig" -SuppressConsoleOutput $SuppressConsoleOutput
+Start-ScriptLogging -ScriptName "Backup-ESXiHostConfig" -LogPath $LogPath -SuppressConsoleOutput $SuppressConsoleOutput
 
 # Initialize variables for the finally block
 $scriptSuccess = $false
