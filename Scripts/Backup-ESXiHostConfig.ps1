@@ -12,11 +12,19 @@ param(
     [bool]$IncludeNetworkConfig = $true,
     [bool]$IncludeStorageConfig = $true,
     [bool]$IncludeServices = $true,
-    [bool]$BypassModuleCheck = $false
+    [bool]$BypassModuleCheck = $false,
+    [bool]$SuppressConsoleOutput = $false
 )
 
 # Import logging functions
 . "$PSScriptRoot\Write-ScriptLog.ps1"
+
+# Override Write-Host if console output is suppressed
+if ($SuppressConsoleOutput) {
+    function global:Write-Host {
+        # Suppress all Write-Host output
+    }
+}
 
 # Start logging
 Start-ScriptLogging -ScriptName "Backup-ESXiHostConfig"

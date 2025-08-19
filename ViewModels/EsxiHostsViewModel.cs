@@ -564,7 +564,7 @@ public partial class EsxiHostsViewModel : ObservableObject
                 completed++;
                 BackupProgress = $"Backing up {host.Name} ({completed}/{SelectedSourceHosts.Count})...";
 
-                // Build the command to execute the external script, redirecting verbose and information streams
+                // Build the command to execute the external script with console output suppressed
                 // Clear any previous script-level and global variables to ensure clean state for each host
                 var backupScript = $@"
                     try {{
@@ -574,9 +574,9 @@ public partial class EsxiHostsViewModel : ObservableObject
                         Remove-Variable -Name 'ScriptStartTime' -Scope Global -ErrorAction SilentlyContinue
                         Remove-Variable -Name 'ConfiguredLogPath' -Scope Global -ErrorAction SilentlyContinue
                         
-                        # Execute the external backup script and pass parameters.
-                        # Redirect Information (6) and Verbose (4) streams to null to keep stdout clean for JSON.
-                        & '{scriptPath}' -HostName '{host.Name}' -BackupPath '{backupPath}' -BypassModuleCheck $true 6> $null 4> $null
+                        # Execute the external backup script with console output suppressed
+                        # This ensures only JSON is returned to stdout
+                        & '{scriptPath}' -HostName '{host.Name}' -BackupPath '{backupPath}' -BypassModuleCheck $true -SuppressConsoleOutput $true
                     }} catch {{
                         # Ensure errors are still captured and sent to the output stream.
                         $errorJson = @{{ Success = $false; Message = ""PowerShell Error: $($_.Exception.Message)"" }} | ConvertTo-Json -Compress
