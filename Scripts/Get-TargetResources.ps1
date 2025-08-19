@@ -1,134 +1,91 @@
-# Get-TargetResources.ps1 - Optimized version
+<#
+.SYNOPSIS
+    Retrieves hosts and datastores from a target vCenter.
+.DESCRIPTION
+    Connects to a vCenter server and retrieves a list of ESXi hosts and datastores,
+    returning the data in JSON format. Provides sample data if connection fails.
+    Requires Write-ScriptLog.ps1 in the same directory.
+.NOTES
+    Version: 2.0 (Integrated with standard logging)
+#>
 param(
+    [Parameter(Mandatory=$true)]
     [string]$VCenterServer,
+    [Parameter(Mandatory=$true)]
     [string]$Username,
+    [Parameter(Mandatory=$true)]
     [string]$Password,
-    [switch]$BypassModuleCheck = $false  # NEW: Allow bypassing PowerCLI checks
+    [Parameter(Mandatory=$false)]
+    [string]$LogPath,
+    [Parameter(Mandatory=$false)]
+    [bool]$SuppressConsoleOutput = $false,
+    [Parameter(Mandatory=$false)]
+    [switch]$BypassModuleCheck
 )
 
-# Function to write structured logs
-function Write-ScriptLog {
-    param([string]$Message, [string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Information "[$timestamp] [$Level] $Message" -InformationAction Continue
-}
+# Import logging functions
+. "$PSScriptRoot\Write-ScriptLog.ps1"
+
+# --- Main Script Logic ---
+Start-ScriptLogging -ScriptName "Get-TargetResources" -LogPath $LogPath -SuppressConsoleOutput $SuppressConsoleOutput
+
+$scriptSuccess = $false
+$finalSummary = ""
+$jsonOutput = '{"Hosts":[],"Datastores":[]}' # Default to empty JSON
+$stats = @{ "HostsFound" = 0; "DatastoresFound" = 0 }
 
 try {
-    Write-ScriptLog "Starting target resources script"
-    Write-ScriptLog "Target vCenter: $VCenterServer"
-    
-    # OPTIMIZED: Only check PowerCLI if not bypassed
-    if (-not $BypassModuleCheck) {
-        Write-ScriptLog "Checking PowerCLI module availability..."
-        
-        $powerCliModule = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
-        if (-not $powerCliModule) {
-            Write-ScriptLog "PowerCLI module not found. Returning sample data." "WARN"
-            
-            # Return sample data in JSON format
-            $sampleData = @{
-                Hosts = @(
-                    @{ Name = "sample-target-esx01.lab.local" },
-                    @{ Name = "sample-target-esx02.lab.local" },
-                    @{ Name = "sample-target-esx03.lab.local" }
-                )
-                Datastores = @(
-                    @{ Name = "sample-target-datastore1" },
-                    @{ Name = "sample-target-datastore2" },
-                    @{ Name = "sample-target-datastore3" }
-                )
-            }
-            
-            $sampleData | ConvertTo-Json -Depth 3
-            return
-        }
+    Write-LogInfo "Starting target resources script for vCenter: $VCenterServer" -Category "Initialization"
 
-        Write-ScriptLog "PowerCLI module found. Importing..."
+    # Import PowerCLI
+    if (-not $BypassModuleCheck) {
+        Write-LogInfo "Importing PowerCLI module..." -Category "Initialization"
         Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-    } else {
-        Write-ScriptLog "Bypassing PowerCLI module check (assumed available)"
-        # Still try to import silently
-        try {
-            Import-Module VMware.PowerCLI -Force -ErrorAction SilentlyContinue
-        } catch {
-            # Ignore import errors when bypassing
-        }
-    }
+    } else { Write-LogInfo "Bypassing PowerCLI module check." -Category "Initialization" }
     
-    # Suppress PowerCLI configuration warnings
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -ParticipateInCEIP $false -Scope Session -Confirm:$false | Out-Null
     
-    # Connect to vCenter (if parameters provided)
-    if ($VCenterServer -and $Username -and $Password) {
-        Write-ScriptLog "Connecting to target vCenter: $VCenterServer"
-        
-        $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-        $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
-        
-        $connection = Connect-VIServer -Server $VCenterServer -Credential $credential -Force -ErrorAction Stop
-        Write-ScriptLog "Successfully connected to $($connection.Name)"
-        
-        try {
-            # Get hosts and datastores
-            Write-ScriptLog "Retrieving hosts and datastores..."
-            
-            $hosts = Get-VMHost -ErrorAction Stop | Select-Object -First 20 | ForEach-Object {
-                @{ Name = $_.Name }
-            }
-            
-            $datastores = Get-Datastore -ErrorAction Stop | Select-Object -First 20 | ForEach-Object {
-                @{ Name = $_.Name }
-            }
-            
-            $result = @{
-                Hosts = $hosts
-                Datastores = $datastores
-            }
-            
-            Write-ScriptLog "Retrieved $($hosts.Count) hosts and $($datastores.Count) datastores"
-            $result | ConvertTo-Json -Depth 3
-        }
-        finally {
-            # Always disconnect
-            Write-ScriptLog "Disconnecting from vCenter"
-            Disconnect-VIServer -Server $VCenterServer -Confirm:$false -Force -ErrorAction SilentlyContinue
-        }
-    }
-    else {
-        Write-ScriptLog "No connection parameters provided. Returning sample data." "WARN"
-        
-        # Return sample data when no connection info provided
-        $sampleData = @{
-            Hosts = @(
-                @{ Name = "demo-target-esx01.lab.local" },
-                @{ Name = "demo-target-esx02.lab.local" },
-                @{ Name = "demo-target-esx03.lab.local" }
-            )
-            Datastores = @(
-                @{ Name = "demo-target-datastore1" },
-                @{ Name = "demo-target-datastore2" },
-                @{ Name = "demo-target-datastore3" }
-            )
-        }
-        
-        $sampleData | ConvertTo-Json -Depth 3
-    }
-}
-catch {
-    Write-ScriptLog "Error occurred: $($_.Exception.Message)" "ERROR"
-    Write-ScriptLog "Stack trace: $($_.ScriptStackTrace)" "ERROR"
+    # Connect to vCenter
+    Write-LogInfo "Connecting to target vCenter..." -Category "Connection"
+    $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
+    $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
+    $connection = Connect-VIServer -Server $VCenterServer -Credential $credential -Force -ErrorAction Stop
+    Write-LogSuccess "Successfully connected to $($connection.Name)." -Category "Connection"
+    
+    # Get hosts and datastores
+    Write-LogInfo "Retrieving hosts and datastores..." -Category "Discovery"
+    $hosts = Get-VMHost -ErrorAction Stop | ForEach-Object { @{ Name = $_.Name } }
+    $datastores = Get-Datastore -ErrorAction Stop | ForEach-Object { @{ Name = $_.Name } }
+    
+    $stats.HostsFound = $hosts.Count
+    $stats.DatastoresFound = $datastores.Count
+    Write-LogSuccess "Retrieved $($stats.HostsFound) hosts and $($stats.DatastoresFound) datastores." -Category "Discovery"
+    
+    $result = @{ Hosts = $hosts; Datastores = $datastores }
+    $jsonOutput = $result | ConvertTo-Json -Depth 3
+    
+    $scriptSuccess = $true
+    $finalSummary = "Successfully retrieved resources from $VCenterServer."
+
+} catch {
+    $scriptSuccess = $false
+    $finalSummary = "Error occurred: $($_.Exception.Message). Returning sample data."
+    Write-LogCritical $finalSummary
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)"
     
     # Return sample data on error
     $sampleData = @{
-        Hosts = @(
-            @{ Name = "error-recovery-host-01" },
-            @{ Name = "error-recovery-host-02" }
-        )
-        Datastores = @(
-            @{ Name = "error-recovery-ds-01" },
-            @{ Name = "error-recovery-ds-02" }
-        )
+        Hosts = @( @{ Name = "error-recovery-host-01" }; @{ Name = "error-recovery-host-02" } )
+        Datastores = @( @{ Name = "error-recovery-ds-01" }; @{ Name = "error-recovery-ds-02" } )
     }
+    $jsonOutput = $sampleData | ConvertTo-Json -Depth 3
+    throw $_
+} finally {
+    Write-LogInfo "Disconnecting from vCenter..." -Category "Cleanup"
+    Disconnect-VIServer -Server $VCenterServer -Confirm:$false -Force -ErrorAction SilentlyContinue
     
-    $sampleData | ConvertTo-Json -Depth 3
+    Stop-ScriptLogging -Success $scriptSuccess -Summary $finalSummary -Statistics $stats
 }
+
+# Final output for consumption by other tools
+Write-Output $jsonOutput

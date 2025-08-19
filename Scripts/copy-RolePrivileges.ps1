@@ -1,227 +1,146 @@
 <#
 .SYNOPSIS
     Copies privileges from one vCenter role to another with version compatibility handling.
-
 .DESCRIPTION
-    This script retrieves all privileges from a source vCenter role and adds them to a target vCenter role.
-    It includes special handling for privilege differences between vCenter versions (such as v7 to v8),
-    skipping privileges that don't exist in the current vCenter version.
-    Requires PowerCLI v13.x or later to be installed.
-
-.PARAMETER vCenterServer
-    The hostname or IP address of the vCenter server to connect to.
-
-.PARAMETER SourceRoleName
-    The name of the role to copy privileges from.
-
-.PARAMETER TargetRoleName
-    The name of the role to add privileges to.
-
-.PARAMETER Credential
-    Optional PSCredential object for authentication to vCenter.
-    If not provided, the script will use the current user's credentials or prompt for credentials.
-
-.PARAMETER ReplaceExisting
-    If specified, completely replaces the target role's privileges with the source role's privileges.
-    By default, the script adds privileges without removing existing ones.
-
-.EXAMPLE
-    .\Copy-RolePrivileges.ps1 -vCenterServer "vcenter.domain.com" -SourceRoleName "Admin" -TargetRoleName "CustomAdmin"
-    
-    Adds all privileges from the "Admin" role to the "CustomAdmin" role.
-
-.EXAMPLE
-    .\Copy-RolePrivileges.ps1 -vCenterServer "vcenter.domain.com" -SourceRoleName "ReadOnly" -TargetRoleName "CustomRole" -ReplaceExisting
-    
-    Replaces all privileges in the "CustomRole" with those from the "ReadOnly" role.
-
-.EXAMPLE
-    $cred = Get-Credential
-    .\Copy-RolePrivileges.ps1 -vCenterServer "vcenter.domain.com" -SourceRoleName "Admin" -TargetRoleName "CustomAdmin" -Credential $cred
-    
-    Connects to vCenter using the specified credentials and adds privileges from the "Admin" role to the "CustomAdmin" role.
-
+    This script retrieves all privileges from a source role and adds them to a target role.
+    It logs all actions and handles privilege differences between vCenter versions.
+    Requires Write-ScriptLog.ps1 in the same directory.
 .NOTES
-    Author: Script Generator
-    Requirements: PowerCLI v13.x or later
-    Version: 1.2
-    Date: [Current Date]
-    
-    Change Log:
-    1.2 - Fixed handling of invalid privileges by processing each privilege individually
-    1.1 - Added compatibility handling for privilege differences between vCenter versions (v7 to v8)
-    1.0 - Initial version
+    Version: 2.0 (Integrated with standard logging)
 #>
-
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, Position = 0, HelpMessage = "vCenter server hostname or IP address")]
+    [Parameter(Mandatory = $true)]
     [string]$vCenterServer,
     
-    [Parameter(Mandatory = $true, Position = 1, HelpMessage = "Source role name to copy privileges from")]
+    [Parameter(Mandatory = $true)]
     [string]$SourceRoleName,
     
-    [Parameter(Mandatory = $true, Position = 2, HelpMessage = "Target role name to add privileges to")]
+    [Parameter(Mandatory = $true)]
     [string]$TargetRoleName,
     
-    [Parameter(Mandatory = $false, HelpMessage = "Credentials for vCenter authentication")]
+    [Parameter(Mandatory = $false)]
     [System.Management.Automation.PSCredential]$Credential,
     
-    [Parameter(Mandatory = $false, HelpMessage = "Replace existing privileges instead of adding to them")]
-    [switch]$ReplaceExisting
+    [Parameter(Mandatory = $false)]
+    [switch]$ReplaceExisting,
+
+    [Parameter()]
+    [string]$LogPath,
+
+    [Parameter()]
+    [bool]$SuppressConsoleOutput = $false
 )
 
-# Import PowerCLI module (if not already loaded)
-if (-not (Get-Module -Name VMware.VimAutomation.Core)) {
-    try {
-        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
-    } catch {
-        Write-Error "Failed to import PowerCLI module. Please ensure PowerCLI v13.x or later is installed."
-        exit 1
-    }
+# Import logging functions
+. "$PSScriptRoot\Write-ScriptLog.ps1"
+
+# --- Main Script Logic ---
+Start-ScriptLogging -ScriptName "Copy-RolePrivileges" -LogPath $LogPath -SuppressConsoleOutput $SuppressConsoleOutput
+
+$scriptSuccess = $false
+$finalSummary = ""
+$connection = $null
+$stats = @{
+    "SourceRolePrivileges" = 0
+    "ValidPrivileges" = 0
+    "SkippedInvalidPrivileges" = 0
+    "PrivilegesAdded" = 0
+    "PrivilegesFailedToAdd" = 0
+    "Mode" = if($ReplaceExisting) { "Replace" } else { "Append" }
 }
 
-# Connect to vCenter
 try {
-    $connectParams = @{
-        Server = $vCenterServer
-        ErrorAction = 'Stop'
-    }
+    # Import PowerCLI module
+    Write-LogInfo "Importing PowerCLI module..." -Category "Initialization"
+    Import-Module VMware.VimAutomation.Core -ErrorAction Stop
+    Write-LogSuccess "PowerCLI module imported successfully." -Category "Initialization"
+
+    # Connect to vCenter
+    $connectParams = @{ Server = $vCenterServer; ErrorAction = 'Stop' }
+    if ($Credential) { $connectParams.Add('Credential', $Credential) }
     
-    if ($Credential) {
-        $connectParams.Add('Credential', $Credential)
-    }
-    
+    Write-LogInfo "Connecting to vCenter server: $vCenterServer" -Category "Connection"
     $connection = Connect-VIServer @connectParams
-    write-verbose "Connected to vCenter server: $($connection.Name)"
+    Write-LogSuccess "Connected to vCenter: $($connection.Name) (Version: $($connection.Version))" -Category "Connection"
     
-    # Get vCenter version
-    $vCenterVersion = $connection.Version
-    write-verbose "vCenter version: $($vCenterVersion)" 
-} catch {
-    Write-Error "Failed to connect to vCenter server: $($_)"
-    exit 1
-}
-
-# Get the source and target roles
-try {
+    # Get roles
+    Write-LogInfo "Retrieving roles '$SourceRoleName' and '$TargetRoleName'..." -Category "Discovery"
     $sourceRole = Get-VIRole -Name $SourceRoleName -ErrorAction Stop
     $targetRole = Get-VIRole -Name $TargetRoleName -ErrorAction Stop
-    
-    write-verbose "Source role: $($sourceRole.Name)"
-    write-verbose "Target role: $($targetRole.Name)"
-} catch {
-    Write-Error "Failed to retrieve roles: $($_)"
-    Disconnect-VIServer -Server $vCenterServer -Confirm:$false
-    exit 1
-}
+    Write-LogSuccess "Found source role '$($sourceRole.Name)' and target role '$($targetRole.Name)'." -Category "Discovery"
 
-# Get all available privileges in the current vCenter for validation
-try {
-    write-verbose "Retrieving all available privileges in this vCenter instance..." 
+    # Get all available privileges for validation
+    Write-LogInfo "Retrieving all available privileges in this vCenter instance..." -Category "Validation"
     $allAvailablePrivileges = Get-VIPrivilege | Select-Object -ExpandProperty Id
-    write-verbose "Found $($allAvailablePrivileges.Count) available privileges." 
-} catch {
-    Write-Error "Failed to retrieve available privileges: $($_)"
-    Disconnect-VIServer -Server $vCenterServer -Confirm:$false
-    exit 1
-}
+    Write-LogSuccess "Found $($allAvailablePrivileges.Count) available privileges." -Category "Validation"
+    
+    # Get and validate source privileges
+    $sourcePrivileges = $sourceRole.PrivilegeList
+    $stats.SourceRolePrivileges = $sourcePrivileges.Count
+    Write-LogInfo "Found $($stats.SourceRolePrivileges) privileges in source role '$SourceRoleName'." -Category "Processing"
 
-# Get privileges from the source role
-$sourcePrivileges = $sourceRole.PrivilegeList
+    $validSourcePrivileges = @()
+    $invalidPrivileges = @()
+    foreach ($privilege in $sourcePrivileges) {
+        if ($privilege -in $allAvailablePrivileges) {
+            $validSourcePrivileges += $privilege
+        } else {
+            $invalidPrivileges += $privilege
+        }
+    }
+    
+    $stats.ValidPrivileges = $validSourcePrivileges.Count
+    $stats.SkippedInvalidPrivileges = $invalidPrivileges.Count
 
-if ($sourcePrivileges.Count -eq 0) {
-    Write-Warning "Source role has no privileges."
-    Disconnect-VIServer -Server $vCenterServer -Confirm:$false
-    exit 0
-}
+    if ($invalidPrivileges.Count -gt 0) {
+        Write-LogWarning "$($invalidPrivileges.Count) privileges don't exist in this vCenter and will be skipped: $($invalidPrivileges -join ', ')" -Category "Compatibility"
+    }
 
-write-verbose "Found $($sourcePrivileges.Count) privileges in source role."
+    Write-LogInfo "Proceeding with $($stats.ValidPrivileges) valid privileges." -Category "Processing"
 
-# Filter out privileges that don't exist in the current vCenter version
-$validSourcePrivileges = @()
-$invalidPrivileges = @()
-
-foreach ($privilege in $sourcePrivileges) {
-    if ($privilege -in $allAvailablePrivileges) {
-        $validSourcePrivileges += $privilege
+    if ($ReplaceExisting) {
+        Write-LogInfo "Mode: Replace. Setting target role to have $($stats.ValidPrivileges) privileges." -Category "Update"
+        Set-VIRole -Role $targetRole -Privilege $validSourcePrivileges -Confirm:$false -ErrorAction Stop
+        Write-LogSuccess "Successfully replaced privileges in target role." -Category "Update"
+        $stats.PrivilegesAdded = $stats.ValidPrivileges
     } else {
-        $invalidPrivileges += $privilege
-    }
-}
+        Write-LogInfo "Mode: Append. Checking for privileges to add." -Category "Update"
+        $targetPrivileges = $targetRole.PrivilegeList
+        $privilegesToAdd = $validSourcePrivileges | Where-Object { $_ -notin $targetPrivileges }
 
-if ($invalidPrivileges.Count -gt 0) {
-    Write-Warning "Found $($invalidPrivileges.Count) privileges that don't exist in this vCenter version and will be skipped:"
-    foreach ($invalidPriv in $invalidPrivileges) {
-        Write-Warning "  - $invalidPriv"
-    }
-}
-
-write-verbose "Proceeding with $($validSourcePrivileges.Count) valid privileges." 
-
-# Handle privileges based on whether we're replacing or adding
-if ($ReplaceExisting) {
-    # Replace all privileges in the target role
-    try {
-        write-verbose "Replacing all privileges in target role with valid source role privileges..."
-        Set-VIRole -Role $targetRole -Privilege $validSourcePrivileges -Confirm:$false
-        write-verbose "Successfully replaced privileges in target role."
-    } catch {
-        Write-Error "Failed to update target role: $($_)"
-    }
-} else {
-    # Add privileges from source to target (without duplicating)
-    $targetPrivileges = $targetRole.PrivilegeList
-    $privilegesToAdd = $validSourcePrivileges | Where-Object { $_ -notin $targetPrivileges }
-
-    if ($privilegesToAdd.Count -eq 0) {
-        write-verbose "All valid source privileges already exist in target role. No changes needed."
-    } else {
-        write-verbose "Adding $($privilegesToAdd.Count) privileges to target role..."
-        
-        $successCount = 0
-        $failCount = 0
-        
-        # Process each privilege individually to avoid batch failures
-        foreach ($privilege in $privilegesToAdd) {
-            try {
-                # Verify again that the privilege exists before trying to add it
-                if ($privilege -in $allAvailablePrivileges) {
+        if ($privilegesToAdd.Count -eq 0) {
+            Write-LogSuccess "All valid source privileges already exist in target role. No changes needed." -Category "Update"
+        } else {
+            Write-LogInfo "Adding $($privilegesToAdd.Count) new privileges to target role..." -Category "Update"
+            foreach ($privilege in $privilegesToAdd) {
+                try {
                     Set-VIRole -Role $targetRole -AddPrivilege $privilege -Confirm:$false -ErrorAction Stop
-                    $successCount++
-                } else {
-                    Write-Warning "Skipping privilege '$($privilege)' as it doesn't exist in this vCenter."
-                    $failCount++
+                    Write-LogDebug "  Added privilege: $privilege" -Category "Update"
+                    $stats.PrivilegesAdded++
+                } catch {
+                    Write-LogWarning "  Failed to add privilege '$($privilege)': $($_.Exception.Message)" -Category "Update"
+                    $stats.PrivilegesFailedToAdd++
                 }
-            } catch {
-                Write-Warning "Failed to add privilege '$($privilege)': $($_)"
-                $failCount++
             }
-        }
-        
-        write-verbose "Successfully added $($successCount) privileges to target role."
-        if ($failCount -gt 0) {
-            Write-Warning "Failed to add $($failCount) privileges."
+            Write-LogSuccess "Finished adding privileges. Added: $($stats.PrivilegesAdded), Failed: $($stats.PrivilegesFailedToAdd)." -Category "Update"
         }
     }
-}
+    
+    $scriptSuccess = $true
+    $finalSummary = "Role copy operation completed. Mode: $($stats.Mode). Privileges Added/Set: $($stats.PrivilegesAdded), Skipped: $($stats.SkippedInvalidPrivileges), Failed: $($stats.PrivilegesFailedToAdd)."
 
-# Summary of what was done
-write-verbose "`nOperation Summary:" 
-write-verbose "--------------------" 
-write-verbose "Source Role: $($SourceRoleName)"
-write-verbose "Target Role: $($TargetRoleName)"
-write-verbose "Total privileges in source role: $($sourcePrivileges.Count)"
-write-verbose "Valid privileges processed: $($validSourcePrivileges.Count)"
-write-verbose "Skipped privileges: $($invalidPrivileges.Count)"
-if (-not $ReplaceExisting) {
-    write-verbose "Privileges added to target role: $($successCount)"
-    if ($failCount -gt 0) {
-        write-verbose "Privileges failed to add: $($failCount)"
+} catch {
+    $scriptSuccess = $false
+    $finalSummary = "Script failed with error: $($_.Exception.Message)"
+    Write-LogCritical $finalSummary
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)"
+    throw $_
+} finally {
+    if ($connection) {
+        Write-LogInfo "Disconnecting from vCenter: $($connection.Name)..." -Category "Cleanup"
+        Disconnect-VIServer -Server $connection -Confirm:$false -ErrorAction SilentlyContinue
     }
+    
+    Stop-ScriptLogging -Success $scriptSuccess -Summary $finalSummary -Statistics $stats
 }
-write-verbose "--------------------" 
-
-# Disconnect from vCenter
-Disconnect-VIServer -Server $vCenterServer -Confirm:$false -ErrorAction SilentlyContinue
-write-verbose "Disconnected from vCenter server."

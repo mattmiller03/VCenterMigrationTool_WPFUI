@@ -1,34 +1,13 @@
 <#
 .SYNOPSIS
     Retrieves resource pool information from a vCenter cluster for GUI display.
-
 .DESCRIPTION
-    This script connects to a vCenter server and retrieves information about resource pools
-    in a specified cluster. Returns data in JSON format for consumption by the
-    vCenter Migration Tool GUI.
-
-.PARAMETER VCenterServer
-    The hostname or IP address of the vCenter Server.
-
-.PARAMETER Username
-    Username for vCenter authentication.
-
-.PARAMETER Password
-    Password for vCenter authentication.
-
-.PARAMETER ClusterName
-    Name of the cluster to query for resource pools.
-
-.PARAMETER BypassModuleCheck
-    Switch to bypass PowerCLI module verification for faster execution.
-
-.PARAMETER LogPath
-    Optional path for logging output.
-
-.EXAMPLE
-    .\Get-ResourcePools.ps1 -VCenterServer "vcenter.lab.local" -Username "admin" -Password "password" -ClusterName "Cluster-A"
+    Connects to vCenter and retrieves detailed info about resource pools in a cluster.
+    Returns data in JSON format.
+    Requires Write-ScriptLog.ps1 in the same directory.
+.NOTES
+    Version: 2.0 (Integrated with standard logging)
 #>
-
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)]
@@ -47,94 +26,103 @@ param(
     [switch]$BypassModuleCheck,
     
     [Parameter()]
-    [string]$LogPath
+    [string]$LogPath,
+
+    [Parameter()]
+    [bool]$SuppressConsoleOutput = $false
 )
 
-# Import PowerCLI modules if not bypassed
-if (-not $BypassModuleCheck) {
-    try {
-        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
-        Write-Host "PowerCLI modules imported successfully"
-    }
-    catch {
-        Write-Error "Failed to import PowerCLI modules: $_"
-        exit 1
-    }
-}
+# Import logging functions
+. "$PSScriptRoot\Write-ScriptLog.ps1"
+
+# --- Main Script Logic ---
+Start-ScriptLogging -ScriptName "Get-ResourcePools" -LogPath $LogPath -SuppressConsoleOutput $SuppressConsoleOutput
+
+$scriptSuccess = $false
+$finalSummary = ""
+$viConnection = $null
+$jsonOutput = "[]"
+$poolCount = 0
 
 try {
-    # Create credential object
+    # Import PowerCLI
+    if (-not $BypassModuleCheck) {
+        Write-LogInfo "Importing PowerCLI modules..." -Category "Initialization"
+        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
+        Write-LogSuccess "PowerCLI modules imported successfully." -Category "Initialization"
+    } else {
+        Write-LogInfo "Bypassing PowerCLI module check." -Category "Initialization"
+    }
+
+    # Connect to vCenter
     $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
     $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
-    
-    # Connect to vCenter
-    Write-Host "Connecting to vCenter: $VCenterServer"
+    Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
     $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+    Write-LogSuccess "Connected to vCenter: $($viConnection.Name)" -Category "Connection"
     
     # Get the specified cluster
-    Write-Host "Finding cluster: $ClusterName"
+    Write-LogInfo "Finding cluster: $ClusterName" -Category "Discovery"
     $cluster = Get-Cluster -Name $ClusterName -ErrorAction Stop
+    Write-LogSuccess "Found cluster '$($cluster.Name)'" -Category "Discovery"
     
-    # Get resource pools from the cluster (excluding built-in ones)
-    Write-Host "Retrieving resource pools from cluster..."
+    # Get resource pools from the cluster
+    Write-LogInfo "Retrieving resource pools from cluster..." -Category "Discovery"
     $resourcePools = Get-ResourcePool -Location $cluster -ErrorAction Stop | 
         Where-Object { $_.Name -notin @('Resources', 'vCLS') }
     
-    Write-Host "Found $($resourcePools.Count) custom resource pools"
+    $poolCount = $resourcePools.Count
+    Write-LogSuccess "Found $poolCount custom resource pools." -Category "Discovery"
     
     # Build detailed resource pool information
     $poolInfo = @()
     foreach ($pool in $resourcePools) {
         try {
-            # Get VMs in this resource pool
+            Write-LogDebug "Processing resource pool: $($pool.Name)" -Category "Processing"
             $vmsInPool = Get-VM -Location $pool -ErrorAction SilentlyContinue
             $vmNames = if ($vmsInPool) { $vmsInPool.Name } else { @() }
             
-            # Get permissions (if any)
-            $permissions = Get-VIPermission -Entity $pool -ErrorAction SilentlyContinue
-            
             $poolData = [PSCustomObject]@{
-                Name = $pool.Name
-                ParentType = $pool.Parent.GetType().Name
-                ParentName = $pool.Parent.Name
-                CpuSharesLevel = $pool.CpuSharesLevel.ToString()
-                CpuShares = $pool.CpuShares
-                CpuReservationMHz = $pool.CpuReservationMHz
-                MemSharesLevel = $pool.MemSharesLevel.ToString()
-                MemShares = $pool.MemShares
-                MemReservationMB = $pool.MemReservationMB
-                VMs = $vmNames
-                VmCount = $vmNames.Count
-                IsSelected = $false  # Default to not selected for GUI
-                Permissions = if ($permissions) { 
-                    $permissions | Select-Object Principal, Role, Propagate 
-                } else { 
-                    @() 
-                }
+                Name = $pool.Name; ParentType = $pool.Parent.GetType().Name; ParentName = $pool.Parent.Name
+                CpuSharesLevel = $pool.CpuSharesLevel.ToString(); CpuShares = $pool.CpuShares
+                CpuReservationMHz = $pool.CpuReservationMHz; MemSharesLevel = $pool.MemSharesLevel.ToString()
+                MemShares = $pool.MemShares; MemReservationMB = $pool.MemReservationMB
+                VMs = $vmNames; VmCount = $vmNames.Count; IsSelected = $false
             }
-            
             $poolInfo += $poolData
-            Write-Host "Processed resource pool: $($pool.Name) ($($vmNames.Count) VMs)"
         }
         catch {
-            Write-Warning "Failed to process resource pool '$($pool.Name)': $_"
+            Write-LogWarning "Failed to process details for resource pool '$($pool.Name)': $($_.Exception.Message)" -Category "Processing"
         }
     }
     
-    # Convert to JSON and output
     $jsonOutput = $poolInfo | ConvertTo-Json -Depth 4
-    Write-Output $jsonOutput
     
+    $scriptSuccess = $true
+    $finalSummary = "Successfully retrieved $poolCount resource pools from cluster '$ClusterName'."
+
 }
 catch {
-    Write-Error "Error retrieving resource pools: $_"
-    # Return empty array as JSON for error handling
-    Write-Output "[]"
+    $scriptSuccess = $false
+    $finalSummary = "Script failed with error: $($_.Exception.Message)"
+    Write-LogCritical $finalSummary
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)"
+    throw $_
 }
 finally {
-    # Disconnect from vCenter
     if ($viConnection) {
+        Write-LogInfo "Disconnecting from vCenter..." -Category "Cleanup"
         Disconnect-VIServer -Server $viConnection -Confirm:$false -Force
-        Write-Host "Disconnected from vCenter"
     }
+    
+    $finalStats = @{
+        "VCenterServer" = $VCenterServer
+        "ClusterName" = $ClusterName
+        "ResourcePoolsFound" = $poolCount
+    }
+    
+    Stop-ScriptLogging -Success $scriptSuccess -Summary $finalSummary -Statistics $finalStats
 }
+
+# Final output
+Write-Output $jsonOutput

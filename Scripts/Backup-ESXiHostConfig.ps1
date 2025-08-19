@@ -26,8 +26,8 @@ if ($SuppressConsoleOutput) {
     }
 }
 
-# Start logging
-Start-ScriptLogging -ScriptName "Backup-ESXiHostConfig"
+# Start logging (suppress console output if requested)
+Start-ScriptLogging -ScriptName "Backup-ESXiHostConfig" -SuppressConsoleOutput $SuppressConsoleOutput
 
 # Initialize variables for the finally block
 $scriptSuccess = $false

@@ -1,34 +1,42 @@
 # Write-ScriptLog.ps1 - PowerShell Script Logging Functions
-# Updated to create individual log files per script and use configured log paths
+# Creates individual log files per script in the PowerShell subfolder
+# Does NOT write to the main application log
 
 # Global variables for session tracking
 $Global:ScriptLogFile = $null
 $Global:ScriptSessionId = $null
 $Global:ScriptStartTime = $null
 $Global:ConfiguredLogPath = $null
+$Global:SuppressConsoleOutput = $false
 
 # Function to initialize log path from parameters or environment
 function Initialize-LogPath {
     param(
         [string]$LogPath = $null,
-        [string]$ScriptName = $null
+        [string]$ScriptName = $null,
+        [bool]$SuppressConsoleOutput = $false
     )
     
-    # Use the provided LogPath if given, otherwise fall back to default
+    # Determine the base log directory
+    # The app log goes here, PowerShell logs go in a PowerShell subfolder
     if ($LogPath) {
         # Check if the provided path is a directory or file
         if ([System.IO.Path]::HasExtension($LogPath)) {
-            # It's a file path, extract the directory
+            # It's a file path (probably the app log), extract the directory
             $Global:ConfiguredLogPath = [System.IO.Path]::GetDirectoryName($LogPath)
         } else {
             # It's a directory path, use it directly
             $Global:ConfiguredLogPath = $LogPath
         }
-        Write-Host "Using configured log path: $Global:ConfiguredLogPath" -ForegroundColor Cyan
+        if (-not $SuppressConsoleOutput) {
+            Write-Host "PowerShell logs will be saved in: $Global:ConfiguredLogPath\PowerShell" -ForegroundColor Cyan
+        }
     } else {
         # Fallback to application's default location
         $Global:ConfiguredLogPath = Join-Path $env:LOCALAPPDATA "VCenterMigrationTool\Logs"
-        Write-Host "Using default log path: $Global:ConfiguredLogPath" -ForegroundColor Yellow
+        if (-not $SuppressConsoleOutput) {
+            Write-Host "Using default log path: $Global:ConfiguredLogPath\PowerShell" -ForegroundColor Yellow
+        }
     }
     
     # Ensure the directory exists and is writable
@@ -42,19 +50,26 @@ function Initialize-LogPath {
         "test" | Out-File -FilePath $testFile -ErrorAction Stop
         Remove-Item $testFile -ErrorAction SilentlyContinue
         
-        Write-Host "Log directory verified as writable: $Global:ConfiguredLogPath" -ForegroundColor Green
+        if (-not $SuppressConsoleOutput) {
+            Write-Host "Log directory verified as writable: $Global:ConfiguredLogPath" -ForegroundColor Green
+        }
         
     } catch {
         # If we can't write to the configured path, use a fallback
-        Write-Host "Cannot write to configured log path: $Global:ConfiguredLogPath. Error: $($_.Exception.Message)" -ForegroundColor Red
+        if (-not $SuppressConsoleOutput) {
+            Write-Host "Cannot write to configured log path: $Global:ConfiguredLogPath. Error: $($_.Exception.Message)" -ForegroundColor Red
+        }
         $Global:ConfiguredLogPath = Join-Path $env:LOCALAPPDATA "VCenterMigrationTool\Logs"
         if (-not (Test-Path $Global:ConfiguredLogPath)) {
             New-Item -ItemType Directory -Path $Global:ConfiguredLogPath -Force | Out-Null
         }
-        Write-Host "Using fallback log path: $Global:ConfiguredLogPath" -ForegroundColor Yellow
+        if (-not $SuppressConsoleOutput) {
+            Write-Host "Using fallback log path: $Global:ConfiguredLogPath" -ForegroundColor Yellow
+        }
     }
     
-    # Create the PowerShell subdirectory within the configured log path
+    # ALWAYS create logs in the PowerShell subdirectory
+    # This keeps PowerShell logs separate from the main application log
     $psLogDir = Join-Path $Global:ConfiguredLogPath "PowerShell"
     if (-not (Test-Path $psLogDir)) {
         New-Item -ItemType Directory -Path $psLogDir -Force | Out-Null
@@ -74,7 +89,9 @@ function Initialize-LogPath {
         $Global:ScriptLogFile = Join-Path $psLogDir "Unknown_${timestamp}_${sessionId}.log"
     }
     
-    Write-Host "Individual script log file: $Global:ScriptLogFile" -ForegroundColor Green
+    if (-not $SuppressConsoleOutput) {
+        Write-Host "Individual script log file: $Global:ScriptLogFile" -ForegroundColor Green
+    }
 }
 
 # Main logging function
@@ -108,8 +125,8 @@ function Write-ScriptLog {
     
     $logEntry = "$timestamp [$Level] $sessionPart [$scriptName] $categoryPart $Message"
     
-    # Write to console (unless suppressed)
-    if (-not $NoConsole) {
+    # Write to console (unless suppressed globally or by parameter)
+    if (-not $NoConsole -and -not $Global:SuppressConsoleOutput) {
         switch ($Level) {
             'Info' { Write-Host $logEntry -ForegroundColor White }
             'Error' { 
@@ -195,7 +212,8 @@ function Write-LogVerbose {
 function Start-ScriptLogging {
     param(
         [string]$ScriptName = '',
-        [string]$LogPath = $null
+        [string]$LogPath = $null,
+        [bool]$SuppressConsoleOutput = $false
     )
     
     # Get script name from calling script, not from this logging script
@@ -215,8 +233,11 @@ function Start-ScriptLogging {
         }
     }
     
+    # Store suppression state globally
+    $Global:SuppressConsoleOutput = $SuppressConsoleOutput
+    
     # Initialize log path with script name for individual file creation
-    Initialize-LogPath -LogPath $LogPath -ScriptName $ScriptName
+    Initialize-LogPath -LogPath $LogPath -ScriptName $ScriptName -SuppressConsoleOutput $SuppressConsoleOutput
     
     # Generate session ID
     $Global:ScriptSessionId = [System.Guid]::NewGuid().ToString("N").Substring(0, 8)

@@ -124,11 +124,20 @@ param(
     [Parameter()]
     [bool]$SkipModuleCheck = $false,
     
-    [Parameter()]
-    [string]$LogPath = "Logs"
+    [Parameter(Mandatory=$false)]
+    [string]$LogPath,
+    [Parameter(Mandatory=$false)]
+    [bool]$SuppressConsoleOutput = $false
 )
-
+# Import logging functions
+. "$PSScriptRoot\Write-ScriptLog.ps1"
 # Helper function to convert credential string to PSCredential
+
+# --- Main Script Logic ---
+Start-ScriptLogging -ScriptName "Invoke-VMMigration" -LogPath $LogPath -SuppressConsoleOutput $SuppressConsoleOutput
+
+$scriptSuccess = $false
+$finalSummary = ""
 function ConvertTo-PSCredential {
     param([string]$CredentialString)
     
@@ -146,88 +155,70 @@ function ConvertTo-PSCredential {
 }
 
 try {
-    Write-Host "Starting VM migration wrapper script..."
-    Write-Host "Source vCenter: $SourceVCenter"
-    Write-Host "Destination vCenter: $DestVCenter"
-    Write-Host "VMs to migrate: $($VMList.Count)"
+Write-LogInfo "Starting VM migration wrapper script..." -Category "Initialization"
+    Write-LogInfo "Source vCenter: $SourceVCenter" -Category "Parameters"
+    Write-LogInfo "Destination vCenter: $DestVCenter" -Category "Parameters"
+    Write-LogInfo "VMs to migrate: $($VMList.Count) ($($VMList -join ', '))" -Category "Parameters"
     
-    # Convert credential strings to PSCredential objects
+    
+    # Convert credential strings
+    Write-LogInfo "Converting credential strings to PSCredential objects..." -Category "Security"
+    if (-not $SourceVCCredential -or -not $DestVCCredential) {
+        throw "Source and destination vCenter credentials must be provided."
+    }
     $sourceCred = ConvertTo-PSCredential -CredentialString $SourceVCCredential
     $destCred = ConvertTo-PSCredential -CredentialString $DestVCCredential
-    
+    Write-LogSuccess "Credentials converted successfully." -Category "Security"
     # Get the path to the main migration script
     $scriptPath = Join-Path -Path $PSScriptRoot -ChildPath "CrossVcenterVMmigration_list.ps1"
     
     if (-not (Test-Path $scriptPath)) {
         throw "Migration script not found at: $scriptPath"
     }
-    
-    # Prepare parameters for the main migration script
+     Write-LogInfo "Found main migration script at: $scriptPath" -Category "Discovery"
+     # Prepare parameters
     $migrationParams = @{
-        SourceVCenter = $SourceVCenter
-        DestVCenter = $DestVCenter
-        VMList = $VMList
-        SourceVCCredential = $sourceCred
-        DestVCCredential = $destCred
-        LogFile = $LogFile
-        LogLevel = $LogLevel
-        NameSuffix = $NameSuffix
-        DiskFormat = $DiskFormat
+        SourceVCenter = $SourceVCenter; DestVCenter = $DestVCenter; VMList = $VMList
+        SourceVCCredential = $sourceCred; DestVCCredential = $destCred
+        LogFile = $LogFile; LogLevel = $LogLevel; NameSuffix = $NameSuffix; DiskFormat = $DiskFormat
     }
+    # Add optional parameters
+    if (-not [string]::IsNullOrEmpty($DestinationCluster)) { $migrationParams.DestinationCluster = $DestinationCluster }
+    if ($PreserveMAC) { $migrationParams.PreserveMAC = $true }
+    if ($SequentialMode) { $migrationParams.SequentialMode = $true } else { $migrationParams.MaxConcurrentMigrations = $MaxConcurrentMigrations }
+    if ($EnhancedNetworkHandling) { $migrationParams.EnhancedNetworkHandling = $true }
+    if ($IgnoreNetworkErrors) { $migrationParams.IgnoreNetworkErrors = $true }
+    if ($Validate) { $migrationParams.Validate = $true }
+    if ($SkipModuleCheck) { $migrationParams.SkipModuleCheck = $true }
+    if ($NetworkMapping.Count -gt 0) { $migrationParams.NetworkMapping = $NetworkMapping }
     
-    # Add optional parameters if specified
-    if (-not [string]::IsNullOrEmpty($DestinationCluster)) {
-        $migrationParams.DestinationCluster = $DestinationCluster
-    }
-    
-    if ($PreserveMAC) {
-        $migrationParams.PreserveMAC = $true
-    }
-    
-    if ($SequentialMode) {
-        $migrationParams.SequentialMode = $true
-    } else {
-        $migrationParams.MaxConcurrentMigrations = $MaxConcurrentMigrations
-    }
-    
-    if ($EnhancedNetworkHandling) {
-        $migrationParams.EnhancedNetworkHandling = $true
-    }
-    
-    if ($IgnoreNetworkErrors) {
-        $migrationParams.IgnoreNetworkErrors = $true
-    }
-    
-    if ($Validate) {
-        $migrationParams.Validate = $true
-    }
-    
-    if ($SkipModuleCheck) {
-        $migrationParams.SkipModuleCheck = $true
-    }
-    
-    if ($NetworkMapping.Count -gt 0) {
-        $migrationParams.NetworkMapping = $NetworkMapping
-    }
-    
-    Write-Host "Executing main migration script..."
+    Write-LogInfo "Executing main migration script..." -Category "Execution"
     
     # Execute the main migration script
     & $scriptPath @migrationParams
     
     $exitCode = $LASTEXITCODE
-    if ($exitCode -eq 0 -or $null -eq $exitCode) {
-        Write-Host "Migration script completed successfully"
-    } else {
-        Write-Error "Migration script failed with exit code: $exitCode"
+    # Check for errors from the child script
+    if ($LASTEXITCODE -ne 0 -or -not $?) {
+         throw "The main migration script (CrossVcenterVMmigration_list.ps1) reported an error. Please check its log file for details."
     }
-    
+     Write-LogSuccess "Main migration script completed successfully." -Category "Execution"
+    $scriptSuccess = $true
+    $finalSummary = "Migration wrapper completed successfully. Handed off $($VMList.Count) VMs to the main migration script."
 }
 catch {
-    Write-Error "Error in migration wrapper: $_"
-    Write-Host "STDERR: $($_.Exception.Message)"
-    exit 1
+    $scriptSuccess = $false
+    $finalSummary = "Error in migration wrapper: $($_.Exception.Message)"
+    Write-LogCritical $finalSummary
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)"
+    exit 1 # Exit with a non-zero code to indicate failure to the calling application
 }
 finally {
-    Write-Host "Migration wrapper script completed"
+    $finalStats = @{
+        "SourceVCenter" = $SourceVCenter
+        "DestinationVCenter" = $DestVCenter
+        "VMCount" = $VMList.Count
+        "ValidationOnly" = $Validate
+    }
+    Stop-ScriptLogging -Success $scriptSuccess -Summary $finalSummary -Statistics $finalStats
 }

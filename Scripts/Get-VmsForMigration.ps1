@@ -1,31 +1,13 @@
 <#
 .SYNOPSIS
     Retrieves VM information from vCenter for migration planning.
-
 .DESCRIPTION
     This script connects to a vCenter server and retrieves detailed information about virtual machines
-    that can be used for migration planning. Returns data in JSON format for consumption by the
-    vCenter Migration Tool.
-
-.PARAMETER VCenterServer
-    The hostname or IP address of the vCenter Server.
-
-.PARAMETER Username
-    Username for vCenter authentication.
-
-.PARAMETER Password
-    Password for vCenter authentication.
-
-.PARAMETER BypassModuleCheck
-    Switch to bypass PowerCLI module verification for faster execution.
-
-.PARAMETER LogPath
-    Optional path for logging output.
-
-.EXAMPLE
-    .\Get-VmsForMigration.ps1 -VCenterServer "vcenter.lab.local" -Username "admin" -Password "password"
+    that can be used for migration planning. Returns data in JSON format.
+    Requires Write-ScriptLog.ps1 in the same directory.
+.NOTES
+    Version: 2.0 (Integrated with standard logging)
 #>
-
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)]
@@ -41,77 +23,93 @@ param(
     [switch]$BypassModuleCheck,
     
     [Parameter()]
-    [string]$LogPath
+    [string]$LogPath,
+
+    [Parameter()]
+    [bool]$SuppressConsoleOutput = $false
 )
 
-# Import PowerCLI modules if not bypassed
-if (-not $BypassModuleCheck) {
-    try {
-        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
-        Write-Host "PowerCLI modules imported successfully"
-    }
-    catch {
-        Write-Error "Failed to import PowerCLI modules: $_"
-        exit 1
-    }
-}
+# Import logging functions
+. "$PSScriptRoot\Write-ScriptLog.ps1"
+
+# --- Main Script Logic ---
+Start-ScriptLogging -ScriptName "Get-VmsForMigration" -LogPath $LogPath -SuppressConsoleOutput $SuppressConsoleOutput
+
+$scriptSuccess = $false
+$finalSummary = ""
+$viConnection = $null
+$jsonOutput = "[]" # Default to empty JSON array on failure
+$vmCount = 0
 
 try {
+    # Import PowerCLI modules if not bypassed
+    if (-not $BypassModuleCheck) {
+        Write-LogInfo "Importing PowerCLI modules..." -Category "Initialization"
+        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
+        Write-LogSuccess "PowerCLI modules imported successfully" -Category "Initialization"
+    } else {
+        Write-LogInfo "Bypassing PowerCLI module check." -Category "Initialization"
+    }
+
     # Create credential object
     $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
     $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
     
     # Connect to vCenter
-    Write-Host "Connecting to vCenter: $VCenterServer"
+    Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
     $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+    Write-LogSuccess "Connected to vCenter: $($viConnection.Name)" -Category "Connection"
     
     # Get all VMs with relevant information
-    Write-Host "Retrieving VM information..."
+    Write-LogInfo "Retrieving VM information..." -Category "Discovery"
     $vms = Get-VM | Where-Object { 
-        # Exclude templates and system VMs
-        $_.ExtensionData.Config.Template -eq $false -and
-        $_.Name -notlike "vCLS*" 
+        $_.ExtensionData.Config.Template -eq $false -and $_.Name -notlike "vCLS*" 
     } | Select-Object @{
-        Name = "Name"
-        Expression = { $_.Name }
+        Name = "Name"; Expression = { $_.Name }
     }, @{
-        Name = "PowerState"
-        Expression = { $_.PowerState.ToString() }
+        Name = "PowerState"; Expression = { $_.PowerState.ToString() }
     }, @{
-        Name = "EsxiHost"
-        Expression = { $_.VMHost.Name }
+        Name = "EsxiHost"; Expression = { $_.VMHost.Name }
     }, @{
-        Name = "Datastore"
-        Expression = { ($_.DatastoreIdList | ForEach-Object { (Get-Datastore -Id $_).Name }) -join ", " }
+        Name = "Datastore"; Expression = { ($_.DatastoreIdList | ForEach-Object { (Get-Datastore -Id $_).Name }) -join ", " }
     }, @{
-        Name = "Cluster"
-        Expression = { 
-            if ($_.VMHost) {
-                $cluster = Get-Cluster -VMHost $_.VMHost -ErrorAction SilentlyContinue
-                if ($cluster) { $cluster.Name } else { "Standalone" }
-            } else { "Unknown" }
-        }
+        Name = "Cluster"; Expression = { if ($_.VMHost) { (Get-Cluster -VMHost $_.VMHost -ErrorAction SilentlyContinue).Name } else { "Unknown" } }
     }, @{
-        Name = "IsSelected"
-        Expression = { $false }  # Default to not selected
+        Name = "IsSelected"; Expression = { $false }
     }
     
-    Write-Host "Found $($vms.Count) VMs"
+    $vmCount = $vms.Count
+    Write-LogSuccess "Found $($vmCount) VMs" -Category "Discovery"
     
-    # Convert to JSON and output
+    # Convert to JSON
     $jsonOutput = $vms | ConvertTo-Json -Depth 3
-    Write-Output $jsonOutput
     
+    $scriptSuccess = $true
+    $finalSummary = "Successfully retrieved $vmCount VMs from $VCenterServer."
+
 }
 catch {
-    Write-Error "Error retrieving VMs: $_"
-    # Return empty array as JSON for error handling
-    Write-Output "[]"
+    $scriptSuccess = $false
+    $finalSummary = "Script failed with error: $($_.Exception.Message)"
+    Write-LogCritical $finalSummary
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)"
+    # Error is re-thrown for external tools to catch
+    throw $_
 }
 finally {
     # Disconnect from vCenter
     if ($viConnection) {
+        Write-LogInfo "Disconnecting from vCenter..." -Category "Cleanup"
         Disconnect-VIServer -Server $viConnection -Confirm:$false -Force
-        Write-Host "Disconnected from vCenter"
     }
+    
+    $finalStats = @{
+        "VCenterServer" = $VCenterServer
+        "VMsFound" = $vmCount
+    }
+    
+    Stop-ScriptLogging -Success $scriptSuccess -Summary $finalSummary -Statistics $finalStats
 }
+
+# Final output for consumption by other tools
+Write-Output $jsonOutput

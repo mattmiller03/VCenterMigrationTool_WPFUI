@@ -207,12 +207,8 @@ public class PowerShellLoggingService : IDisposable
             _currentStreamWriter.WriteLine(logLine);
             }
 
-        // Also log to application logger for critical entries
-        if (entry.Level == "ERROR" || entry.Level == "CRITICAL")
-            {
-            _logger.LogError("[PowerShell] [{SessionId}] [{ScriptName}] {Message}",
-                entry.SessionId, entry.ScriptName, entry.Message);
-            }
+        // Don't duplicate PowerShell logs to application logger
+        // PowerShell scripts have their own logs in the PowerShell folder
 
         // Raise event for real-time monitoring
         LogEntryAdded?.Invoke(this, entry);

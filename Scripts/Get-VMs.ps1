@@ -1,4 +1,5 @@
-﻿param(
+# Get-VMs.ps1 - Retrieves virtual machine information from vCenter
+param(
     [Parameter(Mandatory = $true)]
     [string]$VCenterServer,
     
@@ -6,65 +7,172 @@
     [System.Management.Automation.PSCredential]$Credential,
     
     [bool]$BypassModuleCheck = $false,
-    [string]$LogPath = ""
+    [string]$LogPath = "",
+    [bool]$SuppressConsoleOutput = $false
 )
 
-# Function to write log messages
-function Write-Log {
-    param([string]$Message, [string]$Level = "Info")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] [$Level] $Message"
-    Write-Host $logMessage
-    
-    if (-not [string]::IsNullOrEmpty($LogPath)) {
-        try {
-            $logMessage | Out-File -FilePath $LogPath -Append -Encoding UTF8
-        }
-        catch {
-            # Ignore log file errors
-        }
+# Import logging functions
+. "$PSScriptRoot\Write-ScriptLog.ps1"
+
+# Override Write-Host if console output is suppressed
+if ($SuppressConsoleOutput) {
+    function global:Write-Host {
+        # Suppress all Write-Host output
     }
 }
 
+# Start logging
+Start-ScriptLogging -ScriptName "Get-VMs" -LogPath $LogPath -SuppressConsoleOutput $SuppressConsoleOutput
+
+# Initialize result
+$result = @()
+$scriptSuccess = $true
+
 try {
-    Write-Log "Starting VM discovery from vCenter: $VCenterServer" "Info"
+    Write-LogInfo "Starting VM discovery from vCenter: $VCenterServer" -Category "Initialization"
     
     # Import PowerCLI modules if not bypassing module check
     if (-not $BypassModuleCheck) {
-        Write-Log "Importing PowerCLI modules..." "Info"
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-        Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+        Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
+        try {
+            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+            Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
+        }
+        catch {
+            Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)" -Category "Module"
+            throw $_
+        }
+    }
+    else {
+        Write-LogInfo "Bypassing PowerCLI module check" -Category "Module"
     }
     
     # Connect to vCenter using PSCredential
-    Write-Log "Connecting to vCenter..." "Info"
-    $connection = Connect-VIServer -Server $VCenterServer -Credential $Credential -Force
+    Write-LogInfo "Connecting to vCenter server: $VCenterServer" -Category "Connection"
     
-    if (-not $connection.IsConnected) {
-        throw "Failed to connect to vCenter server"
+    try {
+        $connection = Connect-VIServer -Server $VCenterServer -Credential $Credential -Force -ErrorAction Stop
+        
+        if ($connection.IsConnected) {
+            Write-LogSuccess "Successfully connected to vCenter: $($connection.Name)" -Category "Connection"
+            Write-LogInfo "  Version: $($connection.Version)" -Category "Connection"
+            Write-LogInfo "  Build: $($connection.Build)" -Category "Connection"
+        }
+        else {
+            throw "Connection object returned but IsConnected is false"
+        }
+    }
+    catch {
+        Write-LogError "Failed to connect to vCenter: $($_.Exception.Message)" -Category "Connection"
+        throw $_
     }
     
-    Write-Log "Successfully connected, retrieving VMs..." "Info"
-    
     # Get all VMs
-    $vms = Get-VM | Select-Object Name, PowerState, 
-        @{N="EsxiHost";E={$_.VMHost.Name}},
-        @{N="Datastore";E={($_.DatastoreIdList | Get-Datastore | Select-Object -First 1).Name}},
-        @{N="Cluster";E={$_.VMHost.Parent.Name}},
-        @{N="IsSelected";E={$false}}
+    Write-LogInfo "Retrieving virtual machines..." -Category "Discovery"
     
-    # Convert to JSON for output
-    $jsonOutput = $vms | ConvertTo-Json -Depth 3
-    Write-Output $jsonOutput
+    try {
+        $vms = Get-VM -ErrorAction Stop
+        
+        if ($vms) {
+            Write-LogSuccess "Found $($vms.Count) virtual machines" -Category "Discovery"
+            
+            foreach ($vm in $vms) {
+                Write-LogVerbose "Processing VM: $($vm.Name)" -Category "Discovery"
+                
+                # Get datastore name (handle multiple datastores)
+                $datastoreName = if ($vm.DatastoreIdList) {
+                    ($vm.DatastoreIdList | Get-Datastore | Select-Object -First 1).Name
+                } else {
+                    "Unknown"
+                }
+                
+                $vmInfo = @{
+                    Name = $vm.Name
+                    PowerState = $vm.PowerState.ToString()
+                    EsxiHost = $vm.VMHost.Name
+                    Datastore = $datastoreName
+                    Cluster = $vm.VMHost.Parent.Name
+                    IsSelected = $false
+                    NumCpu = $vm.NumCpu
+                    MemoryGB = $vm.MemoryGB
+                    ProvisionedSpaceGB = [math]::Round($vm.ProvisionedSpaceGB, 2)
+                    UsedSpaceGB = [math]::Round($vm.UsedSpaceGB, 2)
+                    GuestId = $vm.GuestId
+                    Version = $vm.Version
+                    ToolsStatus = $vm.ExtensionData.Guest.ToolsStatus
+                    ToolsVersion = $vm.ExtensionData.Guest.ToolsVersion
+                }
+                
+                $result += $vmInfo
+            }
+            
+            # Log summary statistics
+            $poweredOn = ($vms | Where-Object { $_.PowerState -eq 'PoweredOn' }).Count
+            $poweredOff = ($vms | Where-Object { $_.PowerState -eq 'PoweredOff' }).Count
+            $suspended = ($vms | Where-Object { $_.PowerState -eq 'Suspended' }).Count
+            
+            Write-LogInfo "VM Power States - On: $poweredOn, Off: $poweredOff, Suspended: $suspended" -Category "Statistics"
+        }
+        else {
+            Write-LogWarning "No virtual machines found in vCenter" -Category "Discovery"
+        }
+    }
+    catch {
+        Write-LogError "Failed to retrieve VMs: $($_.Exception.Message)" -Category "Discovery"
+        throw $_
+    }
     
-    Write-Log "VM discovery completed successfully. Found $($vms.Count) VMs" "Info"
+    # Disconnect from vCenter
+    try {
+        Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
+        Disconnect-VIServer -Server $VCenterServer -Force -Confirm:$false -ErrorAction Stop
+        Write-LogSuccess "Disconnected from vCenter" -Category "Connection"
+    }
+    catch {
+        Write-LogWarning "Failed to disconnect cleanly: $($_.Exception.Message)" -Category "Connection"
+    }
     
-    # Disconnect
-    Disconnect-VIServer -Server $VCenterServer -Force -Confirm:$false
+    Write-LogSuccess "VM discovery completed successfully" -Category "Summary"
 }
 catch {
-    $errorMsg = "VM discovery failed: $($_.Exception.Message)"
-    Write-Log $errorMsg "Error"
-    Write-Error $errorMsg
+    $scriptSuccess = $false
+    $errorMessage = "VM discovery failed: $($_.Exception.Message)"
+    Write-LogCritical $errorMessage -Category "Error"
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)" -Category "Error"
+    
+    # Try to disconnect if connected
+    if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {
+        try {
+            Disconnect-VIServer -Server $VCenterServer -Force -Confirm:$false -ErrorAction SilentlyContinue
+        }
+        catch {
+            # Ignore disconnect errors
+        }
+    }
+    
+    # Return error in JSON format
+    $errorResult = @{
+        Success = $false
+        Error = $_.Exception.Message
+    }
+    Write-Output ($errorResult | ConvertTo-Json -Compress)
+    
+    Stop-ScriptLogging -Success $false -Summary $errorMessage
     exit 1
+}
+finally {
+    # Stop logging and output result
+    if ($scriptSuccess) {
+        $stats = @{
+            "TotalVMs" = $result.Count
+            "PoweredOn" = ($result | Where-Object { $_.PowerState -eq 'PoweredOn' }).Count
+            "PoweredOff" = ($result | Where-Object { $_.PowerState -eq 'PoweredOff' }).Count
+        }
+        
+        Stop-ScriptLogging -Success $true -Summary "Retrieved $($result.Count) VMs" -Statistics $stats
+        
+        # Output result as JSON
+        Write-Output ($result | ConvertTo-Json -Depth 3 -Compress)
+    }
 }
