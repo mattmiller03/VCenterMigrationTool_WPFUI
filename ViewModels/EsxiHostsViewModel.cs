@@ -19,6 +19,7 @@ public partial class EsxiHostsViewModel : ObservableObject
         private readonly PersistentExternalConnectionService _persistentConnectionService;
         private readonly SharedConnectionService _sharedConnectionService;
         private readonly ConfigurationService _configurationService;
+        private readonly PowerShellLoggingService _powerShellLoggingService;
         private readonly ILogger<EsxiHostsViewModel> _logger;
 
 
@@ -85,11 +86,13 @@ public partial class EsxiHostsViewModel : ObservableObject
             PersistentExternalConnectionService persistentConnectionService,
             SharedConnectionService sharedConnectionService,
             ConfigurationService configurationService,
+            PowerShellLoggingService powerShellLoggingService,
             ILogger<EsxiHostsViewModel> logger)
         {
             _persistentConnectionService = persistentConnectionService;
             _sharedConnectionService = sharedConnectionService;
             _configurationService = configurationService;
+            _powerShellLoggingService = powerShellLoggingService;
             _logger = logger;
         }
 
@@ -540,6 +543,14 @@ public partial class EsxiHostsViewModel : ObservableObject
         IsBackingUp = true;
         BackupProgress = $"Starting backup of {SelectedSourceHosts.Count} hosts...";
 
+        // Start backup job session for dashboard tracking
+        var sessionId = _powerShellLoggingService.StartScriptLogging("ESXi Host Backup", "source");
+        _powerShellLoggingService.LogParameters(sessionId, "ESXi Host Backup", new Dictionary<string, object>
+        {
+            ["HostCount"] = SelectedSourceHosts.Count,
+            ["BackupType"] = "ESXi Configuration"
+        });
+
         try
             {
             var backupPath = Path.Combine(
@@ -569,6 +580,10 @@ public partial class EsxiHostsViewModel : ObservableObject
                 {
                 completed++;
                 BackupProgress = $"Backing up {host.Name} ({completed}/{SelectedSourceHosts.Count})...";
+                
+                // Log individual host backup activity
+                _powerShellLoggingService.LogScriptOutput(sessionId, "ESXi Host Backup", 
+                    $"Starting backup for host: {host.Name} ({completed}/{SelectedSourceHosts.Count})");
 
                 // Build the command to execute the external script with console output suppressed
                 // Clear any previous script-level and global variables to ensure clean state for each host
@@ -617,6 +632,10 @@ public partial class EsxiHostsViewModel : ObservableObject
                         {
                             var filePath = backupResult.GetProperty("FilePath").GetString();
                             _logger.LogInformation("Successfully backed up host {Host} to {File}", host.Name, filePath);
+                            
+                            // Log successful host backup to PowerShell logging service
+                            _powerShellLoggingService.LogScriptOutput(sessionId, "ESXi Host Backup", 
+                                $"✅ Successfully backed up {host.Name} to {Path.GetFileName(filePath)}");
                         }
                         else
                         {
@@ -641,6 +660,10 @@ public partial class EsxiHostsViewModel : ObservableObject
 
             MigrationStatus = $"✅ Successfully backed up {SelectedSourceHosts.Count} hosts to {backupPath}";
             BackupProgress = "Backup completed successfully!";
+            
+            // End the backup job session successfully
+            _powerShellLoggingService.EndScriptLogging(sessionId, "ESXi Host Backup", true, 
+                $"Successfully backed up {SelectedSourceHosts.Count} hosts to {Path.GetFileName(backupPath)}");
 
             // Keep the success message visible for a moment
             await Task.Delay(2000);
@@ -650,6 +673,10 @@ public partial class EsxiHostsViewModel : ObservableObject
             _logger.LogError(ex, "Error during host backup");
             MigrationStatus = $"❌ Backup failed: {ex.Message}";
             BackupProgress = $"Backup failed: {ex.Message}";
+            
+            // End the backup job session with failure
+            _powerShellLoggingService.EndScriptLogging(sessionId, "ESXi Host Backup", false, 
+                $"Backup failed: {ex.Message}");
 
             // Keep the error message visible for a moment
             await Task.Delay(3000);
