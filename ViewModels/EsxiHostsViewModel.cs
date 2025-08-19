@@ -599,13 +599,14 @@ public partial class EsxiHostsViewModel : ObservableObject
                         # Capture the output and ensure only JSON is returned
                         $backupOutput = & '{scriptPath}' -HostName '{host.Name}' -BackupPath '{backupPath}' -LogPath '{configuredLogPath}' -BypassModuleCheck $true -SuppressConsoleOutput $true 2>&1
                         
-                        # Filter out any non-JSON lines and get only the last JSON line
-                        $jsonLines = $backupOutput | Where-Object {{ $_ -match '^\s*\{{.*\}}\s*$' }}
-                        if ($jsonLines) {{
-                            $jsonLines | Select-Object -Last 1
+                        # Extract the last complete JSON object from the output
+                        $allOutput = $backupOutput -join ""`n""
+                        
+                        # Use regex to find the last complete JSON object
+                        if ($allOutput -match '\{{[^{{}}]*\}}(?!.*\{{[^{{}}]*\}})') {{
+                            $matches[0]
                         }} else {{
                             # If no JSON found, check if there was an error in the output
-                            $allOutput = $backupOutput -join ""`n""
                             if ($allOutput -match 'error|exception|fail') {{
                                 @{{ Success = $false; Message = ""Script execution error: $allOutput"" }} | ConvertTo-Json -Compress
                             }} else {{
