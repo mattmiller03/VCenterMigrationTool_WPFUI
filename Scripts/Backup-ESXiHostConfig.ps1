@@ -39,6 +39,7 @@ $result = @{}
 try {
     Write-LogInfo "Starting backup of ESXi host: $($HostName)"
     Write-LogInfo "Backup destination: $($BackupPath)"
+    write-loginfo "Log path: "$($LogPath)""
     Write-LogInfo "Options: AdvancedSettings=$($IncludeAdvancedSettings), Network=$($IncludeNetworkConfig), Storage=$($IncludeStorageConfig), Services=$($IncludeServices)"
     
     # Import PowerCLI modules if not bypassing module check
