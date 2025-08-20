@@ -1,12 +1,34 @@
-﻿# vCenter Migration Tool v1.2
+﻿# vCenter Migration Tool v1.3
 
 ## 1. Introduction
 
-This document outlines the structure and development guide for the vCenter Migration Tool, a WPF application designed to assist with migrating a VMware vCenter environment. The application provides a modern, intuitive graphical user interface (GUI) for executing complex PowerShell and PowerCLI operations. The project is now at version 1.2, featuring comprehensive ESXi host management, VM configuration backup capabilities, and network migration functionality.
+This document outlines the structure and development guide for the vCenter Migration Tool, a WPF application designed to assist with migrating a VMware vCenter environment. The application provides a modern, intuitive graphical user interface (GUI) for executing complex PowerShell and PowerCLI operations. The project is now at version 1.3, featuring comprehensive ESXi host management, VM configuration backup capabilities, network migration functionality, and enhanced PowerShell logging with dashboard integration.
 
 ## 2. Current Status & Recent Updates (January 2025)
 
-### 2.1 Major New Features in v1.2 ✅
+### 2.1 Latest Updates in v1.3 ✅
+
+**Enhanced PowerShell Logging System:**
+- **Comprehensive Script Logging**: All PowerShell scripts now use the unified Write-ScriptLog.ps1 logging system
+- **Individual Log Files**: Each script execution creates its own log file in PowerShell subdirectory  
+- **Dashboard Activity Integration**: ESXi host backup operations now appear in the dashboard activity logs
+- **PowerShellLoggingService**: Real-time logging service with event-driven architecture for live monitoring
+- **Activity Logs Page**: Complete activity monitoring with filtering, export, and time-range selection
+- **Session Tracking**: Unique session IDs for each script execution with start/end tracking
+
+**Application Cleanup Improvements:**
+- **Enhanced Process Cleanup**: Improved PowerShell process termination on application shutdown
+- **ViewModel Disposal**: Proper cleanup of timers and resources in ViewModels (PowerShellSettingsViewModel, ActivityLogsViewModel)
+- **Shutdown Logging**: Detailed logging of cleanup operations during application exit
+- **Process Count Tracking**: Log exactly how many PowerShell processes are cleaned up on shutdown
+
+**ESXi Host Backup Fixes:**
+- **JSON Parsing Improvements**: Enhanced JSON extraction from PowerShell script output
+- **LogPath Parameter**: Fixed missing LogPath parameter in Backup-ESXiHostConfig.ps1
+- **Error Handling**: Better error handling for multi-host backup operations
+- **Dashboard Job Tracking**: Backup jobs now show properly in the dashboard with progress updates
+
+### 2.2 Major Features from v1.2 ✅
 
 **VM Configuration Backup System:**
 - **Comprehensive VM Backup**: Complete VM configuration backup functionality integrated into VM Migration page
@@ -38,7 +60,7 @@ This document outlines the structure and development guide for the vCenter Migra
 - **Enhanced Navigation**: Improved page navigation with proper scroll handling
 - **Professional UI**: Consistent modern design across all pages with progress indicators and status feedback
 
-### 2.2 Previously Working Features ✅
+### 2.3 Previously Working Features ✅
 
 **ESXi Host Management (v1.1):**
 - **VMHostConfigV2.ps1 Integration**: Complete host backup, restore, and migration functionality
@@ -75,7 +97,9 @@ The project follows a standard MVVM structure:
   - **/Windows**: Main application shell (MainWindow.xaml)
 - **/ViewModels**: Page logic (DashboardViewModel.cs, VmMigrationViewModel.cs, NetworkMigrationViewModel.cs, etc.)
 - **/Services**: Backend services:
-  - **HybridPowerShellService.cs**: PowerShell execution with security and optimization
+  - **HybridPowerShellService.cs**: PowerShell execution with security, optimization, and process cleanup
+  - **PersistentExternalConnectionService.cs**: Manages persistent PowerShell connections to vCenters
+  - **PowerShellLoggingService.cs**: Centralized logging for all PowerShell script executions
   - **SharedConnectionService.cs**: Manages vCenter connections
   - **CredentialService.cs**: Secure credential management
   - **ConfigurationService.cs**: Application configuration
@@ -225,7 +249,18 @@ private bool IsPowerCliScript(string scriptPath)
 - Provide real-time status updates and activity logging
 - Use hierarchical data display (TreeView) for complex data structures
 
-## 8. Recent Code Changes Summary (v1.2)
+## 8. Recent Code Changes Summary (v1.3)
+
+**Latest Changes in v1.3:**
+- `EsxiHostsViewModel.cs`: Added PowerShellLoggingService integration for dashboard job tracking
+- `PowerShellLoggingService.cs`: Enhanced with event-driven architecture for real-time monitoring
+- `ActivityLogsViewModel.cs`: Complete activity log management with filtering and export
+- `App.xaml.cs`: Enhanced shutdown cleanup with ViewModel disposal and process count logging
+- `PowerShellSettingsViewModel.cs`: Added IDisposable implementation for timer cleanup
+- `Write-ScriptLog.ps1`: Updated all PowerShell scripts to use unified logging system
+- `Backup-ESXiHostConfig.ps1`: Fixed missing LogPath parameter and improved JSON output
+
+## 9. Previous Code Changes (v1.2)
 
 **Major Files Added/Modified:**
 - `VmMigrationViewModel.cs`: Complete rewrite with backup functionality and enhanced migration features
@@ -247,43 +282,69 @@ private bool IsPowerCliScript(string scriptPath)
 - **Script Architecture**: Moved to external PowerShell scripts for better maintainability
 - **Professional UI**: Consistent modern design with progress tracking and status feedback
 
-## 9. VM Configuration Backup Features (New in v1.2)
+## 10. VM Configuration Backup Features (New in v1.2)
 
-### 9.1 Backup Capabilities
+### 10.1 Backup Capabilities
 - **Flexible Scopes**: Selected VMs, cluster-based, or full vCenter backup
 - **Comprehensive Data**: VM settings, network adapters, disks, snapshots, annotations, custom attributes
 - **PowerCLI Integration**: Advanced VM configuration extraction using PowerCLI cmdlets
 - **Compression**: Optional ZIP compression for backup files
 - **Metadata**: Rich backup metadata including timestamp, source vCenter, and backup options
 
-### 9.2 Backup Management
+### 10.2 Backup Management
 - **File Validation**: Verify backup file integrity and content
 - **Restore Preview**: Display backup contents without making changes
 - **Backup Browser**: Validate and explore existing backup files
 - **Configuration Options**: Granular control over what data to include in backups
 
-## 10. Network Migration Features (New in v1.2)
+## 11. Network Migration Features (New in v1.2)
 
-### 10.1 Network Discovery
+### 11.1 Network Discovery
 - **Topology Visualization**: Hierarchical display of hosts, vSwitches, and port groups
 - **Component Selection**: Checkbox-based selection of individual network components
 - **Standard and Distributed vSwitches**: Support for both switch types
 - **VMkernel Ports**: Discovery and migration planning for management networks
 
-### 10.2 Migration Capabilities
+### 11.2 Migration Capabilities
 - **Network Mapping**: Manual and automatic mapping between source and target networks
 - **VLAN Preservation**: Maintain or modify VLAN configurations during migration
 - **Conflict Resolution**: Handle existing network configurations on target
 - **Validation Mode**: Test migration configurations before execution
 - **Export/Import**: Save network configurations for documentation and backup
 
-### 10.3 Advanced Features
+### 11.3 Advanced Features
 - **Auto-Mapping**: Intelligent network mapping based on name matching
 - **Selective Migration**: Choose specific network components to migrate
 - **Configuration Export**: JSON/CSV export for documentation and backup
 - **Real-time Progress**: Live migration progress with detailed logging
 
-## 11. Next Development Session Priorities
+## 12. PowerShell Script Logging System (v1.3)
+
+### 12.1 Write-ScriptLog.ps1 Integration
+All PowerShell scripts now use the centralized logging function:
+- **Individual Log Files**: Each script execution creates a unique log file
+- **Session Tracking**: Unique session IDs for tracking script executions
+- **Log Location**: Logs stored in `LogPath/PowerShell/[scriptname]_[sessionid]_[timestamp].log`
+- **Console Control**: `-SuppressConsoleOutput` parameter for cleaner execution
+
+### 12.2 Scripts Updated with Logging
+**Fully Integrated (16 scripts):**
+- Get-Clusters.ps1, Get-Datacenters.ps1, Get-Datastores.ps1
+- Connect-vCenterPersistent.ps1, Export-vCenterConfig.ps1
+- Backup-ESXiHostConfig.ps1, VMHostConfigV2.ps1
+- BackupVMConfigurations.ps1, RestoreVMConfigurations.ps1
+- CrossVcenterVMmigration_list.ps1, VMPostMigrationCleanup.ps1
+- Get-NetworkTopology.ps1, Migrate-NetworkConfiguration.ps1
+- And more...
+
+### 12.3 Process Cleanup Architecture
+**Robust Process Management:**
+- **HybridPowerShellService**: Tracks all spawned processes with 5-minute cleanup timer
+- **PersistentExternalConnectionService**: Manages persistent connections with graceful shutdown
+- **App.OnExit**: Explicit cleanup calls with process count logging
+- **ViewModel Disposal**: Proper cleanup of timers and event subscriptions
+
+## 13. Next Development Session Priorities
 
 **Immediate Next Steps:**
 1. **Resource Pool Migration**: Complete the ResourcePoolMigrationPage functionality
@@ -298,4 +359,18 @@ private bool IsPowerCliScript(string scriptPath)
 4. Create migration templates and saved configurations
 5. Enhance reporting and analytics
 
-The application now provides a comprehensive migration suite with professional-grade VM backup, network migration, and host management capabilities. The next phase should focus on completing the remaining migration types and enhancing the overall user experience with advanced features and validation.
+The application now provides a comprehensive migration suite with professional-grade VM backup, network migration, host management capabilities, and robust PowerShell logging with dashboard integration. The next phase should focus on completing the remaining migration types (Resource Pools, Folder Structure) and enhancing the overall user experience with advanced features and validation.
+
+## 14. Known Issues & Solutions (v1.3)
+
+### 14.1 ESXi Host Backup JSON Parsing
+**Issue**: "T is invalid after a single JSON value" error during multi-host backups
+**Solution**: Enhanced JSON extraction with multiple parsing methods and better error handling in EsxiHostsViewModel.cs
+
+### 14.2 PowerShell Process Cleanup
+**Issue**: Potential hanging PowerShell processes on application exit
+**Solution**: Comprehensive cleanup in App.OnExit with process count logging and ViewModel disposal
+
+### 14.3 Dashboard Activity Tracking
+**Issue**: Backup jobs not appearing in dashboard activity logs
+**Solution**: Integrated PowerShellLoggingService with EsxiHostsViewModel for real-time job tracking
