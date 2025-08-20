@@ -1,10 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
@@ -191,6 +194,114 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
     }
 
     [RelayCommand]
+    private async Task ExportObjects()
+    {
+        try
+        {
+            var saveDialog = new SaveFileDialog
+            {
+                Title = "Export vCenter Objects",
+                Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
+                DefaultExt = "json",
+                FileName = $"vCenter-Objects-{DateTime.Now:yyyy-MM-dd-HHmm}.json"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                OverallStatus = "Exporting objects...";
+                
+                var exportData = new VCenterObjectsExport
+                {
+                    ExportDate = DateTime.Now,
+                    SourceCluster = SelectedSourceCluster?.Name ?? "",
+                    TargetCluster = SelectedTargetCluster?.Name ?? "",
+                    MigrationOptions = new MigrationOptionsData
+                    {
+                        MigrateRoles = MigrateRoles,
+                        MigrateFolders = MigrateFolders,
+                        MigrateTags = MigrateTags,
+                        MigratePermissions = MigratePermissions,
+                        MigrateResourcePools = MigrateResourcePools,
+                        MigrateCustomAttributes = MigrateCustomAttributes
+                    },
+                    ClusterItems = ClusterItems.ToList()
+                };
+
+                var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions 
+                { 
+                    WriteIndented = true 
+                });
+                
+                await File.WriteAllTextAsync(saveDialog.FileName, json);
+                
+                OverallStatus = $"Objects exported to {Path.GetFileName(saveDialog.FileName)}";
+                _logger.LogInformation("Exported {Count} objects to {File}", ClusterItems.Count, saveDialog.FileName);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to export objects");
+            OverallStatus = $"Export failed: {ex.Message}";
+            await _errorHandlingService.ShowErrorDialogAsync(
+                _errorHandlingService.TranslateError(ex.Message, "Export Objects"));
+        }
+    }
+
+    [RelayCommand]
+    private async Task ImportObjects()
+    {
+        try
+        {
+            var openDialog = new OpenFileDialog
+            {
+                Title = "Import vCenter Objects",
+                Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
+                DefaultExt = "json"
+            };
+
+            if (openDialog.ShowDialog() == true)
+            {
+                OverallStatus = "Importing objects...";
+                
+                var json = await File.ReadAllTextAsync(openDialog.FileName);
+                var importData = JsonSerializer.Deserialize<VCenterObjectsExport>(json);
+
+                if (importData != null)
+                {
+                    // Apply migration options
+                    MigrateRoles = importData.MigrationOptions.MigrateRoles;
+                    MigrateFolders = importData.MigrationOptions.MigrateFolders;
+                    MigrateTags = importData.MigrationOptions.MigrateTags;
+                    MigratePermissions = importData.MigrationOptions.MigratePermissions;
+                    MigrateResourcePools = importData.MigrationOptions.MigrateResourcePools;
+                    MigrateCustomAttributes = importData.MigrationOptions.MigrateCustomAttributes;
+
+                    // Import cluster items
+                    ClusterItems.Clear();
+                    foreach (var item in importData.ClusterItems)
+                    {
+                        ClusterItems.Add(item);
+                    }
+
+                    TotalItemsToMigrate = ClusterItems.Count(i => i.IsSelected);
+                    
+                    OverallStatus = $"Imported {ClusterItems.Count} objects from {Path.GetFileName(openDialog.FileName)}";
+                    CurrentTaskDetails = $"Imported from export created on {importData.ExportDate:yyyy-MM-dd HH:mm}";
+                    
+                    _logger.LogInformation("Imported {Count} objects from {File}", ClusterItems.Count, openDialog.FileName);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to import objects");
+            OverallStatus = $"Import failed: {ex.Message}";
+            await _errorHandlingService.ShowErrorDialogAsync(
+                _errorHandlingService.TranslateError(ex.Message, "Import Objects"));
+        }
+    }
+
+    [RelayCommand]
     private async Task StartMigration()
     {
         if (SelectedSourceCluster == null || SelectedTargetCluster == null)
@@ -311,30 +422,65 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
 
             try
             {
-                // Perform the actual migration for this item
-                var itemParams = new Dictionary<string, object>(parameters)
+                // Get source and target connection information
+                var sourceConnection = await _sharedConnectionService.GetConnectionAsync("source");
+                var targetConnection = await _sharedConnectionService.GetConnectionAsync("target");
+                
+                if (sourceConnection == null || targetConnection == null)
                 {
-                    { "ItemName", item.Name },
-                    { "ItemType", item.Type },
-                    { "ItemId", item.Id }
+                    throw new InvalidOperationException("Source or target connection not available");
+                }
+
+                // Perform the actual migration for this item
+                var itemParams = new Dictionary<string, object>
+                {
+                    { "SourceVCenter", sourceConnection.ServerAddress },
+                    { "SourceUsername", sourceConnection.Username },
+                    { "SourcePassword", await _sharedConnectionService.GetPasswordAsync("source") ?? "" },
+                    { "TargetVCenter", targetConnection.ServerAddress },
+                    { "TargetUsername", targetConnection.Username },
+                    { "TargetPassword", await _sharedConnectionService.GetPasswordAsync("target") ?? "" },
+                    { "ObjectType", item.Type },
+                    { "ObjectName", item.Name },
+                    { "ObjectId", item.Id },
+                    { "ObjectPath", item.Path }
                 };
 
                 var result = await _powerShellService.MigrateVCenterObjectAsync(itemParams);
                 
-                migrationTask.Status = "Completed";
                 migrationTask.EndTime = DateTime.Now;
                 migrationTask.ElapsedTime = (migrationTask.EndTime.Value - migrationTask.StartTime).ToString(@"mm\:ss");
                 
-                if (result.Contains("SUCCESS"))
+                // Parse the JSON result to determine success/failure
+                bool migrationSuccessful = false;
+                string errorMessage = "";
+                
+                try
                 {
+                    var resultJson = JsonSerializer.Deserialize<Dictionary<string, object>>(result);
+                    migrationSuccessful = bool.Parse(resultJson.GetValueOrDefault("Success", false).ToString());
+                    if (!migrationSuccessful)
+                    {
+                        errorMessage = resultJson.GetValueOrDefault("Error", "Unknown error").ToString();
+                    }
+                }
+                catch (JsonException)
+                {
+                    // Fallback to string checking if JSON parsing fails
+                    migrationSuccessful = result.Contains("\"Success\":true") || result.Contains("SUCCESS");
+                }
+                
+                if (migrationSuccessful)
+                {
+                    migrationTask.Status = "Completed";
                     SuccessfulMigrations++;
                     item.Status = "Migrated";
                 }
                 else
                 {
+                    migrationTask.Status = $"Failed{(string.IsNullOrEmpty(errorMessage) ? "" : ": " + errorMessage)}";
                     FailedMigrations++;
                     item.Status = "Failed";
-                    migrationTask.Status = "Failed";
                 }
 
                 _logger.LogInformation("Migration completed for {Type}: {Name} - {Status}", 

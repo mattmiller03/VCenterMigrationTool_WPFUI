@@ -333,6 +333,8 @@ public class HybridPowerShellService : IDisposable
             "Get-NetworkTopology.ps1",
             "Get-Clusters.ps1",
             "Get-ClusterItems.ps1",
+            "Get-VCenterObjects.ps1",
+            "Migrate-VCenterObject.ps1",
             "Move-EsxiHost.ps1",
             "Move-VM.ps1",
             "Export-vCenterConfig.ps1",
@@ -1554,47 +1556,60 @@ public class HybridPowerShellService : IDisposable
     {
         try
         {
-            var parameters = new Dictionary<string, object>
-            {
-                { "ConnectionType", connectionType }
-            };
-
-            var sessionId = Guid.NewGuid().ToString()[..8];
             var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-Clusters.ps1");
 
-            var result = await RunScriptExternalAsync(scriptPath, parameters);
+            // Get-Clusters.ps1 expects an existing vCenter connection
+            var result = await RunScriptOptimizedAsync(scriptPath, new Dictionary<string, object>());
 
-            // Parse the result to extract cluster information
-            var clusters = new List<ClusterInfo>();
-            
-            // This would typically parse PowerShell output
-            // For now, return sample data structure
-            if (result.Contains("SUCCESS"))
+            // Parse JSON result from PowerShell script
+            var jsonResult = ExtractJsonFromOutput(result);
+            if (string.IsNullOrEmpty(jsonResult))
             {
-                // Parse actual PowerShell output here
-                // Example parsing logic would go here
-                clusters.Add(new ClusterInfo 
-                { 
-                    Name = "Cluster01", 
-                    HostCount = 4, 
-                    VmCount = 45, 
-                    DatastoreCount = 8 
-                });
-                clusters.Add(new ClusterInfo 
-                { 
-                    Name = "Cluster02", 
-                    HostCount = 6, 
-                    VmCount = 72, 
-                    DatastoreCount = 12 
-                });
+                _logger.LogWarning("No valid JSON found in Get-Clusters output");
+                return new List<ClusterInfo>();
             }
 
-            return clusters;
+            try
+            {
+                var clusterData = JsonSerializer.Deserialize<List<dynamic>>(jsonResult, 
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                var clusters = new List<ClusterInfo>();
+                
+                if (clusterData != null)
+                {
+                    foreach (var cluster in clusterData)
+                    {
+                        // Parse the cluster data from PowerShell output
+                        var clusterDict = JsonSerializer.Deserialize<Dictionary<string, object>>(cluster.ToString());
+                        
+                        clusters.Add(new ClusterInfo
+                        {
+                            Name = clusterDict.GetValueOrDefault("Name", "Unknown").ToString(),
+                            Id = clusterDict.GetValueOrDefault("Id", "").ToString(),
+                            HAEnabled = bool.Parse(clusterDict.GetValueOrDefault("HAEnabled", false).ToString()),
+                            DrsEnabled = bool.Parse(clusterDict.GetValueOrDefault("DrsEnabled", false).ToString()),
+                            EVCMode = clusterDict.GetValueOrDefault("EVCMode", "").ToString(),
+                            HostCount = 0,  // These would need additional PowerShell calls
+                            VmCount = 0,
+                            DatastoreCount = 0
+                        });
+                    }
+                }
+
+                _logger.LogInformation("Retrieved {Count} clusters from vCenter", clusters.Count);
+                return clusters;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse clusters JSON: {Json}", jsonResult);
+                return new List<ClusterInfo>();
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get clusters for {ConnectionType}", connectionType);
-            throw;
+            _logger.LogError(ex, "Failed to get clusters from vCenter");
+            return new List<ClusterInfo>();
         }
     }
 
@@ -1602,108 +1617,121 @@ public class HybridPowerShellService : IDisposable
     {
         try
         {
-            var sessionId = Guid.NewGuid().ToString()[..8];
-            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-ClusterItems.ps1");
+            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-VCenterObjects.ps1");
 
-            var result = await RunScriptExternalAsync(scriptPath, parameters);
-
-            var clusterItems = new List<ClusterItem>();
+            // Use the comprehensive Get-VCenterObjects.ps1 script
+            var scriptParameters = new Dictionary<string, object>();
             
-            // Parse the result to extract cluster items
-            if (result.Contains("SUCCESS"))
+            // Map UI parameters to script parameters
+            if (parameters.ContainsKey("ClusterName") && !string.IsNullOrEmpty(parameters["ClusterName"]?.ToString()))
             {
-                // Example items - in reality this would parse PowerShell output
-                if ((bool)(parameters["IncludeRoles"] ?? false))
-                {
-                    clusterItems.Add(new ClusterItem 
-                    { 
-                        Id = "role-1",
-                        Name = "Administrator", 
-                        Type = "Role", 
-                        Path = "/Roles/Administrator",
-                        ItemCount = 5 
-                    });
-                    clusterItems.Add(new ClusterItem 
-                    { 
-                        Id = "role-2",
-                        Name = "ReadOnly", 
-                        Type = "Role", 
-                        Path = "/Roles/ReadOnly",
-                        ItemCount = 3 
-                    });
-                }
-                
-                if ((bool)(parameters["IncludeFolders"] ?? false))
-                {
-                    clusterItems.Add(new ClusterItem 
-                    { 
-                        Id = "folder-1",
-                        Name = "Production", 
-                        Type = "Folder", 
-                        Path = "/vm/Production",
-                        ItemCount = 12 
-                    });
-                    clusterItems.Add(new ClusterItem 
-                    { 
-                        Id = "folder-2",
-                        Name = "Development", 
-                        Type = "Folder", 
-                        Path = "/vm/Development",
-                        ItemCount = 8 
-                    });
-                }
-                
-                if ((bool)(parameters["IncludeTags"] ?? false))
-                {
-                    clusterItems.Add(new ClusterItem 
-                    { 
-                        Id = "tag-1",
-                        Name = "Environment:Production", 
-                        Type = "Tag", 
-                        Path = "/Tags/Environment",
-                        ItemCount = 8 
-                    });
-                    clusterItems.Add(new ClusterItem 
-                    { 
-                        Id = "tag-2",
-                        Name = "Application:Database", 
-                        Type = "Tag", 
-                        Path = "/Tags/Application",
-                        ItemCount = 4 
-                    });
-                }
+                scriptParameters["ClusterName"] = parameters["ClusterName"];
+            }
+            
+            scriptParameters["IncludeRoles"] = (bool)(parameters["IncludeRoles"] ?? false);
+            scriptParameters["IncludeFolders"] = (bool)(parameters["IncludeFolders"] ?? false);
+            scriptParameters["IncludeTags"] = (bool)(parameters["IncludeTags"] ?? false);
+            scriptParameters["IncludePermissions"] = (bool)(parameters["IncludePermissions"] ?? false);
+            scriptParameters["IncludeResourcePools"] = (bool)(parameters["IncludeResourcePools"] ?? false);
+            scriptParameters["IncludeCustomAttributes"] = (bool)(parameters["IncludeCustomAttributes"] ?? false);
+            scriptParameters["SuppressConsoleOutput"] = true;
 
-                if ((bool)(parameters["IncludePermissions"] ?? false))
-                {
-                    clusterItems.Add(new ClusterItem 
-                    { 
-                        Id = "perm-1",
-                        Name = "VM Operations", 
-                        Type = "Permission", 
-                        Path = "/permissions/vm-ops",
-                        ItemCount = 15 
-                    });
-                }
+            var result = await RunScriptOptimizedAsync(scriptPath, scriptParameters);
 
-                if ((bool)(parameters["IncludeCustomAttributes"] ?? false))
-                {
-                    clusterItems.Add(new ClusterItem 
-                    { 
-                        Id = "attr-1",
-                        Name = "Cost Center", 
-                        Type = "CustomAttribute", 
-                        Path = "/custom-attributes/cost-center",
-                        ItemCount = 2 
-                    });
-                }
+            // Parse JSON result from the Get-VCenterObjects script
+            var jsonResult = ExtractJsonFromOutput(result);
+            if (string.IsNullOrEmpty(jsonResult))
+            {
+                _logger.LogWarning("No valid JSON found in Get-VCenterObjects output");
+                return new List<ClusterItem>();
             }
 
-            return clusterItems;
+            try
+            {
+                var scriptResult = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonResult,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (scriptResult == null || !scriptResult.ContainsKey("Objects"))
+                {
+                    _logger.LogWarning("Invalid result structure from Get-VCenterObjects script");
+                    return new List<ClusterItem>();
+                }
+
+                var objectsJson = scriptResult["Objects"].ToString();
+                var objects = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(objectsJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                var clusterItems = new List<ClusterItem>();
+
+                if (objects != null)
+                {
+                    foreach (var obj in objects)
+                    {
+                        var item = new ClusterItem
+                        {
+                            Id = obj.GetValueOrDefault("Id", "").ToString(),
+                            Name = obj.GetValueOrDefault("Name", "").ToString(),
+                            Type = obj.GetValueOrDefault("Type", "").ToString(),
+                            Path = obj.GetValueOrDefault("Path", "").ToString(),
+                            ItemCount = int.Parse(obj.GetValueOrDefault("ItemCount", 0).ToString()),
+                            IsSelected = bool.Parse(obj.GetValueOrDefault("IsSelected", true).ToString()),
+                            Status = obj.GetValueOrDefault("Status", "Ready").ToString()
+                        };
+
+                        // Set visual properties based on type
+                        switch (item.Type)
+                        {
+                            case "Role":
+                                item.TypeIcon = "PersonKey24";
+                                item.TypeColor = "#FF6B35";
+                                break;
+                            case "Folder":
+                                item.TypeIcon = "Folder24";
+                                item.TypeColor = "#2E8B57";
+                                break;
+                            case "Tag":
+                                item.TypeIcon = "Tag24";
+                                item.TypeColor = "#4682B4";
+                                break;
+                            case "TagCategory":
+                                item.TypeIcon = "TagMultiple24";
+                                item.TypeColor = "#4682B4";
+                                break;
+                            case "Permission":
+                                item.TypeIcon = "Shield24";
+                                item.TypeColor = "#8A2BE2";
+                                break;
+                            case "ResourcePool":
+                                item.TypeIcon = "ServerMultiple24";
+                                item.TypeColor = "#FF8C00";
+                                break;
+                            case "CustomAttribute":
+                                item.TypeIcon = "DocumentProperties24";
+                                item.TypeColor = "#20B2AA";
+                                break;
+                            default:
+                                item.TypeIcon = "Question24";
+                                item.TypeColor = "#808080";
+                                break;
+                        }
+
+                        clusterItems.Add(item);
+                    }
+                }
+
+                _logger.LogInformation("Retrieved {Count} vCenter objects", clusterItems.Count);
+                return clusterItems;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse vCenter objects JSON: {Json}", jsonResult);
+                return new List<ClusterItem>();
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get cluster items");
-            throw;
+            _logger.LogError(ex, "Failed to get vCenter objects");
+            return new List<ClusterItem>();
         }
     }
 
@@ -1711,17 +1739,83 @@ public class HybridPowerShellService : IDisposable
     {
         try
         {
-            var sessionId = Guid.NewGuid().ToString()[..8];
             var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Migrate-VCenterObject.ps1");
 
-            var result = await RunScriptExternalAsync(scriptPath, parameters);
+            // Ensure required parameters are present
+            if (!parameters.ContainsKey("SourceVCenter") || !parameters.ContainsKey("TargetVCenter") ||
+                !parameters.ContainsKey("ObjectType") || !parameters.ContainsKey("ObjectName"))
+            {
+                var missingParams = new List<string>();
+                if (!parameters.ContainsKey("SourceVCenter")) missingParams.Add("SourceVCenter");
+                if (!parameters.ContainsKey("TargetVCenter")) missingParams.Add("TargetVCenter");
+                if (!parameters.ContainsKey("ObjectType")) missingParams.Add("ObjectType");
+                if (!parameters.ContainsKey("ObjectName")) missingParams.Add("ObjectName");
+                
+                var errorMessage = $"Missing required parameters: {string.Join(", ", missingParams)}";
+                _logger.LogError(errorMessage);
+                
+                return JsonSerializer.Serialize(new
+                {
+                    Success = false,
+                    Error = errorMessage,
+                    ObjectType = parameters.GetValueOrDefault("ObjectType", "Unknown"),
+                    ObjectName = parameters.GetValueOrDefault("ObjectName", "Unknown")
+                });
+            }
+
+            _logger.LogInformation("Starting migration of {ObjectType} '{ObjectName}' from {Source} to {Target}",
+                parameters["ObjectType"], parameters["ObjectName"], 
+                parameters["SourceVCenter"], parameters["TargetVCenter"]);
+
+            // Add SuppressConsoleOutput to avoid cluttered output
+            var migrationParams = new Dictionary<string, object>(parameters)
+            {
+                ["SuppressConsoleOutput"] = true
+            };
+
+            var result = await RunScriptOptimizedAsync(scriptPath, migrationParams);
+            
+            // Parse the result to check for success/failure
+            var jsonResult = ExtractJsonFromOutput(result);
+            if (!string.IsNullOrEmpty(jsonResult))
+            {
+                try
+                {
+                    var migrationResult = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonResult);
+                    var success = bool.Parse(migrationResult.GetValueOrDefault("Success", false).ToString());
+                    
+                    if (success)
+                    {
+                        _logger.LogInformation("Successfully migrated {ObjectType} '{ObjectName}'", 
+                            parameters["ObjectType"], parameters["ObjectName"]);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Migration failed for {ObjectType} '{ObjectName}': {Error}",
+                            parameters["ObjectType"], parameters["ObjectName"],
+                            migrationResult.GetValueOrDefault("Error", "Unknown error"));
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, "Could not parse migration result JSON");
+                }
+            }
             
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to migrate vCenter object {ItemName}", parameters.GetValueOrDefault("ItemName"));
-            throw;
+            _logger.LogError(ex, "Failed to migrate vCenter object {ObjectType} '{ObjectName}'", 
+                parameters.GetValueOrDefault("ObjectType"), parameters.GetValueOrDefault("ObjectName"));
+            
+            return JsonSerializer.Serialize(new
+            {
+                Success = false,
+                Error = ex.Message,
+                ObjectType = parameters.GetValueOrDefault("ObjectType", "Unknown"),
+                ObjectName = parameters.GetValueOrDefault("ObjectName", "Unknown")
+            });
         }
     }
 

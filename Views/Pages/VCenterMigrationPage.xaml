@@ -47,14 +47,33 @@
                                TextWrapping="Wrap"/>
                 </StackPanel>
 
-                <ui:Button Grid.Column="1" 
-                          Content="Refresh Connections" 
-                          Icon="{ui:SymbolIcon ArrowSync24}"
-                          Command="{Binding RefreshConnectionsCommand}"
-                          Appearance="Secondary"
-                          VerticalAlignment="Center"
-                          Margin="0,0,15,0"
-                          Padding="15,8"/>
+                <StackPanel Grid.Column="1" 
+                           Orientation="Horizontal"
+                           VerticalAlignment="Center"
+                           Margin="0,0,15,0">
+                    <ui:Button Content="Export Objects" 
+                              Icon="{ui:SymbolIcon ArrowExport24}"
+                              Command="{Binding ExportObjectsCommand}"
+                              Appearance="Secondary"
+                              Margin="0,0,10,0"
+                              Padding="12,8"
+                              ToolTip="Export current objects to file"/>
+                    
+                    <ui:Button Content="Import Objects" 
+                              Icon="{ui:SymbolIcon ArrowImport24}"
+                              Command="{Binding ImportObjectsCommand}"
+                              Appearance="Secondary"
+                              Margin="0,0,10,0"
+                              Padding="12,8"
+                              ToolTip="Import objects from file"/>
+                    
+                    <ui:Button Content="Refresh" 
+                              Icon="{ui:SymbolIcon ArrowSync24}"
+                              Command="{Binding RefreshConnectionsCommand}"
+                              Appearance="Secondary"
+                              Padding="12,8"
+                              ToolTip="Refresh connections and data"/>
+                </StackPanel>
 
                 <ui:Button Grid.Column="2" 
                           Content="Start Migration" 
