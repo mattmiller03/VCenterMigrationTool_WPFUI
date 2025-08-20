@@ -20,6 +20,7 @@ public class HybridPowerShellService : IDisposable
     private readonly ILogger<HybridPowerShellService> _logger;
     private readonly ConfigurationService _configurationService;
     private readonly PowerShellLoggingService _psLoggingService;
+    private readonly SharedConnectionService _sharedConnectionService;
     private readonly ConcurrentDictionary<int, Process> _activeProcesses = new();
     private readonly Timer _cleanupTimer;
     private IErrorHandlingService? _errorHandlingService;
@@ -107,11 +108,13 @@ public class HybridPowerShellService : IDisposable
         ILogger<HybridPowerShellService> logger,
         ConfigurationService configurationService,
         PowerShellLoggingService psLoggingService,
+        SharedConnectionService sharedConnectionService,
         IErrorHandlingService errorHandlingService)
         {
         _logger = logger;
         _configurationService = configurationService;
         _psLoggingService = psLoggingService;
+        _sharedConnectionService = sharedConnectionService;
         _errorHandlingService = errorHandlingService;
 
         // FIXED: Load PowerCLI status from persistent storage on startup
@@ -1558,14 +1561,29 @@ public class HybridPowerShellService : IDisposable
         {
             var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-Clusters.ps1");
 
-            // Enhanced Get-Clusters.ps1 can work with existing connections or discover active ones
+            // Get connection information for the specified connection type
+            var connection = await _sharedConnectionService.GetConnectionAsync(connectionType);
+            var password = await _sharedConnectionService.GetPasswordAsync(connectionType);
+            
+            if (connection == null || string.IsNullOrEmpty(connection.ServerAddress) || 
+                string.IsNullOrEmpty(connection.Username) || string.IsNullOrEmpty(password))
+            {
+                _logger.LogWarning("No {ConnectionType} connection configured or missing credentials", connectionType);
+                return new List<ClusterInfo>();
+            }
+
+            // Pass connection credentials to the script (scripts run in isolated sessions)
             var scriptParameters = new Dictionary<string, object>
             {
+                ["VCenterServer"] = connection.ServerAddress,
+                ["Username"] = connection.Username,
+                ["Password"] = password,
                 ["BypassModuleCheck"] = true,  // PowerCLI should already be loaded
                 ["SuppressConsoleOutput"] = true  // Cleaner output for parsing
             };
 
-            _logger.LogInformation("Calling Get-Clusters script for {ConnectionType} connection", connectionType);
+            _logger.LogInformation("Calling Get-Clusters script for {ConnectionType} connection to {Server}", 
+                connectionType, connection.ServerAddress);
             var result = await RunScriptOptimizedAsync(scriptPath, scriptParameters);
 
             // Parse JSON result from PowerShell script
@@ -1624,48 +1642,53 @@ public class HybridPowerShellService : IDisposable
     {
         try
         {
-            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-VCenterObjects.ps1");
+            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-ClusterItems.ps1");
 
-            // Use the comprehensive Get-VCenterObjects.ps1 script
-            var scriptParameters = new Dictionary<string, object>();
+            // Get connection information (scripts run in isolated sessions, so we need to pass credentials)
+            var connectionType = parameters.GetValueOrDefault("ConnectionType", "source")?.ToString();
+            var connection = await _sharedConnectionService.GetConnectionAsync(connectionType);
+            var password = await _sharedConnectionService.GetPasswordAsync(connectionType);
+            
+            if (connection == null || string.IsNullOrEmpty(connection.ServerAddress) || 
+                string.IsNullOrEmpty(connection.Username) || string.IsNullOrEmpty(password))
+            {
+                _logger.LogWarning("No {ConnectionType} connection configured or missing credentials", connectionType);
+                return new List<ClusterItem>();
+            }
+
+            // Build script parameters with vCenter credentials
+            var scriptParameters = new Dictionary<string, object>
+            {
+                ["VCenterServer"] = connection.ServerAddress,
+                ["Username"] = connection.Username,
+                ["Password"] = password,
+                ["BypassModuleCheck"] = true,
+                ["SuppressConsoleOutput"] = true
+            };
             
             // Map UI parameters to script parameters
             if (parameters.ContainsKey("ClusterName") && !string.IsNullOrEmpty(parameters["ClusterName"]?.ToString()))
             {
                 scriptParameters["ClusterName"] = parameters["ClusterName"];
             }
-            
-            scriptParameters["IncludeRoles"] = (bool)(parameters["IncludeRoles"] ?? false);
-            scriptParameters["IncludeFolders"] = (bool)(parameters["IncludeFolders"] ?? false);
-            scriptParameters["IncludeTags"] = (bool)(parameters["IncludeTags"] ?? false);
-            scriptParameters["IncludePermissions"] = (bool)(parameters["IncludePermissions"] ?? false);
-            scriptParameters["IncludeResourcePools"] = (bool)(parameters["IncludeResourcePools"] ?? false);
-            scriptParameters["IncludeCustomAttributes"] = (bool)(parameters["IncludeCustomAttributes"] ?? false);
-            scriptParameters["SuppressConsoleOutput"] = true;
+
+            _logger.LogInformation("Calling Get-ClusterItems script for {ConnectionType} connection to {Server}", 
+                connectionType, connection.ServerAddress);
 
             var result = await RunScriptOptimizedAsync(scriptPath, scriptParameters);
 
-            // Parse JSON result from the Get-VCenterObjects script
+            // Parse JSON result from Get-ClusterItems.ps1 script
             var jsonResult = ExtractJsonFromOutput(result);
             if (string.IsNullOrEmpty(jsonResult))
             {
-                _logger.LogWarning("No valid JSON found in Get-VCenterObjects output");
+                _logger.LogWarning("No valid JSON found in Get-ClusterItems output");
                 return new List<ClusterItem>();
             }
 
             try
             {
-                var scriptResult = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonResult,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                if (scriptResult == null || !scriptResult.ContainsKey("Objects"))
-                {
-                    _logger.LogWarning("Invalid result structure from Get-VCenterObjects script");
-                    return new List<ClusterItem>();
-                }
-
-                var objectsJson = scriptResult["Objects"].ToString();
-                var objects = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(objectsJson,
+                // Get-ClusterItems.ps1 returns an array of objects directly
+                var objects = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonResult,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                 var clusterItems = new List<ClusterItem>();
@@ -1692,12 +1715,12 @@ public class HybridPowerShellService : IDisposable
                     }
                 }
 
-                _logger.LogInformation("Retrieved {Count} vCenter objects", clusterItems.Count);
+                _logger.LogInformation("Retrieved {Count} cluster items from vCenter", clusterItems.Count);
                 return clusterItems;
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "Failed to parse vCenter objects JSON: {Json}", jsonResult);
+                _logger.LogError(ex, "Failed to parse cluster items JSON: {Json}", jsonResult);
                 return new List<ClusterItem>();
             }
         }

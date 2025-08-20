@@ -58,57 +58,29 @@ try {
         }
     }
     
-    # Check for existing vCenter connections first
-    Write-LogInfo "Checking for existing vCenter connections..." -Category "Connection"
+    # Connect to vCenter (scripts run in isolated sessions, so no existing connections available)
+    Write-LogInfo "Establishing vCenter connection..." -Category "Connection"
     
-    try {
-        # Check all existing connections
-        $allConnections = @(Get-VIServer)
-        Write-LogInfo "Found $($allConnections.Count) existing vCenter connection(s)" -Category "Connection"
-        
-        if ($allConnections.Count -gt 0) {
-            # Find first connected server
-            $activeConnection = $allConnections | Where-Object { $_.IsConnected } | Select-Object -First 1
-            
-            if ($activeConnection) {
-                $connectionUsed = $activeConnection
-                $viConnection = $activeConnection  # For cleanup compatibility
-                Write-LogSuccess "Using existing vCenter connection: $($activeConnection.Name)" -Category "Connection"
-                Write-LogInfo "  Server: $($activeConnection.Name)" -Category "Connection"
-                Write-LogInfo "  User: $($activeConnection.User)" -Category "Connection"
-            }
-            else {
-                Write-LogWarning "Found vCenter connections but none are active" -Category "Connection"
-            }
-        }
-        else {
-            Write-LogInfo "No existing vCenter connections found" -Category "Connection"
-        }
-    }
-    catch {
-        Write-LogWarning "Error checking existing connections: $($_.Exception.Message)" -Category "Connection"
-    }
-    
-    # If no existing connection and credentials provided, create new connection
-    if (-not $connectionUsed -and $VCenterServer -and $Username -and $Password) {
-        Write-LogInfo "Creating new vCenter connection to: $VCenterServer" -Category "Connection"
-        try {
-            $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-            $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
-            $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
-            $connectionUsed = $viConnection
-            Write-LogSuccess "Successfully connected to vCenter: $($viConnection.Name)" -Category "Connection"
-        }
-        catch {
-            Write-LogError "Failed to connect to vCenter $VCenterServer : $($_.Exception.Message)" -Category "Connection"
-        }
-    }
-    
-    # Final validation
-    if (-not $connectionUsed) {
-        $errorMsg = "No vCenter connection available. Please connect to vCenter first or provide connection parameters."
+    if (-not $VCenterServer -or -not $Username -or -not $Password) {
+        $errorMsg = "vCenter connection parameters are required (VCenterServer, Username, Password) since scripts run in isolated sessions."
         Write-LogCritical $errorMsg -Category "Connection"
         throw $errorMsg
+    }
+    
+    try {
+        Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
+        $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
+        $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+        $connectionUsed = $viConnection
+        Write-LogSuccess "Successfully connected to vCenter: $($viConnection.Name)" -Category "Connection"
+        Write-LogInfo "  Server: $($viConnection.Name)" -Category "Connection"
+        Write-LogInfo "  User: $($viConnection.User)" -Category "Connection"
+        Write-LogInfo "  Version: $($viConnection.Version)" -Category "Connection"
+    }
+    catch {
+        Write-LogError "Failed to connect to vCenter $VCenterServer : $($_.Exception.Message)" -Category "Connection"
+        throw "Failed to establish vCenter connection: $($_.Exception.Message)"
     }
 
     # Get Cluster if specified
@@ -243,8 +215,8 @@ catch {
     exit 1
 }
 finally {
-    # Only disconnect if we created the connection (not if we reused existing)
-    if ($viConnection -and $viConnection.IsConnected -and $VCenterServer -and $Username -and $Password) {
+    # Always disconnect since we created our own connection
+    if ($viConnection -and $viConnection.IsConnected) {
         try {
             Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
             Disconnect-VIServer -Server $viConnection -Confirm:$false -Force -ErrorAction Stop
@@ -253,9 +225,6 @@ finally {
         catch {
             Write-LogWarning "Failed to disconnect cleanly: $($_.Exception.Message)" -Category "Connection"
         }
-    }
-    elseif ($viConnection -and $viConnection.IsConnected) {
-        Write-LogInfo "Keeping existing vCenter connection active" -Category "Connection"
     }
     
     # Stop logging and output result

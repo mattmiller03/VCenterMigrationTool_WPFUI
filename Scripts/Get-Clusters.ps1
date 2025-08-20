@@ -53,57 +53,28 @@ try {
         }
     }
     
-    # Check for existing vCenter connections first
-    Write-LogInfo "Checking for existing vCenter connections..." -Category "Connection"
-    $connectionUsed = $null
+    # Connect to vCenter (scripts run in isolated sessions, so no existing connections available)
+    Write-LogInfo "Establishing vCenter connection..." -Category "Connection"
     
-    try {
-        # Check all existing connections
-        $allConnections = @(Get-VIServer)
-        Write-LogInfo "Found $($allConnections.Count) existing vCenter connection(s)" -Category "Connection"
-        
-        if ($allConnections.Count -gt 0) {
-            # Find first connected server
-            $activeConnection = $allConnections | Where-Object { $_.IsConnected } | Select-Object -First 1
-            
-            if ($activeConnection) {
-                $connectionUsed = $activeConnection
-                Write-LogSuccess "Using existing vCenter connection: $($activeConnection.Name)" -Category "Connection"
-                Write-LogInfo "  Server: $($activeConnection.Name)" -Category "Connection"
-                Write-LogInfo "  User: $($activeConnection.User)" -Category "Connection"
-                Write-LogInfo "  Version: $($activeConnection.Version)" -Category "Connection"
-            }
-            else {
-                Write-LogWarning "Found vCenter connections but none are active" -Category "Connection"
-            }
-        }
-        else {
-            Write-LogInfo "No existing vCenter connections found" -Category "Connection"
-        }
-    }
-    catch {
-        Write-LogWarning "Error checking existing connections: $($_.Exception.Message)" -Category "Connection"
-    }
-    
-    # If no existing connection and credentials provided, create new connection
-    if (-not $connectionUsed -and $VCenterServer -and $Username -and $Password) {
-        Write-LogInfo "Creating new vCenter connection to: $VCenterServer" -Category "Connection"
-        try {
-            $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-            $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
-            $connectionUsed = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
-            Write-LogSuccess "Successfully connected to vCenter: $($connectionUsed.Name)" -Category "Connection"
-        }
-        catch {
-            Write-LogError "Failed to connect to vCenter $VCenterServer : $($_.Exception.Message)" -Category "Connection"
-        }
-    }
-    
-    # Final validation
-    if (-not $connectionUsed) {
-        $errorMsg = "No vCenter connection available. Please connect to vCenter first or provide connection parameters."
+    if (-not $VCenterServer -or -not $Username -or -not $Password) {
+        $errorMsg = "vCenter connection parameters are required (VCenterServer, Username, Password) since scripts run in isolated sessions."
         Write-LogCritical $errorMsg -Category "Connection"
         throw $errorMsg
+    }
+    
+    try {
+        Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
+        $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
+        $connectionUsed = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+        Write-LogSuccess "Successfully connected to vCenter: $($connectionUsed.Name)" -Category "Connection"
+        Write-LogInfo "  Server: $($connectionUsed.Name)" -Category "Connection"
+        Write-LogInfo "  User: $($connectionUsed.User)" -Category "Connection"
+        Write-LogInfo "  Version: $($connectionUsed.Version)" -Category "Connection"
+    }
+    catch {
+        Write-LogError "Failed to connect to vCenter $VCenterServer : $($_.Exception.Message)" -Category "Connection"
+        throw "Failed to establish vCenter connection: $($_.Exception.Message)"
     }
     
     # Retrieve clusters from vCenter with timeout
