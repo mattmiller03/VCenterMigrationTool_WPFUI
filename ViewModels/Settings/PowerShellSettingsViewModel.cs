@@ -11,7 +11,7 @@ using VCenterMigrationTool.Services;
 
 namespace VCenterMigrationTool.ViewModels.Settings
     {
-    public partial class PowerShellSettingsViewModel : ObservableObject
+    public partial class PowerShellSettingsViewModel : ObservableObject, IDisposable
         {
         private readonly HybridPowerShellService _powerShellService;
         private readonly ConfigurationService _configurationService;
@@ -56,6 +56,11 @@ namespace VCenterMigrationTool.ViewModels.Settings
         {
             _processMonitorTimer?.Dispose();
             _processMonitorTimer = null;
+        }
+
+        public void Dispose()
+        {
+            StopProcessMonitoring();
         }
         private void UpdateProcessCount (object? state)
         {

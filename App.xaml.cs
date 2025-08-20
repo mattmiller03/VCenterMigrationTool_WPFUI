@@ -147,9 +147,23 @@ public partial class App
             var powerShellService = Host.Services.GetService<HybridPowerShellService>();
             if (powerShellService != null)
                 {
-                logger?.LogInformation("Cleaning up PowerShell processes before shutdown");
+                var activeProcessCount = powerShellService.GetActiveProcessCount();
+                logger?.LogInformation("Cleaning up {ProcessCount} active PowerShell processes before shutdown", activeProcessCount);
                 powerShellService.CleanupAllProcesses();
+                logger?.LogInformation("PowerShell process cleanup completed");
                 }
+
+            // Clean up ViewModels with timers/resources
+            var powerShellSettingsVM = Host.Services.GetService<PowerShellSettingsViewModel>();
+            if (powerShellSettingsVM != null)
+                {
+                logger?.LogInformation("Stopping PowerShell monitoring timer");
+                powerShellSettingsVM.StopProcessMonitoring();
+                }
+
+            // Clean up other ViewModels if needed
+            var activityLogsVM = Host.Services.GetService<ActivityLogsViewModel>();
+            activityLogsVM?.Dispose();
             }
         catch (Exception ex)
             {

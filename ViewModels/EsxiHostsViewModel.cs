@@ -599,12 +599,28 @@ public partial class EsxiHostsViewModel : ObservableObject
                         # Capture the output and ensure only JSON is returned
                         $backupOutput = & '{scriptPath}' -HostName '{host.Name}' -BackupPath '{backupPath}' -LogPath '{configuredLogPath}' -BypassModuleCheck $true -SuppressConsoleOutput $true 2>&1
                         
-                        # Extract the last complete JSON object from the output
+                        # Extract JSON from the output more reliably
                         $allOutput = $backupOutput -join ""`n""
                         
-                        # Use regex to find the last complete JSON object
-                        if ($allOutput -match '\{{[^{{}}]*\}}(?!.*\{{[^{{}}]*\}})') {{
-                            $matches[0]
+                        # Try multiple approaches to extract valid JSON
+                        $jsonFound = $false
+                        $jsonOutput = """"
+                        
+                        # Method 1: Look for lines that start and end with braces
+                        $jsonLines = $backupOutput | Where-Object {{ $_ -match '^\s*\{{.*\}}\s*$' }}
+                        if ($jsonLines) {{
+                            $jsonOutput = $jsonLines | Select-Object -Last 1
+                            $jsonFound = $true
+                        }}
+                        
+                        # Method 2: If no complete lines, try regex extraction
+                        if (-not $jsonFound -and $allOutput -match '\{{[^{{}}]*\}}') {{
+                            $jsonOutput = $matches[0]
+                            $jsonFound = $true
+                        }}
+                        
+                        if ($jsonFound) {{
+                            $jsonOutput
                         }} else {{
                             # If no JSON found, check if there was an error in the output
                             if ($allOutput -match 'error|exception|fail') {{
@@ -641,6 +657,8 @@ public partial class EsxiHostsViewModel : ObservableObject
                         else
                         {
                             var errorMessage = backupResult.TryGetProperty("Message", out var msg) ? msg.GetString() : "Unknown error from script.";
+                            var debugOutput = $"JSON Response: {result}\nParsed Success: {(backupResult.TryGetProperty("Success", out var s) ? s.ToString() : "N/A")}";
+                            _logger.LogError("Backup script returned failure for host {Host}. Debug: {Debug}", host.Name, debugOutput);
                             throw new InvalidOperationException($"Backup script failed for host {host.Name}: {errorMessage}");
                         }
                     }
