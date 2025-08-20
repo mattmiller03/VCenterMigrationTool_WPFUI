@@ -31,17 +31,11 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)]
     [string]$VCenterServer,
-    
-    [Parameter(Mandatory=$true)]
-    [pscredential]$viCredential,
-
-    [Parameter()]
-    [switch]$BypassModuleCheck,
-    
+    [string]$Username,
+    [string]$Password,
+    [bool]$BypassModuleCheck = $false,
     [string]$LogPath = "",
-    
     [bool]$SuppressConsoleOutput = $false
 )
 
@@ -64,93 +58,271 @@ $scriptSuccess = $true
 $viConnection = $null
 
 try {
-    Write-LogInfo "Starting datacenter discovery from vCenter: $($VCenterServer)" -Category "Initialization"
+    Write-LogInfo "Starting datacenter discovery" -Category "Initialization"
     
-    # Import PowerCLI modules if not bypassed
-    if (-not $BypassModuleCheck) {
+    # Ensure PowerCLI modules are available
+    Write-LogInfo "Checking PowerCLI module availability..." -Category "Module"
+    
+    # Check if PowerCLI commands are already available
+    $powerCLIAvailable = $false
+    try {
+        $powerCLIAvailable = Get-Command "Get-VIServer" -ErrorAction SilentlyContinue -ne $null
+        if ($powerCLIAvailable) {
+            Write-LogSuccess "PowerCLI commands are already available" -Category "Module"
+        }
+    }
+    catch {
+        $powerCLIAvailable = $false
+    }
+    
+    # Import PowerCLI modules if needed
+    if (-not $powerCLIAvailable) {
+        if ($BypassModuleCheck) {
+            Write-LogWarning "BypassModuleCheck is true but PowerCLI commands not available - forcing import" -Category "Module"
+        }
+        
         Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
         try {
-            Import-Module VMware.VimAutomation.Core -Force -ErrorAction Stop
-            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+            # Try to import the core VMware modules
+            $modulesToImport = @("VMware.VimAutomation.Core", "VMware.VimAutomation.Common")
+            
+            foreach ($module in $modulesToImport) {
+                $moduleInfo = Get-Module -Name $module -ListAvailable -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($moduleInfo) {
+                    Write-LogInfo "Importing module: $module" -Category "Module"
+                    Import-Module $module -Force -ErrorAction Stop
+                }
+            }
+            
+            # Try PowerCLI as fallback
+            if (-not (Get-Command "Get-VIServer" -ErrorAction SilentlyContinue)) {
+                Write-LogInfo "Core modules not sufficient, trying VMware.PowerCLI..." -Category "Module"
+                Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+            }
+            
+            # Configure PowerCLI
+            if (Get-Command "Set-PowerCLIConfiguration" -ErrorAction SilentlyContinue) {
+                Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+            }
+            
             Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
         }
         catch {
             Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)" -Category "Module"
-            throw $_
+            throw "PowerCLI modules are required but could not be imported: $($_.Exception.Message)"
         }
     }
-    else {
-        Write-LogInfo "Bypassing PowerCLI module check" -Category "Module"
+    
+    # Final verification
+    if (-not (Get-Command "Get-VIServer" -ErrorAction SilentlyContinue)) {
+        throw "PowerCLI commands are not available. Please ensure VMware PowerCLI is installed."
     }
     
-    # Create credential object
-    if (-not $viCredential) {
-        Write-LogError "No credential provided. Please provide a valid PSCredential object." -Category "Authentication"
-        throw "Credential is required to connect to vCenter"
-    }
+    # Check connection status and establish connection if needed
+    Write-LogInfo "Checking vCenter connection status..." -Category "Connection"
+    $connectionEstablished = $false
+    $connectionUsed = $null
     
-    # Connect to vCenter
-    Write-LogInfo "Connecting to vCenter server: $($VCenterServer)" -Category "Connection"
-    
+    # Strategy 1: Check existing default connection
     try {
-        $viConnection = Connect-VIServer -Server $VCenterServer -Credential $viCredential -Force -ErrorAction Stop
-        
-        if ($viConnection.IsConnected) {
-            Write-LogSuccess "Successfully connected to vCenter: $($viConnection.Name)" -Category "Connection"
-            Write-LogInfo "  Version: $($viConnection.Version)" -Category "Connection"
-            Write-LogInfo "  Build: $($viConnection.Build)" -Category "Connection"
+        if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {
+            # Test the connection with a simple command
+            $null = Get-VIServer -Server $global:DefaultVIServer -ErrorAction Stop
+            Write-LogSuccess "Using existing default vCenter connection: $($global:DefaultVIServer.Name)" -Category "Connection"
+            $connectionEstablished = $true
+            $connectionUsed = $global:DefaultVIServer
+            $viConnection = $global:DefaultVIServer  # For compatibility with cleanup
         }
         else {
-            throw "Connection object returned but IsConnected is false"
+            Write-LogInfo "No active default vCenter connection found" -Category "Connection"
         }
     }
     catch {
-        Write-LogError "Failed to connect to vCenter: $($_.Exception.Message)" -Category "Connection"
-        throw $_
+        Write-LogWarning "Default connection appears invalid: $($_.Exception.Message)" -Category "Connection"
+        $global:DefaultVIServer = $null
     }
     
-    # Get all datacenters
-    Write-LogInfo "Retrieving datacenter information..." -Category "Discovery"
+    # Strategy 2: If no default connection, find any active connections
+    if (-not $connectionEstablished) {
+        Write-LogInfo "Scanning for active vCenter connections..." -Category "Connection"
+        try {
+            $allConnections = Get-VIServer -ErrorAction SilentlyContinue
+            if ($allConnections) {
+                $activeConnections = $allConnections | Where-Object { $_.IsConnected }
+                if ($activeConnections) {
+                    $connectionUsed = $activeConnections | Select-Object -First 1
+                    $global:DefaultVIServer = $connectionUsed
+                    $viConnection = $connectionUsed  # For compatibility with cleanup
+                    Write-LogSuccess "Found active vCenter connection: $($connectionUsed.Name)" -Category "Connection"
+                    $connectionEstablished = $true
+                }
+                else {
+                    Write-LogInfo "Found $($allConnections.Count) vCenter connections but none are active" -Category "Connection"
+                }
+            }
+            else {
+                Write-LogInfo "No existing vCenter connections found" -Category "Connection"
+            }
+        }
+        catch {
+            Write-LogWarning "Error scanning for connections: $($_.Exception.Message)" -Category "Connection"
+        }
+    }
+    
+    # Strategy 3: If credentials provided, establish new connection
+    if (-not $connectionEstablished -and $VCenterServer -and $Username -and $Password) {
+        Write-LogInfo "Attempting to establish new vCenter connection to: $VCenterServer" -Category "Connection"
+        try {
+            $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
+            $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
+            $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+            $connectionUsed = $viConnection
+            Write-LogSuccess "Successfully connected to vCenter: $($viConnection.Name)" -Category "Connection"
+            $connectionEstablished = $true
+        }
+        catch {
+            Write-LogError "Failed to connect to vCenter $VCenterServer : $($_.Exception.Message)" -Category "Connection"
+        }
+    }
+    
+    # Final connection validation
+    if (-not $connectionEstablished) {
+        $errorMsg = "No vCenter connection available. "
+        if (-not $VCenterServer) {
+            $errorMsg += "Please connect to vCenter first or provide connection parameters (VCenterServer, Username, Password)."
+        } else {
+            $errorMsg += "Unable to establish connection with provided credentials."
+        }
+        Write-LogCritical $errorMsg -Category "Connection"
+        throw $errorMsg
+    }
+    
+    # Log connection details
+    Write-LogInfo "Active vCenter connection details:" -Category "Connection"
+    Write-LogInfo "  Server: $($connectionUsed.Name)" -Category "Connection"
+    Write-LogInfo "  Version: $($connectionUsed.Version)" -Category "Connection"
+    Write-LogInfo "  User: $($connectionUsed.User)" -Category "Connection"
+    
+    # Retrieve datacenters from vCenter
+    Write-LogInfo "Retrieving datacenters from vCenter..." -Category "Discovery"
     
     try {
         $datacenters = Get-Datacenter -ErrorAction Stop
         
         if ($datacenters) {
-            Write-LogSuccess "Found $($datacenters.Count) datacenters" -Category "Discovery"
+            $datacenterCount = if ($datacenters.Count) { $datacenters.Count } else { 1 }
+            Write-LogSuccess "Found $datacenterCount datacenter(s)" -Category "Discovery"
             
-            foreach ($dc in $datacenters) {
-                Write-LogDebug "Processing datacenter: $($dc.Name)" -Category "Discovery"
-                
-                $dcInfo = @{
-                    Name = $dc.Name
-                    Id = $dc.Id
-                    NumHosts = ($dc | Get-VMHost).Count
-                    NumClusters = ($dc | Get-Cluster).Count
-                    NumVMs = ($dc | Get-VM).Count
-                    NumDatastores = ($dc | Get-Datastore).Count
-                    NumNetworks = ($dc | Get-VirtualPortGroup).Count
-                }
-                
-                $result += $dcInfo
-                
-                Write-LogInfo "  Datacenter: $($dc.Name) - Hosts: $($dcInfo.NumHosts), Clusters: $($dcInfo.NumClusters), VMs: $($dcInfo.NumVMs)" -Category "Discovery"
+            # Ensure $datacenters is always an array for consistent processing
+            if ($datacenters -isnot [array]) {
+                $datacenters = @($datacenters)
             }
             
+            foreach ($dc in $datacenters) {
+                Write-LogInfo "Processing datacenter: $($dc.Name)" -Category "Discovery"
+                
+                try {
+                    # Get datacenter statistics efficiently with error handling
+                    $numHosts = 0
+                    $numClusters = 0
+                    $numVMs = 0
+                    $numDatastores = 0
+                    $numNetworks = 0
+                    
+                    try {
+                        $hosts = $dc | Get-VMHost -ErrorAction SilentlyContinue
+                        $numHosts = if ($hosts) { ($hosts | Measure-Object).Count } else { 0 }
+                    }
+                    catch { 
+                        Write-LogWarning "Could not retrieve host count for datacenter '$($dc.Name)'" -Category "Discovery"
+                    }
+                    
+                    try {
+                        $clusters = $dc | Get-Cluster -ErrorAction SilentlyContinue
+                        $numClusters = if ($clusters) { ($clusters | Measure-Object).Count } else { 0 }
+                    }
+                    catch { 
+                        Write-LogWarning "Could not retrieve cluster count for datacenter '$($dc.Name)'" -Category "Discovery"
+                    }
+                    
+                    try {
+                        $vms = $dc | Get-VM -ErrorAction SilentlyContinue
+                        $numVMs = if ($vms) { ($vms | Measure-Object).Count } else { 0 }
+                    }
+                    catch { 
+                        Write-LogWarning "Could not retrieve VM count for datacenter '$($dc.Name)'" -Category "Discovery"
+                    }
+                    
+                    try {
+                        $datastores = $dc | Get-Datastore -ErrorAction SilentlyContinue
+                        $numDatastores = if ($datastores) { ($datastores | Measure-Object).Count } else { 0 }
+                    }
+                    catch { 
+                        Write-LogWarning "Could not retrieve datastore count for datacenter '$($dc.Name)'" -Category "Discovery"
+                    }
+                    
+                    try {
+                        $networks = $dc | Get-VirtualPortGroup -ErrorAction SilentlyContinue
+                        $numNetworks = if ($networks) { ($networks | Measure-Object).Count } else { 0 }
+                    }
+                    catch { 
+                        Write-LogWarning "Could not retrieve network count for datacenter '$($dc.Name)'" -Category "Discovery"
+                    }
+                    
+                    $dcInfo = @{
+                        Name = if ($dc.Name) { $dc.Name } else { "Unknown" }
+                        Id = if ($dc.Id) { $dc.Id } else { "" }
+                        NumHosts = $numHosts
+                        NumClusters = $numClusters
+                        NumVMs = $numVMs
+                        NumDatastores = $numDatastores
+                        NumNetworks = $numNetworks
+                    }
+                    
+                    $result += $dcInfo
+                    
+                    Write-LogInfo "  Datacenter: $($dc.Name) - Hosts: $numHosts, Clusters: $numClusters, VMs: $numVMs, Datastores: $numDatastores" -Category "Discovery"
+                    Write-LogDebug "Datacenter '$($dc.Name)' processed successfully" -Category "Discovery"
+                }
+                catch {
+                    Write-LogWarning "Error processing datacenter '$($dc.Name)': $($_.Exception.Message)" -Category "Discovery"
+                    
+                    # Add minimal datacenter info even on error
+                    $dcInfo = @{
+                        Name = if ($dc.Name) { $dc.Name } else { "Unknown" }
+                        Id = if ($dc.Id) { $dc.Id } else { "" }
+                        NumHosts = 0
+                        NumClusters = 0
+                        NumVMs = 0
+                        NumDatastores = 0
+                        NumNetworks = 0
+                    }
+                    $result += $dcInfo
+                    
+                    # Continue processing other datacenters
+                    continue
+                }
+            }
+            
+            Write-LogSuccess "Successfully processed $($result.Count) datacenter(s)" -Category "Discovery"
+            
             # For backward compatibility, also create comma-separated list
-            $datacenterNames = $datacenters | Select-Object -ExpandProperty Name
+            $datacenterNames = $result | Select-Object -ExpandProperty Name
             $datacenterList = $datacenterNames -join ", "
             Write-LogInfo "Datacenter names: $datacenterList" -Category "Summary"
         }
         else {
-            Write-LogWarning "No datacenters found in vCenter" -Category "Discovery"
+            Write-LogWarning "No datacenters found in vCenter '$($connectionUsed.Name)'" -Category "Discovery"
+            Write-LogInfo "This could be normal if the connected user doesn't have permissions to view datacenters" -Category "Discovery"
         }
     }
     catch {
         Write-LogError "Failed to retrieve datacenters: $($_.Exception.Message)" -Category "Discovery"
-        throw $_
+        Write-LogError "This might be due to insufficient permissions or connection issues" -Category "Discovery"
+        throw "Datacenter retrieval failed: $($_.Exception.Message)"
     }
     
-    Write-LogSuccess "Datacenter discovery completed successfully" -Category "Summary"
+    Write-LogSuccess "Datacenter discovery completed - found $($result.Count) datacenter(s)" -Category "Summary"
 }
 catch {
     $scriptSuccess = $false
@@ -158,24 +330,19 @@ catch {
     Write-LogCritical $errorMessage -Category "Error"
     Write-LogError "Stack trace: $($_.ScriptStackTrace)" -Category "Error"
     
-    # Return error in JSON format if called from C#
-    if ($SuppressConsoleOutput) {
-        $errorResult = @{
-            Success = $false
-            Error = $_.Exception.Message
-        }
-        Write-Output ($errorResult | ConvertTo-Json -Compress)
+    # Return error in JSON format
+    $errorResult = @{
+        Success = $false
+        Error = $_.Exception.Message
     }
-    else {
-        Write-Output "Error: Could not retrieve datacenters"
-    }
+    Write-Output ($errorResult | ConvertTo-Json -Compress)
     
     Stop-ScriptLogging -Success $false -Summary $errorMessage
     exit 1
 }
 finally {
-    # Disconnect from vCenter
-    if ($viConnection -and $viConnection.IsConnected) {
+    # Only disconnect if we created the connection (not if we reused existing)
+    if ($viConnection -and $viConnection.IsConnected -and $VCenterServer -and $Username -and $Password) {
         try {
             Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
             Disconnect-VIServer -Server $viConnection -Confirm:$false -Force -ErrorAction Stop
@@ -185,27 +352,23 @@ finally {
             Write-LogWarning "Failed to disconnect cleanly: $($_.Exception.Message)" -Category "Connection"
         }
     }
+    elseif ($viConnection -and $viConnection.IsConnected) {
+        Write-LogInfo "Keeping existing vCenter connection active" -Category "Connection"
+    }
     
     # Stop logging and output result
     if ($scriptSuccess) {
         $stats = @{
             "TotalDatacenters" = $result.Count
-            "TotalHosts" = ($result | Measure-Object -Property NumHosts -Sum).Sum
-            "TotalVMs" = ($result | Measure-Object -Property NumVMs -Sum).Sum
+            "TotalHosts" = if ($result.Count -gt 0) { ($result | Measure-Object -Property NumHosts -Sum).Sum } else { 0 }
+            "TotalClusters" = if ($result.Count -gt 0) { ($result | Measure-Object -Property NumClusters -Sum).Sum } else { 0 }
+            "TotalVMs" = if ($result.Count -gt 0) { ($result | Measure-Object -Property NumVMs -Sum).Sum } else { 0 }
+            "TotalDatastores" = if ($result.Count -gt 0) { ($result | Measure-Object -Property NumDatastores -Sum).Sum } else { 0 }
         }
         
         Stop-ScriptLogging -Success $true -Summary "Retrieved $($result.Count) datacenters" -Statistics $stats
         
-        # Output result based on context
-        if ($SuppressConsoleOutput -or $result.Count -gt 0) {
-            # Output as JSON for C# consumption
-            Write-Output ($result | ConvertTo-Json -Depth 3 -Compress)
-        }
-        else {
-            # For backward compatibility, output comma-separated list
-            $datacenterNames = $result | Select-Object -ExpandProperty Name
-            $datacenterList = $datacenterNames -join ", "
-            Write-Output $datacenterList
-        }
+        # Always output as JSON for consistency
+        Write-Output ($result | ConvertTo-Json -Depth 3 -Compress)
     }
 }
