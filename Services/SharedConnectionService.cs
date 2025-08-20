@@ -9,11 +9,11 @@ namespace VCenterMigrationTool.Services;
 /// </summary>
 public class SharedConnectionService
 {
-    private readonly ConnectionProfileService _connectionProfileService;
+    private readonly CredentialService _credentialService;
 
-    public SharedConnectionService(ConnectionProfileService connectionProfileService)
+    public SharedConnectionService(CredentialService credentialService)
     {
-        _connectionProfileService = connectionProfileService;
+        _credentialService = credentialService;
     }
     /// <summary>
     /// Gets or sets the currently selected source vCenter connection.
@@ -50,15 +50,15 @@ public class SharedConnectionService
         var hasPassword = false;
         if (hasBasicInfo)
         {
-            // Check if password can be decrypted
+            // Check if password is available in Windows Credential Manager
             try
             {
-                var password = _connectionProfileService.UnprotectPassword(connection);
+                var password = _credentialService.GetPassword(connection);
                 hasPassword = !string.IsNullOrEmpty(password);
             }
             catch
             {
-                // Password decryption failed
+                // Password retrieval failed
                 hasPassword = false;
             }
         }
@@ -96,7 +96,7 @@ public class SharedConnectionService
             return null;
         }
 
-        // Decrypt the protected password using ConnectionProfileService
-        return _connectionProfileService.UnprotectPassword(connection);
+        // Retrieve password from Windows Credential Manager
+        return _credentialService.GetPassword(connection);
     }
     }
