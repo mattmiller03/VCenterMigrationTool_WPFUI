@@ -43,4 +43,33 @@ public class SharedConnectionService
         
         return (isConnected, connection.ServerAddress ?? "Unknown", "7.0");
     }
+
+    public async Task<VCenterConnection?> GetConnectionAsync(string connectionType)
+    {
+        await Task.Delay(10); // Simulate async operation
+        
+        return connectionType.ToLower() switch
+        {
+            "source" => SourceConnection,
+            "target" => TargetConnection,
+            _ => null
+        };
+    }
+
+    public async Task<string?> GetPasswordAsync(string connectionType)
+    {
+        await Task.Delay(10); // Simulate async operation
+        
+        var connection = connectionType.ToLower() switch
+        {
+            "source" => SourceConnection,
+            "target" => TargetConnection,
+            _ => null
+        };
+
+        // Note: In a real implementation, passwords should be retrieved from 
+        // secure storage and decrypted. For now, return ProtectedPassword
+        // assuming it contains the password (this would need proper decryption)
+        return connection?.ProtectedPassword;
+    }
     }

@@ -1678,42 +1678,8 @@ public class HybridPowerShellService : IDisposable
                             Status = obj.GetValueOrDefault("Status", "Ready").ToString()
                         };
 
-                        // Set visual properties based on type
-                        switch (item.Type)
-                        {
-                            case "Role":
-                                item.TypeIcon = "PersonKey24";
-                                item.TypeColor = "#FF6B35";
-                                break;
-                            case "Folder":
-                                item.TypeIcon = "Folder24";
-                                item.TypeColor = "#2E8B57";
-                                break;
-                            case "Tag":
-                                item.TypeIcon = "Tag24";
-                                item.TypeColor = "#4682B4";
-                                break;
-                            case "TagCategory":
-                                item.TypeIcon = "TagMultiple24";
-                                item.TypeColor = "#4682B4";
-                                break;
-                            case "Permission":
-                                item.TypeIcon = "Shield24";
-                                item.TypeColor = "#8A2BE2";
-                                break;
-                            case "ResourcePool":
-                                item.TypeIcon = "ServerMultiple24";
-                                item.TypeColor = "#FF8C00";
-                                break;
-                            case "CustomAttribute":
-                                item.TypeIcon = "DocumentProperties24";
-                                item.TypeColor = "#20B2AA";
-                                break;
-                            default:
-                                item.TypeIcon = "Question24";
-                                item.TypeColor = "#808080";
-                                break;
-                        }
+                        // Note: TypeIcon and TypeColor are computed properties based on Type
+                        // No need to set them manually - they will be calculated automatically
 
                         clusterItems.Add(item);
                     }

@@ -14,6 +14,9 @@ public class ClusterInfo
     public int DatastoreCount { get; set; }
     public double TotalCpuGhz { get; set; }
     public double TotalMemoryGB { get; set; }
+    public bool HAEnabled { get; set; }
+    public bool DrsEnabled { get; set; }
+    public string EVCMode { get; set; } = string.Empty;
     public ObservableCollection<EsxiHost> Hosts { get; set; } = new();
 
     // For display in UI
