@@ -176,14 +176,16 @@ try {
     }
     
     # Create statistics for logging
+    $executionPolicy = try { 
+        $policy = Get-ExecutionPolicy -Scope CurrentUser -ErrorAction SilentlyContinue
+        if ($policy) { $policy.ToString() } else { "Unknown" }
+    } catch { "Unknown" }
+    
     $stats = @{
         "PowerShellVersion" = $result.PowerShellVersion
         "PowerCLIInstalled" = $powerCliFound
         "PowerCLIVersion" = if ($powerCliFound) { $powerCliVersion } else { "Not Installed" }
-        "ExecutionPolicy" = try { 
-            $policy = Get-ExecutionPolicy -Scope CurrentUser -ErrorAction SilentlyContinue
-            if ($policy) { $policy.ToString() } else { "Unknown" }
-        } catch { "Unknown" }
+        "ExecutionPolicy" = $executionPolicy
         "OS" = $env:OS
         "Computer" = $env:COMPUTERNAME
         "User" = $env:USERNAME
