@@ -82,9 +82,6 @@ public partial class App
             services.AddSingleton<ConfigurationService>();
             services.AddSingleton<SharedConnectionService>();
             services.AddSingleton<IDialogService, DialogService>();
-            services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
-
-
 
             // UPDATED: Use HybridPowerShellService instead of PowerShellService
             services.AddSingleton<HybridPowerShellService>();
@@ -118,12 +115,10 @@ public partial class App
             services.AddTransient<ViewProfilesViewModel>();
             services.AddTransient<ProfileEditorViewModel>();
             services.AddSingleton<PersistentExternalConnectionService>();
-            services.AddTransient<ViewModels.Dialogs.ErrorDialogViewModel>();
 
             // Dialogs
             services.AddTransient<PasswordPromptDialog>();
             services.AddTransient<PasswordPromptViewModel>();
-            services.AddTransient<ErrorDialog>();
 
             // Configuration
             services.Configure<AppConfig>(context.Configuration.GetSection(nameof(AppConfig)));

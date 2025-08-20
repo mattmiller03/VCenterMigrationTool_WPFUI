@@ -1,0 +1,85 @@
+﻿<ui:FluentWindow x:Class="VCenterMigrationTool.Views.Dialogs.ErrorDialog"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels.Dialogs"
+                 Title="{Binding Title}"
+                 Width="600" Height="500"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="CanResize"
+                 WindowBackdropType="Mica">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Error Icon and Title -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+            <ui:SymbolIcon Symbol="{Binding SeverityIcon}" 
+                          Foreground="{Binding SeverityColor}"
+                          FontSize="32" 
+                          Margin="0,0,15,0"/>
+            <TextBlock Text="{Binding Title}" 
+                      FontSize="20" 
+                      FontWeight="SemiBold"
+                      VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Main Message -->
+        <TextBlock Grid.Row="1" 
+                  Text="{Binding Message}"
+                  FontSize="14"
+                  TextWrapping="Wrap"
+                  Margin="0,0,0,20"/>
+
+        <!-- Details Section -->
+        <Expander Grid.Row="2" 
+                 Header="Technical Details" 
+                 IsExpanded="False"
+                 Margin="0,0,0,20">
+            <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                <TextBlock Text="{Binding Details}"
+                          FontFamily="Consolas"
+                          FontSize="12"
+                          TextWrapping="Wrap"
+                          Background="{DynamicResource ControlFillColorDefaultBrush}"
+                          Padding="10"/>
+            </ScrollViewer>
+        </Expander>
+
+        <!-- Suggested Actions -->
+        <ui:Card Grid.Row="3" Margin="0,0,0,20" 
+                Visibility="{Binding HasSuggestedActions, Converter={StaticResource BoolToVisibilityConverter}}">
+            <StackPanel Margin="15">
+                <TextBlock Text="Suggested Actions:" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <ItemsControl ItemsSource="{Binding SuggestedActions}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                <TextBlock Text="•" Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ui:Card>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <ui:Button Content="Retry" 
+                      Command="{Binding RetryCommand}"
+                      Appearance="Primary"
+                      Margin="0,0,10,0"
+                      Visibility="{Binding CanRetry, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            <ui:Button Content="OK" 
+                      Command="{Binding CloseCommand}"
+                      IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>

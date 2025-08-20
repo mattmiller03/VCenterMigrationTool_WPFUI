@@ -22,7 +22,6 @@ public class HybridPowerShellService : IDisposable
     private readonly PowerShellLoggingService _psLoggingService;
     private readonly ConcurrentDictionary<int, Process> _activeProcesses = new();
     private readonly Timer _cleanupTimer;
-    private IErrorHandlingService? _errorHandlingService;
     private bool _disposed = false;
 
     /// <summary>
@@ -93,11 +92,6 @@ public class HybridPowerShellService : IDisposable
             }
         }
 
-    // Add this method to set the error handling service (called from DI)
-    public void SetErrorHandlingService(IErrorHandlingService errorHandlingService)
-    {
-        _errorHandlingService = errorHandlingService;
-    }
     /// <summary>
     /// Static flag to track PowerCLI availability (set by settings page)
     /// </summary>
@@ -106,13 +100,11 @@ public class HybridPowerShellService : IDisposable
     public HybridPowerShellService (
         ILogger<HybridPowerShellService> logger,
         ConfigurationService configurationService,
-        PowerShellLoggingService psLoggingService,
-        IErrorHandlingService errorHandlingService)
+        PowerShellLoggingService psLoggingService)
         {
         _logger = logger;
         _configurationService = configurationService;
         _psLoggingService = psLoggingService;
-        _errorHandlingService = errorHandlingService;
 
         // FIXED: Load PowerCLI status from persistent storage on startup
         LoadPowerCliStatus();
@@ -1475,45 +1467,6 @@ public class HybridPowerShellService : IDisposable
         {
         return _activeProcesses.Count;
         }
-
-    // Add this enhanced method to HybridPowerShellService
-    public async Task<string> RunScriptWithErrorHandlingAsync(
-        string scriptPath,
-        Dictionary<string, object> parameters,
-        string? logPath = null)
-    {
-        try
-        {
-            // First validate the operation
-            var validationResult = await _errorHandlingService.ValidateOperationAsync(
-                Path.GetFileName(scriptPath), parameters);
-
-            if (!validationResult.IsValid)
-            {
-                var errorMessage = string.Join("; ", validationResult.Errors.Select(e => e.Message));
-                await _errorHandlingService.HandleScriptErrorAsync(scriptPath, errorMessage, parameters);
-                return $"VALIDATION_ERROR: {errorMessage}";
-            }
-
-            // Run the script with the optimized method
-            var result = await RunScriptOptimizedAsync(scriptPath, parameters, logPath);
-
-            // Check if the result indicates an error
-            if (result.StartsWith("ERROR:") || result.Contains("Exception"))
-            {
-                await _errorHandlingService.HandleScriptErrorAsync(scriptPath, result, parameters);
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            await _errorHandlingService.LogStructuredErrorAsync(
-                Path.GetFileName(scriptPath), ex, parameters);
-            await _errorHandlingService.HandleScriptErrorAsync(scriptPath, ex.Message, parameters);
-            return $"ERROR: {ex.Message}";
-        }
-    }
 
     #region IDisposable Implementation
 

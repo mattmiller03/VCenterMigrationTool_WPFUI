@@ -1,0 +1,319 @@
+﻿<Page x:Class="VCenterMigrationTool.Views.Pages.ActivityLogsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
+      xmlns:viewmodels="clr-namespace:VCenterMigrationTool.ViewModels"
+      xmlns:models="clr-namespace:VCenterMigrationTool.Models"
+      d:DataContext="{d:DesignInstance viewmodels:ActivityLogsViewModel, IsDesignTimeCreatable=False}"
+      mc:Ignorable="d"
+      d:DesignHeight="700" d:DesignWidth="1200"
+      Title="Activity Logs"
+      Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+      Background="{DynamicResource ApplicationBackgroundBrush}">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <helpers:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+    </Page.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Activity Logs" 
+                  FontSize="24" 
+                  FontWeight="Bold" 
+                  Margin="0,0,0,5"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Real-time PowerShell script execution and application logs" 
+                      FontSize="14" 
+                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                      Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding LastRefreshTime, StringFormat='Last refresh: {0:HH:mm:ss}'}"
+                      FontSize="12"
+                      Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                      VerticalAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                    <!-- Refresh Button -->
+                    <ui:Button Content="Refresh" 
+                  Command="{Binding RefreshLogsCommand}"
+                  Icon="{ui:SymbolIcon ArrowSync24}"
+                  Name="LogRefreshButton"
+                  Appearance="Primary"
+                  Margin="0,0,10,0"
+                  IsEnabled="{Binding IsRefreshing, Converter={StaticResource InverseBooleanConverter}}">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRefreshing}" Value="True">
+                                        <Setter Property="Content" Value="Refreshing..."/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+
+                    <!-- Refresh Options Dropdown -->
+                    <ui:Button x:Name="RefreshOptionsButton" 
+                  Content="⌄"
+                  Appearance="Secondary"
+                  Width="30"
+                  Margin="0,0,10,0"
+                  Click="RefreshOptionsButton_Click">
+                        <ui:Button.ContextMenu>
+                            <ContextMenu x:Name="RefreshContextMenu">
+                                <MenuItem Header="🔄 Refresh Current View" 
+                             Command="{Binding RefreshLogsCommand}"/>
+                                <MenuItem Header="🗑️ Clear and Refresh" 
+                             Command="{Binding RefreshAndClearCommand}"/>
+                                <Separator/>
+                                <MenuItem Header="⏰ Last Hour" 
+                             Command="{Binding RefreshLogsWithTimeRangeCommand}"
+                             CommandParameter="LastHour"/>
+                                <MenuItem Header="⏰ Last 4 Hours" 
+                             Command="{Binding RefreshLogsWithTimeRangeCommand}"
+                             CommandParameter="Last4Hours"/>
+                                <MenuItem Header="⏰ Last 24 Hours" 
+                             Command="{Binding RefreshLogsWithTimeRangeCommand}"
+                             CommandParameter="Last24Hours"/>
+                                <MenuItem Header="⏰ All Available" 
+                             Command="{Binding RefreshLogsWithTimeRangeCommand}"
+                             CommandParameter="All"/>
+                            </ContextMenu>
+                        </ui:Button.ContextMenu>
+                    </ui:Button>
+
+                    <ui:Button Content="Clear Logs" 
+                  Command="{Binding ClearLogsCommand}"
+                  Icon="{ui:SymbolIcon Delete24}"
+                  Appearance="Secondary"
+                  Margin="0,0,10,0"/>
+                    <ui:Button Content="Export" 
+                  Command="{Binding ExportLogsCommand}"
+                  Icon="{ui:SymbolIcon Save24}"
+                  Appearance="Secondary"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Filters and Controls -->
+            <ui:Card Grid.Row="1" Margin="0,0,0,10" Padding="15">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Search Filter -->
+                    <ui:TextBox Grid.Column="0" 
+                           Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                           PlaceholderText="Filter logs by message, script, or session..."
+                           Icon="{ui:SymbolIcon Search24}"
+                           Margin="0,0,15,0"/>
+
+                    <!-- Log Level Filter -->
+                    <ComboBox Grid.Column="1"
+                         ItemsSource="{Binding LogLevels}"
+                         SelectedItem="{Binding SelectedLogLevel}"
+                         Width="120"
+                         Margin="0,0,15,0"/>
+
+                    <!-- Auto Scroll Toggle -->
+                    <ui:ToggleSwitch Grid.Column="2"
+                                Content="Auto Scroll"
+                                IsChecked="{Binding AutoScroll}"
+                                Margin="0,0,15,0"/>
+
+                    <!-- Max Entries -->
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,15,0">
+                        <TextBlock Text="Max:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <ui:NumberBox Value="{Binding MaxLogEntries}" 
+                                 Minimum="100" 
+                                 Maximum="5000" 
+                                 Width="80"/>
+                    </StackPanel>
+
+                    <!-- Clear Filter -->
+                    <ui:Button Grid.Column="4"
+                          Content="Clear Filter"
+                          Command="{Binding ClearFilterCommand}"
+                          Appearance="Secondary"
+                          Icon="{ui:SymbolIcon FilterDismiss24}"/>
+                </Grid>
+            </ui:Card>
+
+            <!-- Log Entries List -->
+            <ui:Card Grid.Row="2" Padding="0">
+                <Grid>
+                    <ListView Name="LogsListView"
+                         ItemsSource="{Binding LogEntries}"
+                         SelectedItem="{Binding SelectedLogEntry}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         VirtualizingPanel.IsVirtualizing="True"
+                         VirtualizingPanel.VirtualizationMode="Recycling">
+
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Time" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding TimeDisplay}" 
+                                                  FontFamily="Consolas"
+                                                  FontSize="11"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Level" Width="80">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{Binding LevelColor}" 
+                                               CornerRadius="3" 
+                                               Padding="4,2">
+                                                <TextBlock Text="{Binding Level}" 
+                                                      Foreground="White" 
+                                                      FontSize="10" 
+                                                      FontWeight="Bold"
+                                                      HorizontalAlignment="Center"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Script" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ScriptName}" 
+                                                  FontFamily="Consolas"
+                                                  FontSize="11"
+                                                  ToolTip="{Binding ScriptName}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Session" Width="80">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding SessionId}" 
+                                                  FontFamily="Consolas"
+                                                  FontSize="11"
+                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Message" Width="600">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Message}" 
+                                                  FontFamily="Consolas"
+                                                  FontSize="11"
+                                                  TextWrapping="NoWrap"
+                                                  ToolTip="{Binding Message}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+
+                        <!-- Context Menu -->
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Copy Message" Click="CopyMessage_Click"/>
+                                <MenuItem Header="Copy Full Entry" Click="CopyFullEntry_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Filter by Session" Click="FilterBySession_Click"/>
+                                <MenuItem Header="Filter by Script" Click="FilterByScript_Click"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                    </ListView>
+
+                    <!-- Empty State -->
+                    <StackPanel HorizontalAlignment="Center" 
+                           VerticalAlignment="Center"
+                           Visibility="{Binding LogEntries.Count, Converter={StaticResource CountToVisibilityConverter}}">
+                        <ui:SymbolIcon Symbol="DocumentText24" 
+                                  FontSize="48" 
+                                  Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                  Margin="0,0,0,15"/>
+                        <TextBlock Text="No log entries yet" 
+                              FontSize="16" 
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                              HorizontalAlignment="Center"
+                              Margin="0,0,0,5"/>
+                        <TextBlock Text="PowerShell script activity will appear here in real-time" 
+                              FontSize="12" 
+                              Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                              HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </ui:Card>
+
+            <!-- Status Bar -->
+            <ui:Card Grid.Row="3" Margin="0,10,0,0" Padding="10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" 
+                               Text="{Binding LogStats}" 
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+
+                    <!-- Refresh Status -->
+                    <StackPanel Grid.Column="1" 
+                                Orientation="Horizontal" 
+                                Margin="0,0,15,0"
+                                Visibility="{Binding IsRefreshing, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ui:ProgressRing IsIndeterminate="True"
+                                         Width="16" 
+                                         Height="16"
+                                         Margin="0,0,5,0"/>
+                        <TextBlock Text="{Binding RefreshStatus}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Live Feed Status -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <Ellipse Width="8" Height="8" 
+                                 Fill="#51CF66" 
+                                 Margin="0,0,5,0" 
+                                 VerticalAlignment="Center"/>
+                        <TextBlock Text="Live Feed Active" 
+                                   FontSize="12" 
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </ui:Card>
+        </Grid>
+    </ScrollViewer>
+</Page>
