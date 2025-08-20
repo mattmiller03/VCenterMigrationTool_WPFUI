@@ -47,9 +47,9 @@ public class ClusterItem : INotifyPropertyChanged
         "Folder" => "Folder24", 
         "Tag" => "Tag24",
         "Permission" => "Shield24",
-        "ResourcePool" => "DataUsageSettings24",
-        "CustomAttribute" => "Properties24",
-        _ => "DatabaseMultiple24"
+        "ResourcePool" => "DataArea24",
+        "CustomAttribute" => "Settings24",
+        _ => "Database24"
     };
 
     public string TypeColor => Type switch

@@ -215,7 +215,7 @@
 
                             <CheckBox IsChecked="{Binding MigrateResourcePools}" Margin="0,0,0,12">
                                 <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="DataUsageSettings24" Margin="0,0,8,0" FontSize="16"/>
+                                    <ui:SymbolIcon Symbol="DataArea24" Margin="0,0,8,0" FontSize="16"/>
                                     <StackPanel>
                                         <TextBlock Text="Resource Pools" FontWeight="Medium"/>
                                         <TextBlock Text="Migrate resource pool configurations" FontSize="11" Opacity="0.7"/>
@@ -225,7 +225,7 @@
 
                             <CheckBox IsChecked="{Binding MigrateCustomAttributes}" Margin="0,0,0,12">
                                 <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="Properties24" Margin="0,0,8,0" FontSize="16"/>
+                                    <ui:SymbolIcon Symbol="Settings24" Margin="0,0,8,0" FontSize="16"/>
                                     <StackPanel>
                                         <TextBlock Text="Custom Attributes" FontWeight="Medium"/>
                                         <TextBlock Text="Migrate custom field definitions" FontSize="11" Opacity="0.7"/>
@@ -246,7 +246,7 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
-                        <ui:SymbolIcon Symbol="ServerMultiple24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <ui:SymbolIcon Symbol="Storage24" Margin="0,0,10,0" VerticalAlignment="Center"/>
                         <TextBlock Text="Cluster Selection" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         <ui:ProgressRing Grid.Column="1" 
                                          IsIndeterminate="True" 
@@ -344,7 +344,7 @@
                             </Grid.ColumnDefinitions>
                             
                             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="DatabaseMultiple24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                <ui:SymbolIcon Symbol="Database24" Margin="0,0,10,0" VerticalAlignment="Center"/>
                                 <TextBlock Text="Objects to Migrate" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                             
@@ -385,7 +385,7 @@
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Margin="0,50">
-                        <ui:SymbolIcon Symbol="DatabaseMultiple24" 
+                        <ui:SymbolIcon Symbol="Database24" 
                                       FontSize="64" 
                                       Opacity="0.3"
                                       Margin="0,0,0,20"/>
@@ -509,7 +509,7 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
-                        <ui:SymbolIcon Symbol="ArrowSyncCircle24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <ui:SymbolIcon Symbol="ArrowSync24" Margin="0,0,10,0" VerticalAlignment="Center"/>
                         <TextBlock Text="Migration Progress" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding OverallProgress, StringFormat=\{0:F1\}%}" 
                                   FontSize="14" 
