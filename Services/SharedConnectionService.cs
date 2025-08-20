@@ -9,6 +9,12 @@ namespace VCenterMigrationTool.Services;
 /// </summary>
 public class SharedConnectionService
 {
+    private readonly ConnectionProfileService _connectionProfileService;
+
+    public SharedConnectionService(ConnectionProfileService connectionProfileService)
+    {
+        _connectionProfileService = connectionProfileService;
+    }
     /// <summary>
     /// Gets or sets the currently selected source vCenter connection.
     /// </summary>
@@ -37,9 +43,27 @@ public class SharedConnectionService
         }
 
         // In a real implementation, this would test the actual connection
-        // For now, simulate based on whether connection details are present
-        var isConnected = !string.IsNullOrEmpty(connection.ServerAddress) && 
-                         !string.IsNullOrEmpty(connection.Username);
+        // For now, simulate based on whether connection details are present and password can be decrypted
+        var hasBasicInfo = !string.IsNullOrEmpty(connection.ServerAddress) && 
+                          !string.IsNullOrEmpty(connection.Username);
+        
+        var hasPassword = false;
+        if (hasBasicInfo)
+        {
+            // Check if password can be decrypted
+            try
+            {
+                var password = _connectionProfileService.UnprotectPassword(connection);
+                hasPassword = !string.IsNullOrEmpty(password);
+            }
+            catch
+            {
+                // Password decryption failed
+                hasPassword = false;
+            }
+        }
+        
+        var isConnected = hasBasicInfo && hasPassword;
         
         return (isConnected, connection.ServerAddress ?? "Unknown", "7.0");
     }
@@ -67,9 +91,12 @@ public class SharedConnectionService
             _ => null
         };
 
-        // Note: In a real implementation, passwords should be retrieved from 
-        // secure storage and decrypted. For now, return ProtectedPassword
-        // assuming it contains the password (this would need proper decryption)
-        return connection?.ProtectedPassword;
+        if (connection == null)
+        {
+            return null;
+        }
+
+        // Decrypt the protected password using ConnectionProfileService
+        return _connectionProfileService.UnprotectPassword(connection);
     }
     }
