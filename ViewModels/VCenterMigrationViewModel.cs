@@ -17,7 +17,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
     private readonly ILogger<VCenterMigrationViewModel> _logger;
     private readonly HybridPowerShellService _powerShellService;
     private readonly SharedConnectionService _sharedConnectionService;
-    private readonly ErrorHandlingService _errorHandlingService;
+    private readonly IErrorHandlingService _errorHandlingService;
 
     // Connection Status
     [ObservableProperty] private bool _isSourceConnected;
@@ -63,7 +63,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
         ILogger<VCenterMigrationViewModel> logger,
         HybridPowerShellService powerShellService, 
         SharedConnectionService sharedConnectionService,
-        ErrorHandlingService errorHandlingService)
+        IErrorHandlingService errorHandlingService)
     {
         _logger = logger;
         _powerShellService = powerShellService;
@@ -73,8 +73,16 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
 
     public async Task OnNavigatedToAsync()
     {
-        await LoadConnectionStatusAsync();
-        await LoadClustersAsync();
+        try
+        {
+            await LoadConnectionStatusAsync();
+            await LoadClustersAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during page navigation");
+            OverallStatus = "Error loading page data. Please try refreshing.";
+        }
     }
 
     public async Task OnNavigatedFromAsync() => await Task.CompletedTask;
