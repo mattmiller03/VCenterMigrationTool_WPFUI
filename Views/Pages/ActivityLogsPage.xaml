@@ -186,13 +186,25 @@
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
 
-                                <GridViewColumn Header="Level" Width="80">
+                                <GridViewColumn Header="Source" Width="70">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Source}" 
+                                                  FontFamily="Segoe UI"
+                                                  FontSize="10"
+                                                  FontWeight="SemiBold"
+                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Level" Width="60">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border Background="{Binding LevelColor}" 
                                                CornerRadius="3" 
                                                Padding="4,2">
-                                                <TextBlock Text="{Binding Level}" 
+                                                <TextBlock Text="{Binding LevelDisplay}" 
                                                       Foreground="White" 
                                                       FontSize="10" 
                                                       FontWeight="Bold"
@@ -202,35 +214,38 @@
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
 
-                                <GridViewColumn Header="Script" Width="150">
+                                <GridViewColumn Header="Script" Width="180">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding ScriptName}" 
-                                                  FontFamily="Consolas"
+                                            <TextBlock Text="{Binding ScriptDisplay}" 
+                                                  FontFamily="Segoe UI"
                                                   FontSize="11"
+                                                  FontWeight="SemiBold"
                                                   ToolTip="{Binding ScriptName}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
 
-                                <GridViewColumn Header="Session" Width="80">
+                                <GridViewColumn Header="Session" Width="70">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding SessionId}" 
+                                            <TextBlock Text="{Binding SessionDisplay}" 
                                                   FontFamily="Consolas"
-                                                  FontSize="11"
+                                                  FontSize="10"
+                                                  ToolTip="{Binding SessionId}"
                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
 
-                                <GridViewColumn Header="Message" Width="600">
+                                <GridViewColumn Header="Message" Width="650">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding Message}" 
-                                                  FontFamily="Consolas"
+                                            <TextBlock Text="{Binding MessageDisplay}" 
+                                                  FontFamily="Segoe UI"
                                                   FontSize="11"
                                                   TextWrapping="NoWrap"
+                                                  TextTrimming="CharacterEllipsis"
                                                   ToolTip="{Binding Message}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>

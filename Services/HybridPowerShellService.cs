@@ -711,7 +711,7 @@ public class HybridPowerShellService : IDisposable
             }
         }
 
-    public async Task<string> CheckPrerequisitesAsync (string logPath = null)
+    public async Task<string> CheckPrerequisitesAsync (string? logPath = null)
     {
         var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-Prerequisites.ps1");
         var parameters = new Dictionary<string, object>();

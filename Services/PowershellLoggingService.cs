@@ -53,7 +53,7 @@ public class PowerShellLoggingService : IDisposable
             else if (File.Exists(configuredLogPath) || Path.HasExtension(configuredLogPath))
                 {
                 // It's a file path, extract the directory
-                baseLogDirectory = Path.GetDirectoryName(configuredLogPath);
+                baseLogDirectory = Path.GetDirectoryName(configuredLogPath) ?? "";
                 _logger.LogDebug("Extracted directory from configured log file path: {LogPath} -> {Directory}",
                     configuredLogPath, baseLogDirectory);
                 }
@@ -153,7 +153,7 @@ public class PowerShellLoggingService : IDisposable
         return sessionId;
         }
 
-    public void EndScriptLogging (string sessionId, string scriptName, bool success, string summary = null)
+    public void EndScriptLogging (string sessionId, string scriptName, bool success, string? summary = null)
         {
         var entry = new LogEntry
             {
@@ -241,6 +241,23 @@ public class PowerShellLoggingService : IDisposable
             ScriptName = scriptName,
             SessionId = sessionId,
             Message = error.Trim()
+            };
+
+        WriteLog(entry);
+        }
+
+    public void LogScriptAction (string sessionId, string scriptName, string action, string details = "", string level = "INFO")
+        {
+        var message = string.IsNullOrEmpty(details) ? action : $"{action}: {details}";
+        
+        var entry = new LogEntry
+            {
+            Timestamp = DateTime.Now,
+            Level = level,
+            Source = "ACTION",
+            ScriptName = scriptName,
+            SessionId = sessionId,
+            Message = message
             };
 
         WriteLog(entry);

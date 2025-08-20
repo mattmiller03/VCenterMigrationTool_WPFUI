@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-
+using System.Windows;
 using Microsoft.Extensions.Logging;
 
 using VCenterMigrationTool.Models;
@@ -353,96 +353,7 @@ public class ErrorHandlingService : IErrorHandlingService
         });
     }
 
-    public async Task<ValidationResult> ValidateOperationAsync(string operation, Dictionary<string, object> parameters)
-    {
-        var result = new ValidationResult();
 
-        try
-        {
-            _logger.LogInformation("Validating operation: {Operation}", operation);
-
-            // Basic parameter validation
-            if (parameters == null || parameters.Count == 0)
-            {
-                result.AddError("Parameters", "No parameters provided for operation");
-                return result;
-            }
-
-            // Connection validation
-            if (parameters.ContainsKey("VCenterServer"))
-            {
-                var server = parameters["VCenterServer"]?.ToString();
-                if (string.IsNullOrEmpty(server))
-                {
-                    result.AddError("Connection", "vCenter server address is required");
-                }
-            }
-
-            // Credential validation
-            if (parameters.ContainsKey("Username"))
-            {
-                var username = parameters["Username"]?.ToString();
-                if (string.IsNullOrEmpty(username))
-                {
-                    result.AddError("Authentication", "Username is required");
-                }
-            }
-
-            // Script path validation
-            if (parameters.ContainsKey("ScriptPath"))
-            {
-                var scriptPath = parameters["ScriptPath"]?.ToString();
-                if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath))
-                {
-                    result.AddError("Script", "Script file not found or invalid path");
-                }
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during operation validation");
-            result.AddError("Validation", $"Validation failed: {ex.Message}");
-            return result;
-        }
-    }
-
-    public ErrorStatistics GetErrorStatistics(DateTime? since = null)
-    {
-        var sinceDate = since ?? DateTime.Today;
-
-        lock (_errorsLock)
-        {
-            var recentErrors = _recentErrors.Where(e => e.Timestamp >= sinceDate).ToList();
-
-            var stats = new ErrorStatistics
-            {
-                TotalErrors = recentErrors.Count,
-                CriticalErrors = recentErrors.Count(e => e.Severity == ErrorSeverity.Critical),
-                ConnectionErrors = recentErrors.Count(e => e.Category == ErrorCategory.Connection),
-                AuthenticationErrors = recentErrors.Count(e => e.Category == ErrorCategory.Authentication),
-                PowerCLIErrors = recentErrors.Count(e => e.Category == ErrorCategory.PowerCLI),
-                LastError = recentErrors.LastOrDefault()?.Timestamp ?? DateTime.MinValue,
-                MostCommonError = recentErrors
-                    .GroupBy(e => e.Message)
-                    .OrderByDescending(g => g.Count())
-                    .FirstOrDefault()?.Key ?? "None"
-            };
-
-            // Group by category
-            stats.ErrorsByCategory = recentErrors
-                .GroupBy(e => e.Category.ToString())
-                .ToDictionary(g => g.Key, g => g.Count());
-
-            // Group by operation
-            stats.ErrorsByOperation = recentErrors
-                .GroupBy(e => e.Operation)
-                .ToDictionary(g => g.Key, g => g.Count());
-
-            return stats;
-        }
-    }
 
     public async Task LogStructuredErrorAsync(string operation, Exception exception, Dictionary<string, object> context)
     {

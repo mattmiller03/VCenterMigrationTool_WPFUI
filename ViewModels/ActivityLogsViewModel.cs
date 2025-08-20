@@ -493,6 +493,98 @@ public class LogEntryDisplay
     public string FullText { get; set; } = "";
 
     public string TimeDisplay => Timestamp.ToString("HH:mm:ss.fff");
+    
+    // Format script name for better display
+    public string ScriptDisplay => 
+        string.IsNullOrEmpty(ScriptName) ? "-" : 
+        ScriptName.Replace(".ps1", "").Replace("-", " ");
+    
+    // Format message for better readability
+    public string MessageDisplay
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Message))
+                return "-";
+                
+            // Clean up common PowerShell output patterns
+            var cleanMessage = Message;
+            
+            // Remove excessive whitespace and clean common patterns
+            cleanMessage = System.Text.RegularExpressions.Regex.Replace(cleanMessage, @"\s+", " ").Trim();
+            cleanMessage = cleanMessage.Replace("\r", "").Replace("\n", " ");
+            
+            // Remove PowerShell verbose noise
+            if (cleanMessage.StartsWith("VERBOSE: "))
+                cleanMessage = cleanMessage.Substring(9);
+            if (cleanMessage.StartsWith("DEBUG: "))
+                cleanMessage = cleanMessage.Substring(7);
+            if (cleanMessage.StartsWith("WARNING: "))
+                cleanMessage = cleanMessage.Substring(9);
+            
+            // Format specific message types with icons and better text
+            if (cleanMessage.StartsWith("Starting script execution:"))
+                return "🚀 " + cleanMessage.Replace("Starting script execution: ", "Started: ");
+            else if (cleanMessage.StartsWith("Script execution completed:"))
+                return cleanMessage.Contains("SUCCESS") ? 
+                    "✅ " + cleanMessage.Replace("Script execution completed: ", "Completed: ") : 
+                    "❌ " + cleanMessage.Replace("Script execution completed: ", "Failed: ");
+            else if (cleanMessage.StartsWith("Script parameters:"))
+                return "⚙️ " + cleanMessage.Replace("Script parameters: ", "Parameters: ");
+            else if (cleanMessage.StartsWith("Trying PowerShell:"))
+                return "🔍 " + cleanMessage;
+            else if (cleanMessage.StartsWith("Starting PowerShell process:"))
+                return "▶️ " + cleanMessage.Replace("Starting PowerShell process: ", "Starting: ");
+            else if (cleanMessage.StartsWith("Process started with PID:"))
+                return "🎯 " + cleanMessage;
+            else if (cleanMessage.StartsWith("Process completed with exit code:"))
+                return cleanMessage.Contains("exit code: 0") ? 
+                    "✅ Process completed successfully" : 
+                    "❌ " + cleanMessage;
+            // Format script output with indentation
+            else if (Source == "SCRIPT" && Level == "OUTPUT")
+                return "    📜 " + cleanMessage;
+            else if (Source == "SCRIPT" && Level == "ERROR")
+                return "    ❌ " + cleanMessage;
+            // Format script actions
+            else if (Source == "ACTION")
+                return "⚡ " + cleanMessage;
+            // Connection-related messages
+            else if (cleanMessage.Contains("Connect-VIServer") || cleanMessage.Contains("connection"))
+                return "🔌 " + cleanMessage;
+            // VM operations
+            else if (cleanMessage.Contains("Virtual Machine") || cleanMessage.Contains("VM"))
+                return "💻 " + cleanMessage;
+            // Host operations
+            else if (cleanMessage.Contains("ESXi") || cleanMessage.Contains("Host"))
+                return "🖥️ " + cleanMessage;
+            // Migration operations
+            else if (cleanMessage.Contains("Migration") || cleanMessage.Contains("Move"))
+                return "🚚 " + cleanMessage;
+            // Network operations
+            else if (cleanMessage.Contains("Network") || cleanMessage.Contains("PortGroup"))
+                return "🌐 " + cleanMessage;
+                
+            return cleanMessage;
+        }
+    }
+    
+    // Shortened session ID for display
+    public string SessionDisplay => 
+        string.IsNullOrEmpty(SessionId) || SessionId.Length < 8 ? SessionId : 
+        SessionId.Substring(0, 8);
+    
+    public string LevelDisplay => Level.ToUpper() switch
+    {
+        "ERROR" => "ERR",
+        "CRITICAL" => "CRIT",
+        "WARNING" => "WARN",
+        "SUCCESS" => "OK",
+        "DEBUG" => "DBG",
+        "INFO" => "INFO",
+        _ => Level.ToUpper().Length > 4 ? Level.ToUpper().Substring(0, 4) : Level.ToUpper()
+    };
+    
     public string LevelColor => Level.ToUpper() switch
         {
             "ERROR" => "#FF6B6B",
