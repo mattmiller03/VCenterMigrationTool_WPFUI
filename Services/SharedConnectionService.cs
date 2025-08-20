@@ -1,4 +1,5 @@
-﻿using VCenterMigrationTool.Models;
+﻿using System.Threading.Tasks;
+using VCenterMigrationTool.Models;
 
 namespace VCenterMigrationTool.Services;
 
@@ -17,4 +18,29 @@ public class SharedConnectionService
     /// Gets or sets the currently selected target vCenter connection.
     /// </summary>
     public VCenterConnection? TargetConnection { get; set; }
+
+    public async Task<(bool IsConnected, string ServerName, string Version)> GetConnectionStatusAsync(string connectionType)
+    {
+        // Simulate async operation
+        await Task.Delay(100);
+
+        var connection = connectionType.ToLower() switch
+        {
+            "source" => SourceConnection,
+            "target" => TargetConnection,
+            _ => null
+        };
+
+        if (connection == null)
+        {
+            return (false, "Not configured", "");
+        }
+
+        // In a real implementation, this would test the actual connection
+        // For now, simulate based on whether connection details are present
+        var isConnected = !string.IsNullOrEmpty(connection.ServerAddress) && 
+                         !string.IsNullOrEmpty(connection.Username);
+        
+        return (isConnected, connection.ServerAddress ?? "Unknown", "7.0");
+    }
     }

@@ -1550,5 +1550,180 @@ public class HybridPowerShellService : IDisposable
         Dispose(false);
         }
 
+    public async Task<List<ClusterInfo>> GetClustersAsync(string connectionType = "source")
+    {
+        try
+        {
+            var parameters = new Dictionary<string, object>
+            {
+                { "ConnectionType", connectionType }
+            };
+
+            var sessionId = Guid.NewGuid().ToString()[..8];
+            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-Clusters.ps1");
+
+            var result = await RunScriptExternalAsync(scriptPath, parameters);
+
+            // Parse the result to extract cluster information
+            var clusters = new List<ClusterInfo>();
+            
+            // This would typically parse PowerShell output
+            // For now, return sample data structure
+            if (result.Contains("SUCCESS"))
+            {
+                // Parse actual PowerShell output here
+                // Example parsing logic would go here
+                clusters.Add(new ClusterInfo 
+                { 
+                    Name = "Cluster01", 
+                    HostCount = 4, 
+                    VmCount = 45, 
+                    DatastoreCount = 8 
+                });
+                clusters.Add(new ClusterInfo 
+                { 
+                    Name = "Cluster02", 
+                    HostCount = 6, 
+                    VmCount = 72, 
+                    DatastoreCount = 12 
+                });
+            }
+
+            return clusters;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get clusters for {ConnectionType}", connectionType);
+            throw;
+        }
+    }
+
+    public async Task<List<ClusterItem>> GetClusterItemsAsync(Dictionary<string, object> parameters)
+    {
+        try
+        {
+            var sessionId = Guid.NewGuid().ToString()[..8];
+            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-ClusterItems.ps1");
+
+            var result = await RunScriptExternalAsync(scriptPath, parameters);
+
+            var clusterItems = new List<ClusterItem>();
+            
+            // Parse the result to extract cluster items
+            if (result.Contains("SUCCESS"))
+            {
+                // Example items - in reality this would parse PowerShell output
+                if ((bool)(parameters["IncludeRoles"] ?? false))
+                {
+                    clusterItems.Add(new ClusterItem 
+                    { 
+                        Id = "role-1",
+                        Name = "Administrator", 
+                        Type = "Role", 
+                        Path = "/Roles/Administrator",
+                        ItemCount = 5 
+                    });
+                    clusterItems.Add(new ClusterItem 
+                    { 
+                        Id = "role-2",
+                        Name = "ReadOnly", 
+                        Type = "Role", 
+                        Path = "/Roles/ReadOnly",
+                        ItemCount = 3 
+                    });
+                }
+                
+                if ((bool)(parameters["IncludeFolders"] ?? false))
+                {
+                    clusterItems.Add(new ClusterItem 
+                    { 
+                        Id = "folder-1",
+                        Name = "Production", 
+                        Type = "Folder", 
+                        Path = "/vm/Production",
+                        ItemCount = 12 
+                    });
+                    clusterItems.Add(new ClusterItem 
+                    { 
+                        Id = "folder-2",
+                        Name = "Development", 
+                        Type = "Folder", 
+                        Path = "/vm/Development",
+                        ItemCount = 8 
+                    });
+                }
+                
+                if ((bool)(parameters["IncludeTags"] ?? false))
+                {
+                    clusterItems.Add(new ClusterItem 
+                    { 
+                        Id = "tag-1",
+                        Name = "Environment:Production", 
+                        Type = "Tag", 
+                        Path = "/Tags/Environment",
+                        ItemCount = 8 
+                    });
+                    clusterItems.Add(new ClusterItem 
+                    { 
+                        Id = "tag-2",
+                        Name = "Application:Database", 
+                        Type = "Tag", 
+                        Path = "/Tags/Application",
+                        ItemCount = 4 
+                    });
+                }
+
+                if ((bool)(parameters["IncludePermissions"] ?? false))
+                {
+                    clusterItems.Add(new ClusterItem 
+                    { 
+                        Id = "perm-1",
+                        Name = "VM Operations", 
+                        Type = "Permission", 
+                        Path = "/permissions/vm-ops",
+                        ItemCount = 15 
+                    });
+                }
+
+                if ((bool)(parameters["IncludeCustomAttributes"] ?? false))
+                {
+                    clusterItems.Add(new ClusterItem 
+                    { 
+                        Id = "attr-1",
+                        Name = "Cost Center", 
+                        Type = "CustomAttribute", 
+                        Path = "/custom-attributes/cost-center",
+                        ItemCount = 2 
+                    });
+                }
+            }
+
+            return clusterItems;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get cluster items");
+            throw;
+        }
+    }
+
+    public async Task<string> MigrateVCenterObjectAsync(Dictionary<string, object> parameters)
+    {
+        try
+        {
+            var sessionId = Guid.NewGuid().ToString()[..8];
+            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Migrate-VCenterObject.ps1");
+
+            var result = await RunScriptExternalAsync(scriptPath, parameters);
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to migrate vCenter object {ItemName}", parameters.GetValueOrDefault("ItemName"));
+            throw;
+        }
+    }
+
     #endregion
     }
