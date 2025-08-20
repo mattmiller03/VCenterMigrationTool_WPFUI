@@ -105,8 +105,7 @@
                               Command="{Binding ViewModel.ConnectSourceCommand}"
                               HorizontalAlignment="Stretch"
                               Appearance="Primary"
-                              IsEnabled="{Binding ViewModel.SelectedSourceProfile, 
-                               Converter={StaticResource NullToBooleanConverter}}"/>
+                              IsEnabled="{Binding ViewModel.CanConnectSource}"/>
                 </Grid>
             </ui:Card>
 
@@ -171,8 +170,7 @@
                               Command="{Binding ViewModel.ConnectTargetCommand}"
                               HorizontalAlignment="Stretch"
                               Appearance="Primary"
-                              IsEnabled="{Binding ViewModel.SelectedSourceProfile, 
-                               Converter={StaticResource NullToBooleanConverter}}"/>
+                              IsEnabled="{Binding ViewModel.CanConnectTarget}"/>
                 </Grid>
             </ui:Card>
         </Grid>
