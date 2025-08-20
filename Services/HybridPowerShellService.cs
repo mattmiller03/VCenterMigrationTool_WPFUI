@@ -1596,18 +1596,16 @@ public class HybridPowerShellService : IDisposable
 
             try
             {
-                var clusterData = JsonSerializer.Deserialize<List<dynamic>>(jsonResult, 
+                // Direct deserialization to Dictionary list - no double parsing needed
+                var clusterData = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonResult, 
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 
                 var clusters = new List<ClusterInfo>();
                 
                 if (clusterData != null)
                 {
-                    foreach (var cluster in clusterData)
+                    foreach (var clusterDict in clusterData)
                     {
-                        // Parse the cluster data from PowerShell output
-                        var clusterDict = JsonSerializer.Deserialize<Dictionary<string, object>>(cluster.ToString());
-                        
                         clusters.Add(new ClusterInfo
                         {
                             Name = clusterDict.GetValueOrDefault("Name", "Unknown").ToString(),
