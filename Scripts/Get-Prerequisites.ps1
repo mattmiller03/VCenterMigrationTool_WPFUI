@@ -159,11 +159,16 @@ try {
     # Execution Policy
     try {
         $execPolicy = Get-ExecutionPolicy -Scope CurrentUser -ErrorAction SilentlyContinue
-        Write-LogInfo "PowerShell Execution Policy (CurrentUser): $execPolicy" -Category "System"
-        
-        # Warn if execution policy might block scripts
-        if ($execPolicy -eq "Restricted" -or $execPolicy -eq "AllSigned") {
-            Write-LogWarning "Execution policy '$execPolicy' may prevent script execution" -Category "System"
+        if ($execPolicy) {
+            Write-LogInfo "PowerShell Execution Policy (CurrentUser): $execPolicy" -Category "System"
+            
+            # Warn if execution policy might block scripts
+            if ($execPolicy -eq "Restricted" -or $execPolicy -eq "AllSigned") {
+                Write-LogWarning "Execution policy '$execPolicy' may prevent script execution" -Category "System"
+            }
+        }
+        else {
+            Write-LogInfo "PowerShell Execution Policy (CurrentUser): Unknown/Default" -Category "System"
         }
     }
     catch {
@@ -175,7 +180,10 @@ try {
         "PowerShellVersion" = $result.PowerShellVersion
         "PowerCLIInstalled" = $powerCliFound
         "PowerCLIVersion" = if ($powerCliFound) { $powerCliVersion } else { "Not Installed" }
-        "ExecutionPolicy" = try { (Get-ExecutionPolicy -Scope CurrentUser -ErrorAction SilentlyContinue).ToString() } catch { "Unknown" }
+        "ExecutionPolicy" = try { 
+            $policy = Get-ExecutionPolicy -Scope CurrentUser -ErrorAction SilentlyContinue
+            if ($policy) { $policy.ToString() } else { "Unknown" }
+        } catch { "Unknown" }
         "OS" = $env:OS
         "Computer" = $env:COMPUTERNAME
         "User" = $env:USERNAME

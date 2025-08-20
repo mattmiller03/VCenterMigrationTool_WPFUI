@@ -1558,8 +1558,15 @@ public class HybridPowerShellService : IDisposable
         {
             var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-Clusters.ps1");
 
-            // Get-Clusters.ps1 expects an existing vCenter connection
-            var result = await RunScriptOptimizedAsync(scriptPath, new Dictionary<string, object>());
+            // Enhanced Get-Clusters.ps1 can work with existing connections or discover active ones
+            var scriptParameters = new Dictionary<string, object>
+            {
+                ["BypassModuleCheck"] = true,  // PowerCLI should already be loaded
+                ["SuppressConsoleOutput"] = true  // Cleaner output for parsing
+            };
+
+            _logger.LogInformation("Calling Get-Clusters script for {ConnectionType} connection", connectionType);
+            var result = await RunScriptOptimizedAsync(scriptPath, scriptParameters);
 
             // Parse JSON result from PowerShell script
             var jsonResult = ExtractJsonFromOutput(result);

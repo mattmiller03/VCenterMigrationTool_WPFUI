@@ -45,13 +45,46 @@ try {
         Write-LogInfo "Bypassing PowerCLI module check" -Category "Module"
     }
     
-    # Check if already connected
+    # Check if already connected or establish new connection
+    $connectionEstablished = $false
+    
+    # First, check for existing connection
     if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {
         Write-LogInfo "Using existing vCenter connection: $($global:DefaultVIServer.Name)" -Category "Connection"
+        $connectionEstablished = $true
+    }
+    # If no existing connection and credentials provided, establish new connection
+    elseif ($VCenterServer -and $Username -and $Password) {
+        Write-LogInfo "Establishing new vCenter connection to: $VCenterServer" -Category "Connection"
+        try {
+            $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
+            $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
+            $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+            Write-LogSuccess "Connected to vCenter: $($viConnection.Name)" -Category "Connection"
+            $connectionEstablished = $true
+        }
+        catch {
+            Write-LogCritical "Failed to connect to vCenter: $($_.Exception.Message)" -Category "Connection"
+            throw "Failed to establish vCenter connection: $($_.Exception.Message)"
+        }
     }
     else {
-        Write-LogWarning "No active vCenter connection found" -Category "Connection"
-        throw "No vCenter connection available"
+        # Check if we have any VI connections at all
+        $allConnections = Get-VIServer -ErrorAction SilentlyContinue
+        if ($allConnections -and ($allConnections | Where-Object { $_.IsConnected })) {
+            $activeConnection = $allConnections | Where-Object { $_.IsConnected } | Select-Object -First 1
+            Write-LogInfo "Using active vCenter connection: $($activeConnection.Name)" -Category "Connection"
+            $global:DefaultVIServer = $activeConnection
+            $connectionEstablished = $true
+        }
+        else {
+            Write-LogWarning "No active vCenter connection found and no credentials provided" -Category "Connection"
+            throw "No vCenter connection available. Please connect to vCenter first or provide connection credentials."
+        }
+    }
+    
+    if (-not $connectionEstablished) {
+        throw "Unable to establish or find vCenter connection"
     }
     
     # Get all clusters

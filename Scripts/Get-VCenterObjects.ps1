@@ -25,13 +25,35 @@ $totalCount = 0
 try {
     Write-LogInfo "Starting vCenter objects discovery" -Category "Initialization"
     
-    # Check if already connected to vCenter
-    if (-not $global:DefaultVIServer -or -not $global:DefaultVIServer.IsConnected) {
-        Write-LogError "No active vCenter connection found" -Category "Connection"
-        throw "No vCenter connection available. Please connect to vCenter first."
+    # Check for existing connection or discover active connections
+    $connectionEstablished = $false
+    
+    # First, check the default connection
+    if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {
+        Write-LogInfo "Using existing default vCenter connection: $($global:DefaultVIServer.Name)" -Category "Connection"
+        $connectionEstablished = $true
+    }
+    else {
+        # Check if we have any VI connections at all
+        Write-LogInfo "Checking for active vCenter connections..." -Category "Connection"
+        $allConnections = Get-VIServer -ErrorAction SilentlyContinue
+        if ($allConnections -and ($allConnections | Where-Object { $_.IsConnected })) {
+            $activeConnection = $allConnections | Where-Object { $_.IsConnected } | Select-Object -First 1
+            Write-LogInfo "Found active vCenter connection: $($activeConnection.Name)" -Category "Connection"
+            $global:DefaultVIServer = $activeConnection
+            $connectionEstablished = $true
+        }
+        else {
+            Write-LogError "No active vCenter connection found" -Category "Connection"
+            throw "No vCenter connection available. Please connect to vCenter first."
+        }
     }
     
-    Write-LogInfo "Using existing vCenter connection: $($global:DefaultVIServer.Name)" -Category "Connection"
+    if (-not $connectionEstablished) {
+        throw "Unable to establish or find vCenter connection"
+    }
+    
+    Write-LogInfo "Using vCenter connection: $($global:DefaultVIServer.Name)" -Category "Connection"
     
     # Get cluster if specified
     $cluster = $null
