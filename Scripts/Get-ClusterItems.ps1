@@ -9,22 +9,12 @@
     Version: 2.0 (Integrated with standard logging)
 #>
 param(
-    [Parameter(Mandatory=$true)]
     [string]$VCenterServer,
-
-    [Parameter(Mandatory=$true)]
     [string]$Username,
-
-    [Parameter(Mandatory=$true)]
     [string]$Password,
-
-    [Parameter(Mandatory=$true)]
     [string]$ClusterName,
-    
-    [Parameter()]
-    [string]$LogPath,
-
-    [Parameter()]
+    [bool]$BypassModuleCheck = $false,
+    [string]$LogPath = "",
     [bool]$SuppressConsoleOutput = $false
 )
 
@@ -37,67 +27,250 @@ Start-ScriptLogging -ScriptName "Get-ClusterItems" -LogPath $LogPath -SuppressCo
 $scriptSuccess = $false
 $finalSummary = ""
 $viConnection = $null
-$jsonOutput = "[]"
-$itemCount = 0
+$result = @()
+$connectionUsed = $null
 
 try {
-    # Import PowerCLI
-    Write-LogInfo "Importing PowerCLI modules..." -Category "Initialization"
-    Import-Module VMware.VimAutomation.Core -ErrorAction Stop
-    Write-LogSuccess "PowerCLI modules imported successfully." -Category "Initialization"
+    Write-LogInfo "Starting cluster items discovery" -Category "Initialization"
+    
+    # Handle PowerCLI module loading based on bypass setting
+    if ($BypassModuleCheck) {
+        Write-LogInfo "BypassModuleCheck is enabled - skipping PowerCLI module import" -Category "Module"
+        
+        # Quick check if PowerCLI commands are available
+        if (-not (Get-Command "Get-VIServer" -ErrorAction SilentlyContinue)) {
+            Write-LogError "PowerCLI commands not available but BypassModuleCheck is enabled" -Category "Module"
+            throw "PowerCLI commands are required. Either import PowerCLI modules first or set BypassModuleCheck to false."
+        }
+        
+        Write-LogSuccess "PowerCLI commands are available" -Category "Module"
+    }
+    else {
+        Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
+        try {
+            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+            Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
+        }
+        catch {
+            Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)" -Category "Module"
+            throw "PowerCLI modules are required but could not be imported: $($_.Exception.Message)"
+        }
+    }
+    
+    # Check for existing vCenter connections first
+    Write-LogInfo "Checking for existing vCenter connections..." -Category "Connection"
+    
+    try {
+        # Check all existing connections
+        $allConnections = @(Get-VIServer)
+        Write-LogInfo "Found $($allConnections.Count) existing vCenter connection(s)" -Category "Connection"
+        
+        if ($allConnections.Count -gt 0) {
+            # Find first connected server
+            $activeConnection = $allConnections | Where-Object { $_.IsConnected } | Select-Object -First 1
+            
+            if ($activeConnection) {
+                $connectionUsed = $activeConnection
+                $viConnection = $activeConnection  # For cleanup compatibility
+                Write-LogSuccess "Using existing vCenter connection: $($activeConnection.Name)" -Category "Connection"
+                Write-LogInfo "  Server: $($activeConnection.Name)" -Category "Connection"
+                Write-LogInfo "  User: $($activeConnection.User)" -Category "Connection"
+            }
+            else {
+                Write-LogWarning "Found vCenter connections but none are active" -Category "Connection"
+            }
+        }
+        else {
+            Write-LogInfo "No existing vCenter connections found" -Category "Connection"
+        }
+    }
+    catch {
+        Write-LogWarning "Error checking existing connections: $($_.Exception.Message)" -Category "Connection"
+    }
+    
+    # If no existing connection and credentials provided, create new connection
+    if (-not $connectionUsed -and $VCenterServer -and $Username -and $Password) {
+        Write-LogInfo "Creating new vCenter connection to: $VCenterServer" -Category "Connection"
+        try {
+            $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
+            $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
+            $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+            $connectionUsed = $viConnection
+            Write-LogSuccess "Successfully connected to vCenter: $($viConnection.Name)" -Category "Connection"
+        }
+        catch {
+            Write-LogError "Failed to connect to vCenter $VCenterServer : $($_.Exception.Message)" -Category "Connection"
+        }
+    }
+    
+    # Final validation
+    if (-not $connectionUsed) {
+        $errorMsg = "No vCenter connection available. Please connect to vCenter first or provide connection parameters."
+        Write-LogCritical $errorMsg -Category "Connection"
+        throw $errorMsg
+    }
 
-    # Connect to vCenter
-    $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-    $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
-    Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
-    Write-LogSuccess "Connected to vCenter: $($viConnection.Name)" -Category "Connection"
+    # Get Cluster if specified
+    $cluster = $null
+    if ($ClusterName) {
+        Write-LogInfo "Retrieving cluster '$ClusterName'..." -Category "Discovery"
+        try {
+            $cluster = Get-Cluster -Name $ClusterName -ErrorAction Stop
+            Write-LogSuccess "Found cluster '$($cluster.Name)'" -Category "Discovery"
+        }
+        catch {
+            Write-LogError "Cluster '$ClusterName' not found: $($_.Exception.Message)" -Category "Discovery"
+            throw "Cluster '$ClusterName' not found"
+        }
+    }
+    else {
+        Write-LogInfo "No cluster specified - retrieving items from all clusters" -Category "Discovery"
+    }
 
-    # Get Cluster
-    Write-LogInfo "Retrieving cluster '$ClusterName'..." -Category "Discovery"
-    $cluster = Get-Cluster -Name $ClusterName -ErrorAction Stop
-    Write-LogSuccess "Found cluster '$($cluster.Name)'." -Category "Discovery"
-
-    # Get items
+    # Get cluster items with enhanced error handling
     Write-LogInfo "Retrieving items from cluster..." -Category "Discovery"
-    $items = @()
     
-    $resourcePools = $cluster | Get-ResourcePool
-    Write-LogInfo "Found $($resourcePools.Count) resource pools." -Category "Discovery"
-    $items += $resourcePools | Select-Object @{N='Name';E={$_.Name}}, @{N='Type';E={"ResourcePool"}}
+    # Get Resource Pools
+    try {
+        if ($cluster) {
+            $resourcePools = $cluster | Get-ResourcePool -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "Resources" }
+        } else {
+            $resourcePools = Get-ResourcePool -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "Resources" }
+        }
+        
+        if ($resourcePools) {
+            Write-LogSuccess "Found $($resourcePools.Count) resource pools" -Category "Discovery"
+            foreach ($rp in $resourcePools) {
+                $result += @{
+                    Id = $rp.Id
+                    Name = $rp.Name
+                    Type = "ResourcePool"
+                    Path = "/ResourcePools/$($rp.Name)"
+                    ItemCount = 0
+                    IsSelected = $true
+                    Status = "Ready"
+                }
+            }
+        } else {
+            Write-LogInfo "No resource pools found" -Category "Discovery"
+        }
+    }
+    catch {
+        Write-LogWarning "Error retrieving resource pools: $($_.Exception.Message)" -Category "Discovery"
+    }
     
-    $vds = $cluster | Get-VMHost | Get-VDSwitch | Select-Object -Unique
-    Write-LogInfo "Found $($vds.Count) Virtual Distributed Switches." -Category "Discovery"
-    $items += $vds | Select-Object @{N='Name';E={$_.Name}}, @{N='Type';E={"VDS"}}
+    # Get Virtual Distributed Switches
+    try {
+        if ($cluster) {
+            $vdSwitches = $cluster | Get-VMHost | Get-VDSwitch -ErrorAction SilentlyContinue | Select-Object -Unique
+        } else {
+            $vdSwitches = Get-VDSwitch -ErrorAction SilentlyContinue
+        }
+        
+        if ($vdSwitches) {
+            Write-LogSuccess "Found $($vdSwitches.Count) virtual distributed switches" -Category "Discovery"
+            foreach ($vds in $vdSwitches) {
+                $result += @{
+                    Id = $vds.Id
+                    Name = $vds.Name
+                    Type = "VDS"
+                    Path = "/VDS/$($vds.Name)"
+                    ItemCount = ($vds | Get-VDPortgroup -ErrorAction SilentlyContinue).Count
+                    IsSelected = $true
+                    Status = "Ready"
+                }
+            }
+        } else {
+            Write-LogInfo "No virtual distributed switches found" -Category "Discovery"
+        }
+    }
+    catch {
+        Write-LogWarning "Error retrieving virtual distributed switches: $($_.Exception.Message)" -Category "Discovery"
+    }
     
-    $itemCount = $items.Count
-    $jsonOutput = $items | ConvertTo-Json
+    # Get VM Folders in cluster
+    try {
+        if ($cluster) {
+            $vmFolders = $cluster | Get-Folder -Type VM -ErrorAction SilentlyContinue | Where-Object { 
+                $_.Name -ne "vm" -and $_.Name -ne "Datacenters" 
+            }
+        } else {
+            $vmFolders = Get-Folder -Type VM -ErrorAction SilentlyContinue | Where-Object { 
+                $_.Name -ne "vm" -and $_.Name -ne "Datacenters" 
+            }
+        }
+        
+        if ($vmFolders) {
+            Write-LogSuccess "Found $($vmFolders.Count) VM folders" -Category "Discovery"
+            foreach ($folder in $vmFolders) {
+                $result += @{
+                    Id = $folder.Id
+                    Name = $folder.Name
+                    Type = "Folder"
+                    Path = "/vm/$($folder.Name)"
+                    ItemCount = ($folder | Get-ChildItem -ErrorAction SilentlyContinue).Count
+                    IsSelected = $true
+                    Status = "Ready"
+                }
+            }
+        } else {
+            Write-LogInfo "No VM folders found" -Category "Discovery"
+        }
+    }
+    catch {
+        Write-LogWarning "Error retrieving VM folders: $($_.Exception.Message)" -Category "Discovery"
+    }
 
     $scriptSuccess = $true
-    $finalSummary = "Successfully retrieved $itemCount items from cluster '$ClusterName'."
+    $finalSummary = "Successfully retrieved $($result.Count) items" + $(if ($ClusterName) { " from cluster '$ClusterName'" } else { " from vCenter" })
 
 }
 catch {
     $scriptSuccess = $false
-    $finalSummary = "Script failed with error: $($_.Exception.Message)"
-    Write-LogCritical $finalSummary
-    Write-LogError "Stack trace: $($_.ScriptStackTrace)"
-    throw $_
+    $finalSummary = "Cluster items discovery failed: $($_.Exception.Message)"
+    Write-LogCritical $finalSummary -Category "Error"
+    Write-LogError "Stack trace: $($_.ScriptStackTrace)" -Category "Error"
+    
+    # Return error in JSON format
+    $errorResult = @{
+        Success = $false
+        Error = $_.Exception.Message
+    }
+    Write-Output ($errorResult | ConvertTo-Json -Compress)
+    
+    Stop-ScriptLogging -Success $false -Summary $finalSummary
+    exit 1
 }
 finally {
-    if ($viConnection) {
-        Write-LogInfo "Disconnecting from vCenter..." -Category "Cleanup"
-        Disconnect-VIServer -Server $viConnection -Confirm:$false -Force
+    # Only disconnect if we created the connection (not if we reused existing)
+    if ($viConnection -and $viConnection.IsConnected -and $VCenterServer -and $Username -and $Password) {
+        try {
+            Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
+            Disconnect-VIServer -Server $viConnection -Confirm:$false -Force -ErrorAction Stop
+            Write-LogSuccess "Disconnected from vCenter" -Category "Connection"
+        }
+        catch {
+            Write-LogWarning "Failed to disconnect cleanly: $($_.Exception.Message)" -Category "Connection"
+        }
+    }
+    elseif ($viConnection -and $viConnection.IsConnected) {
+        Write-LogInfo "Keeping existing vCenter connection active" -Category "Connection"
     }
     
-    $finalStats = @{
-        "VCenterServer" = $VCenterServer
-        "ClusterName" = $ClusterName
-        "ItemsFound" = $itemCount
+    # Stop logging and output result
+    if ($scriptSuccess) {
+        $stats = @{
+            "ClusterName" = if ($ClusterName) { $ClusterName } else { "All Clusters" }
+            "TotalItems" = $result.Count
+            "ResourcePools" = ($result | Where-Object { $_.Type -eq "ResourcePool" }).Count
+            "VDSwitches" = ($result | Where-Object { $_.Type -eq "VDS" }).Count
+            "Folders" = ($result | Where-Object { $_.Type -eq "Folder" }).Count
+        }
+        
+        Stop-ScriptLogging -Success $true -Summary $finalSummary -Statistics $stats
+        
+        # Always output as JSON for consistency
+        Write-Output ($result | ConvertTo-Json -Depth 3 -Compress)
     }
-    
-    Stop-ScriptLogging -Success $scriptSuccess -Summary $finalSummary -Statistics $finalStats
 }
-
-# Final output
-Write-Output $jsonOutput

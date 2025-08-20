@@ -60,62 +60,29 @@ $viConnection = $null
 try {
     Write-LogInfo "Starting datacenter discovery" -Category "Initialization"
     
-    # Ensure PowerCLI modules are available
-    Write-LogInfo "Checking PowerCLI module availability..." -Category "Module"
-    
-    # Check if PowerCLI commands are already available
-    $powerCLIAvailable = $false
-    try {
-        $powerCLIAvailable = Get-Command "Get-VIServer" -ErrorAction SilentlyContinue -ne $null
-        if ($powerCLIAvailable) {
-            Write-LogSuccess "PowerCLI commands are already available" -Category "Module"
-        }
-    }
-    catch {
-        $powerCLIAvailable = $false
-    }
-    
-    # Import PowerCLI modules if needed
-    if (-not $powerCLIAvailable) {
-        if ($BypassModuleCheck) {
-            Write-LogWarning "BypassModuleCheck is true but PowerCLI commands not available - forcing import" -Category "Module"
+    # Handle PowerCLI module loading based on bypass setting
+    if ($BypassModuleCheck) {
+        Write-LogInfo "BypassModuleCheck is enabled - skipping PowerCLI module import" -Category "Module"
+        
+        # Quick check if PowerCLI commands are available
+        if (-not (Get-Command "Get-VIServer" -ErrorAction SilentlyContinue)) {
+            Write-LogError "PowerCLI commands not available but BypassModuleCheck is enabled" -Category "Module"
+            throw "PowerCLI commands are required. Either import PowerCLI modules first or set BypassModuleCheck to false."
         }
         
+        Write-LogSuccess "PowerCLI commands are available" -Category "Module"
+    }
+    else {
         Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
         try {
-            # Try to import the core VMware modules
-            $modulesToImport = @("VMware.VimAutomation.Core", "VMware.VimAutomation.Common")
-            
-            foreach ($module in $modulesToImport) {
-                $moduleInfo = Get-Module -Name $module -ListAvailable -ErrorAction SilentlyContinue | Select-Object -First 1
-                if ($moduleInfo) {
-                    Write-LogInfo "Importing module: $module" -Category "Module"
-                    Import-Module $module -Force -ErrorAction Stop
-                }
-            }
-            
-            # Try PowerCLI as fallback
-            if (-not (Get-Command "Get-VIServer" -ErrorAction SilentlyContinue)) {
-                Write-LogInfo "Core modules not sufficient, trying VMware.PowerCLI..." -Category "Module"
-                Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-            }
-            
-            # Configure PowerCLI
-            if (Get-Command "Set-PowerCLIConfiguration" -ErrorAction SilentlyContinue) {
-                Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
-            }
-            
+            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
             Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
         }
         catch {
             Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)" -Category "Module"
             throw "PowerCLI modules are required but could not be imported: $($_.Exception.Message)"
         }
-    }
-    
-    # Final verification
-    if (-not (Get-Command "Get-VIServer" -ErrorAction SilentlyContinue)) {
-        throw "PowerCLI commands are not available. Please ensure VMware PowerCLI is installed."
     }
     
     # Check connection status and establish connection if needed
