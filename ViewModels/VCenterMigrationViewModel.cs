@@ -151,6 +151,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
 
             var parameters = new Dictionary<string, object>
             {
+                { "ConnectionType", "source" },  // Specify source connection for cluster items
                 { "ClusterName", SelectedSourceCluster.Name },
                 { "IncludeRoles", MigrateRoles },
                 { "IncludeFolders", MigrateFolders },
