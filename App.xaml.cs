@@ -91,6 +91,7 @@ public partial class App
 
             // UPDATED: Use HybridPowerShellService instead of PowerShellService
             services.AddSingleton<HybridPowerShellService>();
+            services.AddSingleton<VCenterInventoryService>();
 
             // Main Window and ViewModel
             services.AddSingleton<INavigationWindow, MainWindow>();

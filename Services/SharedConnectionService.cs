@@ -1,5 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
+using Microsoft.Extensions.Logging;
 
 namespace VCenterMigrationTool.Services;
 
@@ -10,10 +12,17 @@ namespace VCenterMigrationTool.Services;
 public class SharedConnectionService
 {
     private readonly CredentialService _credentialService;
+    private readonly VCenterInventoryService _inventoryService;
+    private readonly ILogger<SharedConnectionService> _logger;
 
-    public SharedConnectionService(CredentialService credentialService)
+    public SharedConnectionService(
+        CredentialService credentialService, 
+        VCenterInventoryService inventoryService,
+        ILogger<SharedConnectionService> logger)
     {
         _credentialService = credentialService;
+        _inventoryService = inventoryService;
+        _logger = logger;
     }
     /// <summary>
     /// Gets or sets the currently selected source vCenter connection.
@@ -98,5 +107,151 @@ public class SharedConnectionService
 
         // Retrieve password from Windows Credential Manager
         return _credentialService.GetPassword(connection);
+    }
+
+    /// <summary>
+    /// Set source connection and load its inventory
+    /// </summary>
+    public async Task<bool> SetSourceConnectionAsync(VCenterConnection connection)
+    {
+        try
+        {
+            SourceConnection = connection;
+            
+            // Load inventory in background
+            var password = _credentialService.GetPassword(connection);
+            if (!string.IsNullOrEmpty(password))
+            {
+                _logger.LogInformation("Loading inventory for source vCenter: {ServerName}", connection.ServerAddress);
+                await _inventoryService.LoadInventoryAsync(connection.ServerAddress!, connection.Username!, password, "source");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to set source connection and load inventory for {ServerName}", connection.ServerAddress);
+        }
+        
+        return false;
+    }
+
+    /// <summary>
+    /// Set target connection and load its inventory
+    /// </summary>
+    public async Task<bool> SetTargetConnectionAsync(VCenterConnection connection)
+    {
+        try
+        {
+            TargetConnection = connection;
+            
+            // Load inventory in background
+            var password = _credentialService.GetPassword(connection);
+            if (!string.IsNullOrEmpty(password))
+            {
+                _logger.LogInformation("Loading inventory for target vCenter: {ServerName}", connection.ServerAddress);
+                await _inventoryService.LoadInventoryAsync(connection.ServerAddress!, connection.Username!, password, "target");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to set target connection and load inventory for {ServerName}", connection.ServerAddress);
+        }
+        
+        return false;
+    }
+
+    /// <summary>
+    /// Clear source connection and its inventory
+    /// </summary>
+    public void ClearSourceConnection()
+    {
+        if (SourceConnection != null)
+        {
+            _inventoryService.ClearInventory(SourceConnection.ServerAddress!);
+            SourceConnection = null;
+            _logger.LogInformation("Cleared source connection and inventory");
+        }
+    }
+
+    /// <summary>
+    /// Clear target connection and its inventory
+    /// </summary>
+    public void ClearTargetConnection()
+    {
+        if (TargetConnection != null)
+        {
+            _inventoryService.ClearInventory(TargetConnection.ServerAddress!);
+            TargetConnection = null;
+            _logger.LogInformation("Cleared target connection and inventory");
+        }
+    }
+
+    /// <summary>
+    /// Get inventory for source vCenter
+    /// </summary>
+    public VCenterInventory? GetSourceInventory()
+    {
+        return SourceConnection != null 
+            ? _inventoryService.GetCachedInventory(SourceConnection.ServerAddress!) 
+            : null;
+    }
+
+    /// <summary>
+    /// Get inventory for target vCenter
+    /// </summary>
+    public VCenterInventory? GetTargetInventory()
+    {
+        return TargetConnection != null 
+            ? _inventoryService.GetCachedInventory(TargetConnection.ServerAddress!) 
+            : null;
+    }
+
+    /// <summary>
+    /// Refresh inventory for source vCenter
+    /// </summary>
+    public async Task<bool> RefreshSourceInventoryAsync()
+    {
+        if (SourceConnection == null) return false;
+
+        try
+        {
+            var password = _credentialService.GetPassword(SourceConnection);
+            if (!string.IsNullOrEmpty(password))
+            {
+                await _inventoryService.RefreshInventoryAsync(SourceConnection.ServerAddress!, SourceConnection.Username!, password, "source");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh source inventory for {ServerName}", SourceConnection.ServerAddress);
+        }
+        
+        return false;
+    }
+
+    /// <summary>
+    /// Refresh inventory for target vCenter
+    /// </summary>
+    public async Task<bool> RefreshTargetInventoryAsync()
+    {
+        if (TargetConnection == null) return false;
+
+        try
+        {
+            var password = _credentialService.GetPassword(TargetConnection);
+            if (!string.IsNullOrEmpty(password))
+            {
+                await _inventoryService.RefreshInventoryAsync(TargetConnection.ServerAddress!, TargetConnection.Username!, password, "target");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh target inventory for {ServerName}", TargetConnection.ServerAddress);
+        }
+        
+        return false;
     }
     }

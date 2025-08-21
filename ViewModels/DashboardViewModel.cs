@@ -278,7 +278,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (success)
                 {
-                _sharedConnectionService.SourceConnection = SelectedSourceProfile;
+                // Use the new inventory-enabled method
+                var inventoryLoaded = await _sharedConnectionService.SetSourceConnectionAsync(SelectedSourceProfile);
 
                 var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("source");
 
@@ -286,10 +287,12 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 SourceConnectionStatus = $"✅ Connected - {SelectedSourceProfile.ServerAddress} (v{version})";
                 SourceConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
 
+                var inventoryMessage = inventoryLoaded ? "\n✅ vCenter inventory loaded successfully!" : "\n⚠️  Inventory loading failed";
+                
                 ScriptOutput = $"Persistent connection established!\n" +
                               $"Server: {SelectedSourceProfile.ServerAddress}\n" +
                               $"Session ID: {sessionId}\n" +
-                              $"Version: {version}\n\n" +
+                              $"Version: {version}{inventoryMessage}\n\n" +
                               $"Connection will remain active for all operations.\n" +
                               $"Use 'Disconnect' button to close the connection.";
 
@@ -371,7 +374,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (success)
                 {
-                _sharedConnectionService.TargetConnection = SelectedTargetProfile;
+                // Use the new inventory-enabled method
+                var inventoryLoaded = await _sharedConnectionService.SetTargetConnectionAsync(SelectedTargetProfile);
 
                 var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("target");
 
@@ -379,10 +383,12 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 TargetConnectionStatus = $"✅ Connected - {SelectedTargetProfile.ServerAddress} (v{version})";
                 TargetConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
 
+                var inventoryMessage = inventoryLoaded ? "\n✅ vCenter inventory loaded successfully!" : "\n⚠️  Inventory loading failed";
+
                 ScriptOutput = $"Persistent connection established!\n" +
                               $"Server: {SelectedTargetProfile.ServerAddress}\n" +
                               $"Session ID: {sessionId}\n" +
-                              $"Version: {version}\n\n" +
+                              $"Version: {version}{inventoryMessage}\n\n" +
                               $"Connection will remain active for all operations.\n" +
                               $"Use 'Disconnect' button to close the connection.";
 
@@ -432,7 +438,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             await _persistentConnectionService.DisconnectAsync("source");
 
-            _sharedConnectionService.SourceConnection = null;
+            _sharedConnectionService.ClearSourceConnection();
 
             IsSourceConnected = false;
             SourceConnectionStatus = "Connection not active";
@@ -472,7 +478,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             await _persistentConnectionService.DisconnectAsync("target");
 
-            _sharedConnectionService.TargetConnection = null;
+            _sharedConnectionService.ClearTargetConnection();
 
             IsTargetConnected = false;
             TargetConnectionStatus = "Connection not active";

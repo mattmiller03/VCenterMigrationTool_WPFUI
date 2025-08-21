@@ -764,13 +764,14 @@ public class HybridPowerShellService : IDisposable
 
         var lines = output.Split('\n', '\r', StringSplitOptions.RemoveEmptyEntries);
 
-        // Look for lines that are complete JSON objects
+        // Look for lines that are complete JSON objects or arrays
         var jsonCandidates = new List<string>();
 
         foreach (var line in lines)
             {
             var trimmedLine = line.Trim();
-            if (trimmedLine.StartsWith("{") && trimmedLine.EndsWith("}"))
+            if ((trimmedLine.StartsWith("{") && trimmedLine.EndsWith("}")) ||
+                (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]")))
                 {
                 // Quick validation - should contain expected JSON structure
                 if (trimmedLine.Contains("\"") && trimmedLine.Length > 10)
@@ -797,9 +798,35 @@ public class HybridPowerShellService : IDisposable
                 }
             }
 
-        // Look for multi-line JSON (fallback)
-        int jsonStart = output.IndexOf('{');
-        int jsonEnd = output.IndexOf('}');
+        // Look for multi-line JSON objects or arrays (fallback)
+        var jsonStart = -1;
+        var jsonEnd = -1;
+        var startChar = ' ';
+        var endChar = ' ';
+
+        // Try to find JSON object first
+        var objStart = output.IndexOf('{');
+        var objEnd = output.LastIndexOf('}');
+        
+        // Try to find JSON array
+        var arrStart = output.IndexOf('[');
+        var arrEnd = output.LastIndexOf(']');
+
+        // Use whichever appears first in the output
+        if (objStart >= 0 && (arrStart < 0 || objStart < arrStart))
+        {
+            jsonStart = objStart;
+            jsonEnd = objEnd;
+            startChar = '{';
+            endChar = '}';
+        }
+        else if (arrStart >= 0)
+        {
+            jsonStart = arrStart;
+            jsonEnd = arrEnd;
+            startChar = '[';
+            endChar = ']';
+        }
 
         if (jsonStart >= 0 && jsonEnd > jsonStart)
             {
@@ -1590,24 +1617,15 @@ public class HybridPowerShellService : IDisposable
                     $connection = Connect-VIServer -Server '{connection.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
                     
                     # Get all clusters from ALL datacenters
-                    Write-Output ""Getting all datacenters...""
                     $datacenters = Get-Datacenter -ErrorAction Stop
-                    Write-Output ""Found $($datacenters.Count) datacenters""
-                    
                     $result = @()
-                    $clusterCount = 0
                     
                     foreach ($datacenter in $datacenters) {{
-                        Write-Output ""Processing datacenter: $($datacenter.Name)""
-                        
                         try {{
                             $clusters = Get-Cluster -Location $datacenter -ErrorAction SilentlyContinue
                             
                             if ($clusters) {{
                                 foreach ($cluster in $clusters) {{
-                                    $clusterCount++
-                                    Write-Output ""Found cluster: $($cluster.Name) in datacenter: $($datacenter.Name)""
-                                    
                                     $clusterObj = [PSCustomObject]@{{
                                         Name = $cluster.Name
                                         Id = $cluster.Id
@@ -1619,15 +1637,12 @@ public class HybridPowerShellService : IDisposable
                                     }}
                                     $result += $clusterObj
                                 }}
-                            }} else {{
-                                Write-Output ""No clusters found in datacenter: $($datacenter.Name)""
                             }}
                         }} catch {{
-                            Write-Output ""Error getting clusters from datacenter $($datacenter.Name): $($_.Exception.Message)""
+                            # Skip this datacenter if there's an error
+                            continue
                         }}
                     }}
-                    
-                    Write-Output ""Total clusters found: $clusterCount across $($datacenters.Count) datacenters""
                     
                     # Force array output even for single items and ensure proper JSON structure
                     if ($result.Count -eq 1) {{

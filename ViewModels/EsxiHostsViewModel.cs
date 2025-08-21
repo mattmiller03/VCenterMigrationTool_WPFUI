@@ -230,286 +230,125 @@ public partial class EsxiHostsViewModel : ObservableObject
         }
 
     /// <summary>
-    /// Load source clusters and their hosts
+    /// Load source clusters and their hosts from inventory cache
     /// </summary>
     private async Task LoadSourceClusters ()
         {
         try
             {
-            var script = @"
-                $clusters = Get-Cluster -ErrorAction SilentlyContinue
-                $result = @()
-                
-                foreach ($cluster in $clusters) {
-                    $hosts = Get-VMHost -Location $cluster -ErrorAction SilentlyContinue
-                    
-                    $clusterInfo = @{
-                        Name = $cluster.Name
-                        Id = $cluster.Id
-                        HostCount = $hosts.Count
-                        TotalCpuGhz = [math]::Round(($hosts | Measure-Object -Property CpuTotalMhz -Sum).Sum / 1000, 2)
-                        TotalMemoryGB = [math]::Round(($hosts | Measure-Object -Property MemoryTotalGB -Sum).Sum, 2)
-                        Hosts = @()
-                    }
-                    
-                    foreach ($vmhost in $hosts) {
-                        $hostInfo = @{
-                            Name = $vmhost.Name
-                            Id = $vmhost.Id
-                            ConnectionState = $vmhost.ConnectionState.ToString()
-                            PowerState = $vmhost.PowerState.ToString()
-                            CpuCores = $vmhost.NumCpu
-                            CpuMhz = $vmhost.CpuTotalMhz
-                            MemoryGB = [math]::Round($vmhost.MemoryTotalGB, 2)
-                            Version = $vmhost.Version
-                            Build = $vmhost.Build
-                            Model = $vmhost.Model
-                            Vendor = $vmhost.Manufacturer
-                            VMs = (Get-VM -Location $vmhost -ErrorAction SilentlyContinue).Count
-                        }
-                        $clusterInfo.Hosts += $hostInfo
-                    }
-                    
-                    $result += $clusterInfo
-                }
-                
-                # Also get standalone hosts (not in any cluster)
-                $standaloneHosts = Get-VMHost -ErrorAction SilentlyContinue | Where-Object { $_.Parent -isnot [VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster] }
-                
-                if ($standaloneHosts.Count -gt 0) {
-                    $standaloneCluster = @{
-                        Name = 'Standalone Hosts'
-                        Id = 'standalone'
-                        HostCount = $standaloneHosts.Count
-                        TotalCpuGhz = [math]::Round(($standaloneHosts | Measure-Object -Property CpuTotalMhz -Sum).Sum / 1000, 2)
-                        TotalMemoryGB = [math]::Round(($standaloneHosts | Measure-Object -Property MemoryTotalGB -Sum).Sum, 2)
-                        Hosts = @()
-                    }
-                    
-                    foreach ($vmhost in $standaloneHosts) {
-                        $hostInfo = @{
-                            Name = $vmhost.Name
-                            Id = $vmhost.Id
-                            ConnectionState = $vmhost.ConnectionState.ToString()
-                            PowerState = $vmhost.PowerState.ToString()
-                            CpuCores = $vmhost.NumCpu
-                            CpuMhz = $vmhost.CpuTotalMhz
-                            MemoryGB = [math]::Round($vmhost.MemoryTotalGB, 2)
-                            Version = $vmhost.Version
-                            Build = $vmhost.Build
-                            Model = $vmhost.Model
-                            Vendor = $vmhost.Manufacturer
-                            VMs = (Get-VM -Location $vmhost -ErrorAction SilentlyContinue).Count
-                        }
-                        $standaloneCluster.Hosts += $hostInfo
-                    }
-                    
-                    $result += $standaloneCluster
-                }
-                
-                $result | ConvertTo-Json -Depth 10
-            ";
-
-            var result = await _persistentConnectionService.ExecuteCommandAsync("source", script);
-
-            if (result.StartsWith("ERROR:"))
-                {
-                _logger.LogError("Failed to load source clusters: {Error}", result);
-                return;
-                }
-
-            // Parse the JSON result
-            var clusters = JsonSerializer.Deserialize<List<dynamic>>(result);
-
+            _logger.LogInformation("Loading source clusters from inventory cache...");
+            
+            var sourceInventory = _sharedConnectionService.GetSourceInventory();
             SourceClusters.Clear();
 
-            if (clusters != null)
+            if (sourceInventory != null)
+            {
+                _logger.LogInformation("Found {Count} clusters in source inventory", sourceInventory.Clusters.Count);
+                
+                foreach (var cluster in sourceInventory.Clusters)
                 {
-                foreach (var cluster in clusters)
-                    {
+                    // Get hosts for this cluster from the inventory
+                    var hostsInCluster = sourceInventory.GetHostsInCluster(cluster.Name);
+                    
+                    // Create cluster with hosts
                     var clusterInfo = new ClusterInfo
-                        {
-                        Name = cluster.GetProperty("Name").GetString(),
-                        Id = cluster.GetProperty("Id").GetString(),
-                        HostCount = cluster.GetProperty("HostCount").GetInt32(),
-                        TotalCpuGhz = cluster.GetProperty("TotalCpuGhz").GetDouble(),
-                        TotalMemoryGB = cluster.GetProperty("TotalMemoryGB").GetDouble()
-                        };
+                    {
+                        Name = cluster.Name,
+                        Id = cluster.Id,
+                        DatacenterName = cluster.DatacenterName,
+                        HostCount = hostsInCluster.Count,
+                        VmCount = cluster.VmCount,
+                        DatastoreCount = cluster.DatastoreCount,
+                        TotalCpuGhz = cluster.TotalCpuGhz,
+                        TotalMemoryGB = cluster.TotalMemoryGB,
+                        HAEnabled = cluster.HAEnabled,
+                        DrsEnabled = cluster.DrsEnabled,
+                        EVCMode = cluster.EVCMode
+                    };
 
-                    var hosts = cluster.GetProperty("Hosts").EnumerateArray();
-                    foreach (var host in hosts)
-                        {
-                        var esxiHost = new EsxiHost
-                            {
-                            Name = host.GetProperty("Name").GetString(),
-                            Id = host.GetProperty("Id").GetString(),
-                            ClusterName = clusterInfo.Name,
-                            ConnectionState = host.GetProperty("ConnectionState").GetString(),
-                            PowerState = host.GetProperty("PowerState").GetString(),
-                            CpuCores = host.GetProperty("CpuCores").GetInt32(),
-                            CpuMhz = host.GetProperty("CpuMhz").GetInt32(),
-                            MemoryGB = host.GetProperty("MemoryGB").GetDouble(),
-                            Version = host.GetProperty("Version").GetString(),
-                            Build = host.GetProperty("Build").GetString(),
-                            Model = host.GetProperty("Model").GetString(),
-                            Vendor = host.GetProperty("Vendor").GetString(),
-                            VmCount = host.GetProperty("VMs").GetInt32()
-                            };
-                        clusterInfo.Hosts.Add(esxiHost);
-                        }
-
-                    SourceClusters.Add(clusterInfo);
-                    SubscribeToHostSelectionEvents(SourceClusters);
+                    // Add hosts from inventory
+                    foreach (var host in hostsInCluster)
+                    {
+                        clusterInfo.Hosts.Add(host);
                     }
 
-                _logger.LogInformation("Loaded {Count} source clusters", SourceClusters.Count);
+                    SourceClusters.Add(clusterInfo);
                 }
+                
+                SubscribeToHostSelectionEvents(SourceClusters);
+                _logger.LogInformation("Loaded {Count} source clusters from inventory cache", SourceClusters.Count);
+            }
+            else
+            {
+                _logger.LogWarning("No source inventory available - connection may not be established or inventory not loaded");
+            }
+            
+            await Task.CompletedTask; // Keep async signature
             }
         catch (Exception ex)
             {
-            _logger.LogError(ex, "Error loading source clusters");
+            _logger.LogError(ex, "Error loading source clusters from inventory");
             }
         }
 
     /// <summary>
-    /// Load target clusters and their hosts
+    /// Load target clusters and their hosts from inventory cache
     /// </summary>
     private async Task LoadTargetClusters ()
         {
         try
             {
-            // Use the same script as source but on target connection
-            var script = @"
-                $clusters = Get-Cluster -ErrorAction SilentlyContinue
-                $result = @()
-                
-                foreach ($cluster in $clusters) {
-                    $hosts = Get-VMHost -Location $cluster -ErrorAction SilentlyContinue
-                    
-                    $clusterInfo = @{
-                        Name = $cluster.Name
-                        Id = $cluster.Id
-                        HostCount = $hosts.Count
-                        TotalCpuGhz = [math]::Round(($hosts | Measure-Object -Property CpuTotalMhz -Sum).Sum / 1000, 2)
-                        TotalMemoryGB = [math]::Round(($hosts | Measure-Object -Property MemoryTotalGB -Sum).Sum, 2)
-                        Hosts = @()
-                    }
-                    
-                    foreach ($vmhost in $hosts) {
-                        $hostInfo = @{
-                            Name = $vmhost.Name
-                            Id = $vmhost.Id
-                            ConnectionState = $vmhost.ConnectionState.ToString()
-                            PowerState = $vmhost.PowerState.ToString()
-                            CpuCores = $vmhost.NumCpu
-                            CpuMhz = $vmhost.CpuTotalMhz
-                            MemoryGB = [math]::Round($vmhost.MemoryTotalGB, 2)
-                            Version = $vmhost.Version
-                            Build = $vmhost.Build
-                            Model = $vmhost.Model
-                            Vendor = $vmhost.Manufacturer
-                            VMs = (Get-VM -Location $vmhost -ErrorAction SilentlyContinue).Count
-                        }
-                        $clusterInfo.Hosts += $hostInfo
-                    }
-                    
-                    $result += $clusterInfo
-                }
-                
-                # Also get standalone hosts
-                $standaloneHosts = Get-VMHost -ErrorAction SilentlyContinue | Where-Object { $_.Parent -isnot [VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster] }
-                
-                if ($standaloneHosts.Count -gt 0) {
-                    $standaloneCluster = @{
-                        Name = 'Standalone Hosts'
-                        Id = 'standalone'
-                        HostCount = $standaloneHosts.Count
-                        TotalCpuGhz = [math]::Round(($standaloneHosts | Measure-Object -Property CpuTotalMhz -Sum).Sum / 1000, 2)
-                        TotalMemoryGB = [math]::Round(($standaloneHosts | Measure-Object -Property MemoryTotalGB -Sum).Sum, 2)
-                        Hosts = @()
-                    }
-                    
-                    foreach ($vmhost in $standaloneHosts) {
-                        $hostInfo = @{
-                            Name = $vmhost.Name
-                            Id = $vmhost.Id
-                            ConnectionState = $vmhost.ConnectionState.ToString()
-                            PowerState = $vmhost.PowerState.ToString()
-                            CpuCores = $vmhost.NumCpu
-                            CpuMhz = $vmhost.CpuTotalMhz
-                            MemoryGB = [math]::Round($vmhost.MemoryTotalGB, 2)
-                            Version = $vmhost.Version
-                            Build = $vmhost.Build
-                            Model = $vmhost.Model
-                            Vendor = $vmhost.Manufacturer
-                            VMs = (Get-VM -Location $vmhost -ErrorAction SilentlyContinue).Count
-                        }
-                        $standaloneCluster.Hosts += $hostInfo
-                    }
-                    
-                    $result += $standaloneCluster
-                }
-                
-                $result | ConvertTo-Json -Depth 10
-            ";
-
-            var result = await _persistentConnectionService.ExecuteCommandAsync("target", script);
-
-            if (result.StartsWith("ERROR:"))
-                {
-                _logger.LogError("Failed to load target clusters: {Error}", result);
-                return;
-                }
-
-            // Parse the JSON result
-            var clusters = JsonSerializer.Deserialize<List<dynamic>>(result);
-
+            _logger.LogInformation("Loading target clusters from inventory cache...");
+            
+            var targetInventory = _sharedConnectionService.GetTargetInventory();
             TargetClusters.Clear();
 
-            if (clusters != null)
+            if (targetInventory != null)
+            {
+                _logger.LogInformation("Found {Count} clusters in target inventory", targetInventory.Clusters.Count);
+                
+                foreach (var cluster in targetInventory.Clusters)
                 {
-                foreach (var cluster in clusters)
-                    {
+                    // Get hosts for this cluster from the inventory
+                    var hostsInCluster = targetInventory.GetHostsInCluster(cluster.Name);
+                    
+                    // Create cluster with hosts
                     var clusterInfo = new ClusterInfo
-                        {
-                        Name = cluster.GetProperty("Name").GetString(),
-                        Id = cluster.GetProperty("Id").GetString(),
-                        HostCount = cluster.GetProperty("HostCount").GetInt32(),
-                        TotalCpuGhz = cluster.GetProperty("TotalCpuGhz").GetDouble(),
-                        TotalMemoryGB = cluster.GetProperty("TotalMemoryGB").GetDouble()
-                        };
+                    {
+                        Name = cluster.Name,
+                        Id = cluster.Id,
+                        DatacenterName = cluster.DatacenterName,
+                        HostCount = hostsInCluster.Count,
+                        VmCount = cluster.VmCount,
+                        DatastoreCount = cluster.DatastoreCount,
+                        TotalCpuGhz = cluster.TotalCpuGhz,
+                        TotalMemoryGB = cluster.TotalMemoryGB,
+                        HAEnabled = cluster.HAEnabled,
+                        DrsEnabled = cluster.DrsEnabled,
+                        EVCMode = cluster.EVCMode
+                    };
 
-                    var hosts = cluster.GetProperty("Hosts").EnumerateArray();
-                    foreach (var host in hosts)
-                        {
-                        var esxiHost = new EsxiHost
-                            {
-                            Name = host.GetProperty("Name").GetString(),
-                            Id = host.GetProperty("Id").GetString(),
-                            ClusterName = clusterInfo.Name,
-                            ConnectionState = host.GetProperty("ConnectionState").GetString(),
-                            PowerState = host.GetProperty("PowerState").GetString(),
-                            CpuCores = host.GetProperty("CpuCores").GetInt32(),
-                            CpuMhz = host.GetProperty("CpuMhz").GetInt32(),
-                            MemoryGB = host.GetProperty("MemoryGB").GetDouble(),
-                            Version = host.GetProperty("Version").GetString(),
-                            Build = host.GetProperty("Build").GetString(),
-                            Model = host.GetProperty("Model").GetString(),
-                            Vendor = host.GetProperty("Vendor").GetString(),
-                            VmCount = host.GetProperty("VMs").GetInt32()
-                            };
-                        clusterInfo.Hosts.Add(esxiHost);
-                        }
-
-                    TargetClusters.Add(clusterInfo);
+                    // Add hosts from inventory
+                    foreach (var host in hostsInCluster)
+                    {
+                        clusterInfo.Hosts.Add(host);
                     }
 
-                _logger.LogInformation("Loaded {Count} target clusters", TargetClusters.Count);
+                    TargetClusters.Add(clusterInfo);
                 }
+                
+                _logger.LogInformation("Loaded {Count} target clusters from inventory cache", TargetClusters.Count);
+            }
+            else
+            {
+                _logger.LogWarning("No target inventory available - connection may not be established or inventory not loaded");
+            }
+            
+            await Task.CompletedTask; // Keep async signature
             }
         catch (Exception ex)
             {
-            _logger.LogError(ex, "Error loading target clusters");
+            _logger.LogError(ex, "Error loading target clusters from inventory");
             }
         }
 
@@ -518,6 +357,54 @@ public partial class EsxiHostsViewModel : ObservableObject
     {
         // Use the general IsLoading for refresh operations
         await CheckConnectionsAndLoadData();
+    }
+
+    [RelayCommand]
+    private async Task RefreshInventory()
+    {
+        try
+        {
+            IsLoading = true;
+            MigrationStatus = "Refreshing vCenter inventory...";
+            
+            var tasks = new List<Task<bool>>();
+            
+            if (IsSourceConnected)
+            {
+                tasks.Add(_sharedConnectionService.RefreshSourceInventoryAsync());
+            }
+            
+            if (IsTargetConnected)
+            {
+                tasks.Add(_sharedConnectionService.RefreshTargetInventoryAsync());
+            }
+            
+            var results = await Task.WhenAll(tasks);
+            var successCount = results.Count(r => r);
+            
+            if (successCount == tasks.Count)
+            {
+                MigrationStatus = "Inventory refreshed successfully";
+                _logger.LogInformation("Inventory refresh completed successfully");
+                
+                // Reload the UI data from the refreshed cache
+                await LoadClustersAndHosts();
+            }
+            else
+            {
+                MigrationStatus = "Inventory refresh failed - some connections could not be refreshed";
+                _logger.LogWarning("Inventory refresh partially failed: {Success}/{Total} succeeded", successCount, tasks.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh inventory");
+            MigrationStatus = $"Inventory refresh failed: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     [RelayCommand]

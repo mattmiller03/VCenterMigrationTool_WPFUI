@@ -96,46 +96,48 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
         try
         {
             IsLoadingClusters = true;
-            OverallStatus = "Loading clusters...";
+            OverallStatus = "Loading vCenter clusters from inventory cache...";
 
-            // Load source clusters
-            _logger.LogInformation("Calling GetClustersAsync for source connection...");
-            var sourceClusters = await _powerShellService.GetClustersAsync();
-            _logger.LogInformation("GetClustersAsync returned {Count} source clusters", sourceClusters?.Count ?? 0);
-            
+            // Load source clusters from cached inventory
+            var sourceInventory = _sharedConnectionService.GetSourceInventory();
             SourceClusters.Clear();
-            if (sourceClusters != null && sourceClusters.Count > 0)
+            
+            if (sourceInventory != null)
             {
-                foreach (var cluster in sourceClusters)
+                _logger.LogInformation("Loading {Count} source clusters from cached inventory", sourceInventory.Clusters.Count);
+                
+                foreach (var cluster in sourceInventory.Clusters)
                 {
-                    _logger.LogInformation("Adding source cluster: {Name} (ID: {Id})", cluster.Name, cluster.Id);
+                    _logger.LogInformation("Adding source cluster: {Name} (DC: {DatacenterName})", cluster.Name, cluster.DatacenterName);
                     SourceClusters.Add(cluster);
                 }
             }
             else
             {
-                _logger.LogWarning("No source clusters returned from GetClustersAsync");
+                _logger.LogWarning("No source inventory available - connection may not be established or inventory not loaded");
+                OverallStatus = "Source vCenter inventory not available. Please check connection.";
             }
 
-            // Load target clusters if target is connected
-            if (IsTargetConnected)
+            // Load target clusters from cached inventory if target is connected
+            var targetInventory = _sharedConnectionService.GetTargetInventory();
+            TargetClusters.Clear();
+            
+            if (IsTargetConnected && targetInventory != null)
             {
-                _logger.LogInformation("Calling GetClustersAsync for target connection...");
-                var targetClusters = await _powerShellService.GetClustersAsync("target");
-                _logger.LogInformation("GetClustersAsync returned {Count} target clusters", targetClusters?.Count ?? 0);
+                _logger.LogInformation("Loading {Count} target clusters from cached inventory", targetInventory.Clusters.Count);
                 
-                TargetClusters.Clear();
-                if (targetClusters != null && targetClusters.Count > 0)
+                foreach (var cluster in targetInventory.Clusters)
                 {
-                    foreach (var cluster in targetClusters)
-                    {
-                        _logger.LogInformation("Adding target cluster: {Name} (ID: {Id})", cluster.Name, cluster.Id);
-                        TargetClusters.Add(cluster);
-                    }
+                    _logger.LogInformation("Adding target cluster: {Name} (DC: {DatacenterName})", cluster.Name, cluster.DatacenterName);
+                    TargetClusters.Add(cluster);
                 }
             }
+            else if (IsTargetConnected)
+            {
+                _logger.LogWarning("No target inventory available despite target connection");
+            }
 
-            OverallStatus = $"Loaded {SourceClusters.Count} source clusters and {TargetClusters.Count} target clusters";
+            OverallStatus = $"Loaded {SourceClusters.Count} source clusters and {TargetClusters.Count} target clusters from inventory cache";
             _logger.LogInformation("Final count - Source: {SourceCount} clusters, Target: {TargetCount} clusters", 
                 SourceClusters.Count, TargetClusters.Count);
         }
@@ -210,6 +212,54 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
     {
         await LoadConnectionStatusAsync();
         await LoadClustersAsync();
+    }
+
+    [RelayCommand]
+    private async Task RefreshInventory()
+    {
+        try
+        {
+            IsLoadingClusters = true;
+            OverallStatus = "Refreshing vCenter inventory...";
+            
+            var tasks = new List<Task<bool>>();
+            
+            if (IsSourceConnected)
+            {
+                tasks.Add(_sharedConnectionService.RefreshSourceInventoryAsync());
+            }
+            
+            if (IsTargetConnected)
+            {
+                tasks.Add(_sharedConnectionService.RefreshTargetInventoryAsync());
+            }
+            
+            var results = await Task.WhenAll(tasks);
+            var successCount = results.Count(r => r);
+            
+            if (successCount == tasks.Count)
+            {
+                OverallStatus = "Inventory refreshed successfully";
+                _logger.LogInformation("Inventory refresh completed successfully");
+                
+                // Reload the UI data from the refreshed cache
+                await LoadClusters();
+            }
+            else
+            {
+                OverallStatus = "Inventory refresh failed - some connections could not be refreshed";
+                _logger.LogWarning("Inventory refresh partially failed: {Success}/{Total} succeeded", successCount, tasks.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh inventory");
+            OverallStatus = $"Inventory refresh failed: {ex.Message}";
+        }
+        finally
+        {
+            IsLoadingClusters = false;
+        }
     }
 
     [RelayCommand]
