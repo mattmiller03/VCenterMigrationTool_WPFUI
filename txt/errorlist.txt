@@ -14,16 +14,16 @@
 2025-08-21 10:25:23.072 -04:00 [INF] STARTUP: PowerCLI detected and confirmed installed on startup
 2025-08-21 10:25:23.075 -04:00 [INF] PERSISTENCE: PowerCLI status saved as true
 2025-08-21 10:25:26.307 -04:00 [INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
-2025-08-21 10:25:26.322 -04:00 [INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+2025-08-21 10:25:26.322 -04:00 [INF] Establishing persistent external connection to klisv0pp21 (source)
 2025-08-21 10:25:26.344 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 27316)
 2025-08-21 10:25:26.347 -04:00 [INF] Bypassing module import (assumed already loaded)
 2025-08-21 10:25:26.349 -04:00 [INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
-2025-08-21 10:25:35.987 -04:00 [INF] ✅ Persistent connection established to klisv0pp212.dir.ad.dla.mil (Session: "13539b797540ce04b5b654a4cb0725c5e8e07354")
-2025-08-21 10:25:35.991 -04:00 [INF] Loading inventory for source vCenter: klisv0pp212.dir.ad.dla.mil
-2025-08-21 10:25:35.994 -04:00 [INF] Loading complete inventory for vCenter: klisv0pp212.dir.ad.dla.mil (connection: source)
-2025-08-21 10:25:36.114 -04:00 [INF] Loading inventory components sequentially for klisv0pp212.dir.ad.dla.mil
+2025-08-21 10:25:35.987 -04:00 [INF] ✅ Persistent connection established to klisv0pp21 (Session: "13539b797540ce04b5b654a4cb0725c5e8e07354")
+2025-08-21 10:25:35.991 -04:00 [INF] Loading inventory for source vCenter: klisv0pp21
+2025-08-21 10:25:35.994 -04:00 [INF] Loading complete inventory for vCenter: klisv0pp21 (connection: source)
+2025-08-21 10:25:36.114 -04:00 [INF] Loading inventory components sequentially for klisv0pp21
 2025-08-21 10:25:45.445 -04:00 [INF] Loaded 5 datacenters for klisv0pp212.dir.ad.dla.mil
-2025-08-21 10:25:55.023 -04:00 [INF] Loaded 4 clusters for klisv0pp212.dir.ad.dla.mil
+2025-08-21 10:25:55.023 -04:00 [INF] Loaded 4 clusters for klisv0pp21
 2025-08-21 10:27:31.964 -04:00 [WRN] PS Error: [31;1mGet-Folder: [0m
 2025-08-21 10:27:31.967 -04:00 [WRN] PS Error: [31;1m[36;1mLine |[0m
 2025-08-21 10:27:31.970 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m .           $folder = if ($_.Folder) { [36;1mGet-Folder -Id $_.Folder[0m } else  .[0m

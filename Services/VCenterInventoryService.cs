@@ -341,7 +341,8 @@ public class VCenterInventoryService
                 $datacenter = if ($cluster) { Get-Datacenter -Cluster $cluster } else { Get-Datacenter -VM $_ }
                 $vmHost = Get-VMHost -VM $_
                 $resourcePool = Get-ResourcePool -VM $_
-                $folder = if ($_.Folder) { Get-Folder -Id $_.Folder } else { $null }
+                # Just use the folder name directly from the VM object instead of trying to get full folder object
+                $folderName = if ($_.Folder) { $_.Folder.ToString() } else { """" }
                 
                 [PSCustomObject]@{
                     Name = $_.Name
@@ -354,7 +355,7 @@ public class VCenterInventoryService
                     HostName = if ($vmHost) { $vmHost.Name } else { """" }
                     ClusterName = if ($cluster) { $cluster.Name } else { """" }
                     DatacenterName = if ($datacenter) { $datacenter.Name } else { """" }
-                    FolderPath = if ($folder) { $folder.Name } else { """" }
+                    FolderPath = $folderName
                     ResourcePoolName = if ($resourcePool) { $resourcePool.Name } else { """" }
                     Tags = @()
                 }
