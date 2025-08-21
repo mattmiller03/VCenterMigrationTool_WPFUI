@@ -259,7 +259,7 @@ public class VCenterInventoryService
     private async Task LoadHostsAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
         var script = @"
-            $hosts = Get-VMHost | ForEach-Object {
+            $esxiHosts = Get-VMHost | ForEach-Object {
                 $cluster = Get-Cluster -VMHost $_
                 $datacenter = Get-Datacenter -Cluster $cluster
                 [PSCustomObject]@{
@@ -277,7 +277,7 @@ public class VCenterInventoryService
                     VmCount = ($_ | Get-VM | Measure-Object).Count
                 }
             }
-            $hosts | ConvertTo-Json -Depth 2
+            $esxiHosts | ConvertTo-Json -Depth 2
         ";
 
         try
@@ -339,9 +339,9 @@ public class VCenterInventoryService
             $vms = Get-VM | ForEach-Object {
                 $cluster = Get-Cluster -VM $_
                 $datacenter = Get-Datacenter -Cluster $cluster
-                $host = Get-VMHost -VM $_
+                $vmHost = Get-VMHost -VM $_
                 $resourcePool = Get-ResourcePool -VM $_
-                $folder = Get-Folder -VM $_
+                $folder = $_ | Get-Folder
                 
                 [PSCustomObject]@{
                     Name = $_.Name
@@ -351,7 +351,7 @@ public class VCenterInventoryService
                     CpuCount = $_.NumCpu
                     MemoryGB = [math]::Round($_.MemoryGB, 2)
                     DiskGB = [math]::Round(($_ | Get-HardDisk | Measure-Object -Property CapacityGB -Sum).Sum, 2)
-                    HostName = $host.Name
+                    HostName = $vmHost.Name
                     ClusterName = $cluster.Name
                     DatacenterName = $datacenter.Name
                     FolderPath = $folder.Name
