@@ -29,5 +29,20 @@ namespace VCenterMigrationTool.Views.Pages
         {
             _navigationService.Navigate(typeof(NetworkMigrationPage));
         }
+
+        private void NavigateToInfrastructureMigration(object sender, RoutedEventArgs e)
+        {
+            _navigationService.Navigate(typeof(InfrastructureMigrationPage));
+        }
+
+        private void NavigateToVirtualMachinesMigration(object sender, RoutedEventArgs e)
+        {
+            _navigationService.Navigate(typeof(VirtualMachinesMigrationPage));
+        }
+
+        private void NavigateToAdminConfigMigration(object sender, RoutedEventArgs e)
+        {
+            _navigationService.Navigate(typeof(AdminConfigMigrationPage));
+        }
     }
 }
