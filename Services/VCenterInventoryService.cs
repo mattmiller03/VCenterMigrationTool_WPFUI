@@ -311,7 +311,7 @@ public class VCenterInventoryService
                     ConnectionState = $esxiHost.Runtime.ConnectionState.ToString()
                     PowerState = $esxiHost.Runtime.PowerState.ToString()
                     CpuCores = $esxiHost.Hardware.CpuInfo.NumCpuCores
-                    CpuMhz = $esxiHost.Hardware.CpuInfo.Hz / 1000000
+                    CpuMhz = [int]($esxiHost.Hardware.CpuInfo.Hz / 1000000)
                     MemoryGB = [math]::Round($esxiHost.Hardware.MemorySize / 1024 / 1024 / 1024, 2)
                     VmCount = $vmCount
                 }
@@ -347,11 +347,11 @@ public class VCenterInventoryService
                 # Count VMs and get connected hosts using API
                 $vmCount = 0
                 $connectedHosts = @()
-                foreach ($hostMoRef in $datastore.Host) {
-                    $hostView = Get-View $hostMoRef
+                foreach ($hostMount in $datastore.Host) {
+                    $hostView = Get-View $hostMount.Key
                     $connectedHosts += $hostView.Name
                     # Count VMs on this datastore through the host
-                    $vmCount += (Get-View -ViewType VirtualMachine -SearchRoot $hostMoRef | Where-Object { 
+                    $vmCount += (Get-View -ViewType VirtualMachine -SearchRoot $hostMount.Key | Where-Object { 
                         $_.Datastore -contains $datastore.MoRef 
                     } | Measure-Object).Count
                 }
