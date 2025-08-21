@@ -1779,40 +1779,112 @@ public class HybridPowerShellService : IDisposable
     {
         try
         {
-            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-ClusterItems.ps1");
-
-            // Get connection information (scripts run in isolated sessions, so we need to pass credentials)
-            var connectionType = parameters.GetValueOrDefault("ConnectionType", "source")?.ToString();
-            var connection = await _sharedConnectionService.GetConnectionAsync(connectionType);
-            var password = await _sharedConnectionService.GetPasswordAsync(connectionType);
+            var connectionType = parameters.GetValueOrDefault("ConnectionType", "source")?.ToString() ?? "source";
             
-            if (connection == null || string.IsNullOrEmpty(connection.ServerAddress) || 
-                string.IsNullOrEmpty(connection.Username) || string.IsNullOrEmpty(password))
+            // Check if persistent connection exists
+            var connection = await _sharedConnectionService.GetConnectionAsync(connectionType);
+            if (connection == null)
             {
-                _logger.LogWarning("No {ConnectionType} connection configured or missing credentials", connectionType);
+                _logger.LogWarning("No {ConnectionType} connection configured", connectionType);
                 return new List<ClusterItem>();
             }
 
-            // Build script parameters with vCenter credentials
-            var scriptParameters = new Dictionary<string, object>
-            {
-                ["VCenterServer"] = connection.ServerAddress,
-                ["Username"] = connection.Username,
-                ["Password"] = password,
-                ["BypassModuleCheck"] = true,
-                ["SuppressConsoleOutput"] = true
-            };
+            // Build the PowerShell script content to run in persistent session
+            var script = new StringBuilder();
             
-            // Map UI parameters to script parameters
-            if (parameters.ContainsKey("ClusterName") && !string.IsNullOrEmpty(parameters["ClusterName"]?.ToString()))
+            // Get cluster name parameter
+            var clusterName = parameters.GetValueOrDefault("ClusterName")?.ToString();
+            if (!string.IsNullOrEmpty(clusterName))
             {
-                scriptParameters["ClusterName"] = parameters["ClusterName"];
+                script.AppendLine($"$ClusterName = '{clusterName.Replace("'", "''")}'");
+            }
+            else
+            {
+                script.AppendLine("$ClusterName = $null");
             }
 
-            _logger.LogInformation("Calling Get-ClusterItems script for {ConnectionType} connection to {Server}", 
-                connectionType, connection.ServerAddress);
+            // Add the Get-ClusterItems script content inline to avoid file dependencies
+            script.AppendLine(@"
+                $result = @()
+                
+                # Get Resource Pools
+                try {
+                    if ($ClusterName) {
+                        $cluster = Get-Cluster -Name $ClusterName -ErrorAction SilentlyContinue
+                        if ($cluster) {
+                            $resourcePools = $cluster | Get-ResourcePool -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'Resources' }
+                        } else {
+                            $resourcePools = @()
+                        }
+                    } else {
+                        $resourcePools = Get-ResourcePool -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'Resources' }
+                    }
+                    
+                    if ($resourcePools) {
+                        foreach ($rp in $resourcePools) {
+                            $result += @{
+                                Id = $rp.Id
+                                Name = $rp.Name
+                                Type = 'ResourcePool'
+                                Path = '/ResourcePools/' + $rp.Name
+                                ItemCount = ($rp | Get-VM -ErrorAction SilentlyContinue | Measure-Object).Count
+                                IsSelected = $true
+                                Status = 'Ready'
+                            }
+                        }
+                    }
+                } catch {
+                    Write-Warning ""Error retrieving resource pools: $($_.Exception.Message)""
+                }
+                
+                # Get VM Folders (datacenter-level, not cluster-level)
+                try {
+                    if ($ClusterName) {
+                        $cluster = Get-Cluster -Name $ClusterName -ErrorAction SilentlyContinue
+                        if ($cluster) {
+                            $datacenter = Get-Datacenter -Cluster $cluster -ErrorAction SilentlyContinue
+                            if ($datacenter) {
+                                $vmFolders = Get-Folder -Type VM -Location $datacenter -ErrorAction SilentlyContinue | Where-Object { 
+                                    $_.Name -ne 'vm' -and $_.Name -ne 'Datacenters' 
+                                }
+                            } else {
+                                $vmFolders = Get-Folder -Type VM -ErrorAction SilentlyContinue | Where-Object { 
+                                    $_.Name -ne 'vm' -and $_.Name -ne 'Datacenters' 
+                                }
+                            }
+                        } else {
+                            $vmFolders = @()
+                        }
+                    } else {
+                        $vmFolders = Get-Folder -Type VM -ErrorAction SilentlyContinue | Where-Object { 
+                            $_.Name -ne 'vm' -and $_.Name -ne 'Datacenters' 
+                        }
+                    }
+                    
+                    if ($vmFolders) {
+                        foreach ($folder in $vmFolders) {
+                            $result += @{
+                                Id = $folder.Id
+                                Name = $folder.Name
+                                Type = 'Folder'
+                                Path = '/vm/' + $folder.Name
+                                ItemCount = ($folder | Get-ChildItem -ErrorAction SilentlyContinue).Count
+                                IsSelected = $true
+                                Status = 'Ready'
+                            }
+                        }
+                    }
+                } catch {
+                    Write-Warning ""Error retrieving VM folders: $($_.Exception.Message)""
+                }
+                
+                $result | ConvertTo-Json -Depth 2
+            ");
 
-            var result = await RunScriptOptimizedAsync(scriptPath, scriptParameters);
+            _logger.LogInformation("Calling cluster items query for {ConnectionType} connection, cluster: {ClusterName}", 
+                connectionType, clusterName ?? "all");
+
+            var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script.ToString());
 
             // Parse JSON result from Get-ClusterItems.ps1 script
             var jsonResult = ExtractJsonFromOutput(result);
