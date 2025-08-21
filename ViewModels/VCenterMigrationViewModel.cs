@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Windows;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using Wpf.Ui.Abstractions.Controls;
@@ -181,7 +182,12 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
         {
             IsLoadingClusterItems = true;
             CurrentTaskDetails = $"Loading items from cluster {SelectedSourceCluster.Name}...";
-            ClusterItems.Clear();
+            
+            // Clear items on UI thread
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                ClusterItems.Clear();
+            });
 
             var parameters = new Dictionary<string, object>
             {
@@ -197,13 +203,17 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
 
             var clusterItems = await _powerShellService.GetClusterItemsAsync(parameters);
             
-            foreach (var item in clusterItems)
+            // Update UI on the dispatcher thread
+            await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                ClusterItems.Add(item);
-            }
+                foreach (var item in clusterItems)
+                {
+                    ClusterItems.Add(item);
+                }
 
-            TotalItemsToMigrate = ClusterItems.Count(i => i.IsSelected);
-            CurrentTaskDetails = $"Found {ClusterItems.Count} items in cluster {SelectedSourceCluster.Name}";
+                TotalItemsToMigrate = ClusterItems.Count(i => i.IsSelected);
+                CurrentTaskDetails = $"Found {ClusterItems.Count} items in cluster {SelectedSourceCluster.Name}";
+            });
             
             _logger.LogInformation("Loaded {Count} cluster items from {Cluster}", 
                 ClusterItems.Count, SelectedSourceCluster.Name);
@@ -211,9 +221,14 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load cluster items for cluster {Cluster}", SelectedSourceCluster?.Name);
-            CurrentTaskDetails = $"Failed to load cluster items: {ex.Message}";
-            await _errorHandlingService.ShowErrorDialogAsync(
-                _errorHandlingService.TranslateError(ex.Message, "Load Cluster Items"));
+            
+            // Update UI on the dispatcher thread
+            await Application.Current.Dispatcher.InvokeAsync(async () =>
+            {
+                CurrentTaskDetails = $"Failed to load cluster items: {ex.Message}";
+                await _errorHandlingService.ShowErrorDialogAsync(
+                    _errorHandlingService.TranslateError(ex.Message, "Load Cluster Items"));
+            });
         }
         finally
         {
