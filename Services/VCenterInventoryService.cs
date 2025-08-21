@@ -595,17 +595,36 @@ public class VCenterInventoryService
     {
         var script = @"
             $resourcePools = Get-ResourcePool | ForEach-Object {
-                $cluster = Get-Cluster -ResourcePool $_
-                $datacenter = if ($cluster) { Get-Datacenter -Cluster $cluster } else { $null }
+                $rp = $_
+                $cluster = $null
+                $datacenter = $null
+                
+                # Try to find parent cluster
+                try {
+                    $parent = $rp.Parent
+                    while ($parent -and !$cluster) {
+                        if ($parent.GetType().Name -eq 'ClusterImpl') {
+                            $cluster = $parent
+                            break
+                        }
+                        $parent = $parent.Parent
+                    }
+                    
+                    if ($cluster) {
+                        $datacenter = Get-Datacenter -Cluster $cluster -ErrorAction SilentlyContinue
+                    }
+                } catch {
+                    # If we can't find parent, continue without it
+                }
                 [PSCustomObject]@{
-                    Name = $_.Name
-                    Id = $_.Id
+                    Name = $rp.Name
+                    Id = $rp.Id
                     ClusterName = if ($cluster) { $cluster.Name } else { """" }
                     DatacenterName = if ($datacenter) { $datacenter.Name } else { """" }
-                    ParentPath = $_.Parent.Name
-                    CpuLimitMhz = [int](if ($_.CpuLimitMhz -ne -1) { $_.CpuLimitMhz } else { 0 })
-                    MemoryLimitMB = [int](if ($_.MemoryLimitMB -ne -1) { $_.MemoryLimitMB } else { 0 })
-                    VmCount = [int]($_ | Get-VM | Measure-Object).Count
+                    ParentPath = $rp.Parent.Name
+                    CpuLimitMhz = if ($rp.CpuLimitMhz -ne -1) { [int]$rp.CpuLimitMhz } else { 0 }
+                    MemoryLimitMB = if ($rp.MemoryLimitMB -ne -1) { [int]$rp.MemoryLimitMB } else { 0 }
+                    VmCount = [int]($rp | Get-VM | Measure-Object).Count
                 }
             }
             $resourcePools | ConvertTo-Json -Depth 2
