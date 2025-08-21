@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Security;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using Wpf.Ui.Abstractions.Controls;
@@ -44,9 +45,6 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     private string _targetConnectionStatus = "Connection not active";
 
     [ObservableProperty]
-    private bool _isJobRunning;
-
-    [ObservableProperty]
     private string _currentJobText = "No active jobs.";
 
     [ObservableProperty]
@@ -60,6 +58,9 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     private bool _isTargetConnected;
 
     [ObservableProperty]
+    private bool _isJobRunning;
+
+    [ObservableProperty]
     private string _sourceConnectionDetails = "";
 
     [ObservableProperty]
@@ -70,6 +71,73 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     public bool IsTargetDisconnected => !IsTargetConnected;
     public bool CanConnectSource => SelectedSourceProfile != null && !IsSourceConnected && !IsJobRunning;
     public bool CanConnectTarget => SelectedTargetProfile != null && !IsTargetConnected && !IsJobRunning;
+    public bool CanDisconnectSource => IsSourceConnected && !IsJobRunning;
+    public bool CanDisconnectTarget => IsTargetConnected && !IsJobRunning;
+
+    // Connection status visual properties
+    public Brush SourceConnectionBackgroundBrush => IsSourceConnected 
+        ? new SolidColorBrush(Color.FromRgb(220, 255, 220)) // Light green
+        : new SolidColorBrush(Color.FromRgb(255, 245, 245)); // Light red
+
+    public Brush SourceConnectionBorderBrush => IsSourceConnected 
+        ? new SolidColorBrush(Color.FromRgb(144, 238, 144)) // Light green border
+        : new SolidColorBrush(Color.FromRgb(255, 182, 193)); // Light pink border
+
+    public Brush SourceConnectionTextBrush => IsSourceConnected 
+        ? new SolidColorBrush(Color.FromRgb(0, 100, 0)) // Dark green text
+        : new SolidColorBrush(Color.FromRgb(139, 69, 19)); // Brown text
+
+    public Brush TargetConnectionBackgroundBrush => IsTargetConnected 
+        ? new SolidColorBrush(Color.FromRgb(220, 255, 220)) // Light green
+        : new SolidColorBrush(Color.FromRgb(255, 245, 245)); // Light red
+
+    public Brush TargetConnectionBorderBrush => IsTargetConnected 
+        ? new SolidColorBrush(Color.FromRgb(144, 238, 144)) // Light green border
+        : new SolidColorBrush(Color.FromRgb(255, 182, 193)); // Light pink border
+
+    public Brush TargetConnectionTextBrush => IsTargetConnected 
+        ? new SolidColorBrush(Color.FromRgb(0, 100, 0)) // Dark green text
+        : new SolidColorBrush(Color.FromRgb(139, 69, 19)); // Brown text
+
+    // Helper methods to notify all related connection properties
+    private void NotifySourceConnectionPropertiesChanged()
+    {
+        OnPropertyChanged(nameof(IsSourceDisconnected));
+        OnPropertyChanged(nameof(CanConnectSource));
+        OnPropertyChanged(nameof(CanDisconnectSource));
+        OnPropertyChanged(nameof(SourceConnectionBackgroundBrush));
+        OnPropertyChanged(nameof(SourceConnectionBorderBrush));
+        OnPropertyChanged(nameof(SourceConnectionTextBrush));
+    }
+
+    private void NotifyTargetConnectionPropertiesChanged()
+    {
+        OnPropertyChanged(nameof(IsTargetDisconnected));
+        OnPropertyChanged(nameof(CanConnectTarget));
+        OnPropertyChanged(nameof(CanDisconnectTarget));
+        OnPropertyChanged(nameof(TargetConnectionBackgroundBrush));
+        OnPropertyChanged(nameof(TargetConnectionBorderBrush));
+        OnPropertyChanged(nameof(TargetConnectionTextBrush));
+    }
+
+    private void NotifyJobStatePropertiesChanged()
+    {
+        OnPropertyChanged(nameof(CanConnectSource));
+        OnPropertyChanged(nameof(CanConnectTarget));
+        OnPropertyChanged(nameof(CanDisconnectSource));
+        OnPropertyChanged(nameof(CanDisconnectTarget));
+    }
+
+    // Partial methods for ObservableProperty change notifications
+    partial void OnIsSourceConnectedChanged(bool value)
+    {
+        NotifySourceConnectionPropertiesChanged();
+    }
+
+    partial void OnIsTargetConnectedChanged(bool value)
+    {
+        NotifyTargetConnectionPropertiesChanged();
+    }
 
     public DashboardViewModel (
         HybridPowerShellService powerShellService,
@@ -510,7 +578,6 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
     partial void OnIsJobRunningChanged (bool value)
         {
-        OnPropertyChanged(nameof(CanConnectSource));
-        OnPropertyChanged(nameof(CanConnectTarget));
+        NotifyJobStatePropertiesChanged();
         }
     }

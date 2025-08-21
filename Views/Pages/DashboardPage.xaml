@@ -76,7 +76,8 @@
                                   Command="{Binding ViewModel.DisconnectSourceCommand}"
                                   Appearance="Danger"
                                   FontSize="12"
-                                  Padding="8,4"/>
+                                  Padding="8,4"
+                                  IsEnabled="{Binding ViewModel.CanDisconnectSource}"/>
                     </Grid>
 
                     <!-- Profile Selection -->
@@ -88,15 +89,16 @@
 
                     <!-- Connection Status -->
                     <Border Grid.Row="2" 
-                           Background="{DynamicResource ControlFillColorDefaultBrush}"
-                           BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                           Background="{Binding ViewModel.SourceConnectionBackgroundBrush}"
+                           BorderBrush="{Binding ViewModel.SourceConnectionBorderBrush}"
                            BorderThickness="1"
                            CornerRadius="4"
                            Padding="10,8"
                            Margin="0,0,0,10">
                         <TextBlock Text="{Binding ViewModel.SourceConnectionStatus}"
                                   VerticalAlignment="Center"
-                                  TextTrimming="CharacterEllipsis"/>
+                                  TextTrimming="CharacterEllipsis"
+                                  Foreground="{Binding ViewModel.SourceConnectionTextBrush}"/>
                     </Border>
 
                     <!-- Connect Button -->
@@ -141,7 +143,8 @@
                                   Command="{Binding ViewModel.DisconnectTargetCommand}"
                                   Appearance="Danger"
                                   FontSize="12"
-                                  Padding="8,4"/>
+                                  Padding="8,4"
+                                  IsEnabled="{Binding ViewModel.CanDisconnectTarget}"/>
                     </Grid>
 
                     <!-- Profile Selection -->
@@ -153,15 +156,16 @@
 
                     <!-- Connection Status -->
                     <Border Grid.Row="2" 
-                           Background="{DynamicResource ControlFillColorDefaultBrush}"
-                           BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                           Background="{Binding ViewModel.TargetConnectionBackgroundBrush}"
+                           BorderBrush="{Binding ViewModel.TargetConnectionBorderBrush}"
                            BorderThickness="1"
                            CornerRadius="4"
                            Padding="10,8"
                            Margin="0,0,0,10">
                         <TextBlock Text="{Binding ViewModel.TargetConnectionStatus}"
                                   VerticalAlignment="Center"
-                                  TextTrimming="CharacterEllipsis"/>
+                                  TextTrimming="CharacterEllipsis"
+                                  Foreground="{Binding ViewModel.TargetConnectionTextBrush}"/>
                     </Border>
 
                     <!-- Connect Button -->
