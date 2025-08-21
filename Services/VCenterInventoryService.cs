@@ -341,7 +341,7 @@ public class VCenterInventoryService
                 $datacenter = if ($cluster) { Get-Datacenter -Cluster $cluster } else { Get-Datacenter -VM $_ }
                 $vmHost = Get-VMHost -VM $_
                 $resourcePool = Get-ResourcePool -VM $_
-                $folder = $_ | Get-VmFolder
+                $folder = if ($_.Folder) { Get-Folder -Id $_.Folder } else { $null }
                 
                 [PSCustomObject]@{
                     Name = $_.Name
