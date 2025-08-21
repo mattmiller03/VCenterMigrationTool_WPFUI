@@ -614,37 +614,52 @@ public class VCenterInventoryService
     private async Task LoadResourcePoolsAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
         var script = @"
-            $resourcePools = Get-ResourcePool | ForEach-Object {
+            # OPTIMIZED: Use vSphere API for fast resource pool collection
+            $resourcePools = Get-View -ViewType ResourcePool | Where-Object { $_.Name -ne 'Resources' } | ForEach-Object {
                 $rp = $_
+                
+                # Find parent cluster efficiently using API
                 $cluster = $null
                 $datacenter = $null
                 
-                # Try to find parent cluster
                 try {
-                    $parent = $rp.Parent
-                    while ($parent -and !$cluster) {
-                        if ($parent.GetType().Name -eq 'ClusterImpl') {
-                            $cluster = $parent
-                            break
+                    # Check if parent is a cluster
+                    if ($rp.Parent.Type -eq 'ClusterComputeResource') {
+                        $cluster = Get-View $rp.Parent -ErrorAction SilentlyContinue
+                        if ($cluster) {
+                            $datacenter = Get-View $cluster.Parent -ErrorAction SilentlyContinue
                         }
-                        $parent = $parent.Parent
                     }
-                    
-                    if ($cluster) {
-                        $datacenter = Get-Datacenter -Cluster $cluster -ErrorAction SilentlyContinue
+                    # If not directly under cluster, might be under host system
+                    elseif ($rp.Parent.Type -eq 'ComputeResource') {
+                        $computeResource = Get-View $rp.Parent -ErrorAction SilentlyContinue
+                        if ($computeResource) {
+                            $datacenter = Get-View $computeResource.Parent -ErrorAction SilentlyContinue
+                        }
                     }
                 } catch {
-                    # If we can't find parent, continue without it
+                    # Continue without parent info if lookup fails
                 }
+                
+                # Get resource limits safely
+                $cpuLimit = 0
+                $memoryLimit = 0
+                if ($rp.Config -and $rp.Config.CpuAllocation -and $rp.Config.CpuAllocation.Limit -and $rp.Config.CpuAllocation.Limit -ne -1) {
+                    $cpuLimit = [int]$rp.Config.CpuAllocation.Limit
+                }
+                if ($rp.Config -and $rp.Config.MemoryAllocation -and $rp.Config.MemoryAllocation.Limit -and $rp.Config.MemoryAllocation.Limit -ne -1) {
+                    $memoryLimit = [int]($rp.Config.MemoryAllocation.Limit / 1024 / 1024)  # Convert to MB
+                }
+                
                 [PSCustomObject]@{
                     Name = $rp.Name
-                    Id = $rp.Id
+                    Id = $rp.MoRef.Value
                     ClusterName = if ($cluster) { $cluster.Name } else { """" }
                     DatacenterName = if ($datacenter) { $datacenter.Name } else { """" }
-                    ParentPath = $rp.Parent.Name
-                    CpuLimitMhz = if ($rp.CpuLimitMhz -ne -1) { [int]$rp.CpuLimitMhz } else { 0 }
-                    MemoryLimitMB = if ($rp.MemoryLimitMB -ne -1) { [int]$rp.MemoryLimitMB } else { 0 }
-                    VmCount = [int]($rp | Get-VM | Measure-Object).Count
+                    ParentPath = if ($rp.Parent) { $rp.Parent.Value } else { """" }
+                    CpuLimitMhz = $cpuLimit
+                    MemoryLimitMB = $memoryLimit
+                    VmCount = [int]$rp.Vm.Count  # Fast count from API object property
                 }
             }
             $resourcePools | ConvertTo-Json -Depth 2

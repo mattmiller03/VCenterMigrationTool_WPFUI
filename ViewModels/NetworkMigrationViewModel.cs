@@ -395,11 +395,10 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
     [RelayCommand]
     private async Task StartNetworkMigration ()
         {
-        var selectedItems = GetSelectedNetworkItems();
-        if (!selectedItems.Any())
+        if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
             {
-            MigrationStatus = "No network items selected for migration";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Migration failed: No items selected\n";
+            MigrationStatus = "Both source and target vCenter connections are required";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Migration failed: Missing connections\n";
             return;
             }
 
@@ -409,16 +408,58 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
             MigrationProgress = 0;
             MigrationStatus = "Starting network migration...";
 
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Starting migration of {selectedItems.Count()} network items\n";
+            var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+            var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+            
+            if (string.IsNullOrEmpty(sourcePassword) || string.IsNullOrEmpty(targetPassword))
+                {
+                MigrationStatus = "Error: Missing passwords for vCenter connections";
+                return;
+                }
 
-            // TODO: Implement actual migration using dual vCenter script method
-            await Task.Delay(2000); // Placeholder
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Starting network migration\n";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Source: {_sharedConnectionService.SourceConnection}\n";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Target: {_sharedConnectionService.TargetConnection}\n";
+
+            // Create network mappings dictionary from the UI
+            var networkMappingsDict = new Dictionary<string, object>();
+            foreach (var mapping in NetworkMappings)
+                {
+                if (!string.IsNullOrEmpty(mapping.SourceNetwork) && !string.IsNullOrEmpty(mapping.TargetNetwork))
+                    {
+                    networkMappingsDict[mapping.SourceNetwork] = mapping.TargetNetwork;
+                    }
+                }
+
+            var parameters = new Dictionary<string, object>
+                {
+                { "SourceVCenter", _sharedConnectionService.SourceConnection },
+                { "TargetVCenter", _sharedConnectionService.TargetConnection },
+                { "MigrateStandardSwitches", MigrateStandardSwitches },
+                { "MigrateDistributedSwitches", MigrateDistributedSwitches },
+                { "MigratePortGroups", MigratePortGroups },
+                { "PreserveVlanIds", PreserveVlanIds },
+                { "RecreateIfExists", RecreateIfExists },
+                { "ValidateOnly", ValidateOnly },
+                { "NetworkMappings", networkMappingsDict },
+                { "BypassModuleCheck", true }
+                };
+
+            MigrationProgress = 50;
+
+            var result = await _powerShellService.RunDualVCenterScriptAsync(
+                "Scripts\\Migrate-NetworkConfiguration.ps1",
+                _sharedConnectionService.SourceConnection,
+                sourcePassword,
+                _sharedConnectionService.TargetConnection, 
+                targetPassword,
+                parameters);
 
             MigrationProgress = 100;
             MigrationStatus = "Network migration completed successfully";
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Network migration completed successfully\n";
 
-            _logger.LogInformation("Network migration completed for {Count} items", selectedItems.Count());
+            _logger.LogInformation("Network migration completed");
             }
         catch (Exception ex)
             {
@@ -475,29 +516,52 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
             return;
             }
 
+        if (_sharedConnectionService.SourceConnection == null)
+            {
+            MigrationStatus = "No source vCenter connection available";
+            return;
+            }
+
         try
             {
             IsLoadingData = true;
             MigrationStatus = "Exporting network configuration...";
 
-            var selectedItems = GetSelectedNetworkItems();
-            if (!selectedItems.Any())
+            var password = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+            if (string.IsNullOrEmpty(password))
                 {
-                MigrationStatus = "No network items selected for export";
+                MigrationStatus = "Error: No password found for source connection";
                 return;
                 }
 
-            // TODO: Implement export logic
-            await Task.Delay(1000);
+            var exportFormat = ExportToJson ? "JSON" : "CSV";
+            var parameters = new Dictionary<string, object>
+                {
+                { "VCenterServer", _sharedConnectionService.SourceConnection },
+                { "Username", "admin" }, // Will be replaced by actual username
+                { "Password", password },
+                { "ExportFilePath", ExportFilePath },
+                { "ExportFormat", exportFormat },
+                { "IncludeStandardSwitches", MigrateStandardSwitches },
+                { "BypassModuleCheck", true }
+                };
 
-            MigrationStatus = $"Exported {selectedItems.Count()} network items successfully";
+            var result = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Export-VDSConfiguration.ps1",
+                _sharedConnectionService.SourceConnection,
+                password,
+                parameters);
+
+            MigrationStatus = "Network configuration exported successfully";
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Network configuration exported to: {ExportFilePath}\n";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Export format: {exportFormat}\n";
 
             _logger.LogInformation("Network configuration exported to {FilePath}", ExportFilePath);
             }
         catch (Exception ex)
             {
             MigrationStatus = $"Export failed: {ex.Message}";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
             _logger.LogError(ex, "Error exporting network configuration");
             }
         finally
@@ -515,22 +579,69 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
             return;
             }
 
+        if (_sharedConnectionService.TargetConnection == null)
+            {
+            MigrationStatus = "No target vCenter connection available";
+            return;
+            }
+
         try
             {
             IsLoadingData = true;
             MigrationStatus = "Importing network configuration...";
 
-            // TODO: Implement import logic
-            await Task.Delay(1000);
+            var password = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+            if (string.IsNullOrEmpty(password))
+                {
+                MigrationStatus = "Error: No password found for target connection";
+                return;
+                }
+
+            // Create network mappings dictionary from the UI
+            var networkMappingsDict = new Dictionary<string, object>();
+            foreach (var mapping in NetworkMappings)
+                {
+                if (!string.IsNullOrEmpty(mapping.SourceNetwork) && !string.IsNullOrEmpty(mapping.TargetNetwork))
+                    {
+                    networkMappingsDict[mapping.SourceNetwork] = mapping.TargetNetwork;
+                    }
+                }
+
+            var parameters = new Dictionary<string, object>
+                {
+                { "VCenterServer", _sharedConnectionService.TargetConnection },
+                { "Username", "admin" }, // Will be replaced by actual username
+                { "Password", password },
+                { "ImportFilePath", ImportFilePath },
+                { "RecreateIfExists", RecreateIfExists },
+                { "ValidateOnly", ValidateOnly },
+                { "NetworkMappings", networkMappingsDict },
+                { "BypassModuleCheck", true }
+                };
+
+            var result = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Import-VDSConfiguration.ps1",
+                _sharedConnectionService.TargetConnection,
+                password,
+                parameters);
 
             MigrationStatus = "Network configuration imported successfully";
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Network configuration imported from: {ImportFilePath}\n";
+            if (ValidateOnly)
+                {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Validation mode - no changes were made\n";
+                }
+            else
+                {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Recreate if exists: {RecreateIfExists}\n";
+                }
 
             _logger.LogInformation("Network configuration imported from {FilePath}", ImportFilePath);
             }
         catch (Exception ex)
             {
             MigrationStatus = $"Import failed: {ex.Message}";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
             _logger.LogError(ex, "Error importing network configuration");
             }
         finally

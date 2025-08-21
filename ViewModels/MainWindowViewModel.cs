@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
@@ -24,14 +25,20 @@ namespace VCenterMigrationTool.ViewModels
         {
             _applicationTitle = "VCenter Migration Tool";
 
+            // Create nested navigation structure
+            var vCenterObjectsChildItems = new List<object>
+            {
+                new NavigationViewItem("Resource Pools", SymbolRegular.DatabaseStack16, typeof(Views.Pages.ResourcePoolMigrationPage)),
+                new NavigationViewItem("Network", SymbolRegular.NetworkCheck24, typeof(Views.Pages.NetworkMigrationPage))
+            };
+            var vCenterObjectsItem = new NavigationViewItem("vCenter Objects", SymbolRegular.Box24, typeof(Views.Pages.VCenterMigrationPage), vCenterObjectsChildItems);
+
             NavigationItems = new ObservableCollection<object>
             {
                 new NavigationViewItem("Dashboard", SymbolRegular.Home24, typeof(Views.Pages.DashboardPage)),
-                new NavigationViewItem("vCenter Objects", SymbolRegular.Box24, typeof(Views.Pages.VCenterMigrationPage)),
+                vCenterObjectsItem,
                 new NavigationViewItem("ESXi Hosts", SymbolRegular.Server24, typeof(Views.Pages.EsxiHostsPage)),
                 new NavigationViewItem("Virtual Machines", SymbolRegular.Desktop24, typeof(Views.Pages.VmMigrationPage)),
-                new NavigationViewItem("Resource Pools", SymbolRegular.DatabaseStack16, typeof(Views.Pages.ResourcePoolMigrationPage)),
-                new NavigationViewItem("Network", SymbolRegular.NetworkCheck24, typeof(Views.Pages.NetworkMigrationPage)),
                 new NavigationViewItem("Activity Logs", SymbolRegular.List24, typeof(Views.Pages.ActivityLogsPage))
             };
 

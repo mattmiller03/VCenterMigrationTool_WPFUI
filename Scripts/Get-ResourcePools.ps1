@@ -67,27 +67,78 @@ try {
     Write-LogSuccess "Found cluster '$($cluster.Name)'" -Category "Discovery"
     
     # Get resource pools from the cluster
-    Write-LogInfo "Retrieving resource pools from cluster..." -Category "Discovery"
-    $resourcePools = Get-ResourcePool -Location $cluster -ErrorAction Stop | 
+    # OPTIMIZED: Use vSphere API for much faster resource pool data collection
+    Write-LogInfo "Retrieving resource pools from cluster using vSphere API..." -Category "Discovery"
+    
+    # Get all resource pools in cluster using API (much faster)
+    $resourcePools = Get-View -ViewType ResourcePool -SearchRoot $cluster.MoRef | 
         Where-Object { $_.Name -notin @('Resources', 'vCLS') }
     
     $poolCount = $resourcePools.Count
     Write-LogSuccess "Found $poolCount custom resource pools." -Category "Discovery"
     
-    # Build detailed resource pool information
+    # Build detailed resource pool information using API
     $poolInfo = @()
     foreach ($pool in $resourcePools) {
         try {
             Write-LogDebug "Processing resource pool: $($pool.Name)" -Category "Processing"
-            $vmsInPool = Get-VM -Location $pool -ErrorAction SilentlyContinue
-            $vmNames = if ($vmsInPool) { $vmsInPool.Name } else { @() }
+            
+            # Get VM names efficiently using API
+            $vmNames = @()
+            if ($pool.Vm -and $pool.Vm.Count -gt 0) {
+                $vms = Get-View -Id $pool.Vm -ErrorAction SilentlyContinue
+                $vmNames = $vms | ForEach-Object { $_.Name }
+            }
+            
+            # Get parent info
+            $parentName = ""
+            $parentType = ""
+            try {
+                if ($pool.Parent) {
+                    $parent = Get-View $pool.Parent -ErrorAction SilentlyContinue
+                    if ($parent) {
+                        $parentName = $parent.Name
+                        $parentType = $parent.GetType().Name
+                    }
+                }
+            } catch {
+                # Continue without parent info
+            }
+            
+            # Get resource allocation settings from API
+            $cpuShares = 0
+            $cpuReservation = 0
+            $cpuSharesLevel = "Normal"
+            $memShares = 0
+            $memReservation = 0
+            $memSharesLevel = "Normal"
+            
+            if ($pool.Config) {
+                if ($pool.Config.CpuAllocation) {
+                    $cpuShares = if ($pool.Config.CpuAllocation.Shares) { $pool.Config.CpuAllocation.Shares.Shares } else { 0 }
+                    $cpuReservation = if ($pool.Config.CpuAllocation.Reservation) { $pool.Config.CpuAllocation.Reservation } else { 0 }
+                    $cpuSharesLevel = if ($pool.Config.CpuAllocation.Shares) { $pool.Config.CpuAllocation.Shares.Level.ToString() } else { "Normal" }
+                }
+                if ($pool.Config.MemoryAllocation) {
+                    $memShares = if ($pool.Config.MemoryAllocation.Shares) { $pool.Config.MemoryAllocation.Shares.Shares } else { 0 }
+                    $memReservation = if ($pool.Config.MemoryAllocation.Reservation) { [int]($pool.Config.MemoryAllocation.Reservation / 1024 / 1024) } else { 0 }
+                    $memSharesLevel = if ($pool.Config.MemoryAllocation.Shares) { $pool.Config.MemoryAllocation.Shares.Level.ToString() } else { "Normal" }
+                }
+            }
             
             $poolData = [PSCustomObject]@{
-                Name = $pool.Name; ParentType = $pool.Parent.GetType().Name; ParentName = $pool.Parent.Name
-                CpuSharesLevel = $pool.CpuSharesLevel.ToString(); CpuShares = $pool.CpuShares
-                CpuReservationMHz = $pool.CpuReservationMHz; MemSharesLevel = $pool.MemSharesLevel.ToString()
-                MemShares = $pool.MemShares; MemReservationMB = $pool.MemReservationMB
-                VMs = $vmNames; VmCount = $vmNames.Count; IsSelected = $false
+                Name = $pool.Name
+                ParentType = $parentType
+                ParentName = $parentName
+                CpuSharesLevel = $cpuSharesLevel
+                CpuShares = [int]$cpuShares
+                CpuReservationMHz = [int]$cpuReservation
+                MemSharesLevel = $memSharesLevel
+                MemShares = [int]$memShares
+                MemReservationMB = [int]$memReservation
+                VMs = $vmNames
+                VmCount = [int]$vmNames.Count
+                IsSelected = $false
             }
             $poolInfo += $poolData
         }

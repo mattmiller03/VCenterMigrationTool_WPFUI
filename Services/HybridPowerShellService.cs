@@ -1810,27 +1810,27 @@ public class HybridPowerShellService : IDisposable
             script.AppendLine(@"
                 $result = @()
                 
-                # Get Resource Pools
+                # Get Resource Pools using vSphere API
                 try {
                     if ($ClusterName) {
-                        $cluster = Get-Cluster -Name $ClusterName -ErrorAction SilentlyContinue
+                        $cluster = Get-View -ViewType ClusterComputeResource | Where-Object { $_.Name -eq $ClusterName } | Select-Object -First 1
                         if ($cluster) {
-                            $resourcePools = $cluster | Get-ResourcePool -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'Resources' }
+                            $resourcePools = Get-View -ViewType ResourcePool -SearchRoot $cluster.MoRef | Where-Object { $_.Name -ne 'Resources' }
                         } else {
                             $resourcePools = @()
                         }
                     } else {
-                        $resourcePools = Get-ResourcePool -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'Resources' }
+                        $resourcePools = Get-View -ViewType ResourcePool | Where-Object { $_.Name -ne 'Resources' }
                     }
                     
                     if ($resourcePools) {
                         foreach ($rp in $resourcePools) {
                             $result += @{
-                                Id = $rp.Id
+                                Id = $rp.MoRef.Value
                                 Name = $rp.Name
                                 Type = 'ResourcePool'
                                 Path = '/ResourcePools/' + $rp.Name
-                                ItemCount = ($rp | Get-VM -ErrorAction SilentlyContinue | Measure-Object).Count
+                                ItemCount = if ($rp.Vm) { $rp.Vm.Count } else { 0 }
                                 IsSelected = $true
                                 Status = 'Ready'
                             }

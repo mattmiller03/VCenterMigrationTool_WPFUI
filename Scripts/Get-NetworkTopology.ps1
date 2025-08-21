@@ -53,13 +53,73 @@ try {
         Write-LogInfo "Processing network topology for host: $($vmHost.Name)" -Category "Discovery"
         $hostNetworkConfig = @{ Name = $vmHost.Name; VSwitches = @(); VmKernelPorts = @() }
 
-        # Get standard and distributed switches
-        $allSwitches = Get-VirtualSwitch -VMHost $vmHost -ErrorAction SilentlyContinue
-        $allSwitches += Get-VDSwitch -VMHost $vmHost -ErrorAction SilentlyContinue
-
-        foreach($switch in $allSwitches) {
-            $switchConfig = @{ Name = $switch.Name; Type = $switch.GetType().Name; PortGroups = @() }
-            # ... add other switch properties as needed ...
+        # Get standard switches
+        $standardSwitches = Get-VirtualSwitch -VMHost $vmHost -Standard -ErrorAction SilentlyContinue
+        foreach($switch in $standardSwitches) {
+            $portGroups = @()
+            Get-VirtualPortGroup -VMHost $vmHost -VirtualSwitch $switch -ErrorAction SilentlyContinue | ForEach-Object {
+                $portGroups += @{
+                    Name = $_.Name
+                    VlanId = $_.VLanId
+                    IsSelected = $false
+                }
+            }
+            
+            $switchConfig = @{
+                Name = $switch.Name
+                Type = "StandardSwitch"
+                NumPorts = $switch.NumPorts
+                Mtu = $switch.Mtu
+                PortGroups = $portGroups
+                IsSelected = $false
+            }
+            $hostNetworkConfig.VSwitches += $switchConfig
+            $stats.TotalVSwitches++
+        }
+        
+        # Get distributed switches associated with this host
+        $distributedSwitches = Get-VDSwitch -ErrorAction SilentlyContinue | Where-Object { 
+            $_.ExtensionData.Summary.HostMember -contains $vmHost.ExtensionData.MoRef 
+        }
+        foreach($vds in $distributedSwitches) {
+            $portGroups = @()
+            Get-VDPortgroup -VDSwitch $vds -ErrorAction SilentlyContinue | ForEach-Object {
+                $vlanConfig = $_.ExtensionData.Config.DefaultPortConfig.Vlan
+                $vlanId = 0
+                if ($vlanConfig.VlanId) { $vlanId = $vlanConfig.VlanId }
+                elseif ($vlanConfig.PvlanId) { $vlanId = $vlanConfig.PvlanId }
+                
+                $portGroups += @{
+                    Name = $_.Name
+                    VlanId = $vlanId
+                    Key = $_.Key
+                    NumPorts = $_.NumPorts
+                    IsSelected = $false
+                }
+            }
+            
+            $switchConfig = @{
+                Name = $vds.Name
+                Type = "DistributedSwitch"
+                Version = $vds.Version
+                Uuid = $vds.ExtensionData.Uuid
+                Vendor = $vds.ExtensionData.Summary.ProductInfo.Vendor
+                Mtu = $vds.Mtu
+                MaxPorts = $vds.MaxPorts
+                NumStandalonePorts = $vds.NumStandalonePorts
+                PortGroups = $portGroups
+                IsSelected = $false
+                # Export key configuration for recreation
+                Config = @{
+                    Version = $vds.Version
+                    MaxPorts = $vds.MaxPorts
+                    NumStandalonePorts = $vds.NumStandalonePorts
+                    Mtu = $vds.Mtu
+                    LinkDiscoveryProtocol = $vds.ExtensionData.Config.LinkDiscoveryProtocolConfig.Protocol
+                    ContactInfo = $vds.ExtensionData.Config.Contact.Contact
+                    ContactDetails = $vds.ExtensionData.Config.Contact.Name
+                }
+            }
             $hostNetworkConfig.VSwitches += $switchConfig
             $stats.TotalVSwitches++
         }
