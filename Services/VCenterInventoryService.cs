@@ -704,29 +704,34 @@ public class VCenterInventoryService
             $folders | ConvertTo-Json -Depth 2
         ";
 
-        var (result, error) = await _powerShellService.ExecuteScriptAsync(script, connectionType);
-        
-        if (!string.IsNullOrEmpty(error))
+        try
         {
-            _logger.LogWarning("Error loading folders for {VCenterName}: {Error}", vCenterName, error);
-            return;
-        }
-
-        if (!string.IsNullOrEmpty(result))
-        {
-            try
+            var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
+            if (!string.IsNullOrEmpty(result))
             {
-                var folders = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(result);
-                if (folders != null && folders.Count > 0)
+                // Check if result looks like JSON before attempting to deserialize
+                if (result.TrimStart().StartsWith("[") || result.TrimStart().StartsWith("{"))
                 {
-                    // Add folders to inventory (you may need to add a Folders property to VCenterInventory if not present)
-                    _logger.LogInformation("Loaded {Count} folders for {VCenterName}", folders.Count, vCenterName);
+                    var folders = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(result);
+                    if (folders != null && folders.Count > 0)
+                    {
+                        // Add folders to inventory (you may need to add a Folders property to VCenterInventory if not present)
+                        _logger.LogInformation("Loaded {Count} folders for {VCenterName}", folders.Count, vCenterName);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Invalid JSON response for folders from {VCenterName}: {Response}", vCenterName, result);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogWarning(ex, "Failed to parse folder data for {VCenterName}", vCenterName);
+                _logger.LogWarning("Empty response for folders from {VCenterName}", vCenterName);
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load folders for {VCenterName}", vCenterName);
         }
     }
 
