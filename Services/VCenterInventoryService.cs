@@ -351,11 +351,8 @@ public class VCenterInventoryService
     {
         var script = @"
             # OPTIMIZED: Get clusters with bulk host data for performance
-            Write-Host 'Loading cluster data...'
             $clusters = Get-View -ViewType ClusterComputeResource
             $allHosts = Get-View -ViewType HostSystem
-            
-            Write-Host ""Processing $($clusters.Count) clusters with $($allHosts.Count) total hosts""
             
             $clusterData = $clusters | ForEach-Object {
                 $cluster = $_
@@ -438,12 +435,9 @@ public class VCenterInventoryService
     {
         var script = @"
             # OPTIMIZED: Get hosts with minimal parent lookups and no VM counting
-            Write-Host 'Loading host data...'
             $esxiHosts = Get-View -ViewType HostSystem
             $clusters = Get-View -ViewType ClusterComputeResource
             $datacenters = Get-View -ViewType Datacenter
-            
-            Write-Host ""Processing $($esxiHosts.Count) hosts""
             
             $hostData = $esxiHosts | ForEach-Object {
                 $esxiHost = $_
@@ -500,11 +494,8 @@ public class VCenterInventoryService
     {
         var script = @"
             # OPTIMIZED: Get datastores without expensive VM counting
-            Write-Host 'Loading datastore data...'
             $datastores = Get-View -ViewType Datastore
             $allHosts = Get-View -ViewType HostSystem
-            
-            Write-Host ""Processing $($datastores.Count) datastores""
             
             $datastoreData = $datastores | ForEach-Object {
                 $datastore = $_
