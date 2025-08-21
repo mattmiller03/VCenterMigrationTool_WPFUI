@@ -22,6 +22,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     private readonly ConnectionProfileService _profileService;
     private readonly CredentialService _credentialService;
     private readonly SharedConnectionService _sharedConnectionService;
+    private readonly VCenterInventoryService _inventoryService;
     private readonly ConfigurationService _configurationService;
     private readonly IDialogService _dialogService;
     private readonly ILogger<DashboardViewModel> _logger;
@@ -65,6 +66,19 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
     [ObservableProperty]
     private string _targetConnectionDetails = "";
+
+    // Inventory summary properties
+    [ObservableProperty]
+    private string _sourceInventorySummary = "No inventory loaded";
+
+    [ObservableProperty]
+    private string _targetInventorySummary = "No inventory loaded";
+
+    [ObservableProperty]
+    private bool _hasSourceInventory;
+
+    [ObservableProperty]
+    private bool _hasTargetInventory;
 
     // Computed properties for UI binding
     public bool IsSourceDisconnected => !IsSourceConnected;
@@ -145,6 +159,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         ConnectionProfileService profileService,
         CredentialService credentialService,
         SharedConnectionService sharedConnectionService,
+        VCenterInventoryService inventoryService,
         ConfigurationService configurationService,
         IDialogService dialogService,
         ILogger<DashboardViewModel> logger)
@@ -154,6 +169,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         _profileService = profileService;
         _credentialService = credentialService;
         _sharedConnectionService = sharedConnectionService;
+        _inventoryService = inventoryService;
         _configurationService = configurationService;
         _dialogService = dialogService;
         _logger = logger;
@@ -164,6 +180,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     public async Task OnNavigatedToAsync ()
         {
         await CheckConnectionStatus();
+        UpdateInventorySummaries();
         }
 
     public async Task OnNavigatedFromAsync ()
@@ -171,6 +188,44 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         // Keep connections alive when navigating away
         await Task.CompletedTask;
         }
+
+    /// <summary>
+    /// Updates inventory summaries for both source and target vCenters
+    /// </summary>
+    private void UpdateInventorySummaries()
+    {
+        // Update source inventory summary
+        var sourceInventory = _sharedConnectionService.GetSourceInventory();
+        if (sourceInventory != null && _sharedConnectionService.SourceConnection != null)
+        {
+            HasSourceInventory = true;
+            var stats = sourceInventory.Statistics;
+            SourceInventorySummary = $"{stats.DatacenterCount} DCs • {stats.ClusterCount} Clusters • {stats.HostCount} Hosts • {stats.VirtualMachineCount} VMs • {stats.DatastoreCount} Datastores\n" +
+                                   $"Resources: {stats.TotalCpuGhz:F1} GHz CPU • {stats.TotalMemoryGB:F0} GB RAM • {stats.TotalDatastoreCapacityGB:F0} GB Storage\n" +
+                                   $"Last Updated: {sourceInventory.LastUpdated:yyyy-MM-dd HH:mm:ss}";
+        }
+        else
+        {
+            HasSourceInventory = false;
+            SourceInventorySummary = IsSourceConnected ? "Loading inventory..." : "No inventory loaded";
+        }
+
+        // Update target inventory summary
+        var targetInventory = _sharedConnectionService.GetTargetInventory();
+        if (targetInventory != null && _sharedConnectionService.TargetConnection != null)
+        {
+            HasTargetInventory = true;
+            var stats = targetInventory.Statistics;
+            TargetInventorySummary = $"{stats.DatacenterCount} DCs • {stats.ClusterCount} Clusters • {stats.HostCount} Hosts • {stats.VirtualMachineCount} VMs • {stats.DatastoreCount} Datastores\n" +
+                                   $"Resources: {stats.TotalCpuGhz:F1} GHz CPU • {stats.TotalMemoryGB:F0} GB RAM • {stats.TotalDatastoreCapacityGB:F0} GB Storage\n" +
+                                   $"Last Updated: {targetInventory.LastUpdated:yyyy-MM-dd HH:mm:ss}";
+        }
+        else
+        {
+            HasTargetInventory = false;
+            TargetInventorySummary = IsTargetConnected ? "Loading inventory..." : "No inventory loaded";
+        }
+    }
 
     /// <summary>
     /// Checks if persistent connections are still active
@@ -298,6 +353,9 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
                 _logger.LogInformation("✅ Persistent source connection established (Session: {SessionId})", sessionId);
 
+                // Update inventory summary
+                UpdateInventorySummaries();
+
                 // Notify property changes
                 OnPropertyChanged(nameof(IsSourceDisconnected));
                 OnPropertyChanged(nameof(CanConnectSource));
@@ -393,6 +451,9 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                               $"Use 'Disconnect' button to close the connection.";
 
                 _logger.LogInformation("✅ Persistent target connection established (Session: {SessionId})", sessionId);
+
+                // Update inventory summary
+                UpdateInventorySummaries();
 
                 // Notify property changes
                 OnPropertyChanged(nameof(IsTargetDisconnected));
@@ -506,70 +567,71 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         }
 
     [RelayCommand]
-    private async Task OnRunTestJob ()
+    private async Task OnRefreshInventory ()
         {
         if (IsJobRunning) return;
 
-        var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("source");
-        if (!isConnected)
-            {
-            ScriptOutput = "Error: Please connect to source vCenter first.";
-            return;
-            }
-
         IsJobRunning = true;
-        JobProgress = 0;
-        CurrentJobText = $"Running commands on persistent connection...";
-        ScriptOutput = string.Empty;
-
+        CurrentJobText = "Refreshing inventory...";
+        
         try
             {
-            _logger.LogInformation("Running test job on persistent connection (Session: {SessionId})", sessionId);
+            var refreshTasks = new List<Task>();
+            
+            if (IsSourceConnected)
+            {
+                refreshTasks.Add(_sharedConnectionService.RefreshSourceInventoryAsync());
+            }
+            
+            if (IsTargetConnected)
+            {
+                refreshTasks.Add(_sharedConnectionService.RefreshTargetInventoryAsync());
+            }
 
-            CurrentJobText = "Getting VM inventory...";
-            JobProgress = 25;
+            if (refreshTasks.Count > 0)
+            {
+                await Task.WhenAll(refreshTasks);
+                UpdateInventorySummaries();
+                CurrentJobText = "Inventory refreshed successfully.";
+            }
+            else
+            {
+                CurrentJobText = "No active connections to refresh.";
+            }
 
-            var result = await _persistentConnectionService.ExecuteCommandAsync("source", @"
-                Write-Output '=== VM Inventory ==='
-                $vms = Get-VM -ErrorAction SilentlyContinue
-                Write-Output ""Total VMs: $($vms.Count)""
-                Write-Output """"
-                Write-Output 'First 5 VMs:'
-                $vms | Select-Object -First 5 Name, PowerState, NumCpu, MemoryGB | Format-Table | Out-String
-                
-                Write-Output '=== Host Information ==='
-                $hosts = Get-VMHost -ErrorAction SilentlyContinue
-                Write-Output ""Total Hosts: $($hosts.Count)""
-                $hosts | Select-Object Name, ConnectionState, PowerState | Format-Table | Out-String
-                
-                Write-Output '=== Datastore Summary ==='
-                $datastores = Get-Datastore -ErrorAction SilentlyContinue
-                Write-Output ""Total Datastores: $($datastores.Count)""
-                $datastores | Select-Object Name, FreeSpaceGB, CapacityGB | Format-Table | Out-String
-                
-                Write-Output '=== Cluster Information ==='
-                $clusters = Get-Cluster -ErrorAction SilentlyContinue
-                Write-Output ""Total Clusters: $($clusters.Count)""
-                $clusters | Select-Object Name, HAEnabled, DrsEnabled | Format-Table | Out-String
-            ");
-
-            JobProgress = 100;
-            ScriptOutput = result;
-            CurrentJobText = "Test job completed successfully.";
-
-            _logger.LogInformation("Test job completed successfully");
+            _logger.LogInformation("Inventory refresh completed");
             }
         catch (Exception ex)
             {
-            _logger.LogError(ex, "Error running test job");
-            ScriptOutput = $"Error: {ex.Message}";
-            CurrentJobText = "Test job failed.";
+            _logger.LogError(ex, "Error refreshing inventory");
+            CurrentJobText = "Inventory refresh failed.";
             }
         finally
             {
             IsJobRunning = false;
             }
         }
+
+    [RelayCommand]
+    private void OnNavigateToObjects()
+    {
+        // This will be handled by the navigation service in the View's code-behind
+        // We'll trigger this via the View
+    }
+
+    [RelayCommand]
+    private void OnNavigateToMigration()
+    {
+        // This will be handled by the navigation service in the View's code-behind
+        // We'll trigger this via the View
+    }
+
+    [RelayCommand]
+    private void OnNavigateToLogs()
+    {
+        // This will be handled by the navigation service in the View's code-behind
+        // We'll trigger this via the View
+    }
 
     // Property change handlers for selection changes
     partial void OnSelectedSourceProfileChanged (VCenterConnection? value)
