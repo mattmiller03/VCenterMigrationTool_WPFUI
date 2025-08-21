@@ -14,7 +14,7 @@ namespace VCenterMigrationTool.ViewModels
     {
         private readonly SharedConnectionService _sharedConnectionService;
         private readonly HybridPowerShellService _powerShellService;
-        private readonly CredentialService _credentialService;
+        private readonly IErrorHandlingService _errorHandlingService;
         private readonly ILogger<AdminConfigMigrationViewModel> _logger;
 
         // Connection Status
@@ -115,43 +115,98 @@ namespace VCenterMigrationTool.ViewModels
         public AdminConfigMigrationViewModel(
             SharedConnectionService sharedConnectionService,
             HybridPowerShellService powerShellService,
-            CredentialService credentialService,
+            IErrorHandlingService errorHandlingService,
             ILogger<AdminConfigMigrationViewModel> logger)
         {
             _sharedConnectionService = sharedConnectionService;
             _powerShellService = powerShellService;
-            _credentialService = credentialService;
+            _errorHandlingService = errorHandlingService;
             _logger = logger;
         }
 
         public async Task OnNavigatedToAsync()
         {
-            UpdateConnectionStatus();
-            await Task.CompletedTask;
+            try
+            {
+                await LoadConnectionStatusAsync();
+                await LoadAdminConfigDataAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during page navigation");
+                MigrationStatus = "Error loading page data. Please try refreshing.";
+            }
         }
 
         public async Task OnNavigatedFromAsync() => await Task.CompletedTask;
 
-        private void UpdateConnectionStatus()
+        private async Task LoadConnectionStatusAsync()
         {
-            IsSourceConnected = _sharedConnectionService.SourceConnection != null;
-            IsTargetConnected = _sharedConnectionService.TargetConnection != null;
+            try
+            {
+                // Check source connection
+                var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
+                IsSourceConnected = sourceStatus.IsConnected;
+                SourceConnectionStatus = sourceStatus.IsConnected ? "Connected" : "Disconnected";
 
-            SourceConnectionStatus = IsSourceConnected ? 
-                $"Connected to {_sharedConnectionService.SourceConnection}" : "Not connected";
-            TargetConnectionStatus = IsTargetConnected ? 
-                $"Connected to {_sharedConnectionService.TargetConnection}" : "Not connected";
+                // Check target connection
+                var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
+                IsTargetConnected = targetStatus.IsConnected;
+                TargetConnectionStatus = targetStatus.IsConnected ? "Connected" : "Disconnected";
 
-            OnPropertyChanged(nameof(CanValidateMigration));
-            OnPropertyChanged(nameof(CanStartMigration));
+                OnPropertyChanged(nameof(CanValidateMigration));
+                OnPropertyChanged(nameof(CanStartMigration));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load connection status");
+                SourceConnectionStatus = "Error checking connection";
+                TargetConnectionStatus = "Error checking connection";
+            }
+        }
+
+        private async Task LoadAdminConfigDataAsync()
+        {
+            try
+            {
+                // Load cached inventory data if available
+                var sourceInventory = _sharedConnectionService.GetSourceInventory();
+                var targetInventory = _sharedConnectionService.GetTargetInventory();
+
+                if (sourceInventory != null)
+                {
+                    // TODO: Populate SourceRoles, SourcePermissions, etc. from inventory
+                    SourceDataStatus = "Admin config data available";
+                }
+                else
+                {
+                    SourceDataStatus = "No admin config data loaded";
+                }
+
+                if (targetInventory != null)
+                {
+                    // TODO: Populate TargetRoles, TargetPermissions, etc. from inventory
+                    TargetDataStatus = "Admin config data available";
+                }
+                else
+                {
+                    TargetDataStatus = "No admin config data loaded";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading admin config data");
+                SourceDataStatus = "Error loading data";
+                TargetDataStatus = "Error loading data";
+            }
         }
 
         [RelayCommand]
         private async Task RefreshData()
         {
-            UpdateConnectionStatus();
-            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Connection status refreshed\n";
-            await Task.CompletedTask;
+            await LoadConnectionStatusAsync();
+            await LoadAdminConfigDataAsync();
+            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Connection status and data refreshed\n";
         }
 
         [RelayCommand]
@@ -166,17 +221,29 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Loading source admin configuration...";
+                SourceDataStatus = "🔄 Loading admin config...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source admin config data\n";
                 
-                // TODO: Implement actual admin config loading
-                await Task.Delay(1000);
-                
-                SourceDataStatus = "Admin config data loaded";
-                MigrationStatus = "Source admin config loaded successfully";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source admin config data loaded successfully\n";
+                var success = await _sharedConnectionService.LoadSourceAdminConfigAsync();
+                if (success)
+                {
+                    SourceDataStatus = "✅ Admin config loaded";
+                    MigrationStatus = "Source admin config loaded successfully";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source admin config data loaded successfully\n";
+                    
+                    // Refresh the data display
+                    await LoadAdminConfigDataAsync();
+                }
+                else
+                {
+                    SourceDataStatus = "❌ Failed to load admin config";
+                    MigrationStatus = "Failed to load source admin config";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load source admin config\n";
+                }
             }
             catch (Exception ex)
             {
+                SourceDataStatus = "❌ Error loading admin config";
                 MigrationStatus = $"Failed to load source admin config: {ex.Message}";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
                 _logger.LogError(ex, "Error loading source admin config");
@@ -195,17 +262,29 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Loading target admin configuration...";
+                TargetDataStatus = "🔄 Loading admin config...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading target admin config data\n";
                 
-                // TODO: Implement actual admin config loading
-                await Task.Delay(1000);
-                
-                TargetDataStatus = "Admin config data loaded";
-                MigrationStatus = "Target admin config loaded successfully";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target admin config data loaded successfully\n";
+                var success = await _sharedConnectionService.LoadTargetAdminConfigAsync();
+                if (success)
+                {
+                    TargetDataStatus = "✅ Admin config loaded";
+                    MigrationStatus = "Target admin config loaded successfully";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target admin config data loaded successfully\n";
+                    
+                    // Refresh the data display
+                    await LoadAdminConfigDataAsync();
+                }
+                else
+                {
+                    TargetDataStatus = "❌ Failed to load admin config";
+                    MigrationStatus = "Failed to load target admin config";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load target admin config\n";
+                }
             }
             catch (Exception ex)
             {
+                TargetDataStatus = "❌ Error loading admin config";
                 MigrationStatus = $"Failed to load target admin config: {ex.Message}";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
                 _logger.LogError(ex, "Error loading target admin config");

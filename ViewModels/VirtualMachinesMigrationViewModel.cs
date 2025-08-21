@@ -14,7 +14,7 @@ namespace VCenterMigrationTool.ViewModels
     {
         private readonly SharedConnectionService _sharedConnectionService;
         private readonly HybridPowerShellService _powerShellService;
-        private readonly CredentialService _credentialService;
+        private readonly IErrorHandlingService _errorHandlingService;
         private readonly ILogger<VirtualMachinesMigrationViewModel> _logger;
 
         // Connection Status
@@ -101,43 +101,98 @@ namespace VCenterMigrationTool.ViewModels
         public VirtualMachinesMigrationViewModel(
             SharedConnectionService sharedConnectionService,
             HybridPowerShellService powerShellService,
-            CredentialService credentialService,
+            IErrorHandlingService errorHandlingService,
             ILogger<VirtualMachinesMigrationViewModel> logger)
         {
             _sharedConnectionService = sharedConnectionService;
             _powerShellService = powerShellService;
-            _credentialService = credentialService;
+            _errorHandlingService = errorHandlingService;
             _logger = logger;
         }
 
         public async Task OnNavigatedToAsync()
         {
-            UpdateConnectionStatus();
-            await Task.CompletedTask;
+            try
+            {
+                await LoadConnectionStatusAsync();
+                await LoadVMDataAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during page navigation");
+                MigrationStatus = "Error loading page data. Please try refreshing.";
+            }
         }
 
         public async Task OnNavigatedFromAsync() => await Task.CompletedTask;
 
-        private void UpdateConnectionStatus()
+        private async Task LoadConnectionStatusAsync()
         {
-            IsSourceConnected = _sharedConnectionService.SourceConnection != null;
-            IsTargetConnected = _sharedConnectionService.TargetConnection != null;
+            try
+            {
+                // Check source connection
+                var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
+                IsSourceConnected = sourceStatus.IsConnected;
+                SourceConnectionStatus = sourceStatus.IsConnected ? "Connected" : "Disconnected";
 
-            SourceConnectionStatus = IsSourceConnected ? 
-                $"Connected to {_sharedConnectionService.SourceConnection}" : "Not connected";
-            TargetConnectionStatus = IsTargetConnected ? 
-                $"Connected to {_sharedConnectionService.TargetConnection}" : "Not connected";
+                // Check target connection
+                var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
+                IsTargetConnected = targetStatus.IsConnected;
+                TargetConnectionStatus = targetStatus.IsConnected ? "Connected" : "Disconnected";
 
-            OnPropertyChanged(nameof(CanValidateMigration));
-            OnPropertyChanged(nameof(CanStartMigration));
+                OnPropertyChanged(nameof(CanValidateMigration));
+                OnPropertyChanged(nameof(CanStartMigration));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load connection status");
+                SourceConnectionStatus = "Error checking connection";
+                TargetConnectionStatus = "Error checking connection";
+            }
+        }
+
+        private async Task LoadVMDataAsync()
+        {
+            try
+            {
+                // Load cached inventory data if available
+                var sourceInventory = _sharedConnectionService.GetSourceInventory();
+                var targetInventory = _sharedConnectionService.GetTargetInventory();
+
+                if (sourceInventory != null)
+                {
+                    // TODO: Populate SourceVirtualMachines, SourceResourcePools, etc. from inventory
+                    SourceDataStatus = "VM data available";
+                }
+                else
+                {
+                    SourceDataStatus = "No VM data loaded";
+                }
+
+                if (targetInventory != null)
+                {
+                    // TODO: Populate TargetVirtualMachines, TargetResourcePools, etc. from inventory
+                    TargetDataStatus = "VM data available";
+                }
+                else
+                {
+                    TargetDataStatus = "No VM data loaded";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading VM data");
+                SourceDataStatus = "Error loading data";
+                TargetDataStatus = "Error loading data";
+            }
         }
 
         [RelayCommand]
         private async Task RefreshData()
         {
-            UpdateConnectionStatus();
-            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Connection status refreshed\n";
-            await Task.CompletedTask;
+            await LoadConnectionStatusAsync();
+            await LoadVMDataAsync();
+            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Connection status and data refreshed\n";
         }
 
         [RelayCommand]
@@ -152,17 +207,29 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Loading source virtual machines...";
+                SourceDataStatus = "🔄 Loading VMs...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source VM data\n";
                 
-                // TODO: Implement actual VM loading
-                await Task.Delay(1000);
-                
-                SourceDataStatus = "VM data loaded";
-                MigrationStatus = "Source VMs loaded successfully";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source VM data loaded successfully\n";
+                var success = await _sharedConnectionService.LoadSourceVirtualMachinesAsync();
+                if (success)
+                {
+                    SourceDataStatus = "✅ VMs loaded";
+                    MigrationStatus = "Source VMs loaded successfully";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source VM data loaded successfully\n";
+                    
+                    // Refresh the data display
+                    await LoadVMDataAsync();
+                }
+                else
+                {
+                    SourceDataStatus = "❌ Failed to load VMs";
+                    MigrationStatus = "Failed to load source VMs";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load source VMs\n";
+                }
             }
             catch (Exception ex)
             {
+                SourceDataStatus = "❌ Error loading VMs";
                 MigrationStatus = $"Failed to load source VMs: {ex.Message}";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
                 _logger.LogError(ex, "Error loading source VMs");
@@ -181,17 +248,29 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Loading target virtual machines...";
+                TargetDataStatus = "🔄 Loading VMs...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading target VM data\n";
                 
-                // TODO: Implement actual VM loading
-                await Task.Delay(1000);
-                
-                TargetDataStatus = "VM data loaded";
-                MigrationStatus = "Target VMs loaded successfully";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target VM data loaded successfully\n";
+                var success = await _sharedConnectionService.LoadTargetVirtualMachinesAsync();
+                if (success)
+                {
+                    TargetDataStatus = "✅ VMs loaded";
+                    MigrationStatus = "Target VMs loaded successfully";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target VM data loaded successfully\n";
+                    
+                    // Refresh the data display
+                    await LoadVMDataAsync();
+                }
+                else
+                {
+                    TargetDataStatus = "❌ Failed to load VMs";
+                    MigrationStatus = "Failed to load target VMs";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load target VMs\n";
+                }
             }
             catch (Exception ex)
             {
+                TargetDataStatus = "❌ Error loading VMs";
                 MigrationStatus = $"Failed to load target VMs: {ex.Message}";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
                 _logger.LogError(ex, "Error loading target VMs");

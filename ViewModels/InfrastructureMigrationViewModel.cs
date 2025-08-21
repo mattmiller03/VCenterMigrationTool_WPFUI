@@ -14,7 +14,7 @@ namespace VCenterMigrationTool.ViewModels
     {
         private readonly SharedConnectionService _sharedConnectionService;
         private readonly HybridPowerShellService _powerShellService;
-        private readonly CredentialService _credentialService;
+        private readonly IErrorHandlingService _errorHandlingService;
         private readonly ILogger<InfrastructureMigrationViewModel> _logger;
 
         // Connection Status
@@ -100,43 +100,98 @@ namespace VCenterMigrationTool.ViewModels
         public InfrastructureMigrationViewModel(
             SharedConnectionService sharedConnectionService,
             HybridPowerShellService powerShellService,
-            CredentialService credentialService,
+            IErrorHandlingService errorHandlingService,
             ILogger<InfrastructureMigrationViewModel> logger)
         {
             _sharedConnectionService = sharedConnectionService;
             _powerShellService = powerShellService;
-            _credentialService = credentialService;
+            _errorHandlingService = errorHandlingService;
             _logger = logger;
         }
 
         public async Task OnNavigatedToAsync()
         {
-            UpdateConnectionStatus();
-            await Task.CompletedTask;
+            try
+            {
+                await LoadConnectionStatusAsync();
+                await LoadInfrastructureDataAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during page navigation");
+                MigrationStatus = "Error loading page data. Please try refreshing.";
+            }
         }
 
         public async Task OnNavigatedFromAsync() => await Task.CompletedTask;
 
-        private void UpdateConnectionStatus()
+        private async Task LoadConnectionStatusAsync()
         {
-            IsSourceConnected = _sharedConnectionService.SourceConnection != null;
-            IsTargetConnected = _sharedConnectionService.TargetConnection != null;
+            try
+            {
+                // Check source connection
+                var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
+                IsSourceConnected = sourceStatus.IsConnected;
+                SourceConnectionStatus = sourceStatus.IsConnected ? "Connected" : "Disconnected";
 
-            SourceConnectionStatus = IsSourceConnected ? 
-                $"Connected to {_sharedConnectionService.SourceConnection}" : "Not connected";
-            TargetConnectionStatus = IsTargetConnected ? 
-                $"Connected to {_sharedConnectionService.TargetConnection}" : "Not connected";
+                // Check target connection
+                var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
+                IsTargetConnected = targetStatus.IsConnected;
+                TargetConnectionStatus = targetStatus.IsConnected ? "Connected" : "Disconnected";
 
-            OnPropertyChanged(nameof(CanValidateMigration));
-            OnPropertyChanged(nameof(CanStartMigration));
+                OnPropertyChanged(nameof(CanValidateMigration));
+                OnPropertyChanged(nameof(CanStartMigration));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load connection status");
+                SourceConnectionStatus = "Error checking connection";
+                TargetConnectionStatus = "Error checking connection";
+            }
+        }
+
+        private async Task LoadInfrastructureDataAsync()
+        {
+            try
+            {
+                // Load cached inventory data if available
+                var sourceInventory = _sharedConnectionService.GetSourceInventory();
+                var targetInventory = _sharedConnectionService.GetTargetInventory();
+
+                if (sourceInventory != null)
+                {
+                    // TODO: Populate SourceDatacenters, SourceClusters, etc. from inventory
+                    SourceDataStatus = "Infrastructure data available";
+                }
+                else
+                {
+                    SourceDataStatus = "No infrastructure data loaded";
+                }
+
+                if (targetInventory != null)
+                {
+                    // TODO: Populate TargetDatacenters, TargetClusters, etc. from inventory
+                    TargetDataStatus = "Infrastructure data available";
+                }
+                else
+                {
+                    TargetDataStatus = "No infrastructure data loaded";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading infrastructure data");
+                SourceDataStatus = "Error loading data";
+                TargetDataStatus = "Error loading data";
+            }
         }
 
         [RelayCommand]
         private async Task RefreshData()
         {
-            UpdateConnectionStatus();
-            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Connection status refreshed\n";
-            await Task.CompletedTask;
+            await LoadConnectionStatusAsync();
+            await LoadInfrastructureDataAsync();
+            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Connection status and data refreshed\n";
         }
 
         [RelayCommand]
@@ -151,17 +206,29 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Loading source infrastructure...";
+                SourceDataStatus = "🔄 Loading infrastructure...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source infrastructure data\n";
                 
-                // TODO: Implement actual infrastructure loading
-                await Task.Delay(1000);
-                
-                SourceDataStatus = "Infrastructure data loaded";
-                MigrationStatus = "Source infrastructure loaded successfully";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source infrastructure data loaded successfully\n";
+                var success = await _sharedConnectionService.LoadSourceInfrastructureAsync();
+                if (success)
+                {
+                    SourceDataStatus = "✅ Infrastructure loaded";
+                    MigrationStatus = "Source infrastructure loaded successfully";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source infrastructure data loaded successfully\n";
+                    
+                    // Refresh the data display
+                    await LoadInfrastructureDataAsync();
+                }
+                else
+                {
+                    SourceDataStatus = "❌ Failed to load infrastructure";
+                    MigrationStatus = "Failed to load source infrastructure";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load source infrastructure\n";
+                }
             }
             catch (Exception ex)
             {
+                SourceDataStatus = "❌ Error loading infrastructure";
                 MigrationStatus = $"Failed to load source infrastructure: {ex.Message}";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
                 _logger.LogError(ex, "Error loading source infrastructure");
@@ -180,17 +247,29 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Loading target infrastructure...";
+                TargetDataStatus = "🔄 Loading infrastructure...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading target infrastructure data\n";
                 
-                // TODO: Implement actual infrastructure loading
-                await Task.Delay(1000);
-                
-                TargetDataStatus = "Infrastructure data loaded";
-                MigrationStatus = "Target infrastructure loaded successfully";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target infrastructure data loaded successfully\n";
+                var success = await _sharedConnectionService.LoadTargetInfrastructureAsync();
+                if (success)
+                {
+                    TargetDataStatus = "✅ Infrastructure loaded";
+                    MigrationStatus = "Target infrastructure loaded successfully";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target infrastructure data loaded successfully\n";
+                    
+                    // Refresh the data display
+                    await LoadInfrastructureDataAsync();
+                }
+                else
+                {
+                    TargetDataStatus = "❌ Failed to load infrastructure";
+                    MigrationStatus = "Failed to load target infrastructure";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load target infrastructure\n";
+                }
             }
             catch (Exception ex)
             {
+                TargetDataStatus = "❌ Error loading infrastructure";
                 MigrationStatus = $"Failed to load target infrastructure: {ex.Message}";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
                 _logger.LogError(ex, "Error loading target infrastructure");
