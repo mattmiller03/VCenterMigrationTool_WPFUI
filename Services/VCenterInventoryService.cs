@@ -157,14 +157,23 @@ public class VCenterInventoryService
     private async Task LoadDatacentersAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
         var script = @"
-            $datacenters = Get-Datacenter | ForEach-Object {
+            # Use vSphere API calls for much faster bulk data collection
+            $datacenters = Get-View -ViewType Datacenter | ForEach-Object {
+                $dc = $_
+                
+                # Count objects using API views (much faster than cmdlets)
+                $clusterCount = (Get-View -ViewType ClusterComputeResource -SearchRoot $dc.MoRef | Measure-Object).Count
+                $hostCount = (Get-View -ViewType HostSystem -SearchRoot $dc.MoRef | Measure-Object).Count  
+                $vmCount = (Get-View -ViewType VirtualMachine -SearchRoot $dc.MoRef | Measure-Object).Count
+                $datastoreCount = (Get-View -ViewType Datastore -SearchRoot $dc.MoRef | Measure-Object).Count
+                
                 [PSCustomObject]@{
-                    Name = $_.Name
-                    Id = $_.Id
-                    ClusterCount = (Get-Cluster -Location $_ | Measure-Object).Count
-                    HostCount = (Get-VMHost -Location $_ | Measure-Object).Count
-                    VmCount = (Get-VM -Location $_ | Measure-Object).Count
-                    DatastoreCount = (Get-Datastore -Location $_ | Measure-Object).Count
+                    Name = $dc.Name
+                    Id = $dc.MoRef.Value
+                    ClusterCount = $clusterCount
+                    HostCount = $hostCount
+                    VmCount = $vmCount
+                    DatastoreCount = $datastoreCount
                 }
             }
             $datacenters | ConvertTo-Json -Depth 2
@@ -204,22 +213,38 @@ public class VCenterInventoryService
     private async Task LoadClustersAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
         var script = @"
-            $clusters = foreach ($datacenter in Get-Datacenter) {
-                Get-Cluster -Location $datacenter | ForEach-Object {
-                    [PSCustomObject]@{
-                        Name = $_.Name
-                        Id = $_.Id
-                        DatacenterName = $datacenter.Name
-                        FullName = ""$($datacenter.Name)/$($_.Name)""
-                        HostCount = ($_ | Get-VMHost | Measure-Object).Count
-                        VmCount = ($_ | Get-VM | Measure-Object).Count
-                        DatastoreCount = ($_ | Get-Datastore | Measure-Object).Count
-                        TotalCpuGhz = [math]::Round(($_ | Get-VMHost | Measure-Object -Property CpuTotalMhz -Sum).Sum / 1000, 2)
-                        TotalMemoryGB = [math]::Round(($_ | Get-VMHost | Measure-Object -Property MemoryTotalGB -Sum).Sum, 2)
-                        HAEnabled = $_.HAEnabled
-                        DrsEnabled = $_.DrsEnabled
-                        EVCMode = if ($_.EVCMode) { $_.EVCMode } else { """" }
-                    }
+            # Use vSphere API for much faster cluster data collection
+            $clusters = Get-View -ViewType ClusterComputeResource | ForEach-Object {
+                $cluster = $_
+                $datacenter = Get-View $cluster.Parent
+                
+                # Count resources using API views (much faster)
+                $hostCount = $cluster.Host.Count
+                $vmCount = (Get-View -ViewType VirtualMachine -SearchRoot $cluster.MoRef | Measure-Object).Count
+                $datastoreCount = $cluster.Datastore.Count
+                
+                # Calculate totals from host hardware
+                $totalCpuMhz = 0
+                $totalMemoryMB = 0
+                foreach ($hostMoRef in $cluster.Host) {
+                    $hostView = Get-View $hostMoRef
+                    $totalCpuMhz += $hostView.Hardware.CpuInfo.Hz * $hostView.Hardware.CpuInfo.NumCpuCores / 1000000
+                    $totalMemoryMB += $hostView.Hardware.MemorySize / 1024 / 1024
+                }
+                
+                [PSCustomObject]@{
+                    Name = $cluster.Name
+                    Id = $cluster.MoRef.Value
+                    DatacenterName = $datacenter.Name
+                    FullName = ""$($datacenter.Name)/$($cluster.Name)""
+                    HostCount = $hostCount
+                    VmCount = $vmCount
+                    DatastoreCount = $datastoreCount
+                    TotalCpuGhz = [math]::Round($totalCpuMhz / 1000, 2)
+                    TotalMemoryGB = [math]::Round($totalMemoryMB / 1024, 2)
+                    HAEnabled = $cluster.Configuration.DasConfig.Enabled
+                    DrsEnabled = $cluster.Configuration.DrsConfig.Enabled
+                    EVCMode = if ($cluster.Summary.CurrentEVCModeKey) { $cluster.Summary.CurrentEVCModeKey } else { """" }
                 }
             }
             $clusters | ConvertTo-Json -Depth 2
@@ -259,22 +284,36 @@ public class VCenterInventoryService
     private async Task LoadHostsAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
         var script = @"
-            $esxiHosts = Get-VMHost | ForEach-Object {
-                $cluster = Get-Cluster -VMHost $_
-                $datacenter = if ($cluster) { Get-Datacenter -Cluster $cluster } else { Get-Datacenter -VMHost $_ }
+            # Use vSphere API for much faster host data collection
+            $esxiHosts = Get-View -ViewType HostSystem | ForEach-Object {
+                $host = $_
+                
+                # Get parent cluster and datacenter using API relationships
+                $cluster = if ($host.Parent) { 
+                    $parent = Get-View $host.Parent
+                    if ($parent.GetType().Name -eq ""ClusterComputeResource"") { $parent } else { $null }
+                } else { $null }
+                $datacenter = if ($cluster) { Get-View $cluster.Parent } else { 
+                    $parent = Get-View $host.Parent
+                    if ($parent.GetType().Name -eq ""Datacenter"") { $parent } else { Get-View $parent.Parent }
+                }
+                
+                # Count VMs on this host using API
+                $vmCount = (Get-View -ViewType VirtualMachine -SearchRoot $host.MoRef | Measure-Object).Count
+                
                 [PSCustomObject]@{
-                    Name = $_.Name
-                    Id = $_.Id
+                    Name = $host.Name
+                    Id = $host.MoRef.Value
                     ClusterName = if ($cluster) { $cluster.Name } else { """" }
                     DatacenterName = if ($datacenter) { $datacenter.Name } else { """" }
-                    Version = $_.Version
-                    Build = $_.Build
-                    ConnectionState = $_.ConnectionState.ToString()
-                    PowerState = $_.PowerState.ToString()
-                    CpuCores = $_.NumCpu
-                    CpuMhz = $_.CpuTotalMhz
-                    MemoryGB = [math]::Round($_.MemoryTotalGB, 2)
-                    VmCount = ($_ | Get-VM | Measure-Object).Count
+                    Version = $host.Config.Product.Version
+                    Build = $host.Config.Product.Build
+                    ConnectionState = $host.Runtime.ConnectionState.ToString()
+                    PowerState = $host.Runtime.PowerState.ToString()
+                    CpuCores = $host.Hardware.CpuInfo.NumCpuCores
+                    CpuMhz = $host.Hardware.CpuInfo.Hz / 1000000
+                    MemoryGB = [math]::Round($host.Hardware.MemorySize / 1024 / 1024 / 1024, 2)
+                    VmCount = $vmCount
                 }
             }
             $esxiHosts | ConvertTo-Json -Depth 2
@@ -301,15 +340,30 @@ public class VCenterInventoryService
     private async Task LoadDatastoresAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
         var script = @"
-            $datastores = Get-Datastore | ForEach-Object {
+            # Use vSphere API for much faster datastore data collection
+            $datastores = Get-View -ViewType Datastore | ForEach-Object {
+                $datastore = $_
+                
+                # Count VMs and get connected hosts using API
+                $vmCount = 0
+                $connectedHosts = @()
+                foreach ($hostMoRef in $datastore.Host) {
+                    $hostView = Get-View $hostMoRef
+                    $connectedHosts += $hostView.Name
+                    # Count VMs on this datastore through the host
+                    $vmCount += (Get-View -ViewType VirtualMachine -SearchRoot $hostMoRef | Where-Object { 
+                        $_.Datastore -contains $datastore.MoRef 
+                    } | Measure-Object).Count
+                }
+                
                 [PSCustomObject]@{
-                    Name = $_.Name
-                    Id = $_.Id
-                    Type = $_.Type
-                    CapacityGB = [math]::Round($_.CapacityGB, 2)
-                    UsedGB = [math]::Round(($_.CapacityGB - $_.FreeSpaceGB), 2)
-                    VmCount = ($_ | Get-VM | Measure-Object).Count
-                    ConnectedHosts = @($_ | Get-VMHost | Select-Object -ExpandProperty Name)
+                    Name = $datastore.Name
+                    Id = $datastore.MoRef.Value
+                    Type = $datastore.Summary.Type
+                    CapacityGB = [math]::Round($datastore.Summary.Capacity / 1024 / 1024 / 1024, 2)
+                    UsedGB = [math]::Round(($datastore.Summary.Capacity - $datastore.Summary.FreeSpace) / 1024 / 1024 / 1024, 2)
+                    VmCount = $vmCount
+                    ConnectedHosts = $connectedHosts
                 }
             }
             $datastores | ConvertTo-Json -Depth 3
@@ -336,26 +390,45 @@ public class VCenterInventoryService
     private async Task LoadVirtualMachinesAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
         var script = @"
-            $vms = Get-VM | ForEach-Object {
-                $cluster = Get-Cluster -VM $_
-                $datacenter = if ($cluster) { Get-Datacenter -Cluster $cluster } else { Get-Datacenter -VM $_ }
-                $vmHost = Get-VMHost -VM $_
-                $resourcePool = Get-ResourcePool -VM $_
-                # Just use the folder name directly from the VM object instead of trying to get full folder object
-                $folderName = if ($_.Folder) { $_.Folder.ToString() } else { """" }
+            # Use vSphere API for much faster VM data collection
+            $vms = Get-View -ViewType VirtualMachine | ForEach-Object {
+                $vm = $_
+                
+                # Get parent objects using API relationships (much faster)
+                $vmHost = if ($vm.Runtime.Host) { Get-View $vm.Runtime.Host } else { $null }
+                $cluster = if ($vmHost -and $vmHost.Parent) { 
+                    $parent = Get-View $vmHost.Parent
+                    if ($parent.GetType().Name -eq ""ClusterComputeResource"") { $parent } else { $null }
+                } else { $null }
+                $datacenter = if ($cluster) { Get-View $cluster.Parent } else { 
+                    if ($vmHost) { 
+                        $hostParent = Get-View $vmHost.Parent
+                        if ($hostParent.GetType().Name -eq ""Datacenter"") { $hostParent } else { Get-View $hostParent.Parent }
+                    } else { $null }
+                }
+                $resourcePool = if ($vm.ResourcePool) { Get-View $vm.ResourcePool } else { $null }
+                $folder = if ($vm.Parent) { Get-View $vm.Parent } else { $null }
+                
+                # Calculate total disk space from API data
+                $totalDiskGB = 0
+                foreach ($device in $vm.Config.Hardware.Device) {
+                    if ($device.GetType().Name -eq ""VirtualDisk"") {
+                        $totalDiskGB += $device.CapacityInKB / 1024 / 1024
+                    }
+                }
                 
                 [PSCustomObject]@{
-                    Name = $_.Name
-                    Id = $_.Id
-                    PowerState = $_.PowerState.ToString()
-                    GuestOS = if ($_.Guest.OSFullName) { $_.Guest.OSFullName } else { """" }
-                    CpuCount = $_.NumCpu
-                    MemoryGB = [math]::Round($_.MemoryGB, 2)
-                    DiskGB = [math]::Round(($_ | Get-HardDisk | Measure-Object -Property CapacityGB -Sum).Sum, 2)
+                    Name = $vm.Name
+                    Id = $vm.MoRef.Value
+                    PowerState = $vm.Runtime.PowerState.ToString()
+                    GuestOS = if ($vm.Config.GuestFullName) { $vm.Config.GuestFullName } else { """" }
+                    CpuCount = $vm.Config.Hardware.NumCPU
+                    MemoryGB = [math]::Round($vm.Config.Hardware.MemoryMB / 1024, 2)
+                    DiskGB = [math]::Round($totalDiskGB, 2)
                     HostName = if ($vmHost) { $vmHost.Name } else { """" }
                     ClusterName = if ($cluster) { $cluster.Name } else { """" }
                     DatacenterName = if ($datacenter) { $datacenter.Name } else { """" }
-                    FolderPath = $folderName
+                    FolderPath = if ($folder) { $folder.Name } else { """" }
                     ResourcePoolName = if ($resourcePool) { $resourcePool.Name } else { """" }
                     Tags = @()
                 }
