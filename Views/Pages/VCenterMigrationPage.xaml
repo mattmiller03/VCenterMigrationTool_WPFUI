@@ -23,6 +23,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*" MinHeight="400"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -167,8 +168,199 @@
                 </ui:Card>
             </Grid>
 
+            <!-- Inventory Loading Controls -->
+            <Grid Grid.Row="2" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Source Inventory Loading -->
+                <ui:Card Grid.Column="0" Margin="0,0,10,0">
+                    <Grid Margin="20,15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Grid.Row="0" 
+                                  Text="Source Inventory Loading" 
+                                  FontSize="16" 
+                                  FontWeight="SemiBold"
+                                  Margin="0,0,0,15"/>
+                        
+                        <StackPanel Grid.Row="1" Spacing="10">
+                            <!-- Infrastructure Button -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <ui:Button Grid.Column="0"
+                                          Content="Load Infrastructure"
+                                          Icon="{ui:SymbolIcon Server24}"
+                                          Command="{Binding LoadSourceInfrastructureCommand}"
+                                          Appearance="Secondary"
+                                          IsEnabled="{Binding IsSourceConnected}"
+                                          ToolTip="Load datacenters, clusters, hosts, and datastores"
+                                          HorizontalAlignment="Stretch"
+                                          Margin="0,0,10,0"/>
+                                
+                                <TextBlock Grid.Column="1"
+                                          Text="{Binding SourceInfrastructureStatus}"
+                                          VerticalAlignment="Center"
+                                          FontSize="12"/>
+                            </Grid>
+                            
+                            <!-- VMs Button -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <ui:Button Grid.Column="0"
+                                          Content="Load Virtual Machines"
+                                          Icon="{ui:SymbolIcon Desktop24}"
+                                          Command="{Binding LoadSourceVMsCommand}"
+                                          Appearance="Secondary"
+                                          IsEnabled="{Binding IsSourceConnected}"
+                                          ToolTip="Load virtual machines and resource pools"
+                                          HorizontalAlignment="Stretch"
+                                          Margin="0,0,10,0"/>
+                                
+                                <TextBlock Grid.Column="1"
+                                          Text="{Binding SourceVMStatus}"
+                                          VerticalAlignment="Center"
+                                          FontSize="12"/>
+                            </Grid>
+                            
+                            <!-- Admin Config Button -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <ui:Button Grid.Column="0"
+                                          Content="Load Admin Config"
+                                          Icon="{ui:SymbolIcon Settings24}"
+                                          Command="{Binding LoadSourceAdminConfigCommand}"
+                                          Appearance="Secondary"
+                                          IsEnabled="{Binding IsSourceConnected}"
+                                          ToolTip="Load roles, permissions, folders, tags, and certificates"
+                                          HorizontalAlignment="Stretch"
+                                          Margin="0,0,10,0"/>
+                                
+                                <TextBlock Grid.Column="1"
+                                          Text="{Binding SourceAdminConfigStatus}"
+                                          VerticalAlignment="Center"
+                                          FontSize="12"/>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                </ui:Card>
+
+                <!-- Loading Arrow -->
+                <ui:SymbolIcon Grid.Column="1" 
+                              Symbol="Database24" 
+                              FontSize="24"
+                              VerticalAlignment="Center"
+                              Margin="15,0"
+                              Opacity="0.6"/>
+
+                <!-- Target Inventory Loading -->
+                <ui:Card Grid.Column="2" Margin="10,0,0,0">
+                    <Grid Margin="20,15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Grid.Row="0" 
+                                  Text="Target Inventory Loading" 
+                                  FontSize="16" 
+                                  FontWeight="SemiBold"
+                                  Margin="0,0,0,15"/>
+                        
+                        <StackPanel Grid.Row="1" Spacing="10">
+                            <!-- Infrastructure Button -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <ui:Button Grid.Column="0"
+                                          Content="Load Infrastructure"
+                                          Icon="{ui:SymbolIcon Server24}"
+                                          Command="{Binding LoadTargetInfrastructureCommand}"
+                                          Appearance="Secondary"
+                                          IsEnabled="{Binding IsTargetConnected}"
+                                          ToolTip="Load datacenters, clusters, hosts, and datastores"
+                                          HorizontalAlignment="Stretch"
+                                          Margin="0,0,10,0"/>
+                                
+                                <TextBlock Grid.Column="1"
+                                          Text="{Binding TargetInfrastructureStatus}"
+                                          VerticalAlignment="Center"
+                                          FontSize="12"/>
+                            </Grid>
+                            
+                            <!-- VMs Button -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <ui:Button Grid.Column="0"
+                                          Content="Load Virtual Machines"
+                                          Icon="{ui:SymbolIcon Desktop24}"
+                                          Command="{Binding LoadTargetVMsCommand}"
+                                          Appearance="Secondary"
+                                          IsEnabled="{Binding IsTargetConnected}"
+                                          ToolTip="Load virtual machines and resource pools"
+                                          HorizontalAlignment="Stretch"
+                                          Margin="0,0,10,0"/>
+                                
+                                <TextBlock Grid.Column="1"
+                                          Text="{Binding TargetVMStatus}"
+                                          VerticalAlignment="Center"
+                                          FontSize="12"/>
+                            </Grid>
+                            
+                            <!-- Admin Config Button -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <ui:Button Grid.Column="0"
+                                          Content="Load Admin Config"
+                                          Icon="{ui:SymbolIcon Settings24}"
+                                          Command="{Binding LoadTargetAdminConfigCommand}"
+                                          Appearance="Secondary"
+                                          IsEnabled="{Binding IsTargetConnected}"
+                                          ToolTip="Load roles, permissions, folders, tags, and certificates"
+                                          HorizontalAlignment="Stretch"
+                                          Margin="0,0,10,0"/>
+                                
+                                <TextBlock Grid.Column="1"
+                                          Text="{Binding TargetAdminConfigStatus}"
+                                          VerticalAlignment="Center"
+                                          FontSize="12"/>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                </ui:Card>
+            </Grid>
+
             <!-- Migration Options -->
-            <ui:Card Grid.Row="2" Margin="0,0,0,20">
+            <ui:Card Grid.Row="3" Margin="0,0,0,20">
                 <Grid Margin="20,15">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -346,7 +538,7 @@
             </ui:Card>
 
             <!-- Cluster Items -->
-            <ui:Card Grid.Row="4" Margin="0,0,0,20">
+            <ui:Card Grid.Row="5" Margin="0,0,0,20">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -518,7 +710,7 @@
             </ui:Card>
 
             <!-- Migration Progress -->
-            <ui:Card Grid.Row="5" 
+            <ui:Card Grid.Row="6" 
                     Margin="0,0,0,20"
                     Visibility="{Binding IsMigrating, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid Margin="20,15">
@@ -553,7 +745,7 @@
                               TextWrapping="Wrap"/>
 
                     <!-- Migration Statistics -->
-                    <Grid Grid.Row="3">
+                    <Grid Grid.Row="4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>

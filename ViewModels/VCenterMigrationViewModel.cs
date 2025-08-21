@@ -30,6 +30,20 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
     [ObservableProperty] private string _sourceVCenterInfo = "";
     [ObservableProperty] private string _targetVCenterInfo = "";
 
+    // Inventory Loading Status
+    [ObservableProperty] private bool _isLoadingSourceInfrastructure;
+    [ObservableProperty] private bool _isLoadingSourceVMs;
+    [ObservableProperty] private bool _isLoadingSourceAdminConfig;
+    [ObservableProperty] private bool _isLoadingTargetInfrastructure;
+    [ObservableProperty] private bool _isLoadingTargetVMs;
+    [ObservableProperty] private bool _isLoadingTargetAdminConfig;
+    [ObservableProperty] private string _sourceInfrastructureStatus = "Not loaded";
+    [ObservableProperty] private string _sourceVMStatus = "Not loaded";
+    [ObservableProperty] private string _sourceAdminConfigStatus = "Not loaded";
+    [ObservableProperty] private string _targetInfrastructureStatus = "Not loaded";
+    [ObservableProperty] private string _targetVMStatus = "Not loaded";
+    [ObservableProperty] private string _targetAdminConfigStatus = "Not loaded";
+
     // Migration Options
     [ObservableProperty] private bool _migrateRoles = true;
     [ObservableProperty] private bool _migrateFolders = true;
@@ -615,4 +629,166 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
     public bool CanStartMigration => IsSourceConnected && IsTargetConnected && 
                                    SelectedSourceCluster != null && SelectedTargetCluster != null && 
                                    ClusterItems.Any(i => i.IsSelected) && !IsMigrating;
+
+    [RelayCommand]
+    private async Task LoadSourceInfrastructure()
+    {
+        if (!IsSourceConnected) return;
+        
+        IsLoadingSourceInfrastructure = true;
+        SourceInfrastructureStatus = "🔄 Loading infrastructure...";
+        
+        try
+        {
+            var success = await _sharedConnectionService.LoadSourceInfrastructureAsync();
+            if (success)
+            {
+                SourceInfrastructureStatus = "✅ Infrastructure loaded";
+                // Reload clusters after infrastructure is loaded
+                await LoadClusters();
+            }
+            else
+            {
+                SourceInfrastructureStatus = "❌ Failed to load infrastructure";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading source infrastructure");
+            SourceInfrastructureStatus = $"❌ Error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoadingSourceInfrastructure = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task LoadSourceVMs()
+    {
+        if (!IsSourceConnected) return;
+        
+        IsLoadingSourceVMs = true;
+        SourceVMStatus = "🔄 Loading virtual machines...";
+        
+        try
+        {
+            var success = await _sharedConnectionService.LoadSourceVirtualMachinesAsync();
+            SourceVMStatus = success ? "✅ VMs loaded" : "❌ Failed to load VMs";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading source VMs");
+            SourceVMStatus = $"❌ Error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoadingSourceVMs = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task LoadSourceAdminConfig()
+    {
+        if (!IsSourceConnected) return;
+        
+        IsLoadingSourceAdminConfig = true;
+        SourceAdminConfigStatus = "🔄 Loading admin configuration...";
+        
+        try
+        {
+            var success = await _sharedConnectionService.LoadSourceAdminConfigAsync();
+            SourceAdminConfigStatus = success ? "✅ Admin config loaded" : "❌ Failed to load admin config";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading source admin config");
+            SourceAdminConfigStatus = $"❌ Error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoadingSourceAdminConfig = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task LoadTargetInfrastructure()
+    {
+        if (!IsTargetConnected) return;
+        
+        IsLoadingTargetInfrastructure = true;
+        TargetInfrastructureStatus = "🔄 Loading infrastructure...";
+        
+        try
+        {
+            var success = await _sharedConnectionService.LoadTargetInfrastructureAsync();
+            if (success)
+            {
+                TargetInfrastructureStatus = "✅ Infrastructure loaded";
+                // Reload clusters after infrastructure is loaded
+                await LoadClusters();
+            }
+            else
+            {
+                TargetInfrastructureStatus = "❌ Failed to load infrastructure";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading target infrastructure");
+            TargetInfrastructureStatus = $"❌ Error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoadingTargetInfrastructure = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task LoadTargetVMs()
+    {
+        if (!IsTargetConnected) return;
+        
+        IsLoadingTargetVMs = true;
+        TargetVMStatus = "🔄 Loading virtual machines...";
+        
+        try
+        {
+            var success = await _sharedConnectionService.LoadTargetVirtualMachinesAsync();
+            TargetVMStatus = success ? "✅ VMs loaded" : "❌ Failed to load VMs";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading target VMs");
+            TargetVMStatus = $"❌ Error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoadingTargetVMs = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task LoadTargetAdminConfig()
+    {
+        if (!IsTargetConnected) return;
+        
+        IsLoadingTargetAdminConfig = true;
+        TargetAdminConfigStatus = "🔄 Loading admin configuration...";
+        
+        try
+        {
+            var success = await _sharedConnectionService.LoadTargetAdminConfigAsync();
+            TargetAdminConfigStatus = success ? "✅ Admin config loaded" : "❌ Failed to load admin config";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading target admin config");
+            TargetAdminConfigStatus = $"❌ Error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoadingTargetAdminConfig = false;
+        }
+    }
 }

@@ -126,6 +126,143 @@ public class VCenterInventoryService
     }
 
     /// <summary>
+    /// Load infrastructure inventory only (datacenters, clusters, hosts, datastores)
+    /// </summary>
+    public async Task<VCenterInventory> LoadInfrastructureInventoryAsync(string vCenterName, string username, string password, string connectionType = "source")
+    {
+        _logger.LogInformation("Loading infrastructure inventory for vCenter: {VCenterName} (connection: {ConnectionType})", vCenterName, connectionType);
+
+        try
+        {
+            var inventory = new VCenterInventory
+            {
+                VCenterName = vCenterName,
+                LastUpdated = DateTime.Now
+            };
+
+            // Get vCenter version and basic info
+            inventory.VCenterVersion = await GetVCenterVersionAsync(vCenterName, username, password, connectionType);
+
+            // Load infrastructure components only
+            _logger.LogInformation("Loading infrastructure components for {VCenterName}", vCenterName);
+            
+            await LoadDatacentersAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadClustersAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadHostsAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadDatastoresAsync(vCenterName, username, password, inventory, connectionType);
+
+            // Cache the inventory
+            lock (_cacheLock)
+            {
+                _inventoryCache[vCenterName] = inventory;
+            }
+
+            // Notify subscribers
+            InventoryUpdated?.Invoke(this, new InventoryUpdatedEventArgs(vCenterName, inventory));
+
+            _logger.LogInformation("Successfully loaded infrastructure inventory for {VCenterName}: {Stats}", 
+                vCenterName, GetInventorySummary(inventory));
+
+            return inventory;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load infrastructure inventory for vCenter: {VCenterName}", vCenterName);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Load virtual machines inventory only
+    /// </summary>
+    public async Task LoadVirtualMachinesInventoryAsync(string vCenterName, string username, string password, string connectionType = "source")
+    {
+        _logger.LogInformation("Loading VM inventory for vCenter: {VCenterName} (connection: {ConnectionType})", vCenterName, connectionType);
+
+        try
+        {
+            // Get or create existing inventory
+            VCenterInventory inventory;
+            lock (_cacheLock)
+            {
+                if (!_inventoryCache.TryGetValue(vCenterName, out inventory!))
+                {
+                    inventory = new VCenterInventory
+                    {
+                        VCenterName = vCenterName,
+                        LastUpdated = DateTime.Now
+                    };
+                    _inventoryCache[vCenterName] = inventory;
+                }
+            }
+
+            // Load VMs and Resource Pools
+            await LoadVirtualMachinesAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadResourcePoolsAsync(vCenterName, username, password, inventory, connectionType);
+
+            // Update timestamp
+            inventory.LastUpdated = DateTime.Now;
+
+            // Notify subscribers
+            InventoryUpdated?.Invoke(this, new InventoryUpdatedEventArgs(vCenterName, inventory));
+
+            _logger.LogInformation("Successfully loaded VM inventory for {VCenterName}: {VMCount} VMs", 
+                vCenterName, inventory.VirtualMachines.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load VM inventory for vCenter: {VCenterName}", vCenterName);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Load administrative configuration inventory only
+    /// </summary>
+    public async Task LoadAdminConfigInventoryAsync(string vCenterName, string username, string password, string connectionType = "source")
+    {
+        _logger.LogInformation("Loading admin config inventory for vCenter: {VCenterName} (connection: {ConnectionType})", vCenterName, connectionType);
+
+        try
+        {
+            // Get or create existing inventory
+            VCenterInventory inventory;
+            lock (_cacheLock)
+            {
+                if (!_inventoryCache.TryGetValue(vCenterName, out inventory!))
+                {
+                    inventory = new VCenterInventory
+                    {
+                        VCenterName = vCenterName,
+                        LastUpdated = DateTime.Now
+                    };
+                    _inventoryCache[vCenterName] = inventory;
+                }
+            }
+
+            // Load admin configuration components
+            await LoadVirtualSwitchesAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadFoldersAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadTagsAndCategoriesAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadRolesAndPermissionsAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadCustomAttributesAsync(vCenterName, username, password, inventory, connectionType);
+
+            // Update timestamp
+            inventory.LastUpdated = DateTime.Now;
+
+            // Notify subscribers
+            InventoryUpdated?.Invoke(this, new InventoryUpdatedEventArgs(vCenterName, inventory));
+
+            _logger.LogInformation("Successfully loaded admin config inventory for {VCenterName}", vCenterName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load admin config inventory for vCenter: {VCenterName}", vCenterName);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Get all cached vCenter names
     /// </summary>
     public List<string> GetCachedVCenterNames()

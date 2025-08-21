@@ -342,26 +342,21 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (success)
                 {
-                // Step 3: Load inventory
-                SourceConnectionStatus = $"📊 Loading vCenter inventory...";
-                await Task.Delay(100); // Allow UI to update
-
-                // Use the new inventory-enabled method
-                var inventoryLoaded = await _sharedConnectionService.SetSourceConnectionAsync(SelectedSourceProfile);
+                // Step 3: Set connection without inventory
+                _sharedConnectionService.SourceConnection = SelectedSourceProfile;
 
                 var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("source");
 
                 IsSourceConnected = true;
                 SourceConnectionStatus = $"✅ Connected - {SelectedSourceProfile.ServerAddress} (v{version})";
                 SourceConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
-
-                var inventoryMessage = inventoryLoaded ? "\n✅ vCenter inventory loaded successfully!" : "\n⚠️  Inventory loading failed";
                 
                 ScriptOutput = $"Persistent connection established!\n" +
                               $"Server: {SelectedSourceProfile.ServerAddress}\n" +
                               $"Session ID: {sessionId}\n" +
-                              $"Version: {version}{inventoryMessage}\n\n" +
+                              $"Version: {version}\n\n" +
                               $"Connection will remain active for all operations.\n" +
+                              $"Use vCenter Objects page to load inventory data.\n" +
                               $"Use 'Disconnect' button to close the connection.";
 
                 _logger.LogInformation("✅ Persistent source connection established (Session: {SessionId})", sessionId);
@@ -454,12 +449,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (success)
                 {
-                // Step 3: Load inventory
-                TargetConnectionStatus = $"📊 Loading vCenter inventory...";
-                await Task.Delay(100); // Allow UI to update
-
-                // Use the new inventory-enabled method
-                var inventoryLoaded = await _sharedConnectionService.SetTargetConnectionAsync(SelectedTargetProfile);
+                // Step 3: Set connection without inventory
+                _sharedConnectionService.TargetConnection = SelectedTargetProfile;
 
                 var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("target");
 
@@ -467,13 +458,12 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 TargetConnectionStatus = $"✅ Connected - {SelectedTargetProfile.ServerAddress} (v{version})";
                 TargetConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
 
-                var inventoryMessage = inventoryLoaded ? "\n✅ vCenter inventory loaded successfully!" : "\n⚠️  Inventory loading failed";
-
                 ScriptOutput = $"Persistent connection established!\n" +
                               $"Server: {SelectedTargetProfile.ServerAddress}\n" +
                               $"Session ID: {sessionId}\n" +
-                              $"Version: {version}{inventoryMessage}\n\n" +
+                              $"Version: {version}\n\n" +
                               $"Connection will remain active for all operations.\n" +
+                              $"Use vCenter Objects page to load inventory data.\n" +
                               $"Use 'Disconnect' button to close the connection.";
 
                 _logger.LogInformation("✅ Persistent target connection established (Session: {SessionId})", sessionId);

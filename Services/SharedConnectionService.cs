@@ -198,6 +198,168 @@ public class SharedConnectionService
     }
 
     /// <summary>
+    /// Load infrastructure inventory for source vCenter (datacenters, clusters, hosts, datastores)
+    /// </summary>
+    public async Task<bool> LoadSourceInfrastructureAsync()
+    {
+        if (SourceConnection == null) return false;
+        
+        try
+        {
+            var password = _credentialService.GetPassword(SourceConnection);
+            if (!string.IsNullOrEmpty(password))
+            {
+                await _inventoryService.LoadInfrastructureInventoryAsync(
+                    SourceConnection.ServerAddress!, 
+                    SourceConnection.Username!, 
+                    password, 
+                    "source");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load source infrastructure inventory");
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Load VMs inventory for source vCenter
+    /// </summary>
+    public async Task<bool> LoadSourceVirtualMachinesAsync()
+    {
+        if (SourceConnection == null) return false;
+        
+        try
+        {
+            var password = _credentialService.GetPassword(SourceConnection);
+            if (!string.IsNullOrEmpty(password))
+            {
+                await _inventoryService.LoadVirtualMachinesInventoryAsync(
+                    SourceConnection.ServerAddress!, 
+                    SourceConnection.Username!, 
+                    password, 
+                    "source");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load source VM inventory");
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Load admin config inventory for source vCenter
+    /// </summary>
+    public async Task<bool> LoadSourceAdminConfigAsync()
+    {
+        if (SourceConnection == null) return false;
+        
+        try
+        {
+            var password = _credentialService.GetPassword(SourceConnection);
+            if (!string.IsNullOrEmpty(password))
+            {
+                await _inventoryService.LoadAdminConfigInventoryAsync(
+                    SourceConnection.ServerAddress!, 
+                    SourceConnection.Username!, 
+                    password, 
+                    "source");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load source admin config inventory");
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Load infrastructure inventory for target vCenter (datacenters, clusters, hosts, datastores)
+    /// </summary>
+    public async Task<bool> LoadTargetInfrastructureAsync()
+    {
+        if (TargetConnection == null) return false;
+        
+        try
+        {
+            var password = _credentialService.GetPassword(TargetConnection);
+            if (!string.IsNullOrEmpty(password))
+            {
+                await _inventoryService.LoadInfrastructureInventoryAsync(
+                    TargetConnection.ServerAddress!, 
+                    TargetConnection.Username!, 
+                    password, 
+                    "target");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load target infrastructure inventory");
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Load VMs inventory for target vCenter
+    /// </summary>
+    public async Task<bool> LoadTargetVirtualMachinesAsync()
+    {
+        if (TargetConnection == null) return false;
+        
+        try
+        {
+            var password = _credentialService.GetPassword(TargetConnection);
+            if (!string.IsNullOrEmpty(password))
+            {
+                await _inventoryService.LoadVirtualMachinesInventoryAsync(
+                    TargetConnection.ServerAddress!, 
+                    TargetConnection.Username!, 
+                    password, 
+                    "target");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load target VM inventory");
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Load admin config inventory for target vCenter
+    /// </summary>
+    public async Task<bool> LoadTargetAdminConfigAsync()
+    {
+        if (TargetConnection == null) return false;
+        
+        try
+        {
+            var password = _credentialService.GetPassword(TargetConnection);
+            if (!string.IsNullOrEmpty(password))
+            {
+                await _inventoryService.LoadAdminConfigInventoryAsync(
+                    TargetConnection.ServerAddress!, 
+                    TargetConnection.Username!, 
+                    password, 
+                    "target");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load target admin config inventory");
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Get inventory for target vCenter
     /// </summary>
     public VCenterInventory? GetTargetInventory()
