@@ -261,12 +261,12 @@ public class VCenterInventoryService
         var script = @"
             $esxiHosts = Get-VMHost | ForEach-Object {
                 $cluster = Get-Cluster -VMHost $_
-                $datacenter = Get-Datacenter -Cluster $cluster
+                $datacenter = if ($cluster) { Get-Datacenter -Cluster $cluster } else { Get-Datacenter -VMHost $_ }
                 [PSCustomObject]@{
                     Name = $_.Name
                     Id = $_.Id
-                    ClusterName = $cluster.Name
-                    DatacenterName = $datacenter.Name
+                    ClusterName = if ($cluster) { $cluster.Name } else { """" }
+                    DatacenterName = if ($datacenter) { $datacenter.Name } else { """" }
                     Version = $_.Version
                     Build = $_.Build
                     ConnectionState = $_.ConnectionState.ToString()
