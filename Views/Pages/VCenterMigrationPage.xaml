@@ -291,7 +291,8 @@
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel>
-                                            <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="Medium"/>
+                                            <TextBlock Text="{Binding DatacenterInfo}" FontSize="10" Opacity="0.6" Margin="0,1,0,0"/>
                                             <TextBlock FontSize="11" Opacity="0.7">
                                                 <TextBlock.Text>
                                                     <MultiBinding StringFormat="\{0\} hosts • \{1\} VMs • \{2\} datastores">
@@ -324,7 +325,8 @@
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel>
-                                            <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="Medium"/>
+                                            <TextBlock Text="{Binding DatacenterInfo}" FontSize="10" Opacity="0.6" Margin="0,1,0,0"/>
                                             <TextBlock FontSize="11" Opacity="0.7">
                                                 <TextBlock.Text>
                                                     <MultiBinding StringFormat="\{0\} hosts • \{1\} VMs • \{2\} datastores">

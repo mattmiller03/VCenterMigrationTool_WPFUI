@@ -1589,20 +1589,45 @@ public class HybridPowerShellService : IDisposable
                     # Connect to vCenter
                     $connection = Connect-VIServer -Server '{connection.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
                     
-                    # Get clusters
-                    $clusters = Get-Cluster -ErrorAction Stop
-                    $result = @()
+                    # Get all clusters from ALL datacenters
+                    Write-Output ""Getting all datacenters...""
+                    $datacenters = Get-Datacenter -ErrorAction Stop
+                    Write-Output ""Found $($datacenters.Count) datacenters""
                     
-                    foreach ($cluster in $clusters) {{
-                        $clusterObj = [PSCustomObject]@{{
-                            Name = $cluster.Name
-                            Id = $cluster.Id
-                            HAEnabled = $cluster.HAEnabled
-                            DrsEnabled = $cluster.DrsEnabled
-                            EVCMode = if ($cluster.EVCMode) {{ $cluster.EVCMode }} else {{ """" }}
+                    $result = @()
+                    $clusterCount = 0
+                    
+                    foreach ($datacenter in $datacenters) {{
+                        Write-Output ""Processing datacenter: $($datacenter.Name)""
+                        
+                        try {{
+                            $clusters = Get-Cluster -Location $datacenter -ErrorAction SilentlyContinue
+                            
+                            if ($clusters) {{
+                                foreach ($cluster in $clusters) {{
+                                    $clusterCount++
+                                    Write-Output ""Found cluster: $($cluster.Name) in datacenter: $($datacenter.Name)""
+                                    
+                                    $clusterObj = [PSCustomObject]@{{
+                                        Name = $cluster.Name
+                                        Id = $cluster.Id
+                                        HAEnabled = $cluster.HAEnabled
+                                        DrsEnabled = $cluster.DrsEnabled
+                                        EVCMode = if ($cluster.EVCMode) {{ $cluster.EVCMode }} else {{ """" }}
+                                        DatacenterName = $datacenter.Name
+                                        FullName = ""$($datacenter.Name)/$($cluster.Name)""
+                                    }}
+                                    $result += $clusterObj
+                                }}
+                            }} else {{
+                                Write-Output ""No clusters found in datacenter: $($datacenter.Name)""
+                            }}
+                        }} catch {{
+                            Write-Output ""Error getting clusters from datacenter $($datacenter.Name): $($_.Exception.Message)""
                         }}
-                        $result += $clusterObj
                     }}
+                    
+                    Write-Output ""Total clusters found: $clusterCount across $($datacenters.Count) datacenters""
                     
                     # Force array output even for single items and ensure proper JSON structure
                     if ($result.Count -eq 1) {{
@@ -1712,6 +1737,8 @@ public class HybridPowerShellService : IDisposable
             HAEnabled = bool.Parse(clusterDict.GetValueOrDefault("HAEnabled", false).ToString()),
             DrsEnabled = bool.Parse(clusterDict.GetValueOrDefault("DrsEnabled", false).ToString()),
             EVCMode = clusterDict.GetValueOrDefault("EVCMode", "").ToString(),
+            DatacenterName = clusterDict.GetValueOrDefault("DatacenterName", "").ToString(),
+            FullName = clusterDict.GetValueOrDefault("FullName", "").ToString(),
             HostCount = 0,  // Would need additional calls to populate
             VmCount = 0,
             DatastoreCount = 0

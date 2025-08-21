@@ -17,10 +17,17 @@ public class ClusterInfo
     public bool HAEnabled { get; set; }
     public bool DrsEnabled { get; set; }
     public string EVCMode { get; set; } = string.Empty;
+    public string DatacenterName { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
     public ObservableCollection<EsxiHost> Hosts { get; set; } = new();
 
-    // For display in UI
-    public string DisplayName => $"{Name} ({HostCount} hosts)";
+    // For display in UI - show datacenter/cluster format
+    public string DisplayName => !string.IsNullOrEmpty(DatacenterName) 
+        ? $"{DatacenterName}/{Name}" 
+        : Name;
     public string ResourceSummary => $"{TotalCpuGhz:F1} GHz / {TotalMemoryGB:F0} GB RAM";
     public string ClusterSummary => $"{HostCount} hosts • {VmCount} VMs • {DatastoreCount} datastores";
+    public string DatacenterInfo => !string.IsNullOrEmpty(DatacenterName) 
+        ? $"Datacenter: {DatacenterName}" 
+        : "Unknown Datacenter";
 }
