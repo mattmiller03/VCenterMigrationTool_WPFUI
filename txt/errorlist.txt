@@ -1,292 +1,132 @@
-﻿'VCenterMigrationTool.exe' (CoreCLR: DefaultDomain): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Private.CoreLib.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\VCenterMigrationTool.dll'. Symbols loaded.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationFramework.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\WindowsBase.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\System.Xaml.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'c:\program files\microsoft visual studio\2022\enterprise\common7\ide\commonextensions\microsoft\hotreload\Microsoft.Extensions.DotNetDeltaApplier.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.IO.Pipes.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Linq.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Console.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Threading.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.InteropServices.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Threading.Overlapped.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Security.AccessControl.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Security.Principal.Windows.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Security.Claims.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Loader.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\PrivateAssemblies\Runtime\Microsoft.VisualStudio.Debugger.Runtime.NetCoreApp.dll'. 
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\netstandard.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Threading.ThreadPool.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.TraceSource.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.IO.Packaging.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.Concurrent.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Private.Uri.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Text.RegularExpressions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationCore.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\DirectWriteForwarder.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Memory.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Extensions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.Debug.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.CompilerServices.VisualC.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\Microsoft.Win32.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\Microsoft.Win32.Registry.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.NonGeneric.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.Specialized.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.ComponentModel.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Threading.Thread.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\System.Configuration.ConfigurationManager.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Xml.ReaderWriter.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Private.Xml.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.WebClient.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Text.Encoding.Extensions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.ComponentModel.TypeConverter.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\System.Windows.Extensions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.ComponentModel.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.ObjectModel.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Wpf.Ui.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.Requests.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.WebHeaderCollection.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.Process.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationFramework.Aero2.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\System.Windows.Controls.Ribbon.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\CommunityToolkit.Mvvm.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Hosting.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Hosting.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Serilog.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Serilog.Extensions.Hosting.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.DependencyInjection.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.DependencyInjection.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.Diagnostics.DiagnosticSource.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.Tracing.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\CommonExtensions\Microsoft\IntelliTrace\Microsoft.IntelliTrace.TelemetryObserver.Common.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\CommonExtensions\Microsoft\IntelliTrace\Microsoft.IntelliTrace.TelemetryObserver.CoreClr.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Extensions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.EnvironmentVariables.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.CommandLine.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.FileProviders.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.FileProviders.Physical.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.FileExtensions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.Json.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.UserSecrets.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.Binder.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.IO.FileSystem.Watcher.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.FileSystemGlobbing.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.Text.Json.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.IO.Pipelines.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Options.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Diagnostics.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Diagnostics.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.Configuration.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.Debug.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.EventSource.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.EventLog.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.Console.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Options.ConfigurationExtensions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Serilog.Extensions.Logging.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Wpf.Ui.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Wpf.Ui.DependencyInjection.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Serilog.Sinks.Debug.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Serilog.Sinks.File.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.Text.Encodings.Web.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Intrinsics.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Numerics.Vectors.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Emit.ILGeneration.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Emit.Lightweight.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\UIAutomationTypes.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Wpf.Ui.Tray.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationFramework-SystemXml.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\UIAutomationProvider.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.Drawing.Common.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.Private.Windows.Core.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Drawing.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'c:\program files\microsoft visual studio\2022\enterprise\common7\ide\commonextensions\microsoft\xamldiagnostics\Core\x64\Microsoft.VisualStudio.DesignTools.WpfTap.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Threading.Tasks.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Json.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Private.DataContractSerialization.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Xml.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Resources.ResourceManager.dll'. Symbol loading disabled by Include/Exclude setting.
-[09:05:09 INF] Configuration loaded successfully from C:\Users\DMM0090\AppData\Local\VCenterMigrationTool\userconfig.json
-[09:05:09 INF] Configured log path: C:\Temp\app\logs
-[09:05:09 INF] Base log directory: C:\Temp\app\logs
-[09:05:09 INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
-[09:05:09 INF] Created PowerShell log directory: C:\Temp\app\logs\PowerShell
-[09:05:09 INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
-[09:05:10 INF] Trying PowerShell executable: pwsh.exe
-[09:05:10 INF] Creating PowerShell process with command: pwsh.exe
-[09:05:10 INF] Successfully started PowerShell process: pwsh.exe (PID: 41000)
-[09:05:10 INF] Application started. Press Ctrl+C to shut down.
-[09:05:10 INF] Hosting environment: Production
-[09:05:10 INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationUI.dll'. Symbol loading disabled by Include/Exclude setting.
-[09:05:10 INF] PowerShell process completed with exit code: 0
-[09:05:10 INF] STARTUP: PowerCLI detected and confirmed installed on startup
-[09:05:10 INF] PERSISTENCE: PowerCLI status saved as true
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Formatters.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\Accessibility.dll'. Module was built without symbols.
-[09:05:20 INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
+﻿[09:14:45 INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
 'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Meziantou.Framework.Win32.CredentialManager.dll'. 
-[09:05:20 INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
-[09:05:20 INF] Started persistent PowerShell process: pwsh.exe (PID: 8020)
-[09:05:20 INF] Bypassing module import (assumed already loaded)
-[09:05:20 INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
-[09:05:30 INF] ✅ Persistent connection established to klisv0pp212.dir.ad.dla.mil (Session: "7d76645be8a37f81576badc0687b57ba7049a223")
-[09:05:30 INF] Loading inventory for source vCenter: klisv0pp212.dir.ad.dla.mil
-[09:05:30 INF] Loading complete inventory for vCenter: klisv0pp212.dir.ad.dla.mil (connection: source)
+[09:14:46 INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+[09:14:46 INF] Started persistent PowerShell process: pwsh.exe (PID: 27992)
+[09:14:46 INF] Bypassing module import (assumed already loaded)
+[09:14:46 INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
+The thread '.NET TP Wait' (36556) has exited with code 0 (0x0).
+[09:14:55 INF] ✅ Persistent connection established to klisv0pp212.dir.ad.dla.mil (Session: "e7d0b7e29e04b1b5847a36451f1e35ea1fc05437")
+[09:14:55 INF] Loading inventory for source vCenter: klisv0pp212.dir.ad.dla.mil
+[09:14:55 INF] Loading complete inventory for vCenter: klisv0pp212.dir.ad.dla.mil (connection: source)
+[09:14:55 INF] Loading inventory components sequentially for klisv0pp212.dir.ad.dla.mil
+[09:15:04 INF] Loaded 5 datacenters for klisv0pp212.dir.ad.dla.mil
+The thread 17348 has exited with code 0 (0x0).
+[09:15:14 INF] Loaded 4 clusters for klisv0pp212.dir.ad.dla.mil
+The thread '.NET TP Worker' (32348) has exited with code 0 (0x0).
+[09:15:39 WRN] PS Error: [31;1mGet-Datacenter: [0m
+[09:15:39 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:15:39 WRN] PS Error: [31;1m[36;1m[36;1m   3 | [0m                 $datacenter = Get-Datacenter -Cluster [36;1m$cluster[0m
+[09:15:39 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                       ~~~~~~~~[0m
+[09:15:39 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot validate argument on parameter 'Cluster'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.[0m
+[09:15:40 WRN] PS Error: [31;1mGet-Datacenter: [0m
+[09:15:40 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:15:40 WRN] PS Error: [31;1m[36;1m[36;1m   3 | [0m                 $datacenter = Get-Datacenter -Cluster [36;1m$cluster[0m
+[09:15:40 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                       ~~~~~~~~[0m
+[09:15:40 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot validate argument on parameter 'Cluster'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.[0m
+[09:15:40 WRN] PS Error: [31;1mGet-Datacenter: [0m
+[09:15:40 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:15:40 WRN] PS Error: [31;1m[36;1m[36;1m   3 | [0m                 $datacenter = Get-Datacenter -Cluster [36;1m$cluster[0m
+[09:15:40 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                       ~~~~~~~~[0m
+[09:15:40 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot validate argument on parameter 'Cluster'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.[0m
+[09:15:41 WRN] PS Error: [31;1mGet-Datacenter: [0m
+[09:15:41 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:15:41 WRN] PS Error: [31;1m[36;1m[36;1m   3 | [0m                 $datacenter = Get-Datacenter -Cluster [36;1m$cluster[0m
+[09:15:41 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                       ~~~~~~~~[0m
+[09:15:41 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot validate argument on parameter 'Cluster'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.[0m
+The thread '.NET TP Worker' (10788) has exited with code 0 (0x0).
 'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.StackTrace.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Metadata.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.Immutable.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.IO.MemoryMappedFiles.dll'. Symbol loading disabled by Include/Exclude setting.
-[09:05:30 ERR] Error executing command
-System.InvalidOperationException: The stream is currently in use by a previous operation on the stream.
-   at System.IO.StreamWriter.ThrowAsyncIOInProgress()
-   at System.IO.StreamWriter.FlushAsync()
-   at VCenterMigrationTool.Services.PersistentExternalConnectionService.ExecuteCommandWithTimeoutAsync(String connectionKey, String command, TimeSpan timeout) in C:\Git\Apps\LatestVcenterApp\Services\PersistantVcenterConnectionService.cs:line 285
-[09:05:30 ERR] Error executing command
-System.InvalidOperationException: The stream is currently in use by a previous operation on the stream.
-   at System.IO.StreamWriter.ThrowAsyncIOInProgress()
-   at System.IO.StreamWriter.FlushAsync()
-   at VCenterMigrationTool.Services.PersistentExternalConnectionService.ExecuteCommandWithTimeoutAsync(String connectionKey, String command, TimeSpan timeout) in C:\Git\Apps\LatestVcenterApp\Services\PersistantVcenterConnectionService.cs:line 285
-[09:05:30 ERR] Error executing command
-System.InvalidOperationException: The stream is currently in use by a previous operation on the stream.
-   at System.IO.StreamWriter.ThrowAsyncIOInProgress()
-   at System.IO.StreamWriter.FlushAsync()
-   at VCenterMigrationTool.Services.PersistentExternalConnectionService.ExecuteCommandWithTimeoutAsync(String connectionKey, String command, TimeSpan timeout) in C:\Git\Apps\LatestVcenterApp\Services\PersistantVcenterConnectionService.cs:line 285
-[09:05:30 ERR] Error executing command
-System.InvalidOperationException: The stream is currently in use by a previous operation on the stream.
-   at System.IO.StreamWriter.ThrowAsyncIOInProgress()
-   at System.IO.StreamWriter.FlushAsync()
-   at VCenterMigrationTool.Services.PersistentExternalConnectionService.ExecuteCommandWithTimeoutAsync(String connectionKey, String command, TimeSpan timeout) in C:\Git\Apps\LatestVcenterApp\Services\PersistantVcenterConnectionService.cs:line 285
-[09:05:30 ERR] Error executing command
-System.InvalidOperationException: The stream is currently in use by a previous operation on the stream.
-   at System.IO.StreamWriter.ThrowAsyncIOInProgress()
-   at System.IO.StreamWriter.FlushAsync()
-   at VCenterMigrationTool.Services.PersistentExternalConnectionService.ExecuteCommandWithTimeoutAsync(String connectionKey, String command, TimeSpan timeout) in C:\Git\Apps\LatestVcenterApp\Services\PersistantVcenterConnectionService.cs:line 285
-[09:05:30 ERR] Failed to load datacenters for klisv0pp212.dir.ad.dla.mil
-System.Text.Json.JsonException: 'E' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
- ---> System.Text.Json.JsonReaderException: 'E' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 0.
-   at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
-   at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
-   at System.Text.Json.Utf8JsonReader.ReadFirstToken(Byte first)
-   at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
-   at System.Text.Json.Utf8JsonReader.Read()
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   --- End of inner exception stack trace ---
-   at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
-   at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
-   at VCenterMigrationTool.Services.VCenterInventoryService.LoadDatacentersAsync(String vCenterName, String username, String password, VCenterInventory inventory, String connectionType) in C:\Git\Apps\LatestVcenterApp\Services\VCenterInventoryService.cs:line 180
-The thread '.NET TP Wait' (40448) has exited with code 0 (0x0).
-[09:05:30 ERR] Failed to load clusters for klisv0pp212.dir.ad.dla.mil
-System.Text.Json.JsonException: 'E' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
- ---> System.Text.Json.JsonReaderException: 'E' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 0.
-   at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
-   at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
-   at System.Text.Json.Utf8JsonReader.ReadFirstToken(Byte first)
-   at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
-   at System.Text.Json.Utf8JsonReader.Read()
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   --- End of inner exception stack trace ---
-   at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
-   at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
-   at VCenterMigrationTool.Services.VCenterInventoryService.LoadClustersAsync(String vCenterName, String username, String password, VCenterInventory inventory, String connectionType) in C:\Git\Apps\LatestVcenterApp\Services\VCenterInventoryService.cs:line 222
-[09:05:30 ERR] Failed to load hosts for klisv0pp212.dir.ad.dla.mil
-System.Text.Json.JsonException: 'E' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
- ---> System.Text.Json.JsonReaderException: 'E' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 0.
-   at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
-   at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
-   at System.Text.Json.Utf8JsonReader.ReadFirstToken(Byte first)
-   at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
-   at System.Text.Json.Utf8JsonReader.Read()
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   --- End of inner exception stack trace ---
-   at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
-   at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
-   at VCenterMigrationTool.Services.VCenterInventoryService.LoadHostsAsync(String vCenterName, String username, String password, VCenterInventory inventory, String connectionType) in C:\Git\Apps\LatestVcenterApp\Services\VCenterInventoryService.cs:line 264
-[09:05:30 ERR] Failed to load datastores for klisv0pp212.dir.ad.dla.mil
-System.Text.Json.JsonException: 'E' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
- ---> System.Text.Json.JsonReaderException: 'E' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 0.
-   at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
-   at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
-   at System.Text.Json.Utf8JsonReader.ReadFirstToken(Byte first)
-   at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
-   at System.Text.Json.Utf8JsonReader.Read()
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   --- End of inner exception stack trace ---
-   at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
-   at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
-   at VCenterMigrationTool.Services.VCenterInventoryService.LoadDatastoresAsync(String vCenterName, String username, String password, VCenterInventory inventory, String connectionType) in C:\Git\Apps\LatestVcenterApp\Services\VCenterInventoryService.cs:line 299
-[09:05:30 ERR] Failed to load virtual machines for klisv0pp212.dir.ad.dla.mil
-System.Text.Json.JsonException: 'E' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
- ---> System.Text.Json.JsonReaderException: 'E' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 0.
-   at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
-   at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
-   at System.Text.Json.Utf8JsonReader.ReadFirstToken(Byte first)
-   at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
-   at System.Text.Json.Utf8JsonReader.Read()
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   --- End of inner exception stack trace ---
-   at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
-   at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
-   at VCenterMigrationTool.Services.VCenterInventoryService.LoadVirtualMachinesAsync(String vCenterName, String username, String password, VCenterInventory inventory, String connectionType) in C:\Git\Apps\LatestVcenterApp\Services\VCenterInventoryService.cs:line 346
-The thread 27560 has exited with code 0 (0x0).
-The thread '.NET TP Worker' (4700) has exited with code 0 (0x0).
-[09:06:15 INF] Application shutting down - cleaning up services
-[09:06:15 INF] Cleaning up 0 active PowerShell processes before shutdown
-[09:06:15 INF] Starting cleanup of all active PowerShell processes
-[09:06:15 INF] Completed cleanup of 0 PowerShell processes
-[09:06:15 INF] PowerShell process cleanup completed
-[09:06:15 INF] Cleaning up persistent vCenter connection processes
-[09:06:15 INF] Disposing PersistentExternalConnectionService - closing all connections
-[09:06:15 INF] Disconnecting from klisv0pp212.dir.ad.dla.mil (source)
-[09:06:16 WRN] PS Error: [31;1mGet-Datacenter: [0m
-[09:06:16 WRN] PS Error: [31;1m[36;1mLine |[0m
-[09:06:16 WRN] PS Error: [31;1m[36;1m[36;1m   3 | [0m                 $datacenter = Get-Datacenter -Cluster [36;1m$cluster[0m
-[09:06:16 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                       ~~~~~~~~[0m
-[09:06:16 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot validate argument on parameter 'Cluster'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.[0m
-[09:06:17 WRN] PS Error: [31;1mGet-Datacenter: [0m
-[09:06:17 WRN] PS Error: [31;1m[36;1mLine |[0m
-[09:06:17 WRN] PS Error: [31;1m[36;1m[36;1m   3 | [0m                 $datacenter = Get-Datacenter -Cluster [36;1m$cluster[0m
-[09:06:17 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                       ~~~~~~~~[0m
-[09:06:17 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot validate argument on parameter 'Cluster'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.[0m
-[09:06:18 WRN] PS Error: [31;1mGet-Datacenter: [0m
-[09:06:18 WRN] PS Error: [31;1m[36;1mLine |[0m
-[09:06:18 WRN] PS Error: [31;1m[36;1m[36;1m   3 | [0m                 $datacenter = Get-Datacenter -Cluster [36;1m$cluster[0m
-[09:06:18 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                       ~~~~~~~~[0m
-[09:06:18 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot validate argument on parameter 'Cluster'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.[0m
-[09:06:18 WRN] PS Error: [31;1mGet-Datacenter: [0m
-[09:06:18 WRN] PS Error: [31;1m[36;1mLine |[0m
-[09:06:18 WRN] PS Error: [31;1m[36;1m[36;1m   3 | [0m                 $datacenter = Get-Datacenter -Cluster [36;1m$cluster[0m
-[09:06:18 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                       ~~~~~~~~[0m
-[09:06:18 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot validate argument on parameter 'Cluster'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.[0m
-The program '[29220] VCenterMigrationTool.exe: Program Trace' has exited with code 0 (0x0).
-The program '[29220] VCenterMigrationTool.exe' has exited with code 4294967295 (0xffffffff).
+[09:16:47 WRN] PS Error: [31;1mWriteError: [0m
+[09:16:47 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:16:47 WRN] PS Error: [31;1m[36;1m[36;1m   4 | [0m                 [36;1m$host = Get-VMHost -VM $_[0m
+[09:16:47 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[09:16:47 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot overwrite variable Host because it is read-only or constant.[0m
+[09:16:48 WRN] PS Error: [31;1mGet-Folder: [0m
+[09:16:48 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:16:48 WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m                 $folder = Get-Folder [36;1m-VM[0m $_[0m
+[09:16:48 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                      ~~~[0m
+[09:16:48 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mA parameter cannot be found that matches parameter name 'VM'.[0m
+[09:16:51 WRN] PS Error: [31;1mWriteError: [0m
+[09:16:51 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:16:51 WRN] PS Error: [31;1m[36;1m[36;1m   4 | [0m                 [36;1m$host = Get-VMHost -VM $_[0m
+[09:16:51 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[09:16:51 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot overwrite variable Host because it is read-only or constant.[0m
+[09:16:52 WRN] PS Error: [31;1mGet-Folder: [0m
+[09:16:52 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:16:52 WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m                 $folder = Get-Folder [36;1m-VM[0m $_[0m
+[09:16:52 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                      ~~~[0m
+[09:16:52 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mA parameter cannot be found that matches parameter name 'VM'.[0m
+[09:16:54 WRN] PS Error: [31;1mWriteError: [0m
+[09:16:54 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:16:54 WRN] PS Error: [31;1m[36;1m[36;1m   4 | [0m                 [36;1m$host = Get-VMHost -VM $_[0m
+[09:16:54 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[09:16:54 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot overwrite variable Host because it is read-only or constant.[0m
+[09:16:56 WRN] PS Error: [31;1mGet-Folder: [0m
+[09:16:56 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:16:56 WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m                 $folder = Get-Folder [36;1m-VM[0m $_[0m
+[09:16:56 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                      ~~~[0m
+[09:16:56 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mA parameter cannot be found that matches parameter name 'VM'.[0m
+[09:16:58 WRN] PS Error: [31;1mWriteError: [0m
+[09:16:58 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:16:58 WRN] PS Error: [31;1m[36;1m[36;1m   4 | [0m                 [36;1m$host = Get-VMHost -VM $_[0m
+[09:16:58 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[09:16:58 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot overwrite variable Host because it is read-only or constant.[0m
+[09:16:59 WRN] PS Error: [31;1mGet-Folder: [0m
+[09:16:59 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:16:59 WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m                 $folder = Get-Folder [36;1m-VM[0m $_[0m
+[09:16:59 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                      ~~~[0m
+[09:16:59 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mA parameter cannot be found that matches parameter name 'VM'.[0m
+[09:17:02 WRN] PS Error: [31;1mWriteError: [0m
+[09:17:02 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:02 WRN] PS Error: [31;1m[36;1m[36;1m   4 | [0m                 [36;1m$host = Get-VMHost -VM $_[0m
+[09:17:02 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[09:17:02 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot overwrite variable Host because it is read-only or constant.[0m
+[09:17:03 WRN] PS Error: [31;1mGet-Folder: [0m
+[09:17:03 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:03 WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m                 $folder = Get-Folder [36;1m-VM[0m $_[0m
+[09:17:03 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                      ~~~[0m
+[09:17:03 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mA parameter cannot be found that matches parameter name 'VM'.[0m
+[09:17:06 WRN] PS Error: [31;1mWriteError: [0m
+[09:17:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:06 WRN] PS Error: [31;1m[36;1m[36;1m   4 | [0m                 [36;1m$host = Get-VMHost -VM $_[0m
+[09:17:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[09:17:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot overwrite variable Host because it is read-only or constant.[0m
+[09:17:07 WRN] PS Error: [31;1mGet-Folder: [0m
+[09:17:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:07 WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m                 $folder = Get-Folder [36;1m-VM[0m $_[0m
+[09:17:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                      ~~~[0m
+[09:17:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mA parameter cannot be found that matches parameter name 'VM'.[0m
+[09:17:09 WRN] PS Error: [31;1mWriteError: [0m
+[09:17:09 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:09 WRN] PS Error: [31;1m[36;1m[36;1m   4 | [0m                 [36;1m$host = Get-VMHost -VM $_[0m
+[09:17:09 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[09:17:09 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot overwrite variable Host because it is read-only or constant.[0m
+[09:17:10 WRN] PS Error: [31;1mGet-Folder: [0m
+[09:17:10 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:10 WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m                 $folder = Get-Folder [36;1m-VM[0m $_[0m
+[09:17:10 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                      ~~~[0m
+[09:17:10 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mA parameter cannot be found that matches parameter name 'VM'.[0m
+[09:17:13 WRN] PS Error: [31;1mWriteError: [0m
+[09:17:13 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:13 WRN] PS Error: [31;1m[36;1m[36;1m   4 | [0m                 [36;1m$host = Get-VMHost -VM $_[0m
+[09:17:13 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[09:17:13 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot overwrite variable Host because it is read-only or constant.[0m
+[09:17:14 WRN] PS Error: [31;1mGet-Folder: [0m
+[09:17:14 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:14 WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m                 $folder = Get-Folder [36;1m-VM[0m $_[0m
+[09:17:14 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                      ~~~[0m
+[09:17:14 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mA parameter cannot be found that matches parameter name 'VM'.[0m
+[09:17:17 WRN] PS Error: [31;1mWriteError: [0m
+[09:17:17 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:17 WRN] PS Error: [31;1m[36;1m[36;1m   4 | [0m                 [36;1m$host = Get-VMHost -VM $_[0m
+[09:17:17 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[09:17:17 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot overwrite variable Host because it is read-only or constant.[0m
+[09:17:18 WRN] PS Error: [31;1mGet-Folder: [0m
+[09:17:18 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:18 WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m                 $folder = Get-Folder [36;1m-VM[0m $_[0m
+[09:17:18 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                      ~~~[0m
+[09:17:18 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mA parameter cannot be found that matches parameter name 'VM'.[0m
+[09:17:20 WRN] PS Error: [31;1mWriteError: [0m
+[09:17:20 WRN] PS Error: [31;1m[36;1mLine |[0m
+[09:17:20 WRN] PS Error: [31;1m[36;1m[36;1m   4 | [0m                 [36;1m$host = Get-VMHost -VM $_[0m
+[09:17:20 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[09:17:20 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot overwrite variable Host because it is read-only or constant.[0m
