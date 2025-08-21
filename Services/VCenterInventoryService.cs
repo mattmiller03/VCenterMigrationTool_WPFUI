@@ -286,33 +286,33 @@ public class VCenterInventoryService
         var script = @"
             # Use vSphere API for much faster host data collection
             $esxiHosts = Get-View -ViewType HostSystem | ForEach-Object {
-                $host = $_
+                $esxiHost = $_
                 
                 # Get parent cluster and datacenter using API relationships
-                $cluster = if ($host.Parent) { 
-                    $parent = Get-View $host.Parent
+                $cluster = if ($esxiHost.Parent) { 
+                    $parent = Get-View $esxiHost.Parent
                     if ($parent.GetType().Name -eq ""ClusterComputeResource"") { $parent } else { $null }
                 } else { $null }
                 $datacenter = if ($cluster) { Get-View $cluster.Parent } else { 
-                    $parent = Get-View $host.Parent
+                    $parent = Get-View $esxiHost.Parent
                     if ($parent.GetType().Name -eq ""Datacenter"") { $parent } else { Get-View $parent.Parent }
                 }
                 
                 # Count VMs on this host using API
-                $vmCount = (Get-View -ViewType VirtualMachine -SearchRoot $host.MoRef | Measure-Object).Count
+                $vmCount = (Get-View -ViewType VirtualMachine -SearchRoot $esxiHost.MoRef | Measure-Object).Count
                 
                 [PSCustomObject]@{
-                    Name = $host.Name
-                    Id = $host.MoRef.Value
+                    Name = $esxiHost.Name
+                    Id = $esxiHost.MoRef.Value
                     ClusterName = if ($cluster) { $cluster.Name } else { """" }
                     DatacenterName = if ($datacenter) { $datacenter.Name } else { """" }
-                    Version = $host.Config.Product.Version
-                    Build = $host.Config.Product.Build
-                    ConnectionState = $host.Runtime.ConnectionState.ToString()
-                    PowerState = $host.Runtime.PowerState.ToString()
-                    CpuCores = $host.Hardware.CpuInfo.NumCpuCores
-                    CpuMhz = $host.Hardware.CpuInfo.Hz / 1000000
-                    MemoryGB = [math]::Round($host.Hardware.MemorySize / 1024 / 1024 / 1024, 2)
+                    Version = $esxiHost.Config.Product.Version
+                    Build = $esxiHost.Config.Product.Build
+                    ConnectionState = $esxiHost.Runtime.ConnectionState.ToString()
+                    PowerState = $esxiHost.Runtime.PowerState.ToString()
+                    CpuCores = $esxiHost.Hardware.CpuInfo.NumCpuCores
+                    CpuMhz = $esxiHost.Hardware.CpuInfo.Hz / 1000000
+                    MemoryGB = [math]::Round($esxiHost.Hardware.MemorySize / 1024 / 1024 / 1024, 2)
                     VmCount = $vmCount
                 }
             }
