@@ -58,23 +58,21 @@ public class VCenterInventoryService
             // Get vCenter version and basic info
             inventory.VCenterVersion = await GetVCenterVersionAsync(vCenterName, username, password, connectionType);
 
-            // Load all inventory components in parallel for performance
-            var tasks = new[]
-            {
-                LoadDatacentersAsync(vCenterName, username, password, inventory, connectionType),
-                LoadClustersAsync(vCenterName, username, password, inventory, connectionType),
-                LoadHostsAsync(vCenterName, username, password, inventory, connectionType),
-                LoadDatastoresAsync(vCenterName, username, password, inventory, connectionType),
-                LoadVirtualMachinesAsync(vCenterName, username, password, inventory, connectionType),
-                LoadResourcePoolsAsync(vCenterName, username, password, inventory, connectionType),
-                LoadVirtualSwitchesAsync(vCenterName, username, password, inventory, connectionType),
-                LoadFoldersAsync(vCenterName, username, password, inventory, connectionType),
-                LoadTagsAndCategoriesAsync(vCenterName, username, password, inventory, connectionType),
-                LoadRolesAndPermissionsAsync(vCenterName, username, password, inventory, connectionType),
-                LoadCustomAttributesAsync(vCenterName, username, password, inventory, connectionType)
-            };
-
-            await Task.WhenAll(tasks);
+            // Load all inventory components sequentially to avoid stream concurrency issues
+            // The PersistentExternalConnectionService uses a single StreamWriter that cannot handle parallel access
+            _logger.LogInformation("Loading inventory components sequentially for {VCenterName}", vCenterName);
+            
+            await LoadDatacentersAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadClustersAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadHostsAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadDatastoresAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadVirtualMachinesAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadResourcePoolsAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadVirtualSwitchesAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadFoldersAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadTagsAndCategoriesAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadRolesAndPermissionsAsync(vCenterName, username, password, inventory, connectionType);
+            await LoadCustomAttributesAsync(vCenterName, username, password, inventory, connectionType);
 
             // Cache the inventory
             lock (_cacheLock)
@@ -177,11 +175,24 @@ public class VCenterInventoryService
             var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
             if (!string.IsNullOrEmpty(result))
             {
-                var datacenters = JsonSerializer.Deserialize<DatacenterInfo[]>(result);
-                if (datacenters != null)
+                // Check if result looks like JSON before attempting to deserialize
+                if (result.TrimStart().StartsWith("[") || result.TrimStart().StartsWith("{"))
                 {
-                    inventory.Datacenters.AddRange(datacenters);
+                    var datacenters = JsonSerializer.Deserialize<DatacenterInfo[]>(result);
+                    if (datacenters != null)
+                    {
+                        inventory.Datacenters.AddRange(datacenters);
+                        _logger.LogInformation("Loaded {Count} datacenters for {VCenterName}", datacenters.Length, vCenterName);
+                    }
                 }
+                else
+                {
+                    _logger.LogWarning("Invalid JSON response for datacenters from {VCenterName}: {Response}", vCenterName, result);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Empty response for datacenters from {VCenterName}", vCenterName);
             }
         }
         catch (Exception ex)
@@ -219,11 +230,24 @@ public class VCenterInventoryService
             var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
             if (!string.IsNullOrEmpty(result))
             {
-                var clusters = JsonSerializer.Deserialize<ClusterInfo[]>(result);
-                if (clusters != null)
+                // Check if result looks like JSON before attempting to deserialize
+                if (result.TrimStart().StartsWith("[") || result.TrimStart().StartsWith("{"))
                 {
-                    inventory.Clusters.AddRange(clusters);
+                    var clusters = JsonSerializer.Deserialize<ClusterInfo[]>(result);
+                    if (clusters != null)
+                    {
+                        inventory.Clusters.AddRange(clusters);
+                        _logger.LogInformation("Loaded {Count} clusters for {VCenterName}", clusters.Length, vCenterName);
+                    }
                 }
+                else
+                {
+                    _logger.LogWarning("Invalid JSON response for clusters from {VCenterName}: {Response}", vCenterName, result);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Empty response for clusters from {VCenterName}", vCenterName);
             }
         }
         catch (Exception ex)
@@ -428,6 +452,44 @@ public class VCenterInventoryService
     {
         var stats = inventory.Statistics;
         return $"{stats.DatacenterCount} DCs, {stats.ClusterCount} clusters, {stats.HostCount} hosts, {stats.VirtualMachineCount} VMs, {stats.DatastoreCount} datastores";
+    }
+
+    /// <summary>
+    /// Execute PowerShell script and safely deserialize JSON response
+    /// </summary>
+    private async Task<T[]?> ExecuteAndDeserializeAsync<T>(string script, string connectionType, string objectType, string vCenterName)
+    {
+        try
+        {
+            var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
+            if (!string.IsNullOrEmpty(result))
+            {
+                // Check if result looks like JSON before attempting to deserialize
+                if (result.TrimStart().StartsWith("[") || result.TrimStart().StartsWith("{"))
+                {
+                    var objects = JsonSerializer.Deserialize<T[]>(result);
+                    if (objects != null)
+                    {
+                        _logger.LogInformation("Loaded {Count} {ObjectType} for {VCenterName}", objects.Length, objectType, vCenterName);
+                        return objects;
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Invalid JSON response for {ObjectType} from {VCenterName}: {Response}", objectType, vCenterName, result);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Empty response for {ObjectType} from {VCenterName}", objectType, vCenterName);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load {ObjectType} for {VCenterName}", objectType, vCenterName);
+        }
+
+        return null;
     }
 }
 
