@@ -6,7 +6,11 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Management;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using VCenterMigrationTool.Models;
@@ -158,6 +162,15 @@ public partial class App
                 logger?.LogInformation("PowerShell process cleanup completed");
                 }
 
+            // Clean up persistent connection service processes
+            var persistentConnectionService = Host.Services.GetService<PersistentExternalConnectionService>();
+            if (persistentConnectionService != null)
+                {
+                logger?.LogInformation("Cleaning up persistent vCenter connection processes");
+                persistentConnectionService.Dispose(); // This should clean up persistent PowerShell processes
+                logger?.LogInformation("Persistent connection service cleanup completed");
+                }
+
             // Clean up ViewModels with timers/resources
             var powerShellSettingsVM = Host.Services.GetService<PowerShellSettingsViewModel>();
             if (powerShellSettingsVM != null)
@@ -169,10 +182,13 @@ public partial class App
             // Clean up other ViewModels if needed
             var activityLogsVM = Host.Services.GetService<ActivityLogsViewModel>();
             activityLogsVM?.Dispose();
+
+            // Final cleanup: Kill any remaining PowerShell processes created by this app
+            await PerformFinalProcessCleanup(logger);
             }
         catch (Exception ex)
             {
-            logger?.LogError(ex, "Error during PowerShell service cleanup");
+            logger?.LogError(ex, "Error during service cleanup");
             }
 
         try
@@ -185,6 +201,124 @@ public partial class App
             logger?.LogError(ex, "Error during host shutdown");
             }
         }
+
+    /// <summary>
+    /// Final cleanup to kill any remaining PowerShell processes that might have been left behind
+    /// </summary>
+    private async Task PerformFinalProcessCleanup(ILogger<App>? logger)
+    {
+        try
+        {
+            // Get all PowerShell processes running on the system
+            var allPowerShellProcesses = Process.GetProcessesByName("pwsh")
+                .Concat(Process.GetProcessesByName("powershell"))
+                .ToArray();
+
+            if (allPowerShellProcesses.Length == 0)
+            {
+                logger?.LogInformation("No PowerShell processes found during final cleanup");
+                return;
+            }
+
+            logger?.LogInformation("Found {Count} PowerShell processes during final cleanup scan", allPowerShellProcesses.Length);
+
+            // Kill PowerShell processes that were likely created by this application
+            // We'll identify them by command line arguments or creation time near our app's startup
+            var killed = 0;
+            var appStartTime = Process.GetCurrentProcess().StartTime;
+
+            foreach (var process in allPowerShellProcesses)
+            {
+                try
+                {
+                    // Skip processes that started before our app (likely system or user processes)
+                    if (process.StartTime < appStartTime.AddSeconds(-30))
+                        continue;
+
+                    // Try to get command line to identify our processes
+                    var isOurProcess = false;
+                    try
+                    {
+                        // Check if it's running our scripts or has our signature parameters
+                        var commandLine = GetCommandLine(process);
+                        if (!string.IsNullOrEmpty(commandLine) && 
+                            (commandLine.Contains("VCenterMigrationTool") || 
+                             commandLine.Contains("Get-Clusters") ||
+                             commandLine.Contains("Get-ClusterItems") ||
+                             commandLine.Contains("BypassModuleCheck") ||
+                             commandLine.Contains("SuppressConsoleOutput")))
+                        {
+                            isOurProcess = true;
+                        }
+                    }
+                    catch
+                    {
+                        // If we can't read command line, check if it's a recent process
+                        // and assume it might be ours if it started recently
+                        var timeDiff = DateTime.Now - process.StartTime;
+                        if (timeDiff.TotalMinutes < 30) // Started within last 30 minutes
+                        {
+                            isOurProcess = true;
+                        }
+                    }
+
+                    if (isOurProcess)
+                    {
+                        logger?.LogInformation("Killing potentially orphaned PowerShell process PID {PID} (started: {StartTime})", 
+                            process.Id, process.StartTime);
+                        
+                        process.Kill(entireProcessTree: true);
+                        await Task.Delay(100); // Small delay to allow process to terminate
+                        killed++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogDebug(ex, "Error cleaning up PowerShell process PID {PID}", process.Id);
+                }
+                finally
+                {
+                    process.Dispose();
+                }
+            }
+
+            if (killed > 0)
+            {
+                logger?.LogWarning("Killed {Count} potentially orphaned PowerShell processes during final cleanup", killed);
+            }
+            else
+            {
+                logger?.LogInformation("No orphaned PowerShell processes found during final cleanup");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Error during final PowerShell process cleanup");
+        }
+    }
+
+    /// <summary>
+    /// Get command line arguments for a process (Windows-specific)
+    /// </summary>
+    private string GetCommandLine(Process process)
+    {
+        try
+        {
+            using var searcher = new System.Management.ManagementObjectSearcher(
+                $"SELECT CommandLine FROM Win32_Process WHERE ProcessId = {process.Id}");
+            using var objects = searcher.Get();
+            
+            foreach (System.Management.ManagementObject obj in objects)
+            {
+                return obj["CommandLine"]?.ToString() ?? "";
+            }
+        }
+        catch
+        {
+            // Fallback - unable to read command line
+        }
+        return "";
+    }
 
     private void OnDispatcherUnhandledException (object sender, DispatcherUnhandledExceptionEventArgs e)
         {

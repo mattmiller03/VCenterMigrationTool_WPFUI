@@ -1594,17 +1594,27 @@ public class HybridPowerShellService : IDisposable
                     $result = @()
                     
                     foreach ($cluster in $clusters) {{
-                        $result += @{{
+                        $clusterObj = [PSCustomObject]@{{
                             Name = $cluster.Name
                             Id = $cluster.Id
                             HAEnabled = $cluster.HAEnabled
                             DrsEnabled = $cluster.DrsEnabled
                             EVCMode = if ($cluster.EVCMode) {{ $cluster.EVCMode }} else {{ """" }}
                         }}
+                        $result += $clusterObj
                     }}
                     
-                    # Output as JSON
-                    $result | ConvertTo-Json -Compress
+                    # Force array output even for single items and ensure proper JSON structure
+                    if ($result.Count -eq 1) {{
+                        # Single item - wrap in array to ensure JSON array format
+                        Write-Output (@($result) | ConvertTo-Json -Compress)
+                    }} elseif ($result.Count -gt 1) {{
+                        # Multiple items - ensure array format
+                        Write-Output ($result | ConvertTo-Json -Compress)
+                    }} else {{
+                        # No items - output empty array
+                        Write-Output '[]'
+                    }}
                     
                     # Disconnect
                     Disconnect-VIServer -Server $connection -Confirm:$false -Force -ErrorAction SilentlyContinue
