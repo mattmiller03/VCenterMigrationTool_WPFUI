@@ -99,26 +99,44 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
             OverallStatus = "Loading clusters...";
 
             // Load source clusters
+            _logger.LogInformation("Calling GetClustersAsync for source connection...");
             var sourceClusters = await _powerShellService.GetClustersAsync();
+            _logger.LogInformation("GetClustersAsync returned {Count} source clusters", sourceClusters?.Count ?? 0);
+            
             SourceClusters.Clear();
-            foreach (var cluster in sourceClusters)
+            if (sourceClusters != null && sourceClusters.Count > 0)
             {
-                SourceClusters.Add(cluster);
+                foreach (var cluster in sourceClusters)
+                {
+                    _logger.LogInformation("Adding source cluster: {Name} (ID: {Id})", cluster.Name, cluster.Id);
+                    SourceClusters.Add(cluster);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("No source clusters returned from GetClustersAsync");
             }
 
             // Load target clusters if target is connected
             if (IsTargetConnected)
             {
+                _logger.LogInformation("Calling GetClustersAsync for target connection...");
                 var targetClusters = await _powerShellService.GetClustersAsync("target");
+                _logger.LogInformation("GetClustersAsync returned {Count} target clusters", targetClusters?.Count ?? 0);
+                
                 TargetClusters.Clear();
-                foreach (var cluster in targetClusters)
+                if (targetClusters != null && targetClusters.Count > 0)
                 {
-                    TargetClusters.Add(cluster);
+                    foreach (var cluster in targetClusters)
+                    {
+                        _logger.LogInformation("Adding target cluster: {Name} (ID: {Id})", cluster.Name, cluster.Id);
+                        TargetClusters.Add(cluster);
+                    }
                 }
             }
 
-            OverallStatus = $"Loaded {SourceClusters.Count} source clusters";
-            _logger.LogInformation("Loaded {SourceCount} source clusters and {TargetCount} target clusters", 
+            OverallStatus = $"Loaded {SourceClusters.Count} source clusters and {TargetClusters.Count} target clusters";
+            _logger.LogInformation("Final count - Source: {SourceCount} clusters, Target: {TargetCount} clusters", 
                 SourceClusters.Count, TargetClusters.Count);
         }
         catch (Exception ex)

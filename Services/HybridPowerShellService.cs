@@ -1585,47 +1585,79 @@ public class HybridPowerShellService : IDisposable
             _logger.LogInformation("Calling Get-Clusters script for {ConnectionType} connection to {Server}", 
                 connectionType, connection.ServerAddress);
             var result = await RunScriptOptimizedAsync(scriptPath, scriptParameters);
+            
+            _logger.LogInformation("Get-Clusters raw output length: {Length} characters", result?.Length ?? 0);
+            if (!string.IsNullOrEmpty(result))
+            {
+                // Log first 500 chars of output for debugging
+                var preview = result.Length > 500 ? result.Substring(0, 500) + "..." : result;
+                _logger.LogDebug("Get-Clusters output preview: {Output}", preview);
+            }
 
             // Parse JSON result from PowerShell script
             var jsonResult = ExtractJsonFromOutput(result);
             if (string.IsNullOrEmpty(jsonResult))
             {
-                _logger.LogWarning("No valid JSON found in Get-Clusters output");
+                _logger.LogWarning("No valid JSON found in Get-Clusters output. Raw output: {Output}", result);
                 return new List<ClusterInfo>();
             }
+            
+            _logger.LogInformation("Extracted JSON length: {Length} characters", jsonResult.Length);
 
             try
             {
+                _logger.LogInformation("Attempting to deserialize JSON to List<Dictionary<string, object>>...");
+                
                 // Direct deserialization to Dictionary list - no double parsing needed
                 var clusterData = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonResult, 
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 
+                _logger.LogInformation("Deserialization successful. ClusterData is null: {IsNull}, Count: {Count}", 
+                    clusterData == null, clusterData?.Count ?? 0);
+                
                 var clusters = new List<ClusterInfo>();
                 
-                if (clusterData != null)
+                if (clusterData != null && clusterData.Count > 0)
                 {
                     foreach (var clusterDict in clusterData)
                     {
-                        clusters.Add(new ClusterInfo
+                        var name = clusterDict.GetValueOrDefault("Name", "Unknown").ToString();
+                        var id = clusterDict.GetValueOrDefault("Id", "").ToString();
+                        
+                        _logger.LogDebug("Processing cluster: Name={Name}, Id={Id}", name, id);
+                        
+                        var clusterInfo = new ClusterInfo
                         {
-                            Name = clusterDict.GetValueOrDefault("Name", "Unknown").ToString(),
-                            Id = clusterDict.GetValueOrDefault("Id", "").ToString(),
+                            Name = name,
+                            Id = id,
                             HAEnabled = bool.Parse(clusterDict.GetValueOrDefault("HAEnabled", false).ToString()),
                             DrsEnabled = bool.Parse(clusterDict.GetValueOrDefault("DrsEnabled", false).ToString()),
                             EVCMode = clusterDict.GetValueOrDefault("EVCMode", "").ToString(),
                             HostCount = 0,  // These would need additional PowerShell calls
                             VmCount = 0,
                             DatastoreCount = 0
-                        });
+                        };
+                        
+                        clusters.Add(clusterInfo);
+                        _logger.LogInformation("Added cluster to list: {Name} (ID: {Id})", clusterInfo.Name, clusterInfo.Id);
                     }
                 }
+                else
+                {
+                    _logger.LogWarning("ClusterData is null or empty after deserialization");
+                }
 
-                _logger.LogInformation("Retrieved {Count} clusters from vCenter", clusters.Count);
+                _logger.LogInformation("Successfully parsed {Count} clusters from JSON", clusters.Count);
                 return clusters;
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "Failed to parse clusters JSON: {Json}", jsonResult);
+                _logger.LogError(ex, "JSON deserialization failed. JSON content: {Json}", jsonResult);
+                return new List<ClusterInfo>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error parsing clusters. JSON content: {Json}", jsonResult);
                 return new List<ClusterInfo>();
             }
         }
