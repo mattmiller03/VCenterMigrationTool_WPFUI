@@ -1,46 +1,839 @@
-﻿2025-08-21 10:25:22.345 -04:00 [INF] Configuration loaded successfully from C:\Users\DMM0090\AppData\Local\VCenterMigrationTool\userconfig.json
-2025-08-21 10:25:22.378 -04:00 [INF] Configured log path: C:\Temp\app\logs
-2025-08-21 10:25:22.381 -04:00 [INF] Base log directory: C:\Temp\app\logs
-2025-08-21 10:25:22.383 -04:00 [INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
-2025-08-21 10:25:22.386 -04:00 [INF] Created PowerShell log directory: C:\Temp\app\logs\PowerShell
-2025-08-21 10:25:22.397 -04:00 [INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
-2025-08-21 10:25:22.418 -04:00 [INF] Trying PowerShell executable: pwsh.exe
-2025-08-21 10:25:22.420 -04:00 [INF] Creating PowerShell process with command: pwsh.exe
-2025-08-21 10:25:22.449 -04:00 [INF] Successfully started PowerShell process: pwsh.exe (PID: 32136)
-2025-08-21 10:25:22.508 -04:00 [INF] Application started. Press Ctrl+C to shut down.
-2025-08-21 10:25:22.510 -04:00 [INF] Hosting environment: Production
-2025-08-21 10:25:22.513 -04:00 [INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
-2025-08-21 10:25:23.067 -04:00 [INF] PowerShell process completed with exit code: 0
-2025-08-21 10:25:23.072 -04:00 [INF] STARTUP: PowerCLI detected and confirmed installed on startup
-2025-08-21 10:25:23.075 -04:00 [INF] PERSISTENCE: PowerCLI status saved as true
-2025-08-21 10:25:26.307 -04:00 [INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
-2025-08-21 10:25:26.322 -04:00 [INF] Establishing persistent external connection to klisv0pp21 (source)
-2025-08-21 10:25:26.344 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 27316)
-2025-08-21 10:25:26.347 -04:00 [INF] Bypassing module import (assumed already loaded)
-2025-08-21 10:25:26.349 -04:00 [INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
-2025-08-21 10:25:35.987 -04:00 [INF] ✅ Persistent connection established to klisv0pp21 (Session: "13539b797540ce04b5b654a4cb0725c5e8e07354")
-2025-08-21 10:25:35.991 -04:00 [INF] Loading inventory for source vCenter: klisv0pp21
-2025-08-21 10:25:35.994 -04:00 [INF] Loading complete inventory for vCenter: klisv0pp21 (connection: source)
-2025-08-21 10:25:36.114 -04:00 [INF] Loading inventory components sequentially for klisv0pp21
-2025-08-21 10:25:45.445 -04:00 [INF] Loaded 5 datacenters for klisv0pp212.dir.ad.dla.mil
-2025-08-21 10:25:55.023 -04:00 [INF] Loaded 4 clusters for klisv0pp21
-2025-08-21 10:27:31.964 -04:00 [WRN] PS Error: [31;1mGet-Folder: [0m
-2025-08-21 10:27:31.967 -04:00 [WRN] PS Error: [31;1m[36;1mLine |[0m
-2025-08-21 10:27:31.970 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m .           $folder = if ($_.Folder) { [36;1mGet-Folder -Id $_.Folder[0m } else  .[0m
-2025-08-21 10:27:31.972 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                        ~~~~~~~~~~~~~~~~~~~~~~~~[0m
-2025-08-21 10:27:31.974 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1m8/21/2025 10:27:31 AM	Get-Folder		Folder with id 'LAN Team Servers' was not found using the specified filter(s).	[0m
-2025-08-21 10:27:36.152 -04:00 [WRN] PS Error: [31;1mGet-Folder: [0m
-2025-08-21 10:27:36.155 -04:00 [WRN] PS Error: [31;1m[36;1mLine |[0m
-2025-08-21 10:27:36.157 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m .           $folder = if ($_.Folder) { [36;1mGet-Folder -Id $_.Folder[0m } else  .[0m
-2025-08-21 10:27:36.160 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                        ~~~~~~~~~~~~~~~~~~~~~~~~[0m
-2025-08-21 10:27:36.162 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1m8/21/2025 10:27:36 AM	Get-Folder		Folder with id 'Hyperflex Storage Controllers' was not found using the specified filter(s).	[0m
-2025-08-21 10:27:40.293 -04:00 [WRN] PS Error: [31;1mGet-Folder: [0m
-2025-08-21 10:27:40.295 -04:00 [WRN] PS Error: [31;1m[36;1mLine |[0m
-2025-08-21 10:27:40.297 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m .           $folder = if ($_.Folder) { [36;1mGet-Folder -Id $_.Folder[0m } else  .[0m
-2025-08-21 10:27:40.300 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                        ~~~~~~~~~~~~~~~~~~~~~~~~[0m
-2025-08-21 10:27:40.302 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1m8/21/2025 10:27:40 AM	Get-Folder		Folder with id 'Hyperflex Storage Controllers' was not found using the specified filter(s).	[0m
-2025-08-21 10:27:44.554 -04:00 [WRN] PS Error: [31;1mGet-Folder: [0m
-2025-08-21 10:27:44.558 -04:00 [WRN] PS Error: [31;1m[36;1mLine |[0m
-2025-08-21 10:27:44.560 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m   6 | [0m .           $folder = if ($_.Folder) { [36;1mGet-Folder -Id $_.Folder[0m } else  .[0m
-2025-08-21 10:27:44.563 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                        ~~~~~~~~~~~~~~~~~~~~~~~~[0m
-2025-08-21 10:27:44.567 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1m8/21/2025 10:27:44 AM	Get-Folder		Folder with id 'Hyperflex Storage Controllers' was not found using the specified filter(s).	[0m
+﻿[11:19:30 INF] Configuration loaded successfully from C:\Users\DMM0090\AppData\Local\VCenterMigrationTool\userconfig.json
+[11:19:30 INF] Configured log path: C:\Temp\app\logs
+[11:19:30 INF] Base log directory: C:\Temp\app\logs
+[11:19:30 INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
+[11:19:30 INF] Created PowerShell log directory: C:\Temp\app\logs\PowerShell
+[11:19:30 INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
+[11:19:30 INF] Trying PowerShell executable: pwsh.exe
+[11:19:30 INF] Creating PowerShell process with command: pwsh.exe
+[11:19:30 INF] Successfully started PowerShell process: pwsh.exe (PID: 34812)
+[11:19:30 INF] Application started. Press Ctrl+C to shut down.
+[11:19:30 INF] Hosting environment: Production
+[11:19:30 INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationUI.dll'. Symbol loading disabled by Include/Exclude setting.
+[11:19:31 INF] PowerShell process completed with exit code: 0
+[11:19:31 INF] STARTUP: PowerCLI detected and confirmed installed on startup
+[11:19:31 INF] PERSISTENCE: PowerCLI status saved as true
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Formatters.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\Accessibility.dll'. Module was built without symbols.
+[11:19:49 INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Meziantou.Framework.Win32.CredentialManager.dll'. 
+[11:19:49 INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+[11:19:49 INF] Started persistent PowerShell process: pwsh.exe (PID: 14212)
+[11:19:49 INF] Bypassing module import (assumed already loaded)
+[11:19:49 INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
+The thread '.NET TP Worker' (32552) has exited with code 0 (0x0).
+The thread '.NET TP Wait' (14136) has exited with code 0 (0x0).
+The thread 34032 has exited with code 0 (0x0).
+The thread '.NET TP Worker' (40656) has exited with code 0 (0x0).
+[11:20:19 INF] ✅ Persistent connection established to klisv0pp212.dir.ad.dla.mil (Session: "9a21e0f6e60a6b61a0b1b0f9f4f9137522c6077a")
+[11:20:19 INF] Loading inventory for source vCenter: klisv0pp212.dir.ad.dla.mil
+[11:20:19 INF] Loading complete inventory for vCenter: klisv0pp212.dir.ad.dla.mil (connection: source)
+[11:20:19 INF] Loading inventory components sequentially for klisv0pp212.dir.ad.dla.mil
+[11:20:35 INF] Loaded 5 datacenters for klisv0pp212.dir.ad.dla.mil
+[11:20:45 INF] Loaded 4 clusters for klisv0pp212.dir.ad.dla.mil
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.StackTrace.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Metadata.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.Immutable.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.IO.MemoryMappedFiles.dll'. Symbol loading disabled by Include/Exclude setting.
+[11:21:06 ERR] Failed to load hosts for klisv0pp212.dir.ad.dla.mil
+System.Text.Json.JsonException: The JSON value could not be converted to System.Int32. Path: $[0].CpuMhz | LineNumber: 11 | BytePositionInLine: 25.
+ ---> System.FormatException: Either the JSON value is not in a supported format, or is out of bounds for an Int32.
+   at System.Text.Json.ThrowHelper.ThrowFormatException(NumericType numericType)
+   at System.Text.Json.Utf8JsonReader.GetInt32()
+   at System.Text.Json.Serialization.Converters.Int32Converter.Read(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options)
+   at System.Text.Json.Serialization.Metadata.JsonPropertyInfo`1.ReadJsonAndSetMember(Object obj, ReadStack& state, Utf8JsonReader& reader)
+   at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
+   --- End of inner exception stack trace ---
+   at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, Utf8JsonReader& reader, Exception ex)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
+   at VCenterMigrationTool.Services.VCenterInventoryService.LoadHostsAsync(String vCenterName, String username, String password, VCenterInventory inventory, String connectionType) in C:\Git\Apps\LatestVcenterApp\Services\VCenterInventoryService.cs:line 327
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:06 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:06 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:06 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m   7 | [0m                     $hostView = Get-View [36;1m$hostMoRef[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                          ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'Id'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+[11:21:07 WRN] PS Error: [31;1mGet-View: [0m
+[11:21:07 WRN] PS Error: [31;1m[36;1mLine |[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m  10 | [0m .  += (Get-View -ViewType VirtualMachine -SearchRoot [36;1m$hostMoRef[0m | Where .[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                      ~~~~~~~~~~[0m
+[11:21:07 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCannot bind parameter 'SearchRoot'. Cannot convert the "VMware.Vim.DatastoreHostMount" value of type "VMware.Vim.DatastoreHostMount" to type "VMware.Vim.ManagedObjectReference".[0m
+The thread '.NET TP Worker' (23340) has exited with code 0 (0x0).
