@@ -113,6 +113,14 @@ public partial class App
             services.AddSingleton<ActivityLogsViewModel>();
             services.AddSingleton<ActivityLogsPage>();
 
+            // New Migration Pages and ViewModels
+            services.AddSingleton<InfrastructureMigrationPage>();
+            services.AddSingleton<InfrastructureMigrationViewModel>();
+            services.AddSingleton<VirtualMachinesMigrationPage>();
+            services.AddSingleton<VirtualMachinesMigrationViewModel>();
+            services.AddSingleton<AdminConfigMigrationPage>();
+            services.AddSingleton<AdminConfigMigrationViewModel>();
+
             // Settings Page and its sub-ViewModels
             services.AddSingleton<SettingsPage>();
             services.AddSingleton<SettingsViewModel>();
