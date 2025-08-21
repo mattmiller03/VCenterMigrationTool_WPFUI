@@ -21,6 +21,7 @@ public class HybridPowerShellService : IDisposable
     private readonly ConfigurationService _configurationService;
     private readonly PowerShellLoggingService _psLoggingService;
     private readonly SharedConnectionService _sharedConnectionService;
+    private readonly PersistentExternalConnectionService _persistentConnectionService;
     private readonly ConcurrentDictionary<int, Process> _activeProcesses = new();
     private readonly Timer _cleanupTimer;
     private IErrorHandlingService? _errorHandlingService;
@@ -109,12 +110,14 @@ public class HybridPowerShellService : IDisposable
         ConfigurationService configurationService,
         PowerShellLoggingService psLoggingService,
         SharedConnectionService sharedConnectionService,
+        PersistentExternalConnectionService persistentConnectionService,
         IErrorHandlingService errorHandlingService)
         {
         _logger = logger;
         _configurationService = configurationService;
         _psLoggingService = psLoggingService;
         _sharedConnectionService = sharedConnectionService;
+        _persistentConnectionService = persistentConnectionService;
         _errorHandlingService = errorHandlingService;
 
         // FIXED: Load PowerCLI status from persistent storage on startup
