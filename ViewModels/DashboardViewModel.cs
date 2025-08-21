@@ -40,10 +40,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     private VCenterConnection? _selectedTargetProfile;
 
     [ObservableProperty]
-    private string _sourceConnectionStatus = "Connection not active";
+    private string _sourceConnectionStatus = "⭕ Connection not active";
 
     [ObservableProperty]
-    private string _targetConnectionStatus = "Connection not active";
+    private string _targetConnectionStatus = "⭕ Connection not active";
 
     [ObservableProperty]
     private string _currentJobText = "No active jobs.";
@@ -294,16 +294,21 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         if (SelectedSourceProfile is null) return;
 
         IsJobRunning = true;
-        SourceConnectionStatus = "Establishing persistent connection...";
+        SourceConnectionStatus = "🔄 Initializing connection...";
         ScriptOutput = string.Empty;
 
         _logger.LogInformation("=== ESTABLISHING PERSISTENT SOURCE CONNECTION ===");
+
+        // Step 1: Get credentials
+        SourceConnectionStatus = "🔐 Retrieving credentials...";
+        await Task.Delay(100); // Allow UI to update
 
         string? password = _credentialService.GetPassword(SelectedSourceProfile);
         string finalPassword;
 
         if (string.IsNullOrEmpty(password))
             {
+            SourceConnectionStatus = "🔑 Password required - please enter credentials";
             var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
                 "Password Required",
                 $"Enter password for {SelectedSourceProfile.Username}@{SelectedSourceProfile.ServerAddress}:"
@@ -311,7 +316,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
                 {
-                SourceConnectionStatus = "Connection not active";
+                SourceConnectionStatus = "❌ Connection cancelled by user";
                 IsJobRunning = false;
                 return;
                 }
@@ -325,6 +330,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
         try
             {
+            // Step 2: Establish PowerShell connection
+            SourceConnectionStatus = $"🔗 Connecting to {SelectedSourceProfile.ServerAddress}...";
+            await Task.Delay(100); // Allow UI to update
+
             var (success, message, sessionId) = await _persistentConnectionService.ConnectAsync(
                 SelectedSourceProfile,
                 finalPassword,
@@ -333,6 +342,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (success)
                 {
+                // Step 3: Load inventory
+                SourceConnectionStatus = $"📊 Loading vCenter inventory...";
+                await Task.Delay(100); // Allow UI to update
+
                 // Use the new inventory-enabled method
                 var inventoryLoaded = await _sharedConnectionService.SetSourceConnectionAsync(SelectedSourceProfile);
 
@@ -363,7 +376,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             else
                 {
                 IsSourceConnected = false;
-                SourceConnectionStatus = "❌ Connection failed";
+                SourceConnectionStatus = $"❌ Connection failed: {message}";
                 SourceConnectionDetails = "";
                 ScriptOutput = $"Connection failed: {message}";
                 _sharedConnectionService.SourceConnection = null;
@@ -375,7 +388,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             {
             _logger.LogError(ex, "Error establishing persistent connection");
             IsSourceConnected = false;
-            SourceConnectionStatus = "❌ Connection error";
+            SourceConnectionStatus = $"❌ Connection error: {ex.Message}";
             SourceConnectionDetails = "";
             ScriptOutput = $"Error: {ex.Message}";
             }
@@ -393,16 +406,21 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         if (SelectedTargetProfile is null) return;
 
         IsJobRunning = true;
-        TargetConnectionStatus = "Establishing persistent connection...";
+        TargetConnectionStatus = "🔄 Initializing connection...";
         ScriptOutput = string.Empty;
 
         _logger.LogInformation("=== ESTABLISHING PERSISTENT TARGET CONNECTION ===");
+
+        // Step 1: Get credentials
+        TargetConnectionStatus = "🔐 Retrieving credentials...";
+        await Task.Delay(100); // Allow UI to update
 
         string? password = _credentialService.GetPassword(SelectedTargetProfile);
         string finalPassword;
 
         if (string.IsNullOrEmpty(password))
             {
+            TargetConnectionStatus = "🔑 Password required - please enter credentials";
             var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
                 "Password Required",
                 $"Enter password for {SelectedTargetProfile.Username}@{SelectedTargetProfile.ServerAddress}:"
@@ -410,7 +428,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
                 {
-                TargetConnectionStatus = "Connection not active";
+                TargetConnectionStatus = "❌ Connection cancelled by user";
                 IsJobRunning = false;
                 return;
                 }
@@ -424,6 +442,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
         try
             {
+            // Step 2: Establish PowerShell connection
+            TargetConnectionStatus = $"🔗 Connecting to {SelectedTargetProfile.ServerAddress}...";
+            await Task.Delay(100); // Allow UI to update
+
             var (success, message, sessionId) = await _persistentConnectionService.ConnectAsync(
                 SelectedTargetProfile,
                 finalPassword,
@@ -432,6 +454,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (success)
                 {
+                // Step 3: Load inventory
+                TargetConnectionStatus = $"📊 Loading vCenter inventory...";
+                await Task.Delay(100); // Allow UI to update
+
                 // Use the new inventory-enabled method
                 var inventoryLoaded = await _sharedConnectionService.SetTargetConnectionAsync(SelectedTargetProfile);
 
@@ -462,7 +488,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             else
                 {
                 IsTargetConnected = false;
-                TargetConnectionStatus = "❌ Connection failed";
+                TargetConnectionStatus = $"❌ Connection failed: {message}";
                 TargetConnectionDetails = "";
                 ScriptOutput = $"Connection failed: {message}";
                 _sharedConnectionService.TargetConnection = null;
@@ -474,7 +500,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             {
             _logger.LogError(ex, "Error establishing persistent connection");
             IsTargetConnected = false;
-            TargetConnectionStatus = "❌ Connection error";
+            TargetConnectionStatus = $"❌ Connection error: {ex.Message}";
             TargetConnectionDetails = "";
             ScriptOutput = $"Error: {ex.Message}";
             }
@@ -490,19 +516,25 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     private async Task OnDisconnectSource ()
         {
         IsJobRunning = true;
-        SourceConnectionStatus = "Disconnecting...";
+        SourceConnectionStatus = "🔄 Disconnecting...";
         ScriptOutput = string.Empty;
 
         try
             {
             _logger.LogInformation("Disconnecting source vCenter connection...");
 
+            SourceConnectionStatus = "🔌 Closing PowerShell session...";
+            await Task.Delay(100); // Allow UI to update
+
             await _persistentConnectionService.DisconnectAsync("source");
+
+            SourceConnectionStatus = "🧹 Clearing cached inventory...";
+            await Task.Delay(50); // Allow UI to update
 
             _sharedConnectionService.ClearSourceConnection();
 
             IsSourceConnected = false;
-            SourceConnectionStatus = "Connection not active";
+            SourceConnectionStatus = "⭕ Connection not active";
             SourceConnectionDetails = "";
             ScriptOutput = "Source vCenter connection has been closed.";
 
@@ -515,7 +547,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         catch (Exception ex)
             {
             _logger.LogError(ex, "Error disconnecting source vCenter");
-            SourceConnectionStatus = "❌ Disconnect error";
+            SourceConnectionStatus = $"❌ Disconnect error: {ex.Message}";
             ScriptOutput = $"Failed to disconnect: {ex.Message}";
             }
         finally
@@ -530,19 +562,25 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     private async Task OnDisconnectTarget ()
         {
         IsJobRunning = true;
-        TargetConnectionStatus = "Disconnecting...";
+        TargetConnectionStatus = "🔄 Disconnecting...";
         ScriptOutput = string.Empty;
 
         try
             {
             _logger.LogInformation("Disconnecting target vCenter connection...");
 
+            TargetConnectionStatus = "🔌 Closing PowerShell session...";
+            await Task.Delay(100); // Allow UI to update
+
             await _persistentConnectionService.DisconnectAsync("target");
+
+            TargetConnectionStatus = "🧹 Clearing cached inventory...";
+            await Task.Delay(50); // Allow UI to update
 
             _sharedConnectionService.ClearTargetConnection();
 
             IsTargetConnected = false;
-            TargetConnectionStatus = "Connection not active";
+            TargetConnectionStatus = "⭕ Connection not active";
             TargetConnectionDetails = "";
             ScriptOutput = "Target vCenter connection has been closed.";
 
@@ -555,7 +593,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         catch (Exception ex)
             {
             _logger.LogError(ex, "Error disconnecting target vCenter");
-            TargetConnectionStatus = "❌ Disconnect error";
+            TargetConnectionStatus = $"❌ Disconnect error: {ex.Message}";
             ScriptOutput = $"Failed to disconnect: {ex.Message}";
             }
         finally
