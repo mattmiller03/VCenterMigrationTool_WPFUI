@@ -162,10 +162,10 @@ public class VCenterInventoryService
                 $dc = $_
                 
                 # Count objects using API views (much faster than cmdlets)
-                $clusterCount = (Get-View -ViewType ClusterComputeResource -SearchRoot $dc.MoRef | Measure-Object).Count
-                $hostCount = (Get-View -ViewType HostSystem -SearchRoot $dc.MoRef | Measure-Object).Count  
-                $vmCount = (Get-View -ViewType VirtualMachine -SearchRoot $dc.MoRef | Measure-Object).Count
-                $datastoreCount = (Get-View -ViewType Datastore -SearchRoot $dc.MoRef | Measure-Object).Count
+                $clusterCount = [int](Get-View -ViewType ClusterComputeResource -SearchRoot $dc.MoRef | Measure-Object).Count
+                $hostCount = [int](Get-View -ViewType HostSystem -SearchRoot $dc.MoRef | Measure-Object).Count  
+                $vmCount = [int](Get-View -ViewType VirtualMachine -SearchRoot $dc.MoRef | Measure-Object).Count
+                $datastoreCount = [int](Get-View -ViewType Datastore -SearchRoot $dc.MoRef | Measure-Object).Count
                 
                 [PSCustomObject]@{
                     Name = $dc.Name
@@ -219,9 +219,9 @@ public class VCenterInventoryService
                 $datacenter = Get-View $cluster.Parent
                 
                 # Count resources using API views (much faster)
-                $hostCount = $cluster.Host.Count
-                $vmCount = (Get-View -ViewType VirtualMachine -SearchRoot $cluster.MoRef | Measure-Object).Count
-                $datastoreCount = $cluster.Datastore.Count
+                $hostCount = [int]$cluster.Host.Count
+                $vmCount = [int](Get-View -ViewType VirtualMachine -SearchRoot $cluster.MoRef | Measure-Object).Count
+                $datastoreCount = [int]$cluster.Datastore.Count
                 
                 # Calculate totals from host hardware
                 $totalCpuMhz = 0
@@ -299,7 +299,7 @@ public class VCenterInventoryService
                 }
                 
                 # Count VMs on this host using API
-                $vmCount = (Get-View -ViewType VirtualMachine -SearchRoot $esxiHost.MoRef | Measure-Object).Count
+                $vmCount = [int](Get-View -ViewType VirtualMachine -SearchRoot $esxiHost.MoRef | Measure-Object).Count
                 
                 [PSCustomObject]@{
                     Name = $esxiHost.Name
@@ -310,10 +310,10 @@ public class VCenterInventoryService
                     Build = $esxiHost.Config.Product.Build
                     ConnectionState = $esxiHost.Runtime.ConnectionState.ToString()
                     PowerState = $esxiHost.Runtime.PowerState.ToString()
-                    CpuCores = $esxiHost.Hardware.CpuInfo.NumCpuCores
+                    CpuCores = [int]$esxiHost.Hardware.CpuInfo.NumCpuCores
                     CpuMhz = [int]($esxiHost.Hardware.CpuInfo.Hz / 1000000)
                     MemoryGB = [math]::Round($esxiHost.Hardware.MemorySize / 1024 / 1024 / 1024, 2)
-                    VmCount = $vmCount
+                    VmCount = [int]$vmCount
                 }
             }
             $esxiHosts | ConvertTo-Json -Depth 2
@@ -351,7 +351,7 @@ public class VCenterInventoryService
                     $hostView = Get-View $hostMount.Key
                     $connectedHosts += $hostView.Name
                     # Count VMs on this datastore through the host
-                    $vmCount += (Get-View -ViewType VirtualMachine -SearchRoot $hostMount.Key | Where-Object { 
+                    $vmCount += [int](Get-View -ViewType VirtualMachine -SearchRoot $hostMount.Key | Where-Object { 
                         $_.Datastore -contains $datastore.MoRef 
                     } | Measure-Object).Count
                 }
@@ -422,7 +422,7 @@ public class VCenterInventoryService
                     Id = $vm.MoRef.Value
                     PowerState = $vm.Runtime.PowerState.ToString()
                     GuestOS = if ($vm.Config.GuestFullName) { $vm.Config.GuestFullName } else { """" }
-                    CpuCount = $vm.Config.Hardware.NumCPU
+                    CpuCount = [int]$vm.Config.Hardware.NumCPU
                     MemoryGB = [math]::Round($vm.Config.Hardware.MemoryMB / 1024, 2)
                     DiskGB = [math]::Round($totalDiskGB, 2)
                     HostName = if ($vmHost) { $vmHost.Name } else { """" }
@@ -466,9 +466,9 @@ public class VCenterInventoryService
                     ClusterName = if ($cluster) { $cluster.Name } else { """" }
                     DatacenterName = if ($datacenter) { $datacenter.Name } else { """" }
                     ParentPath = $_.Parent.Name
-                    CpuLimitMhz = if ($_.CpuLimitMhz -ne -1) { $_.CpuLimitMhz } else { 0 }
-                    MemoryLimitMB = if ($_.MemoryLimitMB -ne -1) { $_.MemoryLimitMB } else { 0 }
-                    VmCount = ($_ | Get-VM | Measure-Object).Count
+                    CpuLimitMhz = [int](if ($_.CpuLimitMhz -ne -1) { $_.CpuLimitMhz } else { 0 })
+                    MemoryLimitMB = [int](if ($_.MemoryLimitMB -ne -1) { $_.MemoryLimitMB } else { 0 })
+                    VmCount = [int]($_ | Get-VM | Measure-Object).Count
                 }
             }
             $resourcePools | ConvertTo-Json -Depth 2
