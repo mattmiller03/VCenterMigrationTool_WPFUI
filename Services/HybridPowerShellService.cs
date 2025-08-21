@@ -1559,8 +1559,9 @@ public class HybridPowerShellService : IDisposable
     {
         try
         {
-            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-Clusters.ps1");
-
+            // Use inline PowerShell approach like the ESXi Hosts page since it works reliably
+            _logger.LogInformation("Getting clusters using inline PowerShell for {ConnectionType} connection", connectionType);
+            
             // Get connection information for the specified connection type
             var connection = await _sharedConnectionService.GetConnectionAsync(connectionType);
             var password = await _sharedConnectionService.GetPasswordAsync(connectionType);
@@ -1572,82 +1573,111 @@ public class HybridPowerShellService : IDisposable
                 return new List<ClusterInfo>();
             }
 
-            // Pass connection credentials to the script (scripts run in isolated sessions)
+            // Use inline PowerShell script similar to ESXi Hosts page approach
+            var inlineScript = $@"
+                # Connect to vCenter with provided credentials
+                try {{
+                    $securePassword = ConvertTo-SecureString '{password.Replace("'", "''")}' -AsPlainText -Force
+                    $credential = New-Object System.Management.Automation.PSCredential('{connection.Username.Replace("'", "''")}', $securePassword)
+                    
+                    # Import PowerCLI if not already loaded
+                    if (-not (Get-Command 'Connect-VIServer' -ErrorAction SilentlyContinue)) {{
+                        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+                        Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+                    }}
+                    
+                    # Connect to vCenter
+                    $connection = Connect-VIServer -Server '{connection.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
+                    
+                    # Get clusters
+                    $clusters = Get-Cluster -ErrorAction Stop
+                    $result = @()
+                    
+                    foreach ($cluster in $clusters) {{
+                        $result += @{{
+                            Name = $cluster.Name
+                            Id = $cluster.Id
+                            HAEnabled = $cluster.HAEnabled
+                            DrsEnabled = $cluster.DrsEnabled
+                            EVCMode = if ($cluster.EVCMode) {{ $cluster.EVCMode }} else {{ """" }}
+                        }}
+                    }}
+                    
+                    # Output as JSON
+                    $result | ConvertTo-Json -Compress
+                    
+                    # Disconnect
+                    Disconnect-VIServer -Server $connection -Confirm:$false -Force -ErrorAction SilentlyContinue
+                }}
+                catch {{
+                    Write-Error ""Failed to get clusters: $($_.Exception.Message)""
+                    # Try to disconnect on error
+                    try {{ Disconnect-VIServer -Server '*' -Confirm:$false -Force -ErrorAction SilentlyContinue }} catch {{}}
+                    throw
+                }}
+            ";
+
             var scriptParameters = new Dictionary<string, object>
             {
-                ["VCenterServer"] = connection.ServerAddress,
-                ["Username"] = connection.Username,
-                ["Password"] = password,
-                ["BypassModuleCheck"] = true,  // PowerCLI should already be loaded
-                ["SuppressConsoleOutput"] = true  // Cleaner output for parsing
+                ["SuppressConsoleOutput"] = true
             };
 
-            _logger.LogInformation("Calling Get-Clusters script for {ConnectionType} connection to {Server}", 
-                connectionType, connection.ServerAddress);
-            var result = await RunScriptOptimizedAsync(scriptPath, scriptParameters);
+            _logger.LogInformation("Executing inline cluster retrieval script for {Server}", connection.ServerAddress);
+            var result = await RunInlineScriptAsync(inlineScript, scriptParameters);
             
-            _logger.LogInformation("Get-Clusters raw output length: {Length} characters", result?.Length ?? 0);
-            if (!string.IsNullOrEmpty(result))
+            _logger.LogInformation("Inline script raw output length: {Length} characters", result?.Length ?? 0);
+
+            if (string.IsNullOrEmpty(result))
             {
-                // Log first 500 chars of output for debugging
-                var preview = result.Length > 500 ? result.Substring(0, 500) + "..." : result;
-                _logger.LogDebug("Get-Clusters output preview: {Output}", preview);
+                _logger.LogWarning("No output from inline cluster script");
+                return new List<ClusterInfo>();
             }
 
-            // Parse JSON result from PowerShell script
+            // Extract JSON from the output
             var jsonResult = ExtractJsonFromOutput(result);
             if (string.IsNullOrEmpty(jsonResult))
             {
-                _logger.LogWarning("No valid JSON found in Get-Clusters output. Raw output: {Output}", result);
+                _logger.LogWarning("No valid JSON found in inline script output. Raw output: {Output}", result);
                 return new List<ClusterInfo>();
             }
             
-            _logger.LogInformation("Extracted JSON length: {Length} characters", jsonResult.Length);
+            _logger.LogInformation("Extracted JSON from inline script: {Json}", jsonResult);
 
             try
             {
-                _logger.LogInformation("Attempting to deserialize JSON to List<Dictionary<string, object>>...");
-                
-                // Direct deserialization to Dictionary list - no double parsing needed
-                var clusterData = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonResult, 
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                
-                _logger.LogInformation("Deserialization successful. ClusterData is null: {IsNull}, Count: {Count}", 
-                    clusterData == null, clusterData?.Count ?? 0);
-                
                 var clusters = new List<ClusterInfo>();
                 
-                if (clusterData != null && clusterData.Count > 0)
+                // Try to parse as array first, then as single object
+                if (jsonResult.TrimStart().StartsWith("["))
                 {
-                    foreach (var clusterDict in clusterData)
+                    var clusterArray = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonResult, 
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        
+                    if (clusterArray != null)
                     {
-                        var name = clusterDict.GetValueOrDefault("Name", "Unknown").ToString();
-                        var id = clusterDict.GetValueOrDefault("Id", "").ToString();
-                        
-                        _logger.LogDebug("Processing cluster: Name={Name}, Id={Id}", name, id);
-                        
-                        var clusterInfo = new ClusterInfo
+                        foreach (var clusterDict in clusterArray)
                         {
-                            Name = name,
-                            Id = id,
-                            HAEnabled = bool.Parse(clusterDict.GetValueOrDefault("HAEnabled", false).ToString()),
-                            DrsEnabled = bool.Parse(clusterDict.GetValueOrDefault("DrsEnabled", false).ToString()),
-                            EVCMode = clusterDict.GetValueOrDefault("EVCMode", "").ToString(),
-                            HostCount = 0,  // These would need additional PowerShell calls
-                            VmCount = 0,
-                            DatastoreCount = 0
-                        };
-                        
-                        clusters.Add(clusterInfo);
-                        _logger.LogInformation("Added cluster to list: {Name} (ID: {Id})", clusterInfo.Name, clusterInfo.Id);
+                            var clusterInfo = CreateClusterInfoFromDict(clusterDict);
+                            clusters.Add(clusterInfo);
+                            _logger.LogInformation("Parsed cluster from array: {Name}", clusterInfo.Name);
+                        }
                     }
                 }
                 else
                 {
-                    _logger.LogWarning("ClusterData is null or empty after deserialization");
+                    // Single object
+                    var clusterDict = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonResult, 
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        
+                    if (clusterDict != null)
+                    {
+                        var clusterInfo = CreateClusterInfoFromDict(clusterDict);
+                        clusters.Add(clusterInfo);
+                        _logger.LogInformation("Parsed single cluster: {Name}", clusterInfo.Name);
+                    }
                 }
 
-                _logger.LogInformation("Successfully parsed {Count} clusters from JSON", clusters.Count);
+                _logger.LogInformation("Successfully retrieved {Count} clusters using inline script", clusters.Count);
                 return clusters;
             }
             catch (JsonException ex)
@@ -1655,16 +1685,41 @@ public class HybridPowerShellService : IDisposable
                 _logger.LogError(ex, "JSON deserialization failed. JSON content: {Json}", jsonResult);
                 return new List<ClusterInfo>();
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error parsing clusters. JSON content: {Json}", jsonResult);
-                return new List<ClusterInfo>();
-            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get clusters from vCenter");
+            _logger.LogError(ex, "Failed to get clusters using inline script");
             return new List<ClusterInfo>();
+        }
+    }
+
+    private ClusterInfo CreateClusterInfoFromDict(Dictionary<string, object> clusterDict)
+    {
+        return new ClusterInfo
+        {
+            Name = clusterDict.GetValueOrDefault("Name", "Unknown").ToString(),
+            Id = clusterDict.GetValueOrDefault("Id", "").ToString(),
+            HAEnabled = bool.Parse(clusterDict.GetValueOrDefault("HAEnabled", false).ToString()),
+            DrsEnabled = bool.Parse(clusterDict.GetValueOrDefault("DrsEnabled", false).ToString()),
+            EVCMode = clusterDict.GetValueOrDefault("EVCMode", "").ToString(),
+            HostCount = 0,  // Would need additional calls to populate
+            VmCount = 0,
+            DatastoreCount = 0
+        };
+    }
+
+    private async Task<string> RunInlineScriptAsync(string script, Dictionary<string, object> parameters)
+    {
+        // Reuse the existing RunScriptOptimizedAsync infrastructure but with inline script
+        var tempScriptFile = Path.GetTempFileName() + ".ps1";
+        try
+        {
+            await File.WriteAllTextAsync(tempScriptFile, script);
+            return await RunScriptOptimizedAsync(tempScriptFile, parameters);
+        }
+        finally
+        {
+            try { File.Delete(tempScriptFile); } catch { }
         }
     }
 
