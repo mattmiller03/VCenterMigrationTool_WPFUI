@@ -190,9 +190,9 @@
                                   FontWeight="SemiBold"
                                   Margin="0,0,0,15"/>
                         
-                        <StackPanel Grid.Row="1" Spacing="10">
+                        <StackPanel Grid.Row="1">
                             <!-- Infrastructure Button -->
-                            <Grid>
+                            <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -215,7 +215,7 @@
                             </Grid>
                             
                             <!-- VMs Button -->
-                            <Grid>
+                            <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -285,9 +285,9 @@
                                   FontWeight="SemiBold"
                                   Margin="0,0,0,15"/>
                         
-                        <StackPanel Grid.Row="1" Spacing="10">
+                        <StackPanel Grid.Row="1">
                             <!-- Infrastructure Button -->
-                            <Grid>
+                            <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -310,7 +310,7 @@
                             </Grid>
                             
                             <!-- VMs Button -->
-                            <Grid>
+                            <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -449,7 +449,7 @@
             </ui:Card>
 
             <!-- Cluster Selection -->
-            <ui:Card Grid.Row="3" Margin="0,0,0,20">
+            <ui:Card Grid.Row="4" Margin="0,0,0,20">
                 <Grid Margin="20,15">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -804,7 +804,7 @@
             </ui:Card>
 
             <!-- Status Bar -->
-            <ui:Card Grid.Row="6">
+            <ui:Card Grid.Row="7">
                 <Grid Margin="15,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
