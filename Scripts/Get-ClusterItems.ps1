@@ -161,11 +161,20 @@ try {
         Write-LogWarning "Error retrieving virtual distributed switches: $($_.Exception.Message)" -Category "Discovery"
     }
     
-    # Get VM Folders in cluster
+    # Get VM Folders (Note: Folders are datacenter-level, not cluster-level)
     try {
         if ($cluster) {
-            $vmFolders = $cluster | Get-Folder -Type VM -ErrorAction SilentlyContinue | Where-Object { 
-                $_.Name -ne "vm" -and $_.Name -ne "Datacenters" 
+            # Get the datacenter that contains this cluster
+            $datacenter = Get-Datacenter -Cluster $cluster -ErrorAction SilentlyContinue
+            if ($datacenter) {
+                $vmFolders = Get-Folder -Type VM -Location $datacenter -ErrorAction SilentlyContinue | Where-Object { 
+                    $_.Name -ne "vm" -and $_.Name -ne "Datacenters" 
+                }
+            } else {
+                # Fallback to all folders if datacenter can't be determined
+                $vmFolders = Get-Folder -Type VM -ErrorAction SilentlyContinue | Where-Object { 
+                    $_.Name -ne "vm" -and $_.Name -ne "Datacenters" 
+                }
             }
         } else {
             $vmFolders = Get-Folder -Type VM -ErrorAction SilentlyContinue | Where-Object { 

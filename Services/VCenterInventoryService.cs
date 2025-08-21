@@ -656,8 +656,78 @@ public class VCenterInventoryService
 
     private async Task LoadFoldersAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
-        // Placeholder - folder discovery is optional for MVP
-        await Task.CompletedTask;
+        var script = @"
+            # Get all VM folders (not including root 'vm' folders)
+            $folders = Get-Folder -Type VM | Where-Object { 
+                $_.Name -ne 'vm' -and 
+                $_.Name -ne 'Datacenters' -and
+                $_.ParentId -ne $null
+            } | ForEach-Object {
+                $folder = $_
+                
+                # Get parent datacenter
+                $datacenter = $null
+                try {
+                    $parent = $folder.Parent
+                    while ($parent -and !$datacenter) {
+                        if ($parent.GetType().Name -like '*Datacenter*') {
+                            $datacenter = $parent
+                            break
+                        }
+                        # Check if parent is root folder
+                        if ($parent.Name -eq 'Datacenters' -or !$parent.Parent) {
+                            break
+                        }
+                        $parent = $parent.Parent
+                    }
+                } catch {
+                    # If we can't traverse parents, continue without datacenter
+                }
+                
+                # Build folder path
+                $path = $folder.Name
+                $currentFolder = $folder
+                while ($currentFolder.Parent -and $currentFolder.Parent.Name -ne 'vm' -and $currentFolder.Parent.Name -ne 'Datacenters') {
+                    $currentFolder = $currentFolder.Parent
+                    $path = $currentFolder.Name + '/' + $path
+                }
+                
+                [PSCustomObject]@{
+                    Name = $folder.Name
+                    Id = $folder.Id
+                    Type = 'VM'
+                    Path = $path
+                    DatacenterName = if ($datacenter) { $datacenter.Name } else { '' }
+                    ChildItemCount = ($folder | Get-ChildItem -ErrorAction SilentlyContinue | Measure-Object).Count
+                }
+            }
+            $folders | ConvertTo-Json -Depth 2
+        ";
+
+        var (result, error) = await _powerShellService.ExecuteScriptAsync(script, connectionType);
+        
+        if (!string.IsNullOrEmpty(error))
+        {
+            _logger.LogWarning("Error loading folders for {VCenterName}: {Error}", vCenterName, error);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(result))
+        {
+            try
+            {
+                var folders = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(result);
+                if (folders != null && folders.Count > 0)
+                {
+                    // Add folders to inventory (you may need to add a Folders property to VCenterInventory if not present)
+                    _logger.LogInformation("Loaded {Count} folders for {VCenterName}", folders.Count, vCenterName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse folder data for {VCenterName}", vCenterName);
+            }
+        }
     }
 
     private async Task LoadTagsAndCategoriesAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
