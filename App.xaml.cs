@@ -9,7 +9,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Management;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -235,31 +234,46 @@ public partial class App
                     if (process.StartTime < appStartTime.AddSeconds(-30))
                         continue;
 
-                    // Try to get command line to identify our processes
+                    // Identify our processes by timing and process characteristics
                     var isOurProcess = false;
                     try
                     {
-                        // Check if it's running our scripts or has our signature parameters
-                        var commandLine = GetCommandLine(process);
-                        if (!string.IsNullOrEmpty(commandLine) && 
-                            (commandLine.Contains("VCenterMigrationTool") || 
-                             commandLine.Contains("Get-Clusters") ||
-                             commandLine.Contains("Get-ClusterItems") ||
-                             commandLine.Contains("BypassModuleCheck") ||
-                             commandLine.Contains("SuppressConsoleOutput")))
+                        // Check if it's a recent process that could be ours
+                        var timeDiff = DateTime.Now - process.StartTime;
+                        
+                        // Only consider processes started after our app started or recently
+                        if (timeDiff.TotalMinutes < 30)
                         {
-                            isOurProcess = true;
+                            // Additional checks to be more certain it's our process
+                            try
+                            {
+                                // Check if the process was started from our application directory
+                                var processPath = process.MainModule?.FileName ?? "";
+                                var appPath = Environment.CurrentDirectory;
+                                
+                                // If PowerShell is running and started recently, and either:
+                                // 1. Was started from our app directory, or
+                                // 2. Started very recently (within 5 minutes - likely our scripts)
+                                if ((processPath.Contains("pwsh") || processPath.Contains("powershell")) &&
+                                    (processPath.StartsWith(appPath, StringComparison.OrdinalIgnoreCase) || 
+                                     timeDiff.TotalMinutes < 5))
+                                {
+                                    isOurProcess = true;
+                                }
+                            }
+                            catch
+                            {
+                                // If we can't get detailed info, assume recent PowerShell processes might be ours
+                                if (timeDiff.TotalMinutes < 5) // Very recent - likely ours
+                                {
+                                    isOurProcess = true;
+                                }
+                            }
                         }
                     }
                     catch
                     {
-                        // If we can't read command line, check if it's a recent process
-                        // and assume it might be ours if it started recently
-                        var timeDiff = DateTime.Now - process.StartTime;
-                        if (timeDiff.TotalMinutes < 30) // Started within last 30 minutes
-                        {
-                            isOurProcess = true;
-                        }
+                        // Skip this process if we can't analyze it
                     }
 
                     if (isOurProcess)
@@ -297,28 +311,6 @@ public partial class App
         }
     }
 
-    /// <summary>
-    /// Get command line arguments for a process (Windows-specific)
-    /// </summary>
-    private string GetCommandLine(Process process)
-    {
-        try
-        {
-            using var searcher = new System.Management.ManagementObjectSearcher(
-                $"SELECT CommandLine FROM Win32_Process WHERE ProcessId = {process.Id}");
-            using var objects = searcher.Get();
-            
-            foreach (System.Management.ManagementObject obj in objects)
-            {
-                return obj["CommandLine"]?.ToString() ?? "";
-            }
-        }
-        catch
-        {
-            // Fallback - unable to read command line
-        }
-        return "";
-    }
 
     private void OnDispatcherUnhandledException (object sender, DispatcherUnhandledExceptionEventArgs e)
         {
