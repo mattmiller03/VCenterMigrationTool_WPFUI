@@ -338,24 +338,24 @@ public class VCenterInventoryService
         var script = @"
             $vms = Get-VM | ForEach-Object {
                 $cluster = Get-Cluster -VM $_
-                $datacenter = Get-Datacenter -Cluster $cluster
+                $datacenter = if ($cluster) { Get-Datacenter -Cluster $cluster } else { Get-Datacenter -VM $_ }
                 $vmHost = Get-VMHost -VM $_
                 $resourcePool = Get-ResourcePool -VM $_
-                $folder = $_ | Get-Folder
+                $folder = $_ | Get-VmFolder
                 
                 [PSCustomObject]@{
                     Name = $_.Name
                     Id = $_.Id
                     PowerState = $_.PowerState.ToString()
-                    GuestOS = $_.Guest.OSFullName
+                    GuestOS = if ($_.Guest.OSFullName) { $_.Guest.OSFullName } else { """" }
                     CpuCount = $_.NumCpu
                     MemoryGB = [math]::Round($_.MemoryGB, 2)
                     DiskGB = [math]::Round(($_ | Get-HardDisk | Measure-Object -Property CapacityGB -Sum).Sum, 2)
-                    HostName = $vmHost.Name
-                    ClusterName = $cluster.Name
-                    DatacenterName = $datacenter.Name
-                    FolderPath = $folder.Name
-                    ResourcePoolName = $resourcePool.Name
+                    HostName = if ($vmHost) { $vmHost.Name } else { """" }
+                    ClusterName = if ($cluster) { $cluster.Name } else { """" }
+                    DatacenterName = if ($datacenter) { $datacenter.Name } else { """" }
+                    FolderPath = if ($folder) { $folder.Name } else { """" }
+                    ResourcePoolName = if ($resourcePool) { $resourcePool.Name } else { """" }
                     Tags = @()
                 }
             }
