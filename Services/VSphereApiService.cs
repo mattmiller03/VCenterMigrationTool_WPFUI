@@ -262,7 +262,7 @@ namespace VCenterMigrationTool.Services
                         }
                         else
                         {
-                            _logger.LogWarning("vCenter API response for {Endpoint} unexpected format. Expected object with 'value' property or direct array. Response: {Content}", endpoint, content);
+                            _logger.LogWarning("vCenter API response for {Endpoint} unexpected format. Expected object with 'value' property or direct array. Actual ValueKind: {ValueKind}. Response: {Content}", endpoint, jsonData.ValueKind, content);
                         }
                     }
                     catch (JsonException jsonEx)
