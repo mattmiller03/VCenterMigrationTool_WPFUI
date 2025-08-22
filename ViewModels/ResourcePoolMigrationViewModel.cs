@@ -175,44 +175,52 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             IsLoadingData = true;
             LoadingMessage = "Checking vCenter connections...";
 
-            // Get source and target from shared connection
-            var sourceConnection = _sharedConnectionService.SourceConnection;
-            var targetConnection = _sharedConnectionService.TargetConnection;
-
-            if (sourceConnection == null || targetConnection == null)
-            {
-                _logger.LogWarning("Source or target connection not available");
-                IsSourceConnected = false;
-                IsTargetConnected = false;
-                SourceConnectionStatus = "Not configured";
-                TargetConnectionStatus = "Not configured";
-                return;
-            }
-
-            // Use API-based connection status check
+            // Use API-based connection status check - don't require both to be configured
             var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
             var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
 
-            // Update connection states
+            // Update source connection state
             IsSourceConnected = sourceStatus.IsConnected;
-            SourceConnectionStatus = sourceStatus.IsConnected ? 
-                $"Connected - {sourceStatus.ServerName} ({sourceStatus.Version})" : 
-                "Disconnected";
-
-            IsTargetConnected = targetStatus.IsConnected;
-            TargetConnectionStatus = targetStatus.IsConnected ? 
-                $"Connected - {targetStatus.ServerName} ({targetStatus.Version})" : 
-                "Disconnected";
-
-            if (IsSourceConnected && IsTargetConnected)
+            if (sourceStatus.IsConnected)
             {
-                SourceVCenter = sourceConnection.ServerAddress ?? "";
-                TargetVCenter = targetConnection.ServerAddress ?? "";
-                _logger.LogInformation("Both vCenter connections verified via API");
+                SourceConnectionStatus = $"Connected - {sourceStatus.ServerName} ({sourceStatus.Version})";
+                SourceVCenter = _sharedConnectionService.SourceConnection?.ServerAddress ?? sourceStatus.ServerName;
             }
             else
             {
-                _logger.LogWarning("Not all vCenter connections are available");
+                SourceConnectionStatus = _sharedConnectionService.SourceConnection != null ? "Disconnected" : "Not configured";
+                SourceVCenter = "";
+            }
+
+            // Update target connection state
+            IsTargetConnected = targetStatus.IsConnected;
+            if (targetStatus.IsConnected)
+            {
+                TargetConnectionStatus = $"Connected - {targetStatus.ServerName} ({targetStatus.Version})";
+                TargetVCenter = _sharedConnectionService.TargetConnection?.ServerAddress ?? targetStatus.ServerName;
+            }
+            else
+            {
+                TargetConnectionStatus = _sharedConnectionService.TargetConnection != null ? "Disconnected" : "Not configured";
+                TargetVCenter = "";
+            }
+
+            // Log connection status
+            if (IsSourceConnected && IsTargetConnected)
+            {
+                _logger.LogInformation("Both vCenter connections verified via API");
+            }
+            else if (IsSourceConnected)
+            {
+                _logger.LogInformation("Source vCenter connection verified via API - target connection needed");
+            }
+            else if (IsTargetConnected)
+            {
+                _logger.LogInformation("Target vCenter connection verified via API - source connection needed");
+            }
+            else
+            {
+                _logger.LogInformation("No vCenter connections available - please configure connections on Dashboard");
             }
             }
         catch (Exception ex)
