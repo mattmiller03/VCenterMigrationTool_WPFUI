@@ -169,23 +169,91 @@ namespace VCenterMigrationTool.ViewModels
                 var sourceInventory = _sharedConnectionService.GetSourceInventory();
                 var targetInventory = _sharedConnectionService.GetTargetInventory();
 
+                // Populate source infrastructure data
                 if (sourceInventory != null)
                 {
-                    // TODO: Populate SourceDatacenters, SourceClusters, etc. from inventory
-                    SourceDataStatus = "Infrastructure data available";
+                    // Clear existing collections
+                    SourceDatacenters.Clear();
+                    SourceClusters.Clear();
+                    SourceHosts.Clear();
+                    SourceDatastores.Clear();
+
+                    // Populate with data from inventory
+                    foreach (var datacenter in sourceInventory.Datacenters)
+                    {
+                        SourceDatacenters.Add(datacenter);
+                    }
+
+                    foreach (var cluster in sourceInventory.Clusters)
+                    {
+                        SourceClusters.Add(cluster);
+                    }
+
+                    foreach (var host in sourceInventory.Hosts)
+                    {
+                        SourceHosts.Add(host);
+                    }
+
+                    foreach (var datastore in sourceInventory.Datastores)
+                    {
+                        SourceDatastores.Add(datastore);
+                    }
+
+                    SourceDataStatus = $"✅ {sourceInventory.Datacenters.Count} datacenters, {sourceInventory.Clusters.Count} clusters, {sourceInventory.Hosts.Count} hosts, {sourceInventory.Datastores.Count} datastores";
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source inventory populated: {SourceDatacenters.Count} DCs, {SourceClusters.Count} clusters, {SourceHosts.Count} hosts, {SourceDatastores.Count} datastores\n";
                 }
                 else
                 {
+                    // Clear collections if no data
+                    SourceDatacenters.Clear();
+                    SourceClusters.Clear();
+                    SourceHosts.Clear();
+                    SourceDatastores.Clear();
                     SourceDataStatus = "No infrastructure data loaded";
                 }
 
+                // Populate target infrastructure data
                 if (targetInventory != null)
                 {
-                    // TODO: Populate TargetDatacenters, TargetClusters, etc. from inventory
-                    TargetDataStatus = "Infrastructure data available";
+                    // Clear existing collections
+                    TargetDatacenters.Clear();
+                    TargetClusters.Clear();
+                    TargetHosts.Clear();
+                    TargetDatastores.Clear();
+
+                    // Populate with data from inventory
+                    foreach (var datacenter in targetInventory.Datacenters)
+                    {
+                        TargetDatacenters.Add(datacenter);
+                    }
+
+                    foreach (var cluster in targetInventory.Clusters)
+                    {
+                        TargetClusters.Add(cluster);
+                    }
+
+                    foreach (var host in targetInventory.Hosts)
+                    {
+                        TargetHosts.Add(host);
+                    }
+
+                    foreach (var datastore in targetInventory.Datastores)
+                    {
+                        TargetDatastores.Add(datastore);
+                    }
+
+                    TargetDataStatus = $"✅ {targetInventory.Datacenters.Count} datacenters, {targetInventory.Clusters.Count} clusters, {targetInventory.Hosts.Count} hosts, {targetInventory.Datastores.Count} datastores";
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target inventory populated: {TargetDatacenters.Count} DCs, {TargetClusters.Count} clusters, {TargetHosts.Count} hosts, {TargetDatastores.Count} datastores\n";
                 }
                 else
                 {
+                    // Clear collections if no data
+                    TargetDatacenters.Clear();
+                    TargetClusters.Clear();
+                    TargetHosts.Clear();
+                    TargetDatastores.Clear();
                     TargetDataStatus = "No infrastructure data loaded";
                 }
             }
@@ -194,6 +262,7 @@ namespace VCenterMigrationTool.ViewModels
                 _logger.LogError(ex, "Error loading infrastructure data");
                 SourceDataStatus = "Error loading data";
                 TargetDataStatus = "Error loading data";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR loading infrastructure data: {ex.Message}\n";
             }
         }
 
