@@ -450,7 +450,8 @@ namespace VCenterMigrationTool.ViewModels
                             ["ObjectName"] = datacenter.Name,
                             ["ObjectId"] = datacenter.Id ?? "",
                             ["ObjectPath"] = "", // Datacenters don't have a path concept
-                            ["LogPath"] = _configurationService.GetConfiguration().LogPath
+                            ["LogPath"] = _configurationService.GetConfiguration().LogPath,
+                            ["ValidateOnly"] = ValidateOnly
                         };
 
                         var result = await _powerShellService.RunScriptAsync("Scripts\\Migrate-VCenterObject.ps1", parameters);

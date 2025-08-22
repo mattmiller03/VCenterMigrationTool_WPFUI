@@ -27,7 +27,8 @@ param(
     [string]$ObjectId = "",
     [string]$ObjectPath = "",
     [string]$LogPath = "",
-    [bool]$SuppressConsoleOutput = $false
+    [bool]$SuppressConsoleOutput = $false,
+    [bool]$ValidateOnly = $false
 )
 
 # Import logging functions
@@ -200,22 +201,28 @@ try {
                 $finalSummary = "Datacenter already exists in target - skipped"
             }
             else {
-                # Get root folder
-                $rootFolder = Get-Folder -Name "Datacenters" -Type Datacenter -ErrorAction SilentlyContinue
-                if (-not $rootFolder) {
-                    # Fallback: get the invisible root folder
-                    $rootFolder = Get-Folder -Type Datacenter | Where-Object { $_.Name -eq "Datacenters" -or $_.Parent.Name -eq "" } | Select-Object -First 1
-                }
-                
-                if ($rootFolder) {
-                    # Create datacenter in target
-                    $targetDC = New-Datacenter -Name $ObjectName -Location $rootFolder -ErrorAction Stop
-                    Write-LogSuccess "Created datacenter '$($targetDC.Name)' in target vCenter" -Category "Migration"
-                    $finalSummary = "Successfully migrated datacenter '$ObjectName'"
+                if ($ValidateOnly) {
+                    Write-LogInfo "VALIDATION ONLY: Would create datacenter '$ObjectName' in target vCenter" -Category "Validation"
+                    $finalSummary = "Validation: Would create datacenter '$ObjectName'"
                 }
                 else {
-                    Write-LogError "Could not find root datacenter folder in target vCenter" -Category "Migration"
-                    $finalSummary = "Failed to locate root datacenter folder"
+                    # Get root folder
+                    $rootFolder = Get-Folder -Name "Datacenters" -Type Datacenter -ErrorAction SilentlyContinue
+                    if (-not $rootFolder) {
+                        # Fallback: get the invisible root folder
+                        $rootFolder = Get-Folder -Type Datacenter | Where-Object { $_.Name -eq "Datacenters" -or $_.Parent.Name -eq "" } | Select-Object -First 1
+                    }
+                    
+                    if ($rootFolder) {
+                        # Create datacenter in target
+                        $targetDC = New-Datacenter -Name $ObjectName -Location $rootFolder -ErrorAction Stop
+                        Write-LogSuccess "Created datacenter '$($targetDC.Name)' in target vCenter" -Category "Migration"
+                        $finalSummary = "Successfully migrated datacenter '$ObjectName'"
+                    }
+                    else {
+                        Write-LogError "Could not find root datacenter folder in target vCenter" -Category "Migration"
+                        $finalSummary = "Failed to locate root datacenter folder"
+                    }
                 }
             }
         }
