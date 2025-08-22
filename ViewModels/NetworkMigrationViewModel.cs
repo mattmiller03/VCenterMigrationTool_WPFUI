@@ -129,16 +129,35 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
 
     public async Task OnNavigatedToAsync ()
         {
-        if (_sharedConnectionService.SourceConnection != null && _sharedConnectionService.TargetConnection != null)
-            {
-            MigrationStatus = "Connections available - ready to load network data";
-            }
-        else
-            {
-            MigrationStatus = "Please establish source and target connections on the Dashboard first";
-            }
+        try
+        {
+            // Check actual connection status using API
+            var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
+            var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
 
-        await Task.CompletedTask;
+            if (sourceStatus.IsConnected && targetStatus.IsConnected)
+            {
+                MigrationStatus = $"Connected to {sourceStatus.ServerName} and {targetStatus.ServerName} - ready to load network data";
+                _logger.LogInformation("Network page loaded with active connections");
+            }
+            else if (sourceStatus.IsConnected)
+            {
+                MigrationStatus = $"Connected to source ({sourceStatus.ServerName}) - target connection needed";
+            }
+            else if (targetStatus.IsConnected)
+            {
+                MigrationStatus = $"Connected to target ({targetStatus.ServerName}) - source connection needed";
+            }
+            else
+            {
+                MigrationStatus = "Please establish source and target connections on the Dashboard first";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking connection status on network page");
+            MigrationStatus = "Error checking connection status";
+        }
         }
 
     public async Task OnNavigatedFromAsync () => await Task.CompletedTask;

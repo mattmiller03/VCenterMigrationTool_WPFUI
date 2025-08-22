@@ -9,6 +9,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -83,11 +84,22 @@ public partial class App
             services.AddSingleton<ConnectionProfileService>();
             services.AddSingleton<CredentialService>();
             services.AddSingleton<ConfigurationService>();
-            services.AddSingleton<SharedConnectionService>();
             services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
 
-
+            // HTTP Client for vSphere API
+            services.AddHttpClient<VSphereApiService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+            }).ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                return new HttpClientHandler()
+                {
+                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+                };
+            });
+            services.AddSingleton<VSphereApiService>();
+            services.AddSingleton<SharedConnectionService>();
 
             // UPDATED: Use HybridPowerShellService instead of PowerShellService
             services.AddSingleton<HybridPowerShellService>();

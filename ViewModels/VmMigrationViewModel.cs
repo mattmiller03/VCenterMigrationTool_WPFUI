@@ -160,17 +160,35 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
 
     public async Task OnNavigatedToAsync ()
         {
-        // Check if we have active connections
-        if (_sharedConnectionService.SourceConnection != null && _sharedConnectionService.TargetConnection != null)
-            {
-            MigrationStatus = "Connections available - ready to load data";
-            }
-        else
-            {
-            MigrationStatus = "Please establish source and target connections on the Dashboard first";
-            }
+        try
+        {
+            // Check actual connection status using API
+            var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
+            var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
 
-        await Task.CompletedTask;
+            if (sourceStatus.IsConnected && targetStatus.IsConnected)
+            {
+                MigrationStatus = $"Connected to {sourceStatus.ServerName} and {targetStatus.ServerName} - ready to load data";
+                _logger.LogInformation("VM migration page loaded with active connections");
+            }
+            else if (sourceStatus.IsConnected)
+            {
+                MigrationStatus = $"Connected to source ({sourceStatus.ServerName}) - target connection needed";
+            }
+            else if (targetStatus.IsConnected)
+            {
+                MigrationStatus = $"Connected to target ({targetStatus.ServerName}) - source connection needed";
+            }
+            else
+            {
+                MigrationStatus = "Please establish source and target connections on the Dashboard first";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking connection status on VM migration page");
+            MigrationStatus = "Error checking connection status";
+        }
         }
 
     public async Task OnNavigatedFromAsync () => await Task.CompletedTask;

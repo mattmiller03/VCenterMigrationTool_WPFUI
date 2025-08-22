@@ -156,6 +156,16 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             "VCenterMigrationTool", "ResourcePoolBackups");
         }
 
+    public async Task OnNavigatedToAsync()
+    {
+        await ConnectToVCenters();
+    }
+
+    public async Task OnNavigatedFromAsync()
+    {
+        await Task.CompletedTask;
+    }
+
     // Connection Commands
     [RelayCommand]
     private async Task ConnectToVCenters ()
@@ -163,72 +173,47 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
         try
             {
             IsLoadingData = true;
-            LoadingMessage = "Connecting to vCenter servers...";
+            LoadingMessage = "Checking vCenter connections...";
 
             // Get source and target from shared connection
             var sourceConnection = _sharedConnectionService.SourceConnection;
             var targetConnection = _sharedConnectionService.TargetConnection;
 
-            // Check connection status from SharedConnectionService
+            if (sourceConnection == null || targetConnection == null)
+            {
+                _logger.LogWarning("Source or target connection not available");
+                IsSourceConnected = false;
+                IsTargetConnected = false;
+                SourceConnectionStatus = "Not configured";
+                TargetConnectionStatus = "Not configured";
+                return;
+            }
+
+            // Use API-based connection status check
             var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
             var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
 
+            // Update connection states
             IsSourceConnected = sourceStatus.IsConnected;
-            SourceConnectionStatus = sourceStatus.IsConnected ? "Connected" : "Disconnected";
+            SourceConnectionStatus = sourceStatus.IsConnected ? 
+                $"Connected - {sourceStatus.ServerName} ({sourceStatus.Version})" : 
+                "Disconnected";
 
             IsTargetConnected = targetStatus.IsConnected;
-            TargetConnectionStatus = targetStatus.IsConnected ? "Connected" : "Disconnected";
+            TargetConnectionStatus = targetStatus.IsConnected ? 
+                $"Connected - {targetStatus.ServerName} ({targetStatus.Version})" : 
+                "Disconnected";
 
-            if (!IsSourceConnected || !IsTargetConnected)
-                {
-                _logger.LogWarning("Not all vCenter connections are available");
-                return;
-                }
-
-            SourceVCenter = sourceConnection.ServerAddress;
-            TargetVCenter = targetConnection.ServerAddress;
-
-            // Test connections - variables will be injected by HybridPowerShellService
-            var script = @"
-try {
-    # Connect to source vCenter
-    $sourceCred = New-Object System.Management.Automation.PSCredential($SourceUser, (ConvertTo-SecureString $SourcePass -AsPlainText -Force))
-    Connect-VIServer -Server $SourceServer -Credential $sourceCred -Force | Out-Null
-    
-    # Connect to target vCenter
-    $targetCred = New-Object System.Management.Automation.PSCredential($TargetUser, (ConvertTo-SecureString $TargetPass -AsPlainText -Force))
-    Connect-VIServer -Server $TargetServer -Credential $targetCred -Force | Out-Null
-    
-    Write-Output 'SUCCESS: Connected to both vCenter servers'
-}
-catch {
-    Write-Error ""Failed to connect: $($_.Exception.Message)""
-}";
-
-            // Get credentials using your actual CredentialService implementation
-            var sourcePassword = _credentialService.GetPassword(sourceConnection);
-            var targetPassword = _credentialService.GetPassword(targetConnection);
-
-            var parameters = new Dictionary<string, object>
-                {
-                ["SourceServer"] = sourceConnection.ServerAddress,
-                ["TargetServer"] = targetConnection.ServerAddress,
-                ["SourceUser"] = sourceConnection.Username,
-                ["SourcePass"] = sourcePassword ?? "",
-                ["TargetUser"] = targetConnection.Username,
-                ["TargetPass"] = targetPassword ?? ""
-                };
-
-            var result = await _powerShellService.RunScriptAsync(script, parameters);
-
-            if (!string.IsNullOrEmpty(result) && result.Contains("SUCCESS"))
-                {
-                _logger.LogInformation("Successfully tested vCenter connections");
-                }
+            if (IsSourceConnected && IsTargetConnected)
+            {
+                SourceVCenter = sourceConnection.ServerAddress ?? "";
+                TargetVCenter = targetConnection.ServerAddress ?? "";
+                _logger.LogInformation("Both vCenter connections verified via API");
+            }
             else
-                {
-                _logger.LogError("Failed to test vCenter connections: {Error}", result);
-                }
+            {
+                _logger.LogWarning("Not all vCenter connections are available");
+            }
             }
         catch (Exception ex)
             {

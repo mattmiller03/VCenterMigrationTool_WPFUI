@@ -13,15 +13,18 @@ public class SharedConnectionService
 {
     private readonly CredentialService _credentialService;
     private readonly VCenterInventoryService _inventoryService;
+    private readonly VSphereApiService _vSphereApiService;
     private readonly ILogger<SharedConnectionService> _logger;
 
     public SharedConnectionService(
         CredentialService credentialService, 
         VCenterInventoryService inventoryService,
+        VSphereApiService vSphereApiService,
         ILogger<SharedConnectionService> logger)
     {
         _credentialService = credentialService;
         _inventoryService = inventoryService;
+        _vSphereApiService = vSphereApiService;
         _logger = logger;
     }
     /// <summary>
@@ -36,9 +39,6 @@ public class SharedConnectionService
 
     public async Task<(bool IsConnected, string ServerName, string Version)> GetConnectionStatusAsync(string connectionType)
     {
-        // Simulate async operation
-        await Task.Delay(100);
-
         var connection = connectionType.ToLower() switch
         {
             "source" => SourceConnection,
@@ -51,30 +51,46 @@ public class SharedConnectionService
             return (false, "Not configured", "");
         }
 
-        // In a real implementation, this would test the actual connection
-        // For now, simulate based on whether connection details are present and password can be decrypted
-        var hasBasicInfo = !string.IsNullOrEmpty(connection.ServerAddress) && 
-                          !string.IsNullOrEmpty(connection.Username);
-        
-        var hasPassword = false;
-        if (hasBasicInfo)
+        // Convert VCenterConnection to VCenterConnectionInfo for API service
+        var connectionInfo = new VCenterConnectionInfo
         {
-            // Check if password is available in Windows Credential Manager
-            try
+            ServerAddress = connection.ServerAddress ?? "",
+            Username = connection.Username ?? ""
+        };
+
+        // Check if password is available
+        string password;
+        try
+        {
+            password = _credentialService.GetPassword(connection);
+            if (string.IsNullOrEmpty(password))
             {
-                var password = _credentialService.GetPassword(connection);
-                hasPassword = !string.IsNullOrEmpty(password);
-            }
-            catch
-            {
-                // Password retrieval failed
-                hasPassword = false;
+                return (false, connection.ServerAddress ?? "Unknown", "No password");
             }
         }
-        
-        var isConnected = hasBasicInfo && hasPassword;
-        
-        return (isConnected, connection.ServerAddress ?? "Unknown", "7.0");
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to retrieve password for {ConnectionType} connection", connectionType);
+            return (false, connection.ServerAddress ?? "Unknown", "Password error");
+        }
+
+        // Use vSphere API to test actual connection
+        try
+        {
+            var (isConnected, version, build) = await _vSphereApiService.GetConnectionStatusAsync(connectionInfo, password);
+            var versionString = !string.IsNullOrEmpty(version) ? $"{version} (Build: {build})" : "Connected";
+            
+            _logger.LogInformation("{ConnectionType} connection status: {IsConnected} to {Server}", 
+                connectionType, isConnected, connection.ServerAddress);
+                
+            return (isConnected, connection.ServerAddress ?? "Unknown", versionString);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error testing {ConnectionType} connection to {Server}", 
+                connectionType, connection.ServerAddress);
+            return (false, connection.ServerAddress ?? "Unknown", "Connection error");
+        }
     }
 
     public async Task<VCenterConnection?> GetConnectionAsync(string connectionType)
@@ -415,5 +431,61 @@ public class SharedConnectionService
         }
         
         return false;
+    }
+
+    /// <summary>
+    /// Get basic inventory counts using vSphere API for dashboard display
+    /// </summary>
+    public async Task<InventoryCounts?> GetInventoryCountsAsync(string connectionType)
+    {
+        var connection = connectionType.ToLower() switch
+        {
+            "source" => SourceConnection,
+            "target" => TargetConnection,
+            _ => null
+        };
+
+        if (connection == null)
+        {
+            return null;
+        }
+
+        // Convert VCenterConnection to VCenterConnectionInfo for API service
+        var connectionInfo = new VCenterConnectionInfo
+        {
+            ServerAddress = connection.ServerAddress ?? "",
+            Username = connection.Username ?? ""
+        };
+
+        // Check if password is available
+        string password;
+        try
+        {
+            password = _credentialService.GetPassword(connection);
+            if (string.IsNullOrEmpty(password))
+            {
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to retrieve password for inventory counts on {ConnectionType} connection", connectionType);
+            return null;
+        }
+
+        // Use vSphere API to get inventory counts
+        try
+        {
+            var counts = await _vSphereApiService.GetInventoryCountsAsync(connectionInfo, password);
+            _logger.LogInformation("Retrieved inventory counts for {ConnectionType}: VMs={VmCount}, Hosts={HostCount}", 
+                connectionType, counts.VmCount, counts.HostCount);
+            return counts;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting inventory counts for {ConnectionType} connection to {Server}", 
+                connectionType, connection.ServerAddress);
+            return null;
+        }
     }
     }

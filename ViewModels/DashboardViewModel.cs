@@ -180,7 +180,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     public async Task OnNavigatedToAsync ()
         {
         await CheckConnectionStatus();
-        UpdateInventorySummaries();
+        await Task.Run(UpdateInventorySummaries);
         }
 
     public async Task OnNavigatedFromAsync ()
@@ -191,18 +191,35 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
     /// <summary>
     /// Updates inventory summaries for both source and target vCenters
+    /// Uses vSphere API for quick counts on dashboard
     /// </summary>
-    private void UpdateInventorySummaries()
+    private async void UpdateInventorySummaries()
     {
-        // Update source inventory summary
-        var sourceInventory = _sharedConnectionService.GetSourceInventory();
-        if (sourceInventory != null && _sharedConnectionService.SourceConnection != null)
+        // Update source inventory summary using API
+        if (IsSourceConnected && _sharedConnectionService.SourceConnection != null)
         {
-            HasSourceInventory = true;
-            var stats = sourceInventory.Statistics;
-            SourceInventorySummary = $"{stats.DatacenterCount} DCs • {stats.ClusterCount} Clusters • {stats.HostCount} Hosts • {stats.VirtualMachineCount} VMs • {stats.DatastoreCount} Datastores\n" +
-                                   $"Resources: {stats.TotalCpuGhz:F1} GHz CPU • {stats.TotalMemoryGB:F0} GB RAM • {stats.TotalDatastoreCapacityGB:F0} GB Storage\n" +
-                                   $"Last Updated: {sourceInventory.LastUpdated:yyyy-MM-dd HH:mm:ss}";
+            try
+            {
+                var sourceCounts = await _sharedConnectionService.GetInventoryCountsAsync("source");
+                if (sourceCounts != null)
+                {
+                    HasSourceInventory = true;
+                    SourceInventorySummary = $"{sourceCounts.DatacenterCount} DCs • {sourceCounts.ClusterCount} Clusters • {sourceCounts.HostCount} Hosts • {sourceCounts.VmCount} VMs • {sourceCounts.DatastoreCount} Datastores\n" +
+                                           $"Basic counts via vSphere API • Use vCenter Objects page for detailed inventory\n" +
+                                           $"Last Updated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+                }
+                else
+                {
+                    HasSourceInventory = false;
+                    SourceInventorySummary = "Error loading inventory counts";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get source inventory counts via API");
+                HasSourceInventory = false;
+                SourceInventorySummary = "Error loading inventory counts";
+            }
         }
         else
         {
@@ -210,15 +227,31 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             SourceInventorySummary = IsSourceConnected ? "Loading inventory..." : "No inventory loaded";
         }
 
-        // Update target inventory summary
-        var targetInventory = _sharedConnectionService.GetTargetInventory();
-        if (targetInventory != null && _sharedConnectionService.TargetConnection != null)
+        // Update target inventory summary using API
+        if (IsTargetConnected && _sharedConnectionService.TargetConnection != null)
         {
-            HasTargetInventory = true;
-            var stats = targetInventory.Statistics;
-            TargetInventorySummary = $"{stats.DatacenterCount} DCs • {stats.ClusterCount} Clusters • {stats.HostCount} Hosts • {stats.VirtualMachineCount} VMs • {stats.DatastoreCount} Datastores\n" +
-                                   $"Resources: {stats.TotalCpuGhz:F1} GHz CPU • {stats.TotalMemoryGB:F0} GB RAM • {stats.TotalDatastoreCapacityGB:F0} GB Storage\n" +
-                                   $"Last Updated: {targetInventory.LastUpdated:yyyy-MM-dd HH:mm:ss}";
+            try
+            {
+                var targetCounts = await _sharedConnectionService.GetInventoryCountsAsync("target");
+                if (targetCounts != null)
+                {
+                    HasTargetInventory = true;
+                    TargetInventorySummary = $"{targetCounts.DatacenterCount} DCs • {targetCounts.ClusterCount} Clusters • {targetCounts.HostCount} Hosts • {targetCounts.VmCount} VMs • {targetCounts.DatastoreCount} Datastores\n" +
+                                           $"Basic counts via vSphere API • Use vCenter Objects page for detailed inventory\n" +
+                                           $"Last Updated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+                }
+                else
+                {
+                    HasTargetInventory = false;
+                    TargetInventorySummary = "Error loading inventory counts";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get target inventory counts via API");
+                HasTargetInventory = false;
+                TargetInventorySummary = "Error loading inventory counts";
+            }
         }
         else
         {
@@ -362,7 +395,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 _logger.LogInformation("✅ Persistent source connection established (Session: {SessionId})", sessionId);
 
                 // Update inventory summary
-                UpdateInventorySummaries();
+                _ = Task.Run(UpdateInventorySummaries);
 
                 // Notify property changes
                 OnPropertyChanged(nameof(IsSourceDisconnected));
@@ -469,7 +502,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 _logger.LogInformation("✅ Persistent target connection established (Session: {SessionId})", sessionId);
 
                 // Update inventory summary
-                UpdateInventorySummaries();
+                _ = Task.Run(UpdateInventorySummaries);
 
                 // Notify property changes
                 OnPropertyChanged(nameof(IsTargetDisconnected));
@@ -619,7 +652,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             if (refreshTasks.Count > 0)
             {
                 await Task.WhenAll(refreshTasks);
-                UpdateInventorySummaries();
+                await Task.Run(UpdateInventorySummaries);
                 CurrentJobText = "Inventory refreshed successfully.";
             }
             else
