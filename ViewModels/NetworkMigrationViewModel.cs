@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
@@ -181,9 +182,89 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 _sharedConnectionService.SourceConnection,
                 password);
 
-            // TODO: Parse network topology data and populate SourceNetworkTopology
+            // Parse network topology JSON data
+            if (!string.IsNullOrEmpty(networkResult))
+            {
+                try
+                {
+                    var networkData = JsonSerializer.Deserialize<JsonElement[]>(networkResult);
+                    foreach (var hostData in networkData)
+                    {
+                        var hostNode = new NetworkHostNode
+                        {
+                            Name = hostData.GetProperty("HostName").GetString() ?? ""
+                        };
 
-            MigrationStatus = $"Loaded source network data successfully";
+                        // Parse vSwitches
+                        if (hostData.TryGetProperty("VSwitches", out var vSwitchesElement))
+                        {
+                            foreach (var vSwitchData in vSwitchesElement.EnumerateArray())
+                            {
+                                var vSwitch = new VSwitchInfo
+                                {
+                                    Name = vSwitchData.GetProperty("Name").GetString() ?? "",
+                                    Type = vSwitchData.GetProperty("Type").GetString() ?? "Standard",
+                                    IsSelected = vSwitchData.TryGetProperty("IsSelected", out var selectedElement) 
+                                        ? selectedElement.GetBoolean() 
+                                        : false
+                                };
+
+                                // Parse port groups
+                                if (vSwitchData.TryGetProperty("PortGroups", out var portGroupsElement))
+                                {
+                                    foreach (var portGroupData in portGroupsElement.EnumerateArray())
+                                    {
+                                        var portGroup = new PortGroupInfo
+                                        {
+                                            Name = portGroupData.GetProperty("Name").GetString() ?? "",
+                                            VlanId = portGroupData.TryGetProperty("VlanId", out var vlanElement) 
+                                                ? vlanElement.GetInt32() 
+                                                : 0,
+                                            Type = vSwitch.Type,
+                                            IsSelected = portGroupData.TryGetProperty("IsSelected", out var pgSelectedElement) 
+                                                ? pgSelectedElement.GetBoolean() 
+                                                : false
+                                        };
+                                        vSwitch.PortGroups.Add(portGroup);
+                                    }
+                                }
+                                hostNode.VSwitches.Add(vSwitch);
+                            }
+                        }
+
+                        // Parse VMkernel ports
+                        if (hostData.TryGetProperty("VmKernelPorts", out var vmkElement))
+                        {
+                            foreach (var vmkData in vmkElement.EnumerateArray())
+                            {
+                                var vmkPort = new VmKernelPortInfo
+                                {
+                                    Name = vmkData.GetProperty("Name").GetString() ?? "",
+                                    IpAddress = vmkData.TryGetProperty("IpAddress", out var ipElement) 
+                                        ? ipElement.GetString() ?? "" 
+                                        : ""
+                                };
+                                hostNode.VmKernelPorts.Add(vmkPort);
+                            }
+                        }
+
+                        SourceNetworkTopology.Add(hostNode);
+                    }
+                    
+                    MigrationStatus = $"Loaded source network data successfully - {SourceNetworkTopology.Count} hosts, {SourceNetworkTopology.Sum(h => h.VSwitches.Count)} switches";
+                }
+                catch (JsonException ex)
+                {
+                    MigrationStatus = $"Failed to parse network topology data: {ex.Message}";
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] JSON parsing error: {ex.Message}\n";
+                    _logger.LogError(ex, "Error parsing network topology JSON");
+                }
+            }
+            else
+            {
+                MigrationStatus = "No network topology data returned from script";
+            }
+
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded source network data\n";
 
             _logger.LogInformation("Successfully loaded source network data");
@@ -229,7 +310,89 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 _sharedConnectionService.TargetConnection,
                 password);
 
-            MigrationStatus = "Loaded target network data successfully";
+            // Parse network topology JSON data
+            if (!string.IsNullOrEmpty(result))
+            {
+                try
+                {
+                    var networkData = JsonSerializer.Deserialize<JsonElement[]>(result);
+                    foreach (var hostData in networkData)
+                    {
+                        var hostNode = new NetworkHostNode
+                        {
+                            Name = hostData.GetProperty("HostName").GetString() ?? ""
+                        };
+
+                        // Parse vSwitches
+                        if (hostData.TryGetProperty("VSwitches", out var vSwitchesElement))
+                        {
+                            foreach (var vSwitchData in vSwitchesElement.EnumerateArray())
+                            {
+                                var vSwitch = new VSwitchInfo
+                                {
+                                    Name = vSwitchData.GetProperty("Name").GetString() ?? "",
+                                    Type = vSwitchData.GetProperty("Type").GetString() ?? "Standard",
+                                    IsSelected = vSwitchData.TryGetProperty("IsSelected", out var selectedElement) 
+                                        ? selectedElement.GetBoolean() 
+                                        : false
+                                };
+
+                                // Parse port groups
+                                if (vSwitchData.TryGetProperty("PortGroups", out var portGroupsElement))
+                                {
+                                    foreach (var portGroupData in portGroupsElement.EnumerateArray())
+                                    {
+                                        var portGroup = new PortGroupInfo
+                                        {
+                                            Name = portGroupData.GetProperty("Name").GetString() ?? "",
+                                            VlanId = portGroupData.TryGetProperty("VlanId", out var vlanElement) 
+                                                ? vlanElement.GetInt32() 
+                                                : 0,
+                                            Type = vSwitch.Type,
+                                            IsSelected = portGroupData.TryGetProperty("IsSelected", out var pgSelectedElement) 
+                                                ? pgSelectedElement.GetBoolean() 
+                                                : false
+                                        };
+                                        vSwitch.PortGroups.Add(portGroup);
+                                    }
+                                }
+                                hostNode.VSwitches.Add(vSwitch);
+                            }
+                        }
+
+                        // Parse VMkernel ports
+                        if (hostData.TryGetProperty("VmKernelPorts", out var vmkElement))
+                        {
+                            foreach (var vmkData in vmkElement.EnumerateArray())
+                            {
+                                var vmkPort = new VmKernelPortInfo
+                                {
+                                    Name = vmkData.GetProperty("Name").GetString() ?? "",
+                                    IpAddress = vmkData.TryGetProperty("IpAddress", out var ipElement) 
+                                        ? ipElement.GetString() ?? "" 
+                                        : ""
+                                };
+                                hostNode.VmKernelPorts.Add(vmkPort);
+                            }
+                        }
+
+                        TargetNetworkTopology.Add(hostNode);
+                    }
+                    
+                    MigrationStatus = $"Loaded target network data successfully - {TargetNetworkTopology.Count} hosts, {TargetNetworkTopology.Sum(h => h.VSwitches.Count)} switches";
+                }
+                catch (JsonException ex)
+                {
+                    MigrationStatus = $"Failed to parse target network topology data: {ex.Message}";
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] JSON parsing error: {ex.Message}\n";
+                    _logger.LogError(ex, "Error parsing target network topology JSON");
+                }
+            }
+            else
+            {
+                MigrationStatus = "No target network topology data returned from script";
+            }
+
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded target network data\n";
 
             _logger.LogInformation("Successfully loaded target network data");
