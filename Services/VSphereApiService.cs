@@ -58,13 +58,43 @@ namespace VCenterMigrationTool.Services
                 
                 if (response.IsSuccessStatusCode)
                 {
-                    var sessionToken = await response.Content.ReadAsStringAsync();
-                    sessionToken = sessionToken.Trim('"'); // Remove quotes from JSON string
+                    var content = await response.Content.ReadAsStringAsync();
+                    _logger.LogDebug("vCenter API authentication response: {Content}", content);
                     
-                    _sessionTokens[connectionKey] = sessionToken;
-                    _logger.LogInformation("Successfully authenticated to vCenter API: {Server}", connection.ServerAddress);
-                    
-                    return (true, sessionToken);
+                    try
+                    {
+                        var sessionToken = content.Trim('"'); // Remove quotes from JSON string if present
+                        
+                        // Handle case where response might be JSON object instead of just a string
+                        if (content.StartsWith("{"))
+                        {
+                            var jsonData = JsonSerializer.Deserialize<JsonElement>(content);
+                            if (jsonData.TryGetProperty("value", out var valueElement))
+                            {
+                                sessionToken = valueElement.GetString() ?? "";
+                            }
+                            else if (jsonData.TryGetProperty("session_id", out var sessionElement))
+                            {
+                                sessionToken = sessionElement.GetString() ?? "";
+                            }
+                        }
+                        
+                        if (string.IsNullOrEmpty(sessionToken))
+                        {
+                            _logger.LogError("Empty session token received from vCenter API: {Server}", connection.ServerAddress);
+                            return (false, string.Empty);
+                        }
+                        
+                        _sessionTokens[connectionKey] = sessionToken;
+                        _logger.LogInformation("Successfully authenticated to vCenter API: {Server}", connection.ServerAddress);
+                        
+                        return (true, sessionToken);
+                    }
+                    catch (JsonException jsonEx)
+                    {
+                        _logger.LogError(jsonEx, "Failed to parse vCenter API authentication response. Content: {Content}", content);
+                        return (false, string.Empty);
+                    }
                 }
                 else
                 {
@@ -126,12 +156,22 @@ namespace VCenterMigrationTool.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var versionInfo = JsonSerializer.Deserialize<JsonElement>(content);
+                    _logger.LogDebug("vCenter API version response: {Content}", content);
                     
-                    var version = versionInfo.TryGetProperty("version", out var versionElement) ? versionElement.GetString() ?? "" : "";
-                    var build = versionInfo.TryGetProperty("build", out var buildElement) ? buildElement.GetString() ?? "" : "";
-                    
-                    return (true, version, build);
+                    try
+                    {
+                        var versionInfo = JsonSerializer.Deserialize<JsonElement>(content);
+                        
+                        var version = versionInfo.TryGetProperty("version", out var versionElement) ? versionElement.GetString() ?? "" : "";
+                        var build = versionInfo.TryGetProperty("build", out var buildElement) ? buildElement.GetString() ?? "" : "";
+                        
+                        return (true, version, build);
+                    }
+                    catch (JsonException jsonEx)
+                    {
+                        _logger.LogError(jsonEx, "Failed to parse vCenter API version response. Content: {Content}", content);
+                        return (false, string.Empty, string.Empty);
+                    }
                 }
                 
                 return (false, string.Empty, string.Empty);
@@ -204,11 +244,24 @@ namespace VCenterMigrationTool.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var jsonData = JsonSerializer.Deserialize<JsonElement>(content);
+                    _logger.LogDebug("vCenter API {Endpoint} response: {Content}", endpoint, content);
                     
-                    if (jsonData.TryGetProperty("value", out var valueElement) && valueElement.ValueKind == JsonValueKind.Array)
+                    try
                     {
-                        return valueElement.GetArrayLength();
+                        var jsonData = JsonSerializer.Deserialize<JsonElement>(content);
+                        
+                        if (jsonData.TryGetProperty("value", out var valueElement) && valueElement.ValueKind == JsonValueKind.Array)
+                        {
+                            return valueElement.GetArrayLength();
+                        }
+                        else
+                        {
+                            _logger.LogWarning("vCenter API response for {Endpoint} missing 'value' array. Response: {Content}", endpoint, content);
+                        }
+                    }
+                    catch (JsonException jsonEx)
+                    {
+                        _logger.LogError(jsonEx, "Failed to parse vCenter API response for {Endpoint}. Content: {Content}", endpoint, content);
                     }
                 }
                 

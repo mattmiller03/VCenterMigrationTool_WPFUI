@@ -209,9 +209,16 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                     var networkData = JsonSerializer.Deserialize<JsonElement[]>(networkResult);
                     foreach (var hostData in networkData)
                     {
+                        // Validate that hostData is an object before accessing properties
+                        if (hostData.ValueKind != JsonValueKind.Object)
+                        {
+                            _logger.LogWarning("Expected object but got {ValueKind} in network data", hostData.ValueKind);
+                            continue;
+                        }
+
                         var hostNode = new NetworkHostNode
                         {
-                            Name = hostData.GetProperty("HostName").GetString() ?? ""
+                            Name = hostData.TryGetProperty("HostName", out var hostNameElement) ? hostNameElement.GetString() ?? "" : ""
                         };
 
                         // Parse vSwitches
@@ -221,8 +228,8 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                             {
                                 var vSwitch = new VSwitchInfo
                                 {
-                                    Name = vSwitchData.GetProperty("Name").GetString() ?? "",
-                                    Type = vSwitchData.GetProperty("Type").GetString() ?? "Standard",
+                                    Name = vSwitchData.TryGetProperty("Name", out var nameElement) ? nameElement.GetString() ?? "" : "",
+                                    Type = vSwitchData.TryGetProperty("Type", out var typeElement) ? typeElement.GetString() ?? "Standard" : "Standard",
                                     IsSelected = vSwitchData.TryGetProperty("IsSelected", out var selectedElement) 
                                         ? selectedElement.GetBoolean() 
                                         : false
@@ -235,7 +242,7 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                                     {
                                         var portGroup = new PortGroupInfo
                                         {
-                                            Name = portGroupData.GetProperty("Name").GetString() ?? "",
+                                            Name = portGroupData.TryGetProperty("Name", out var pgNameElement) ? pgNameElement.GetString() ?? "" : "",
                                             VlanId = portGroupData.TryGetProperty("VlanId", out var vlanElement) 
                                                 ? vlanElement.GetInt32() 
                                                 : 0,
@@ -258,7 +265,7 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                             {
                                 var vmkPort = new VmKernelPortInfo
                                 {
-                                    Name = vmkData.GetProperty("Name").GetString() ?? "",
+                                    Name = vmkData.TryGetProperty("Name", out var vmkNameElement) ? vmkNameElement.GetString() ?? "" : "",
                                     IpAddress = vmkData.TryGetProperty("IpAddress", out var ipElement) 
                                         ? ipElement.GetString() ?? "" 
                                         : ""
@@ -337,9 +344,16 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                     var networkData = JsonSerializer.Deserialize<JsonElement[]>(result);
                     foreach (var hostData in networkData)
                     {
+                        // Validate that hostData is an object before accessing properties
+                        if (hostData.ValueKind != JsonValueKind.Object)
+                        {
+                            _logger.LogWarning("Expected object but got {ValueKind} in target network data", hostData.ValueKind);
+                            continue;
+                        }
+
                         var hostNode = new NetworkHostNode
                         {
-                            Name = hostData.GetProperty("HostName").GetString() ?? ""
+                            Name = hostData.TryGetProperty("HostName", out var hostNameElement) ? hostNameElement.GetString() ?? "" : ""
                         };
 
                         // Parse vSwitches
@@ -349,8 +363,8 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                             {
                                 var vSwitch = new VSwitchInfo
                                 {
-                                    Name = vSwitchData.GetProperty("Name").GetString() ?? "",
-                                    Type = vSwitchData.GetProperty("Type").GetString() ?? "Standard",
+                                    Name = vSwitchData.TryGetProperty("Name", out var nameElement) ? nameElement.GetString() ?? "" : "",
+                                    Type = vSwitchData.TryGetProperty("Type", out var typeElement) ? typeElement.GetString() ?? "Standard" : "Standard",
                                     IsSelected = vSwitchData.TryGetProperty("IsSelected", out var selectedElement) 
                                         ? selectedElement.GetBoolean() 
                                         : false
@@ -363,7 +377,7 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                                     {
                                         var portGroup = new PortGroupInfo
                                         {
-                                            Name = portGroupData.GetProperty("Name").GetString() ?? "",
+                                            Name = portGroupData.TryGetProperty("Name", out var pgNameElement) ? pgNameElement.GetString() ?? "" : "",
                                             VlanId = portGroupData.TryGetProperty("VlanId", out var vlanElement) 
                                                 ? vlanElement.GetInt32() 
                                                 : 0,
@@ -386,7 +400,7 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                             {
                                 var vmkPort = new VmKernelPortInfo
                                 {
-                                    Name = vmkData.GetProperty("Name").GetString() ?? "",
+                                    Name = vmkData.TryGetProperty("Name", out var vmkNameElement) ? vmkNameElement.GetString() ?? "" : "",
                                     IpAddress = vmkData.TryGetProperty("IpAddress", out var ipElement) 
                                         ? ipElement.GetString() ?? "" 
                                         : ""
