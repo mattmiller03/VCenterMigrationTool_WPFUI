@@ -260,33 +260,35 @@ catch {
             IsLoadingData = true;
             LoadingMessage = "Loading source clusters...";
 
-            // Variables will be injected by HybridPowerShellService
-            var script = @"
-try {
-    $clusters = Get-Cluster -Server $SourceServer | Select-Object Name, Id, @{N='Host';E={$_.ExtensionData.Summary.NumHosts}}, @{N='VM';E={$_.ExtensionData.Summary.NumVmotionInterfaces}}
-    
-    $clusterData = @()
-    foreach ($cluster in $clusters) {
-        $clusterData += [PSCustomObject]@{
-            Name = $cluster.Name
-            Id = $cluster.Id
-            HostCount = $cluster.Host
-            VmCount = $cluster.VM
-        }
-    }
-    
-    return $clusterData | ConvertTo-Json -Depth 3
-}
-catch {
-    Write-Error ""Failed to load clusters: $($_.Exception.Message)""
-}";
+            // Get source connection
+            var sourceConnection = _sharedConnectionService.SourceConnection;
+            if (sourceConnection == null)
+            {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No source vCenter connection\n";
+                return;
+            }
+
+            var sourcePassword = _credentialService.GetPassword(sourceConnection);
+            if (string.IsNullOrEmpty(sourcePassword))
+            {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No password found for source connection\n";
+                return;
+            }
 
             var parameters = new Dictionary<string, object>
                 {
-                ["SourceServer"] = SourceVCenter
+                ["VCenterServer"] = sourceConnection.ServerAddress,
+                ["Username"] = sourceConnection.Username,
+                ["Password"] = sourcePassword,
+                ["BypassModuleCheck"] = true
                 };
 
-            var result = await _powerShellService.RunScriptAsync(script, parameters);
+            // Use the dedicated Get-Clusters.ps1 script
+            var result = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Get-Clusters.ps1",
+                sourceConnection,
+                sourcePassword,
+                parameters);
 
             if (!string.IsNullOrEmpty(result))
                 {
@@ -339,33 +341,35 @@ catch {
             IsLoadingData = true;
             LoadingMessage = "Loading target clusters...";
 
-            // Variables will be injected by HybridPowerShellService
-            var script = @"
-try {
-    $clusters = Get-Cluster -Server $TargetServer | Select-Object Name, Id, @{N='Host';E={$_.ExtensionData.Summary.NumHosts}}, @{N='VM';E={$_.ExtensionData.Summary.NumVmotionInterfaces}}
-    
-    $clusterData = @()
-    foreach ($cluster in $clusters) {
-        $clusterData += [PSCustomObject]@{
-            Name = $cluster.Name
-            Id = $cluster.Id
-            HostCount = $cluster.Host
-            VmCount = $cluster.VM
-        }
-    }
-    
-    return $clusterData | ConvertTo-Json -Depth 3
-}
-catch {
-    Write-Error ""Failed to load clusters: $($_.Exception.Message)""
-}";
+            // Get target connection
+            var targetConnection = _sharedConnectionService.TargetConnection;
+            if (targetConnection == null)
+            {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No target vCenter connection\n";
+                return;
+            }
+
+            var targetPassword = _credentialService.GetPassword(targetConnection);
+            if (string.IsNullOrEmpty(targetPassword))
+            {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No password found for target connection\n";
+                return;
+            }
 
             var parameters = new Dictionary<string, object>
                 {
-                ["TargetServer"] = TargetVCenter
+                ["VCenterServer"] = targetConnection.ServerAddress,
+                ["Username"] = targetConnection.Username,
+                ["Password"] = targetPassword,
+                ["BypassModuleCheck"] = true
                 };
 
-            var result = await _powerShellService.RunScriptAsync(script, parameters);
+            // Use the dedicated Get-Clusters.ps1 script
+            var result = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Get-Clusters.ps1",
+                targetConnection,
+                targetPassword,
+                parameters);
 
             if (!string.IsNullOrEmpty(result))
                 {
