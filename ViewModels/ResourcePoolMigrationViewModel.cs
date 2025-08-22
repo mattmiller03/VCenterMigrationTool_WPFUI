@@ -172,9 +172,8 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             SourceVCenter = sourceConnection.ServerAddress;
             TargetVCenter = targetConnection.ServerAddress;
 
-            // Test connections
-            var script = @"param($SourceServer, $TargetServer, $SourceUser, $SourcePass, $TargetUser, $TargetPass)
-
+            // Test connections - variables will be injected by HybridPowerShellService
+            var script = @"
 try {
     # Connect to source vCenter
     $sourceCred = New-Object System.Management.Automation.PSCredential($SourceUser, (ConvertTo-SecureString $SourcePass -AsPlainText -Force))
@@ -247,8 +246,8 @@ catch {
             IsLoadingData = true;
             LoadingMessage = "Loading source clusters...";
 
-            var script = @"param($SourceServer)
-
+            // Variables will be injected by HybridPowerShellService
+            var script = @"
 try {
     $clusters = Get-Cluster -Server $SourceServer | Select-Object Name, Id, @{N='Host';E={$_.ExtensionData.Summary.NumHosts}}, @{N='VM';E={$_.ExtensionData.Summary.NumVmotionInterfaces}}
     
@@ -326,8 +325,8 @@ catch {
             IsLoadingData = true;
             LoadingMessage = "Loading target clusters...";
 
-            var script = @"param($TargetServer)
-
+            // Variables will be injected by HybridPowerShellService
+            var script = @"
 try {
     $clusters = Get-Cluster -Server $TargetServer | Select-Object Name, Id, @{N='Host';E={$_.ExtensionData.Summary.NumHosts}}, @{N='VM';E={$_.ExtensionData.Summary.NumVmotionInterfaces}}
     
