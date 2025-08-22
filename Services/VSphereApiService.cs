@@ -252,6 +252,15 @@ namespace VCenterMigrationTool.Services
     }
 
     /// <summary>
+    /// vCenter connection information for API calls
+    /// </summary>
+    public class VCenterConnectionInfo
+    {
+        public string ServerAddress { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+    }
+
+    /// <summary>
     /// Basic inventory counts from vSphere API
     /// </summary>
     public class InventoryCounts

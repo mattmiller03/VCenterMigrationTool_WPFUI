@@ -25,6 +25,7 @@
 	<ItemGroup>
 		<PackageReference Include="Meziantou.Framework.Win32.CredentialManager" Version="1.7.4" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.8" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<!-- Updated PowerShell packages for hybrid approach -->
 		<!-- Removed Microsoft.PowerShell.SDK - using external processes for complex operations -->
