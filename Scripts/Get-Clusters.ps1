@@ -49,6 +49,7 @@ try {
         try {
             Import-Module VMware.PowerCLI -Force -ErrorAction Stop
             Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+            Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
             Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
         }
         catch {
@@ -68,7 +69,8 @@ try {
     
     try {
         Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-        $connectionUsed = Connect-VIServer -Server $VCenterServer -Credential $Credentials -ErrorAction Stop
+        # Force connection and ignore SSL certificate issues
+        $connectionUsed = Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
         Write-LogSuccess "Successfully connected to vCenter: $($connectionUsed.Name)" -Category "Connection"
         Write-LogInfo "  Server: $($connectionUsed.Name)" -Category "Connection"
         Write-LogInfo "  User: $($connectionUsed.User)" -Category "Connection"

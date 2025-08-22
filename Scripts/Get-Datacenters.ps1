@@ -137,7 +137,8 @@ try {
     if (-not $connectionEstablished -and $VCenterServer -and $Credentials) {
         Write-LogInfo "Attempting to establish new vCenter connection to: $VCenterServer" -Category "Connection"
         try {
-            $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -ErrorAction Stop
+            # Force connection and ignore SSL certificate issues
+            $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
             $connectionUsed = $viConnection
             Write-LogSuccess "Successfully connected to vCenter: $($viConnection.Name)" -Category "Connection"
             $connectionEstablished = $true

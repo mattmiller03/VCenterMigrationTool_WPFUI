@@ -43,7 +43,8 @@ try {
 
     # Connect to vCenter using provided credentials
     Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -ErrorAction Stop
+    # Force connection and ignore SSL certificate issues
+    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
     Write-LogSuccess "Connected to vCenter: $($viConnection.Name)" -Category "Connection"
 
     # Get all clusters and for each cluster, get its hosts
