@@ -292,6 +292,17 @@ catch {
 
             if (!string.IsNullOrEmpty(result))
                 {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script output: {result.Substring(0, Math.Min(200, result.Length))}...\n";
+                
+                // Check if result starts with error indicators
+                if (result.TrimStart().StartsWith("Unable") || result.TrimStart().StartsWith("Error") || 
+                    result.TrimStart().StartsWith("Failed") || result.Contains("Exception"))
+                {
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script returned error: {result}\n";
+                    _logger.LogError("Get-Clusters script returned error: {Error}", result);
+                    return;
+                }
+                
                 // Parse JSON result and populate clusters
                 SourceClusters.Clear();
                 try
@@ -303,17 +314,21 @@ catch {
                         {
                             SourceClusters.Add(cluster);
                         }
+                        LogOutput += $"[{DateTime.Now:HH:mm:ss}] Successfully loaded {SourceClusters.Count} source clusters\n";
+                        _logger.LogInformation("Successfully loaded {Count} source clusters", SourceClusters.Count);
                     }
-                    _logger.LogInformation("Successfully loaded {Count} source clusters", SourceClusters.Count);
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogError(ex, "Error parsing source clusters JSON");
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] JSON parsing error: {ex.Message}\n";
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Raw script output: {result}\n";
+                    _logger.LogError(ex, "Error parsing source clusters JSON. Raw output: {RawOutput}", result);
                 }
                 }
             else
                 {
-                _logger.LogError("Failed to load source clusters: {Error}", result);
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script returned empty result\n";
+                _logger.LogError("Failed to load source clusters: empty result");
                 }
             }
         catch (Exception ex)
@@ -373,6 +388,17 @@ catch {
 
             if (!string.IsNullOrEmpty(result))
                 {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Target script output: {result.Substring(0, Math.Min(200, result.Length))}...\n";
+                
+                // Check if result starts with error indicators
+                if (result.TrimStart().StartsWith("Unable") || result.TrimStart().StartsWith("Error") || 
+                    result.TrimStart().StartsWith("Failed") || result.Contains("Exception"))
+                {
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Target script returned error: {result}\n";
+                    _logger.LogError("Get-Clusters script returned error: {Error}", result);
+                    return;
+                }
+                
                 // Parse JSON result and populate clusters
                 TargetClusters.Clear();
                 try
@@ -384,17 +410,21 @@ catch {
                         {
                             TargetClusters.Add(cluster);
                         }
+                        LogOutput += $"[{DateTime.Now:HH:mm:ss}] Successfully loaded {TargetClusters.Count} target clusters\n";
+                        _logger.LogInformation("Successfully loaded {Count} target clusters", TargetClusters.Count);
                     }
-                    _logger.LogInformation("Successfully loaded {Count} target clusters", TargetClusters.Count);
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogError(ex, "Error parsing target clusters JSON");
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Target JSON parsing error: {ex.Message}\n";
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Raw target script output: {result}\n";
+                    _logger.LogError(ex, "Error parsing target clusters JSON. Raw output: {RawOutput}", result);
                 }
                 }
             else
                 {
-                _logger.LogError("Failed to load target clusters: {Error}", result);
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Target script returned empty result\n";
+                _logger.LogError("Failed to load target clusters: empty result");
                 }
             }
         catch (Exception ex)

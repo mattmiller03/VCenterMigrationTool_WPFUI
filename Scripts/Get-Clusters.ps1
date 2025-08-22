@@ -88,16 +88,64 @@ try {
             $clusterCount = if ($clusters.Count) { $clusters.Count } else { 1 }
             Write-LogSuccess "Found $clusterCount cluster(s)" -Category "Discovery"
             
-            # Process clusters - keep it simple
+            # Process clusters - get comprehensive information
             foreach ($cluster in @($clusters)) {
                 Write-LogInfo "Processing cluster: $($cluster.Name)" -Category "Discovery"
                 
-                $clusterInfo = @{
-                    Name = $cluster.Name
-                    Id = $cluster.Id
-                    HAEnabled = $cluster.HAEnabled
-                    DrsEnabled = $cluster.DrsEnabled
-                    EVCMode = if ($cluster.EVCMode) { $cluster.EVCMode } else { "" }
+                try {
+                    # Get cluster view for more detailed information
+                    $clusterView = Get-View -VIObject $cluster -ErrorAction SilentlyContinue
+                    
+                    # Get hosts and VMs information
+                    $hosts = Get-VMHost -Location $cluster -ErrorAction SilentlyContinue
+                    $vms = Get-VM -Location $cluster -ErrorAction SilentlyContinue
+                    $datastores = Get-Datastore -Location $cluster -ErrorAction SilentlyContinue
+                    
+                    # Calculate totals
+                    $totalCpuGhz = if ($hosts) { ($hosts | Measure-Object -Property CpuTotalMhz -Sum).Sum / 1000 } else { 0 }
+                    $totalMemoryGB = if ($hosts) { ($hosts | Measure-Object -Property MemoryTotalGB -Sum).Sum } else { 0 }
+                    
+                    # Get datacenter name
+                    $datacenter = Get-Datacenter -Cluster $cluster -ErrorAction SilentlyContinue
+                    $datacenterName = if ($datacenter) { $datacenter.Name } else { "" }
+                    
+                    $clusterInfo = @{
+                        Name = $cluster.Name
+                        Id = $cluster.Id
+                        HostCount = if ($hosts) { $hosts.Count } else { 0 }
+                        VmCount = if ($vms) { $vms.Count } else { 0 }
+                        DatastoreCount = if ($datastores) { $datastores.Count } else { 0 }
+                        TotalCpuGhz = [math]::Round($totalCpuGhz, 1)
+                        TotalMemoryGB = [math]::Round($totalMemoryGB, 0)
+                        HAEnabled = $cluster.HAEnabled
+                        DrsEnabled = $cluster.DrsEnabled
+                        EVCMode = if ($cluster.EVCMode) { $cluster.EVCMode } else { "" }
+                        DatacenterName = $datacenterName
+                        FullName = if ($datacenterName) { "$datacenterName/$($cluster.Name)" } else { $cluster.Name }
+                        Hosts = @() # Empty array for now - can be populated later if needed
+                    }
+                    
+                    Write-LogInfo "  Hosts: $($clusterInfo.HostCount), VMs: $($clusterInfo.VmCount), CPU: $($clusterInfo.TotalCpuGhz) GHz, Memory: $($clusterInfo.TotalMemoryGB) GB" -Category "Discovery"
+                }
+                catch {
+                    Write-LogWarning "Failed to get detailed info for cluster $($cluster.Name): $($_.Exception.Message)" -Category "Discovery"
+                    
+                    # Fallback to basic information
+                    $clusterInfo = @{
+                        Name = $cluster.Name
+                        Id = $cluster.Id
+                        HostCount = 0
+                        VmCount = 0
+                        DatastoreCount = 0
+                        TotalCpuGhz = 0.0
+                        TotalMemoryGB = 0.0
+                        HAEnabled = $cluster.HAEnabled
+                        DrsEnabled = $cluster.DrsEnabled
+                        EVCMode = if ($cluster.EVCMode) { $cluster.EVCMode } else { "" }
+                        DatacenterName = ""
+                        FullName = $cluster.Name
+                        Hosts = @()
+                    }
                 }
                 
                 $result += $clusterInfo
