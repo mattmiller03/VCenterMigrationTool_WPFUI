@@ -1,123 +1,84 @@
-﻿
-=================================================================
-PowerShell Script Execution Log - 2025-08-22 06:12:08
-=================================================================
-
-2025-08-22 06:12:08.763 [INFO] [742fa50e] [if-(Get-Module--ListAvailable] Starting script execution: if-(Get-Module--ListAvailable on source connection
-
-[SESSION START] 742fa50e - if-(Get-Module--ListAvailable
-Connection: source
-Started: 2025-08-22 06:12:08.764
-----------------------------------------
-2025-08-22 06:12:08.775 [INFO] [7efe65bb] [tmp4a4rqy.tmp.ps1] Starting script execution: tmp4a4rqy.tmp.ps1 on source connection
-
-[SESSION START] 7efe65bb - tmp4a4rqy.tmp.ps1
-Connection: source
-Started: 2025-08-22 06:12:08.775
-----------------------------------------
-2025-08-22 06:12:08.780 [DEBUG] [7efe65bb] [tmp4a4rqy.tmp.ps1] Script parameters: LogPath=C:\Temp\app\logs
-2025-08-22 06:12:08.782 [DEBUG] [7efe65bb] [tmp4a4rqy.tmp.ps1] Script parameters:  -LogPath "C:\Temp\app\logs"
-2025-08-22 06:12:08.785 [INFO] [7efe65bb] [tmp4a4rqy.tmp.ps1] Trying PowerShell: pwsh.exe
-2025-08-22 06:12:08.787 [INFO] [7efe65bb] [tmp4a4rqy.tmp.ps1] Starting PowerShell process: pwsh.exe
-2025-08-22 06:12:08.815 [INFO] [7efe65bb] [tmp4a4rqy.tmp.ps1] Process started with PID: 28416
-2025-08-22 06:12:09.628 [OUTPUT] [7efe65bb] [tmp4a4rqy.tmp.ps1] true
-2025-08-22 06:12:09.684 [INFO] [7efe65bb] [tmp4a4rqy.tmp.ps1] Process completed with exit code: 0
-2025-08-22 06:12:09.685 [INFO] [7efe65bb] [tmp4a4rqy.tmp.ps1] Script execution completed: tmp4a4rqy.tmp.ps1 - SUCCESS
-----------------------------------------
-[SESSION END] 7efe65bb - tmp4a4rqy.tmp.ps1
-Result: SUCCESS
-Summary: Exit code: 0, Output length: 6 chars
-Ended: 2025-08-22 06:12:09.685
-
-2025-08-22 06:12:09.685 [INFO] [742fa50e] [if-(Get-Module--ListAvailable] Script execution completed: if-(Get-Module--ListAvailable - SUCCESS
-----------------------------------------
-[SESSION END] 742fa50e - if-(Get-Module--ListAvailable
-Result: SUCCESS
-Summary: Command execution completed
-Ended: 2025-08-22 06:12:09.685
-
-2025-08-22 06:13:14.982 [INFO] [1f23a14e] [PowerShell-Command] Starting script execution: PowerShell-Command on source connection
-
-[SESSION START] 1f23a14e - PowerShell-Command
-Connection: source
-Started: 2025-08-22 06:13:14.982
-----------------------------------------
-2025-08-22 06:13:14.982 [DEBUG] [1f23a14e] [PowerShell-Command] Script parameters: SourceServer=klisv0pp212.dir.ad.dla.mil, TargetServer=klisv0pp251.dir.ad.dla.mil, SourceUser=administrator@DLA-KLEBER.local, SourcePass=Lep2Tat00in3!52unJ, TargetUser=administrator@DLA-KLEBER.local, TargetPass=Lep2Tat00in3!52unJ
-2025-08-22 06:13:14.997 [INFO] [067cb6fd] [tmpwvbkoz.tmp.ps1] Starting script execution: tmpwvbkoz.tmp.ps1 on source connection
-
-[SESSION START] 067cb6fd - tmpwvbkoz.tmp.ps1
-Connection: source
-Started: 2025-08-22 06:13:14.997
-----------------------------------------
-2025-08-22 06:13:14.997 [DEBUG] [067cb6fd] [tmpwvbkoz.tmp.ps1] Script parameters: LogPath=C:\Temp\app\logs
-2025-08-22 06:13:14.997 [DEBUG] [067cb6fd] [tmpwvbkoz.tmp.ps1] Script parameters:  -LogPath "C:\Temp\app\logs"
-2025-08-22 06:13:14.999 [INFO] [067cb6fd] [tmpwvbkoz.tmp.ps1] Trying PowerShell: pwsh.exe
-2025-08-22 06:13:15.001 [INFO] [067cb6fd] [tmpwvbkoz.tmp.ps1] Starting PowerShell process: pwsh.exe
-2025-08-22 06:13:15.019 [INFO] [067cb6fd] [tmpwvbkoz.tmp.ps1] Process started with PID: 5984
-2025-08-22 06:13:15.733 [ERROR] [067cb6fd] [tmpwvbkoz.tmp.ps1] [31;1mparam: [0mC:\Users\DMM0090\AppData\Local\Temp\tmpwvbkoz.tmp.ps1:9[0m
-2025-08-22 06:13:15.736 [ERROR] [067cb6fd] [tmpwvbkoz.tmp.ps1] [31;1m[0m[36;1mLine |[0m
-2025-08-22 06:13:15.739 [ERROR] [067cb6fd] [tmpwvbkoz.tmp.ps1] [31;1m[0m[36;1m[36;1m   9 | [0m                 [36;1mparam[0m($SourceServer, $TargetServer, $SourceUser, $Sou .[0m
-2025-08-22 06:13:15.742 [ERROR] [067cb6fd] [tmpwvbkoz.tmp.ps1] [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~[0m
-2025-08-22 06:13:15.744 [ERROR] [067cb6fd] [tmpwvbkoz.tmp.ps1] [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mThe term 'param' is not recognized as a name of a cmdlet, function, script file, or executable program. Check[0m
-2025-08-22 06:13:15.748 [ERROR] [067cb6fd] [tmpwvbkoz.tmp.ps1] [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m[31;1m[36;1m     | [31;1mthe spelling of the name, or if a path was included, verify that the path is correct and try again.[0m
-2025-08-22 06:13:27.610 [OUTPUT] [067cb6fd] [tmpwvbkoz.tmp.ps1] SUCCESS: Connected to both vCenter servers
-2025-08-22 06:13:27.664 [INFO] [067cb6fd] [tmpwvbkoz.tmp.ps1] Process completed with exit code: 0
-2025-08-22 06:13:27.664 [INFO] [067cb6fd] [tmpwvbkoz.tmp.ps1] Script execution completed: tmpwvbkoz.tmp.ps1 - SUCCESS
-----------------------------------------
-[SESSION END] 067cb6fd - tmpwvbkoz.tmp.ps1
-Result: SUCCESS
-Summary: Exit code: 0, Output length: 774 chars
-Ended: 2025-08-22 06:13:27.664
-
-2025-08-22 06:13:27.665 [INFO] [1f23a14e] [PowerShell-Command] Script execution completed: PowerShell-Command - SUCCESS
-----------------------------------------
-[SESSION END] 1f23a14e - PowerShell-Command
-Result: SUCCESS
-Summary: Command execution completed
-Ended: 2025-08-22 06:13:27.665
-
-2025-08-22 06:13:27.676 [INFO] [986a47e5] [PowerShell-Command] Starting script execution: PowerShell-Command on source connection
-
-[SESSION START] 986a47e5 - PowerShell-Command
-Connection: source
-Started: 2025-08-22 06:13:27.676
-----------------------------------------
-2025-08-22 06:13:27.676 [DEBUG] [986a47e5] [PowerShell-Command] Script parameters: SourceServer=klisv0pp212.dir.ad.dla.mil
-2025-08-22 06:13:27.695 [INFO] [09482345] [tmpf5qtpv.tmp.ps1] Starting script execution: tmpf5qtpv.tmp.ps1 on source connection
-
-[SESSION START] 09482345 - tmpf5qtpv.tmp.ps1
-Connection: source
-Started: 2025-08-22 06:13:27.695
-----------------------------------------
-2025-08-22 06:13:27.695 [DEBUG] [09482345] [tmpf5qtpv.tmp.ps1] Script parameters: LogPath=C:\Temp\app\logs
-2025-08-22 06:13:27.695 [DEBUG] [09482345] [tmpf5qtpv.tmp.ps1] Script parameters:  -LogPath "C:\Temp\app\logs"
-2025-08-22 06:13:27.698 [INFO] [09482345] [tmpf5qtpv.tmp.ps1] Trying PowerShell: pwsh.exe
-2025-08-22 06:13:27.700 [INFO] [09482345] [tmpf5qtpv.tmp.ps1] Starting PowerShell process: pwsh.exe
-2025-08-22 06:13:27.718 [INFO] [09482345] [tmpf5qtpv.tmp.ps1] Process started with PID: 33632
-2025-08-22 06:13:28.369 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1mparam: [0mC:\Users\DMM0090\AppData\Local\Temp\tmpf5qtpv.tmp.ps1:4[0m
-2025-08-22 06:13:28.371 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1m[0m[36;1mLine |[0m
-2025-08-22 06:13:28.373 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1m[0m[36;1m[36;1m   4 | [0m                 [36;1mparam[0m($SourceServer)[0m
-2025-08-22 06:13:28.374 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                 ~~~~~[0m
-2025-08-22 06:13:28.376 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mThe term 'param' is not recognized as a name of a cmdlet, function, script file, or executable program. Check[0m
-2025-08-22 06:13:28.378 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m[31;1m[36;1m     | [31;1mthe spelling of the name, or if a path was included, verify that the path is correct and try again.[0m
-2025-08-22 06:13:33.070 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1mGet-Cluster: [0mC:\Users\DMM0090\AppData\Local\Temp\tmpf5qtpv.tmp.ps1:7[0m
-2025-08-22 06:13:33.075 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1m[0m[36;1mLine |[0m
-2025-08-22 06:13:33.077 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1m[0m[36;1m[36;1m   7 | [0m .                 $clusters = [36;1mGet-Cluster -Server $SourceServer[0m | Selec .[0m
-2025-08-22 06:13:33.079 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
-2025-08-22 06:13:33.081 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1m8/22/2025 6:13:33 AM Get-Cluster  Could not find VIServer with name 'klisv0pp212.dir.ad.dla.mil'. [0m
-2025-08-22 06:13:33.226 [ERROR] [09482345] [tmpf5qtpv.tmp.ps1] [31;1mWrite-Error: [31;1mFailed to load clusters: 8/22/2025 6:13:33 AM	Get-Cluster		Could not find any of the servers specified by name.	[0m
-2025-08-22 06:13:33.313 [INFO] [09482345] [tmpf5qtpv.tmp.ps1] Process completed with exit code: 0
-2025-08-22 06:13:33.313 [INFO] [09482345] [tmpf5qtpv.tmp.ps1] Script execution completed: tmpf5qtpv.tmp.ps1 - SUCCESS
-----------------------------------------
-[SESSION END] 09482345 - tmpf5qtpv.tmp.ps1
-Result: SUCCESS
-Summary: Exit code: 0, Output length: 1399 chars
-Ended: 2025-08-22 06:13:33.313
-
-2025-08-22 06:13:33.316 [INFO] [986a47e5] [PowerShell-Command] Script execution completed: PowerShell-Command - SUCCESS
-----------------------------------------
-[SESSION END] 986a47e5 - PowerShell-Command
-Result: SUCCESS
-Summary: Command execution completed
-Ended: 2025-08-22 06:13:33.316
-
+﻿2025-08-22 09:38:14.511 -04:00 [INF] Configuration loaded successfully from C:\Users\DMM0090\AppData\Local\VCenterMigrationTool\userconfig.json
+2025-08-22 09:38:14.540 -04:00 [INF] Configured log path: C:\Temp\app\logs
+2025-08-22 09:38:14.541 -04:00 [INF] Base log directory: C:\Temp\app\logs
+2025-08-22 09:38:14.543 -04:00 [INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
+2025-08-22 09:38:14.545 -04:00 [INF] Created PowerShell log directory: C:\Temp\app\logs\PowerShell
+2025-08-22 09:38:14.571 -04:00 [INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
+2025-08-22 09:38:14.585 -04:00 [INF] Trying PowerShell executable: pwsh.exe
+2025-08-22 09:38:14.587 -04:00 [INF] Creating PowerShell process with command: pwsh.exe
+2025-08-22 09:38:14.607 -04:00 [INF] Successfully started PowerShell process: pwsh.exe (PID: 44604)
+2025-08-22 09:38:14.657 -04:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-22 09:38:14.659 -04:00 [INF] Hosting environment: Production
+2025-08-22 09:38:14.660 -04:00 [INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
+2025-08-22 09:38:15.203 -04:00 [INF] PowerShell process completed with exit code: 0
+2025-08-22 09:38:15.207 -04:00 [INF] STARTUP: PowerCLI detected and confirmed installed on startup
+2025-08-22 09:38:15.210 -04:00 [INF] PERSISTENCE: PowerCLI status saved as true
+2025-08-22 09:38:36.601 -04:00 [INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
+2025-08-22 09:38:36.831 -04:00 [INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+2025-08-22 09:38:36.852 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 32076)
+2025-08-22 09:38:36.854 -04:00 [INF] Bypassing module import (assumed already loaded)
+2025-08-22 09:38:36.855 -04:00 [INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
+2025-08-22 09:38:47.201 -04:00 [INF] ✅ Persistent connection established to klisv0pp212.dir.ad.dla.mil (Session: "f284b76f44d1d42c2ea973570d4640e6d38f2f68")
+2025-08-22 09:38:47.205 -04:00 [INF] ✅ Persistent source connection established (Session: "f284b76f44d1d42c2ea973570d4640e6d38f2f68")
+2025-08-22 09:38:47.221 -04:00 [INF] Start processing HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 09:38:47.229 -04:00 [INF] Sending HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 09:38:48.210 -04:00 [INF] Received HTTP response headers after 976.9857ms - 201
+2025-08-22 09:38:48.213 -04:00 [INF] End processing HTTP request after 997.2539ms - 201
+2025-08-22 09:38:48.218 -04:00 [INF] Successfully authenticated to vCenter API: klisv0pp212.dir.ad.dla.mil
+2025-08-22 09:38:48.221 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 09:38:48.223 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 09:38:48.415 -04:00 [INF] Received HTTP response headers after 190.8958ms - 200
+2025-08-22 09:38:48.417 -04:00 [INF] End processing HTTP request after 196.4383ms - 200
+2025-08-22 09:38:48.467 -04:00 [WRN] Error getting count for endpoint: vcenter/vm
+System.InvalidOperationException: The requested operation requires an element of type 'Object', but the target element has type 'Array'.
+   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
+   at System.Text.Json.JsonDocument.TryGetNamedPropertyValue(Int32 index, ReadOnlySpan`1 propertyName, JsonElement& value)
+   at System.Text.Json.JsonElement.TryGetProperty(ReadOnlySpan`1 propertyName, JsonElement& value)
+   at System.Text.Json.JsonElement.TryGetProperty(String propertyName, JsonElement& value)
+   at VCenterMigrationTool.Services.VSphereApiService.GetResourceCountAsync(String baseUrl, String sessionToken, String endpoint) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 253
+2025-08-22 09:38:48.523 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 09:38:48.525 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 09:38:48.905 -04:00 [INF] Received HTTP response headers after 378.7814ms - 200
+2025-08-22 09:38:48.907 -04:00 [INF] End processing HTTP request after 384.638ms - 200
+2025-08-22 09:38:48.943 -04:00 [WRN] Error getting count for endpoint: vcenter/host
+System.InvalidOperationException: The requested operation requires an element of type 'Object', but the target element has type 'Array'.
+   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
+   at System.Text.Json.JsonDocument.TryGetNamedPropertyValue(Int32 index, ReadOnlySpan`1 propertyName, JsonElement& value)
+   at System.Text.Json.JsonElement.TryGetProperty(ReadOnlySpan`1 propertyName, JsonElement& value)
+   at System.Text.Json.JsonElement.TryGetProperty(String propertyName, JsonElement& value)
+   at VCenterMigrationTool.Services.VSphereApiService.GetResourceCountAsync(String baseUrl, String sessionToken, String endpoint) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 253
+2025-08-22 09:38:48.945 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 09:38:48.947 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 09:38:49.120 -04:00 [INF] Received HTTP response headers after 171.0992ms - 200
+2025-08-22 09:38:49.123 -04:00 [INF] End processing HTTP request after 178.169ms - 200
+2025-08-22 09:38:49.167 -04:00 [WRN] Error getting count for endpoint: vcenter/cluster
+System.InvalidOperationException: The requested operation requires an element of type 'Object', but the target element has type 'Array'.
+   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
+   at System.Text.Json.JsonDocument.TryGetNamedPropertyValue(Int32 index, ReadOnlySpan`1 propertyName, JsonElement& value)
+   at System.Text.Json.JsonElement.TryGetProperty(ReadOnlySpan`1 propertyName, JsonElement& value)
+   at System.Text.Json.JsonElement.TryGetProperty(String propertyName, JsonElement& value)
+   at VCenterMigrationTool.Services.VSphereApiService.GetResourceCountAsync(String baseUrl, String sessionToken, String endpoint) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 253
+2025-08-22 09:38:49.170 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 09:38:49.171 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 09:38:49.352 -04:00 [INF] Received HTTP response headers after 178.3333ms - 200
+2025-08-22 09:38:49.354 -04:00 [INF] End processing HTTP request after 184.2749ms - 200
+2025-08-22 09:38:49.387 -04:00 [WRN] Error getting count for endpoint: vcenter/datacenter
+System.InvalidOperationException: The requested operation requires an element of type 'Object', but the target element has type 'Array'.
+   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
+   at System.Text.Json.JsonDocument.TryGetNamedPropertyValue(Int32 index, ReadOnlySpan`1 propertyName, JsonElement& value)
+   at System.Text.Json.JsonElement.TryGetProperty(ReadOnlySpan`1 propertyName, JsonElement& value)
+   at System.Text.Json.JsonElement.TryGetProperty(String propertyName, JsonElement& value)
+   at VCenterMigrationTool.Services.VSphereApiService.GetResourceCountAsync(String baseUrl, String sessionToken, String endpoint) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 253
+2025-08-22 09:38:49.389 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 09:38:49.391 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 09:38:49.564 -04:00 [INF] Received HTTP response headers after 171.7196ms - 200
+2025-08-22 09:38:49.567 -04:00 [INF] End processing HTTP request after 177.2971ms - 200
+2025-08-22 09:38:49.598 -04:00 [WRN] Error getting count for endpoint: vcenter/datastore
+System.InvalidOperationException: The requested operation requires an element of type 'Object', but the target element has type 'Array'.
+   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
+   at System.Text.Json.JsonDocument.TryGetNamedPropertyValue(Int32 index, ReadOnlySpan`1 propertyName, JsonElement& value)
+   at System.Text.Json.JsonElement.TryGetProperty(ReadOnlySpan`1 propertyName, JsonElement& value)
+   at System.Text.Json.JsonElement.TryGetProperty(String propertyName, JsonElement& value)
+   at VCenterMigrationTool.Services.VSphereApiService.GetResourceCountAsync(String baseUrl, String sessionToken, String endpoint) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 253
+2025-08-22 09:38:49.600 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=0, Hosts=0, Clusters=0
+2025-08-22 09:38:49.602 -04:00 [INF] Retrieved inventory counts for source: VMs=0, Hosts=0
