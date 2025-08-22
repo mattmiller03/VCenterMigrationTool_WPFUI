@@ -15,6 +15,7 @@ namespace VCenterMigrationTool.ViewModels
         private readonly SharedConnectionService _sharedConnectionService;
         private readonly HybridPowerShellService _powerShellService;
         private readonly IErrorHandlingService _errorHandlingService;
+        private readonly PersistentExternalConnectionService _persistentConnectionService;
         private readonly ILogger<AdminConfigMigrationViewModel> _logger;
 
         // Connection Status
@@ -116,11 +117,13 @@ namespace VCenterMigrationTool.ViewModels
             SharedConnectionService sharedConnectionService,
             HybridPowerShellService powerShellService,
             IErrorHandlingService errorHandlingService,
+            PersistentExternalConnectionService persistentConnectionService,
             ILogger<AdminConfigMigrationViewModel> logger)
         {
             _sharedConnectionService = sharedConnectionService;
             _powerShellService = powerShellService;
             _errorHandlingService = errorHandlingService;
+            _persistentConnectionService = persistentConnectionService;
             _logger = logger;
         }
 
@@ -144,15 +147,15 @@ namespace VCenterMigrationTool.ViewModels
         {
             try
             {
-                // Check source connection
-                var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
-                IsSourceConnected = sourceStatus.IsConnected;
-                SourceConnectionStatus = sourceStatus.IsConnected ? "Connected" : "Disconnected";
+                // Check persistent connection status (same as Dashboard)
+                var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
+                IsSourceConnected = sourceConnected;
+                SourceConnectionStatus = sourceConnected ? "Connected" : "Disconnected";
 
                 // Check target connection
-                var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
-                IsTargetConnected = targetStatus.IsConnected;
-                TargetConnectionStatus = targetStatus.IsConnected ? "Connected" : "Disconnected";
+                var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
+                IsTargetConnected = targetConnected;
+                TargetConnectionStatus = targetConnected ? "Connected" : "Disconnected";
 
                 OnPropertyChanged(nameof(CanValidateMigration));
                 OnPropertyChanged(nameof(CanStartMigration));

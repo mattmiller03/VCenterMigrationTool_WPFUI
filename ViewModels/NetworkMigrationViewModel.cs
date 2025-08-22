@@ -23,6 +23,7 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
     private readonly SharedConnectionService _sharedConnectionService;
     private readonly ConfigurationService _configurationService;
     private readonly CredentialService _credentialService;
+    private readonly PersistentExternalConnectionService _persistentConnectionService;
     private readonly ILogger<NetworkMigrationViewModel> _logger;
 
     // Source Network Data
@@ -111,12 +112,14 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
         SharedConnectionService sharedConnectionService,
         ConfigurationService configurationService,
         CredentialService credentialService,
+        PersistentExternalConnectionService persistentConnectionService,
         ILogger<NetworkMigrationViewModel> logger)
         {
         _powerShellService = powerShellService;
         _sharedConnectionService = sharedConnectionService;
         _configurationService = configurationService;
         _credentialService = credentialService;
+        _persistentConnectionService = persistentConnectionService;
         _logger = logger;
 
         // Initialize with default network mapping
@@ -131,22 +134,26 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
         {
         try
         {
-            // Check actual connection status using API
-            var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
-            var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
+            // Check persistent connection status (same as Dashboard)
+            var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
+            var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
 
-            if (sourceStatus.IsConnected && targetStatus.IsConnected)
+            if (sourceConnected && targetConnected)
             {
-                MigrationStatus = $"Connected to {sourceStatus.ServerName} and {targetStatus.ServerName} - ready to load network data";
+                var sourceServer = _sharedConnectionService.SourceConnection?.ServerAddress ?? "Unknown";
+                var targetServer = _sharedConnectionService.TargetConnection?.ServerAddress ?? "Unknown";
+                MigrationStatus = $"Connected to {sourceServer} and {targetServer} - ready to load network data";
                 _logger.LogInformation("Network page loaded with active connections");
             }
-            else if (sourceStatus.IsConnected)
+            else if (sourceConnected)
             {
-                MigrationStatus = $"Connected to source ({sourceStatus.ServerName}) - target connection needed";
+                var sourceServer = _sharedConnectionService.SourceConnection?.ServerAddress ?? "Unknown";
+                MigrationStatus = $"Connected to source ({sourceServer}) - target connection needed";
             }
-            else if (targetStatus.IsConnected)
+            else if (targetConnected)
             {
-                MigrationStatus = $"Connected to target ({targetStatus.ServerName}) - source connection needed";
+                var targetServer = _sharedConnectionService.TargetConnection?.ServerAddress ?? "Unknown";
+                MigrationStatus = $"Connected to target ({targetServer}) - source connection needed";
             }
             else
             {

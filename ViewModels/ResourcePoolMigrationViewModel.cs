@@ -22,6 +22,7 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
     private readonly SharedConnectionService _sharedConnectionService;
     private readonly ConfigurationService _configurationService;
     private readonly CredentialService _credentialService;
+    private readonly PersistentExternalConnectionService _persistentConnectionService;
     private readonly ILogger<ResourcePoolMigrationViewModel> _logger;
 
     // Source and Target Connection Properties
@@ -143,12 +144,14 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
         SharedConnectionService sharedConnectionService,
         ConfigurationService configurationService,
         CredentialService credentialService,
+        PersistentExternalConnectionService persistentConnectionService,
         ILogger<ResourcePoolMigrationViewModel> logger)
         {
         _powerShellService = powerShellService;
         _sharedConnectionService = sharedConnectionService;
         _configurationService = configurationService;
         _credentialService = credentialService;
+        _persistentConnectionService = persistentConnectionService;
         _logger = logger;
 
         // Initialize backup location
@@ -175,16 +178,17 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             IsLoadingData = true;
             LoadingMessage = "Checking vCenter connections...";
 
-            // Use API-based connection status check - don't require both to be configured
-            var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
-            var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
+            // Check persistent connection status (same as Dashboard)
+            var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
+            var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
 
             // Update source connection state
-            IsSourceConnected = sourceStatus.IsConnected;
-            if (sourceStatus.IsConnected)
+            IsSourceConnected = sourceConnected;
+            if (sourceConnected && _sharedConnectionService.SourceConnection != null)
             {
-                SourceConnectionStatus = $"Connected - {sourceStatus.ServerName} ({sourceStatus.Version})";
-                SourceVCenter = _sharedConnectionService.SourceConnection?.ServerAddress ?? sourceStatus.ServerName;
+                var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("source");
+                SourceConnectionStatus = $"Connected - {_sharedConnectionService.SourceConnection.ServerAddress} ({version})";
+                SourceVCenter = _sharedConnectionService.SourceConnection.ServerAddress;
             }
             else
             {
@@ -193,11 +197,12 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             }
 
             // Update target connection state
-            IsTargetConnected = targetStatus.IsConnected;
-            if (targetStatus.IsConnected)
+            IsTargetConnected = targetConnected;
+            if (targetConnected && _sharedConnectionService.TargetConnection != null)
             {
-                TargetConnectionStatus = $"Connected - {targetStatus.ServerName} ({targetStatus.Version})";
-                TargetVCenter = _sharedConnectionService.TargetConnection?.ServerAddress ?? targetStatus.ServerName;
+                var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("target");
+                TargetConnectionStatus = $"Connected - {_sharedConnectionService.TargetConnection.ServerAddress} ({version})";
+                TargetVCenter = _sharedConnectionService.TargetConnection.ServerAddress;
             }
             else
             {
