@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
@@ -282,8 +283,22 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
                 {
                 // Parse JSON result and populate clusters
                 SourceClusters.Clear();
-                // TODO: Parse JSON and populate SourceClusters collection
-                _logger.LogInformation("Successfully loaded {Count} source clusters", SourceClusters.Count);
+                try
+                {
+                    var clusters = JsonSerializer.Deserialize<ClusterInfo[]>(result);
+                    if (clusters != null)
+                    {
+                        foreach (var cluster in clusters)
+                        {
+                            SourceClusters.Add(cluster);
+                        }
+                    }
+                    _logger.LogInformation("Successfully loaded {Count} source clusters", SourceClusters.Count);
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(ex, "Error parsing source clusters JSON");
+                }
                 }
             else
                 {
@@ -349,8 +364,22 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
                 {
                 // Parse JSON result and populate clusters
                 TargetClusters.Clear();
-                // TODO: Parse JSON and populate TargetClusters collection
-                _logger.LogInformation("Successfully loaded {Count} target clusters", TargetClusters.Count);
+                try
+                {
+                    var clusters = JsonSerializer.Deserialize<ClusterInfo[]>(result);
+                    if (clusters != null)
+                    {
+                        foreach (var cluster in clusters)
+                        {
+                            TargetClusters.Add(cluster);
+                        }
+                    }
+                    _logger.LogInformation("Successfully loaded {Count} target clusters", TargetClusters.Count);
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(ex, "Error parsing target clusters JSON");
+                }
                 }
             else
                 {
@@ -371,20 +400,75 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
     [RelayCommand]
     private async Task LoadSourceResourcePools ()
         {
-        if (SelectedSourceCluster == null) return;
+        if (SelectedSourceCluster == null) 
+        {
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Please select a source cluster first\n";
+            return;
+        }
+
+        if (_sharedConnectionService.SourceConnection == null)
+        {
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No source vCenter connection\n";
+            return;
+        }
 
         try
             {
             IsLoadingData = true;
             LoadingMessage = "Loading source resource pools...";
+            SourceResourcePools.Clear();
 
-            // TODO: Load resource pools for selected source cluster
-            await Task.Delay(1000); // Placeholder
+            var password = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+            if (string.IsNullOrEmpty(password))
+            {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No password found for source connection\n";
+                return;
+            }
 
-            _logger.LogInformation("Successfully loaded source resource pools for cluster {Cluster}", SelectedSourceCluster.Name);
+            var parameters = new Dictionary<string, object>
+            {
+                { "ClusterName", SelectedSourceCluster.Name },
+                { "BypassModuleCheck", true }
+            };
+
+            // Call the Get-ResourcePools.ps1 script
+            var result = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Get-ResourcePools.ps1",
+                _sharedConnectionService.SourceConnection,
+                password,
+                parameters);
+
+            if (!string.IsNullOrEmpty(result))
+            {
+                try
+                {
+                    // Parse the JSON result
+                    var resourcePools = JsonSerializer.Deserialize<ResourcePoolInfo[]>(result);
+                    if (resourcePools != null)
+                    {
+                        foreach (var pool in resourcePools)
+                        {
+                            SourceResourcePools.Add(pool);
+                        }
+                        LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded {SourceResourcePools.Count} resource pools from cluster '{SelectedSourceCluster.Name}'\n";
+                        _logger.LogInformation("Successfully loaded {Count} source resource pools for cluster {Cluster}", 
+                            SourceResourcePools.Count, SelectedSourceCluster.Name);
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error parsing resource pool data: {ex.Message}\n";
+                    _logger.LogError(ex, "Error parsing resource pool JSON data");
+                }
+            }
+            else
+            {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] No resource pools found in cluster '{SelectedSourceCluster.Name}'\n";
+            }
             }
         catch (Exception ex)
             {
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error loading resource pools: {ex.Message}\n";
             _logger.LogError(ex, "Error loading source resource pools");
             }
         finally
@@ -397,20 +481,75 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
     [RelayCommand]
     private async Task LoadTargetResourcePools ()
         {
-        if (SelectedTargetCluster == null) return;
+        if (SelectedTargetCluster == null) 
+        {
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Please select a target cluster first\n";
+            return;
+        }
+
+        if (_sharedConnectionService.TargetConnection == null)
+        {
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No target vCenter connection\n";
+            return;
+        }
 
         try
             {
             IsLoadingData = true;
             LoadingMessage = "Loading target resource pools...";
+            TargetResourcePools.Clear();
 
-            // TODO: Load resource pools for selected target cluster
-            await Task.Delay(1000); // Placeholder
+            var password = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+            if (string.IsNullOrEmpty(password))
+            {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No password found for target connection\n";
+                return;
+            }
 
-            _logger.LogInformation("Successfully loaded target resource pools for cluster {Cluster}", SelectedTargetCluster.Name);
+            var parameters = new Dictionary<string, object>
+            {
+                { "ClusterName", SelectedTargetCluster.Name },
+                { "BypassModuleCheck", true }
+            };
+
+            // Call the Get-ResourcePools.ps1 script
+            var result = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Get-ResourcePools.ps1",
+                _sharedConnectionService.TargetConnection,
+                password,
+                parameters);
+
+            if (!string.IsNullOrEmpty(result))
+            {
+                try
+                {
+                    // Parse the JSON result
+                    var resourcePools = JsonSerializer.Deserialize<ResourcePoolInfo[]>(result);
+                    if (resourcePools != null)
+                    {
+                        foreach (var pool in resourcePools)
+                        {
+                            TargetResourcePools.Add(pool);
+                        }
+                        LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded {TargetResourcePools.Count} resource pools from cluster '{SelectedTargetCluster.Name}'\n";
+                        _logger.LogInformation("Successfully loaded {Count} target resource pools for cluster {Cluster}", 
+                            TargetResourcePools.Count, SelectedTargetCluster.Name);
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error parsing resource pool data: {ex.Message}\n";
+                    _logger.LogError(ex, "Error parsing resource pool JSON data");
+                }
+            }
+            else
+            {
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] No resource pools found in cluster '{SelectedTargetCluster.Name}'\n";
+            }
             }
         catch (Exception ex)
             {
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error loading resource pools: {ex.Message}\n";
             _logger.LogError(ex, "Error loading target resource pools");
             }
         finally
