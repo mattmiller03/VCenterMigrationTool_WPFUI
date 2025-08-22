@@ -27,8 +27,9 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
 		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.8" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-		<!-- Updated PowerShell packages for hybrid approach -->
-		<!-- Removed Microsoft.PowerShell.SDK - using external processes for complex operations -->
+		<!-- PowerShell SDK packages for in-process execution -->
+		<PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.6" />
+		<PackageReference Include="System.Management.Automation" Version="7.4.6" />
 		<PackageReference Include="Serilog" Version="4.3.0" />
 		<PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
 		<PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />

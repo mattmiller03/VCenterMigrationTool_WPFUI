@@ -6,6 +6,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Management.Automation;
+using System.Management.Automation.Runspaces;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -227,6 +229,112 @@ public class HybridPowerShellService : IDisposable
         return "PowerShell-Command";
     }
 
+    /// <summary>
+    /// Run a PowerShell script using the PowerShell SDK for better parameter handling and reliability
+    /// </summary>
+    private async Task<string> RunScriptWithSDKAsync(string scriptPath, Dictionary<string, object> parameters, string? logPath = null)
+    {
+        var scriptName = Path.GetFileName(scriptPath);
+        var sessionId = _psLoggingService.StartScriptLogging(scriptName);
+        
+        try
+        {
+            _logger.LogInformation("Executing script with PowerShell SDK: {ScriptPath}", scriptPath);
+            _psLoggingService.LogParameters(sessionId, scriptName, parameters);
+
+            if (!File.Exists(scriptPath))
+            {
+                var error = $"Script not found: {scriptPath}";
+                _logger.LogError(error);
+                _psLoggingService.LogScriptError(sessionId, scriptName, error);
+                return $"ERROR: {error}";
+            }
+
+            // Create PowerShell instance with runspace
+            using var powerShell = PowerShell.Create();
+            
+            // Configure runspace to allow execution
+            powerShell.Runspace.SessionStateProxy.SetVariable("ExecutionPolicy", "Bypass");
+            
+            // Read and execute script content
+            var scriptContent = await File.ReadAllTextAsync(scriptPath);
+            powerShell.AddScript(scriptContent);
+
+            // Add parameters properly
+            foreach (var param in parameters)
+            {
+                if (param.Key == "LogPath" && string.IsNullOrEmpty(logPath))
+                {
+                    logPath = param.Value?.ToString();
+                }
+                
+                _logger.LogDebug("Adding parameter: {Key} = {Value}", param.Key, 
+                    IsSensitiveParameter(param.Key) ? "***HIDDEN***" : param.Value);
+                
+                powerShell.AddParameter(param.Key, param.Value);
+            }
+
+            // Execute script asynchronously
+            var results = new List<string>();
+            var errors = new List<string>();
+
+            var pipelineObjects = await Task.Run(() => powerShell.Invoke());
+
+            // Collect output
+            foreach (var obj in pipelineObjects)
+            {
+                if (obj != null)
+                {
+                    results.Add(obj.ToString());
+                }
+            }
+
+            // Collect errors
+            if (powerShell.HadErrors)
+            {
+                foreach (var error in powerShell.Streams.Error)
+                {
+                    errors.Add(error.ToString());
+                    _logger.LogError("PowerShell Error: {Error}", error.ToString());
+                }
+            }
+
+            // Log warnings
+            foreach (var warning in powerShell.Streams.Warning)
+            {
+                _logger.LogWarning("PowerShell Warning: {Warning}", warning.Message);
+            }
+
+            // Combine output
+            var output = string.Join(Environment.NewLine, results);
+            
+            if (errors.Count > 0)
+            {
+                var errorOutput = string.Join(Environment.NewLine, errors);
+                _psLoggingService.LogScriptError(sessionId, scriptName, errorOutput);
+                
+                if (string.IsNullOrEmpty(output))
+                {
+                    output = $"ERROR: {errorOutput}";
+                }
+            }
+
+            _psLoggingService.LogScriptOutput(sessionId, scriptName, output, "INFO");
+            _psLoggingService.EndScriptLogging(sessionId, scriptName, errors.Count == 0, 
+                errors.Count == 0 ? "Script completed successfully" : $"Script completed with {errors.Count} errors");
+
+            return output;
+        }
+        catch (Exception ex)
+        {
+            var error = $"SDK execution failed: {ex.Message}";
+            _logger.LogError(ex, error);
+            _psLoggingService.LogScriptError(sessionId, scriptName, error);
+            _psLoggingService.EndScriptLogging(sessionId, scriptName, false, error);
+            return $"ERROR: {error}";
+        }
+    }
+
     public async Task<string> RunScriptAsync (string scriptPath, Dictionary<string, object> parameters,
         string? logPath = null)
         {
@@ -244,10 +352,10 @@ public class HybridPowerShellService : IDisposable
             logPath = Path.Combine("Logs", $"{scriptName}_{timestamp}.log");
             }
 
-        // Always use external PowerShell due to SDK issues
-        _logger.LogDebug("Using external PowerShell for script: {ScriptPath}", scriptPath);
+        // Use PowerShell SDK for better reliability and parameter handling
+        _logger.LogDebug("Using PowerShell SDK for script: {ScriptPath}", scriptPath);
         _logger.LogDebug("Script log will be written to: {LogPath}", logPath);
-        return await RunScriptExternalAsync(scriptPath, parameters, logPath);
+        return await RunScriptWithSDKAsync(scriptPath, parameters, logPath);
         }
 
     /// <summary>
@@ -875,72 +983,37 @@ public class HybridPowerShellService : IDisposable
         {
         try
             {
-            _logger.LogInformation("Executing script with PSCredential object: {ScriptPath}", scriptPath);
+            _logger.LogInformation("Executing script with PSCredential object using SDK: {ScriptPath}", scriptPath);
 
-            // Prepare the script content that creates the credential object
-            var scriptContent = new StringBuilder();
+            // Create parameters dictionary with credential object
+            var parameters = new Dictionary<string, object>();
 
-            // Create the PSCredential object in PowerShell
-            scriptContent.AppendLine("# Create PSCredential object");
-            scriptContent.AppendLine(
-                $"$securePassword = ConvertTo-SecureString '{password.Replace("'", "''")}' -AsPlainText -Force");
-            scriptContent.AppendLine(
-                $"$credential = New-Object System.Management.Automation.PSCredential('{username.Replace("'", "''")}', $securePassword)");
-            scriptContent.AppendLine();
+            // Create PSCredential object
+            var securePassword = new System.Security.SecureString();
+            foreach (char c in password)
+            {
+                securePassword.AppendChar(c);
+            }
+            securePassword.MakeReadOnly();
+            var credential = new PSCredential(username, securePassword);
 
-            // Add any additional parameters
+            // Add the credential parameter (scripts expect $Credentials with capital C)
+            parameters["Credentials"] = credential;
+
+            // Add additional parameters
             if (additionalParameters != null)
                 {
                 foreach (var param in additionalParameters)
                     {
-                    if (param.Value is bool boolValue)
+                    if (param.Key != "Username" && param.Key != "Password") // Skip these as they're in credential
                         {
-                        scriptContent.AppendLine($"${param.Key} = ${boolValue.ToString().ToLower()}");
-                        }
-                    else if (param.Value is string stringValue)
-                        {
-                        scriptContent.AppendLine($"${param.Key} = '{stringValue.Replace("'", "''")}'");
-                        }
-                    else
-                        {
-                        scriptContent.AppendLine($"${param.Key} = '{param.Value?.ToString()?.Replace("'", "''")}'");
+                        parameters[param.Key] = param.Value;
                         }
                     }
-
-                scriptContent.AppendLine();
                 }
 
-            // Add the script execution
-            scriptContent.AppendLine($"# Execute the target script");
-            scriptContent.AppendLine($". '{Path.GetFullPath(scriptPath)}'");
-
-            // Create temporary script file
-            var tempScriptPath = Path.GetTempFileName() + ".ps1";
-
-            try
-                {
-                await File.WriteAllTextAsync(tempScriptPath, scriptContent.ToString());
-
-                // Execute using existing external PowerShell method
-                var result = await RunScriptExternalAsync(tempScriptPath, new Dictionary<string, object>(), logPath);
-
-                return result;
-                }
-            finally
-                {
-                // Clean up temp file
-                try
-                    {
-                    if (File.Exists(tempScriptPath))
-                        {
-                        File.Delete(tempScriptPath);
-                        }
-                    }
-                catch
-                    {
-                    // Ignore cleanup errors
-                    }
-                }
+            // Execute using SDK method with proper parameter passing
+            return await RunScriptWithSDKAsync(scriptPath, parameters, logPath);
             }
         catch (Exception ex)
             {
