@@ -10,11 +10,8 @@
 .PARAMETER VCenterServer
     The hostname or IP address of the vCenter Server.
 
-.PARAMETER Username
-    Username for vCenter authentication.
-
-.PARAMETER Password
-    Password for vCenter authentication.
+.PARAMETER Credentials
+    PSCredential object for vCenter authentication.
 
 .PARAMETER BypassModuleCheck
     Switch to bypass PowerCLI module verification for faster execution.
@@ -26,14 +23,14 @@
     Suppress console output for clean JSON returns.
 
 .EXAMPLE
-    .\Get-Datacenters.ps1 -VCenterServer "vcenter.lab.local" -Username "admin" -Password "password"
+    $cred = Get-Credential
+    .\Get-Datacenters.ps1 -VCenterServer "vcenter.lab.local" -Credentials $cred
 #>
 
 [CmdletBinding()]
 param(
     [string]$VCenterServer,
-    [string]$Username,
-    [string]$Password,
+    [System.Management.Automation.PSCredential]$Credentials,
     [bool]$BypassModuleCheck = $false,
     [string]$LogPath = "",
     [bool]$SuppressConsoleOutput = $false
@@ -137,12 +134,10 @@ try {
     }
     
     # Strategy 3: If credentials provided, establish new connection
-    if (-not $connectionEstablished -and $VCenterServer -and $Username -and $Password) {
+    if (-not $connectionEstablished -and $VCenterServer -and $Credentials) {
         Write-LogInfo "Attempting to establish new vCenter connection to: $VCenterServer" -Category "Connection"
         try {
-            $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-            $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
-            $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+            $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -ErrorAction Stop
             $connectionUsed = $viConnection
             Write-LogSuccess "Successfully connected to vCenter: $($viConnection.Name)" -Category "Connection"
             $connectionEstablished = $true
@@ -156,7 +151,7 @@ try {
     if (-not $connectionEstablished) {
         $errorMsg = "No vCenter connection available. "
         if (-not $VCenterServer) {
-            $errorMsg += "Please connect to vCenter first or provide connection parameters (VCenterServer, Username, Password)."
+            $errorMsg += "Please connect to vCenter first or provide connection parameters (VCenterServer, Credentials)."
         } else {
             $errorMsg += "Unable to establish connection with provided credentials."
         }
@@ -309,7 +304,7 @@ catch {
 }
 finally {
     # Only disconnect if we created the connection (not if we reused existing)
-    if ($viConnection -and $viConnection.IsConnected -and $VCenterServer -and $Username -and $Password) {
+    if ($viConnection -and $viConnection.IsConnected -and $VCenterServer -and $Credentials) {
         try {
             Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
             Disconnect-VIServer -Server $viConnection -Confirm:$false -Force -ErrorAction Stop

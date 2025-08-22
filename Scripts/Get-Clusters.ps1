@@ -1,8 +1,7 @@
 # Get-Clusters.ps1 - Retrieves cluster information from vCenter
 param(
     [string]$VCenterServer,
-    [string]$Username,
-    [string]$Password,
+    [System.Management.Automation.PSCredential]$Credentials,
     [bool]$BypassModuleCheck = $false,
     [string]$LogPath = "",
     [bool]$SuppressConsoleOutput = $false
@@ -56,17 +55,15 @@ try {
     # Connect to vCenter (scripts run in isolated sessions, so no existing connections available)
     Write-LogInfo "Establishing vCenter connection..." -Category "Connection"
     
-    if (-not $VCenterServer -or -not $Username -or -not $Password) {
-        $errorMsg = "vCenter connection parameters are required (VCenterServer, Username, Password) since scripts run in isolated sessions."
+    if (-not $VCenterServer -or -not $Credentials) {
+        $errorMsg = "vCenter connection parameters are required (VCenterServer, Credentials) since scripts run in isolated sessions."
         Write-LogCritical $errorMsg -Category "Connection"
         throw $errorMsg
     }
     
     try {
         Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-        $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-        $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
-        $connectionUsed = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+        $connectionUsed = Connect-VIServer -Server $VCenterServer -Credential $Credentials -ErrorAction Stop
         Write-LogSuccess "Successfully connected to vCenter: $($connectionUsed.Name)" -Category "Connection"
         Write-LogInfo "  Server: $($connectionUsed.Name)" -Category "Connection"
         Write-LogInfo "  User: $($connectionUsed.User)" -Category "Connection"

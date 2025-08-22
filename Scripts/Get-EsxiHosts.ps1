@@ -13,10 +13,7 @@ param(
     [string]$VCenterServer,
     
     [Parameter(Mandatory=$true)]
-    [string]$Username,
-    
-    [Parameter(Mandatory=$true)]
-    [string]$Password,
+    [System.Management.Automation.PSCredential]$Credentials,
     
     [Parameter()]
     [string]$LogPath,
@@ -44,11 +41,9 @@ try {
     Import-Module VMware.VimAutomation.Core -ErrorAction Stop
     Write-LogSuccess "PowerCLI modules imported successfully" -Category "Initialization"
 
-    # Create credential object and connect
-    $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-    $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
+    # Connect to vCenter using provided credentials
     Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -ErrorAction Stop
     Write-LogSuccess "Connected to vCenter: $($viConnection.Name)" -Category "Connection"
 
     # Get all clusters and for each cluster, get its hosts

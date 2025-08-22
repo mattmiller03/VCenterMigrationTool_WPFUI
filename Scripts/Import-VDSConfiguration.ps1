@@ -9,8 +9,7 @@
 #>
 param(
     [Parameter(Mandatory=$true)] [string]$VCenterServer,
-    [Parameter(Mandatory=$true)] [string]$Username,
-    [Parameter(Mandatory=$true)] [string]$Password,
+    [Parameter(Mandatory=$true)] [System.Management.Automation.PSCredential]$Credentials,
     [Parameter(Mandatory=$true)] [string]$ImportFilePath,
     [Parameter()][bool]$RecreateIfExists = $false,
     [Parameter()][bool]$ValidateOnly = $false,
@@ -47,8 +46,7 @@ try {
     
     # Connect to vCenter
     Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-    $credential = New-Object System.Management.Automation.PSCredential($Username, (ConvertTo-SecureString $Password -AsPlainText -Force))
-    Connect-VIServer -Server $VCenterServer -Credential $credential -Force -ErrorAction Stop
+    Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
     Write-LogSuccess "Connected to vCenter." -Category "Connection"
     
     # Load configuration data

@@ -14,10 +14,7 @@ param(
     [string]$VCenterServer,
     
     [Parameter(Mandatory=$true)]
-    [string]$Username,
-    
-    [Parameter(Mandatory=$true)]
-    [string]$Password,
+    [System.Management.Automation.PSCredential]$Credentials,
     
     [Parameter(Mandatory=$true)]
     [string]$ClusterName,
@@ -55,10 +52,8 @@ try {
     }
 
     # Connect to vCenter
-    $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-    $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
     Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -ErrorAction Stop
     Write-LogSuccess "Connected to vCenter: $($viConnection.Name)" -Category "Connection"
     
     # Get the specified cluster
