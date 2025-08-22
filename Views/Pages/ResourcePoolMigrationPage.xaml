@@ -400,37 +400,6 @@
                 </ui:Card>
             </Grid>
 
-            <!-- Action Buttons -->
-            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
-                <ui:Button Content="Export Configuration" 
-                          Icon="{ui:SymbolIcon DocumentArrowLeft24}"
-                          Command="{Binding ExportConfigurationCommand}"
-                          Appearance="Secondary"
-                          Margin="0,0,10,0"
-                          Padding="15,10"/>
-                
-                <ui:Button Content="Import Configuration" 
-                          Icon="{ui:SymbolIcon DocumentArrowRight24}"
-                          Command="{Binding ImportConfigurationCommand}"
-                          Appearance="Secondary"
-                          Margin="0,0,10,0"
-                          Padding="15,10"/>
-                
-                <ui:Button Content="Validate Migration" 
-                          Icon="{ui:SymbolIcon CheckmarkCircle24}"
-                          Command="{Binding ValidateMigrationCommand}"
-                          IsEnabled="{Binding SelectedSourcePools.Count, Converter={StaticResource CountToVisibilityConverter}}"
-                          Appearance="Info"
-                          Margin="0,0,10,0"
-                          Padding="15,10"/>
-                
-                <ui:Button Content="Start Migration" 
-                          Icon="{ui:SymbolIcon ArrowForward24}"
-                          Command="{Binding StartMigrationCommand}"
-                          IsEnabled="{Binding SelectedSourcePools.Count, Converter={StaticResource CountToVisibilityConverter}}"
-                          Appearance="Primary"
-                          Padding="15,10"/>
-            </StackPanel>
 
             <!-- Activity Log -->
             <ui:Card Grid.Row="5">
@@ -443,13 +412,6 @@
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
                         <ui:SymbolIcon Symbol="DocumentBulletList24" Margin="0,0,10,0" VerticalAlignment="Center"/>
                         <TextBlock Text="Activity Log" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center"/>
-                        <ui:Button Content="Clear"
-                                  Icon="{ui:SymbolIcon Delete24}"
-                                  Command="{Binding ClearLogCommand}"
-                                  Appearance="Secondary"
-                                  FontSize="12"
-                                  Padding="8,4"
-                                  Margin="20,0,0,0"/>
                     </StackPanel>
 
                     <Border Grid.Row="1" 
@@ -469,25 +431,6 @@
                 </Grid>
             </ui:Card>
 
-            <!-- Progress Overlay -->
-            <Grid Grid.Row="0" Grid.RowSpan="6" 
-                  Background="{DynamicResource ApplicationBackgroundBrush}"
-                  Opacity="0.95"
-                  Visibility="{Binding IsMigrationInProgress, Converter={StaticResource BoolToVisibilityConverter}}">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <ui:ProgressRing Width="60" Height="60" IsIndeterminate="True"/>
-                    <TextBlock Text="{Binding MigrationProgress}" 
-                              FontSize="16" 
-                              FontWeight="Medium"
-                              Margin="0,20,0,0"
-                              HorizontalAlignment="Center"/>
-                    <TextBlock Text="{Binding OperationStatus}" 
-                              FontSize="14" 
-                              Opacity="0.7"
-                              Margin="0,10,0,0"
-                              HorizontalAlignment="Center"/>
-                </StackPanel>
-            </Grid>
         </Grid>
     </ScrollViewer>
 </Page>

@@ -862,10 +862,30 @@ catch {
         _logger.LogInformation("Navigated away from Resource Pool Migration page");
         }
 
-    public Task OnNavigatedToAsync ()
+    public async Task OnNavigatedToAsync ()
         {
         OnNavigatedTo();
-        return Task.CompletedTask;
+        try
+        {
+            // Load connection status when navigating to the page
+            var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
+            var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
+
+            IsSourceConnected = sourceStatus.IsConnected;
+            SourceConnectionStatus = sourceStatus.IsConnected ? "Connected" : "Disconnected";
+
+            IsTargetConnected = targetStatus.IsConnected;
+            TargetConnectionStatus = targetStatus.IsConnected ? "Connected" : "Disconnected";
+
+            _logger.LogInformation("Connection status loaded - Source: {SourceStatus}, Target: {TargetStatus}", 
+                SourceConnectionStatus, TargetConnectionStatus);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading connection status");
+            SourceConnectionStatus = "Error";
+            TargetConnectionStatus = "Error";
+        }
         }
 
     public Task OnNavigatedFromAsync ()
