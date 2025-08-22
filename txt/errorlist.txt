@@ -1,5 +1,4 @@
-﻿2025-08-22 09:38:14.511 -04:00 [INF] Configuration loaded successfully from C:\Users\DMM0090\AppData\Local\VCenterMigrationTool\userconfig.json
-2025-08-22 09:38:14.540 -04:00 [INF] Configured log path: C:\Temp\app\logs
+﻿2025-08-22 09:38:14.540 -04:00 [INF] Configured log path: C:\Temp\app\logs
 2025-08-22 09:38:14.541 -04:00 [INF] Base log directory: C:\Temp\app\logs
 2025-08-22 09:38:14.543 -04:00 [INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
 2025-08-22 09:38:14.545 -04:00 [INF] Created PowerShell log directory: C:\Temp\app\logs\PowerShell
