@@ -15,10 +15,11 @@
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
     <Page.Resources>
-        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter" />
-        <helpers:BoolToParameterConverter x:Key="BoolToParameterConverter" />
-        <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        <helpers:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <helpers:BoolToColorConverter x:Key="BoolToColorConverter"/>
+        <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </Page.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" 
@@ -27,432 +28,564 @@
                   CanContentScroll="True">
         <Grid Margin="42">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*" MinHeight="400"/>
             </Grid.RowDefinitions>
 
-            <!-- Page Title -->
-            <TextBlock Grid.Row="0" 
-                      FontSize="24" 
-                      FontWeight="Medium" 
-                      Text="Network Migration" 
-                      Margin="0,0,0,20" />
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <!-- Data Loading Section -->
-            <ui:CardControl Grid.Row="1" Margin="0,0,0,20">
-                <StackPanel>
-                    <TextBlock Text="Network Data Loading" FontWeight="Medium" FontSize="16" />
-                    <TextBlock Margin="0,5,0,15" 
-                              Text="Load network topology from source and target vCenters" 
-                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="10" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Source Network" FontWeight="Medium" Margin="0,0,0,8" />
-
-                            <ui:Button Content="Load Source Network Data" 
-                                      Command="{Binding LoadSourceNetworkDataCommand}"
-                                      Icon="{ui:SymbolIcon CloudArrowDown24}"
-                                      IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
-                                      Appearance="Primary"
-                                      Margin="0,0,0,10" />
-
-                            <TextBlock Text="{Binding SourceHosts.Count, StringFormat='Hosts: {0}'}" 
-                                      FontSize="12" 
-                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                      Margin="0,0,0,3" />
-
-                            <TextBlock Text="{Binding SourceNetworkTopology.Count, StringFormat='Network Configs: {0}'}" 
-                                      FontSize="12" 
-                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Text="Target Network" FontWeight="Medium" Margin="0,0,0,8" />
-
-                            <ui:Button Content="Load Target Network Data" 
-                                      Command="{Binding LoadTargetNetworkDataCommand}"
-                                      Icon="{ui:SymbolIcon CloudArrowUp24}"
-                                      IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
-                                      Appearance="Primary"
-                                      Margin="0,0,0,10" />
-
-                            <TextBlock Text="{Binding TargetHosts.Count, StringFormat='Hosts: {0}'}" 
-                                      FontSize="12" 
-                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                      Margin="0,0,0,3" />
-
-                            <TextBlock Text="{Binding TargetNetworkTopology.Count, StringFormat='Network Configs: {0}'}" 
-                                      FontSize="12" 
-                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                    </Grid>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Network Migration" 
+                               FontSize="28" 
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="Migrate virtual switches, port groups, and network configurations between vCenter environments" 
+                               Opacity="0.7"
+                               FontSize="14"
+                               Margin="0,5,0,0"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
-            </ui:CardControl>
 
-            <!-- Network Topology Section -->
-            <ui:CardControl Grid.Row="2" Margin="0,0,0,20">
-                <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+                <ui:Button Grid.Column="1" 
+                          Content="Refresh" 
+                          Icon="{ui:SymbolIcon ArrowSync24}"
+                          Command="{Binding RefreshDataCommand}"
+                          Appearance="Secondary"
+                          VerticalAlignment="Center"
+                          Padding="15,8"/>
+            </Grid>
 
-                        <TextBlock Grid.Column="0" Text="Source Network Topology" FontWeight="Medium" FontSize="16" />
+            <!-- Connection Status -->
+            <Grid Grid.Row="1" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <ui:Button Content="Select All" 
-                                      Command="{Binding SelectAllNetworkItemsCommand}"
-                                      Icon="{ui:SymbolIcon CheckboxChecked24}"
-                                      Margin="0,0,5,0" />
-
-                            <ui:Button Content="Unselect All" 
-                                      Command="{Binding UnselectAllNetworkItemsCommand}"
-                                      Icon="{ui:SymbolIcon CheckboxUnchecked24}" />
+                <!-- Source Connection -->
+                <ui:Card Grid.Column="0" Margin="0,0,10,0">
+                    <Grid Margin="20,15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                            <ui:SymbolIcon Symbol="Server24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Source vCenter" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center"/>
                         </StackPanel>
+                        
+                        <StackPanel Grid.Row="1" Margin="0,0,0,15">
+                            <TextBlock Text="{Binding SourceNetworkTopology.Count, StringFormat='🔌 {0} hosts loaded'}" 
+                                       FontWeight="Medium"
+                                       Margin="0,0,0,5"/>
+                            <TextBlock Text="{Binding SourceNetworkTopology, Converter={StaticResource NetworkSummaryConverter}}" 
+                                       FontSize="12"
+                                       Opacity="0.7"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                        
+                        <ui:Button Grid.Row="2"
+                                  Content="Load Source Network"
+                                  Icon="{ui:SymbolIcon CloudArrowDown24}"
+                                  Command="{Binding LoadSourceNetworkDataCommand}"
+                                  IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
+                                  Appearance="Primary"
+                                  HorizontalAlignment="Stretch"/>
                     </Grid>
+                </ui:Card>
 
-                    <TextBlock Margin="0,5,0,15" 
-                              Text="Select network components to migrate" 
-                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <!-- Arrow -->
+                <ui:SymbolIcon Grid.Column="1" 
+                              Symbol="ArrowRight24" 
+                              FontSize="24" 
+                              VerticalAlignment="Center"
+                              Margin="10,0"/>
 
-                    <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto">
-                        <TreeView ItemsSource="{Binding SourceNetworkTopology}">
-                            <TreeView.Resources>
-                                <!-- NetworkHostNode Template -->
-                                <HierarchicalDataTemplate DataType="{x:Type models:NetworkHostNode}" 
-                                                         ItemsSource="{Binding VSwitches}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="🖥️" Margin="0,0,5,0" />
-                                        <TextBlock Text="{Binding Name}" FontWeight="Medium" />
-                                        <TextBlock Text="{Binding VSwitches.Count, StringFormat=' ({0} vSwitches)'}" 
-                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
-                                </HierarchicalDataTemplate>
-
-                                <!-- VSwitchInfo Template -->
-                                <HierarchicalDataTemplate DataType="{x:Type models:VSwitchInfo}" 
-                                                         ItemsSource="{Binding PortGroups}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding IsSelected}" Margin="0,0,5,0" />
-                                        <TextBlock Text="🔀" Margin="0,0,5,0" />
-                                        <TextBlock Text="{Binding Name}" />
-                                        <TextBlock Text="{Binding Type, StringFormat=' ({0})'}" 
-                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                        <TextBlock Text="{Binding PortGroups.Count, StringFormat=' - {0} Port Groups'}" 
-                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
-                                </HierarchicalDataTemplate>
-
-                                <!-- PortGroupInfo Template -->
-                                <DataTemplate DataType="{x:Type models:PortGroupInfo}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding IsSelected}" Margin="0,0,5,0" />
-                                        <TextBlock Text="📡" Margin="0,0,5,0" />
-                                        <TextBlock Text="{Binding Name}" />
-                                        <TextBlock Text="{Binding VlanId, StringFormat=' (VLAN {0})'}" 
-                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </TreeView.Resources>
-                        </TreeView>
-                    </ScrollViewer>
-                </StackPanel>
-            </ui:CardControl>
-
-            <!-- Migration Configuration Section -->
-            <ui:CardControl Grid.Row="3" Margin="0,0,0,20">
-                <StackPanel>
-                    <TextBlock Text="Migration Configuration" FontWeight="Medium" FontSize="16" />
-                    <TextBlock Margin="0,5,0,15" 
-                              Text="Configure network migration options and mappings" 
-                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="10" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Left Column - Migration Options -->
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Migration Options" FontWeight="Medium" Margin="0,0,0,8" />
-
-                            <CheckBox Content="Migrate Standard vSwitches" 
-                                     IsChecked="{Binding MigrateStandardSwitches}"
-                                     Margin="0,0,0,5" />
-
-                            <CheckBox Content="Migrate Distributed vSwitches" 
-                                     IsChecked="{Binding MigrateDistributedSwitches}"
-                                     Margin="0,0,0,5" />
-
-                            <CheckBox Content="Migrate Port Groups" 
-                                     IsChecked="{Binding MigratePortGroups}"
-                                     Margin="0,0,0,5" />
-
-                            <CheckBox Content="Migrate VMkernel Ports" 
-                                     IsChecked="{Binding MigrateVmkernelPorts}"
-                                     Margin="0,0,0,5" />
-
-                            <CheckBox Content="Preserve VLAN IDs" 
-                                     IsChecked="{Binding PreserveVlanIds}"
-                                     Margin="0,0,0,5" />
-
-                            <CheckBox Content="Recreate if exists" 
-                                     IsChecked="{Binding RecreateIfExists}"
-                                     Margin="0,0,0,5" />
-
-                            <CheckBox Content="Validation only (no changes)" 
-                                     IsChecked="{Binding ValidateOnly}"
-                                     Margin="0,0,0,5" />
+                <!-- Target Connection -->
+                <ui:Card Grid.Column="2" Margin="10,0,0,0">
+                    <Grid Margin="20,15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                            <ui:SymbolIcon Symbol="Server24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Target vCenter" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center"/>
                         </StackPanel>
-
-                        <!-- Right Column - Network Mapping -->
-                        <StackPanel Grid.Column="2">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Column="0" Text="Network Mapping" FontWeight="Medium" Margin="0,0,0,8" />
-
-                                <ui:Button Grid.Column="1" 
-                                          Content="Auto Map" 
-                                          Command="{Binding AutoMapNetworksCommand}"
-                                          Icon="{ui:SymbolIcon AutoFitWidth24}"
-                                          FontSize="11"
-                                          Padding="8,4" />
-                            </Grid>
-
-                            <ui:Button Content="Add Network Mapping" 
-                                      Command="{Binding AddNetworkMappingCommand}"
-                                      Icon="{ui:SymbolIcon Add24}"
-                                      Margin="0,0,0,10" />
-
-                            <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding NetworkMappings}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,0,0,5">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="30" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-
-                                                <ui:TextBox Grid.Column="0"
-                                                           Text="{Binding SourceNetwork}"
-                                                           PlaceholderText="Source Network" />
-
-                                                <TextBlock Grid.Column="1" 
-                                                          Text="→" 
-                                                          HorizontalAlignment="Center"
-                                                          VerticalAlignment="Center" />
-
-                                                <ui:TextBox Grid.Column="2"
-                                                           Text="{Binding TargetNetwork}"
-                                                           PlaceholderText="Target Network" />
-
-                                                <ui:Button Grid.Column="3"
-                                                          Content="×"
-                                                          Command="{Binding DataContext.RemoveNetworkMappingCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                          CommandParameter="{Binding}"
-                                                          Width="30"
-                                                          Margin="5,0,0,0" />
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
+                        
+                        <StackPanel Grid.Row="1" Margin="0,0,0,15">
+                            <TextBlock Text="{Binding TargetNetworkTopology.Count, StringFormat='🔌 {0} hosts loaded'}" 
+                                       FontWeight="Medium"
+                                       Margin="0,0,0,5"/>
+                            <TextBlock Text="{Binding TargetNetworkTopology, Converter={StaticResource NetworkSummaryConverter}}" 
+                                       FontSize="12"
+                                       Opacity="0.7"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
+                        
+                        <ui:Button Grid.Row="2"
+                                  Content="Load Target Network"
+                                  Icon="{ui:SymbolIcon CloudArrowDown24}"
+                                  Command="{Binding LoadTargetNetworkDataCommand}"
+                                  IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
+                                  Appearance="Primary"
+                                  HorizontalAlignment="Stretch"/>
                     </Grid>
-                </StackPanel>
-            </ui:CardControl>
+                </ui:Card>
+            </Grid>
 
-            <!-- Export/Import Section -->
-            <ui:CardControl Grid.Row="4" Margin="0,0,0,20">
-                <StackPanel>
-                    <TextBlock Text="Export / Import Configuration" FontWeight="Medium" FontSize="16" />
-                    <TextBlock Margin="0,5,0,15" 
-                              Text="Export network configurations for backup or import existing configurations" 
-                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            <!-- Migration Options -->
+            <ui:Card Grid.Row="2" Margin="0,0,0,20">
+                <Grid Margin="20,15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <Grid>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                        <ui:SymbolIcon Symbol="Options24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Migration Options" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="10" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Left Column - Export -->
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Export Configuration" FontWeight="Medium" Margin="0,0,0,8" />
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                <RadioButton Content="JSON" IsChecked="{Binding ExportToJson}" Margin="0,0,10,0" />
-                                <RadioButton Content="CSV" IsChecked="{Binding ExportToCsv}" />
+                        <!-- First Row of Options -->
+                        <CheckBox Grid.Row="0" Grid.Column="0" 
+                                 IsChecked="{Binding MigrateStandardSwitches}"
+                                 Margin="0,0,20,15">
+                            <StackPanel>
+                                <TextBlock Text="Standard Switches" FontWeight="Medium"/>
+                                <TextBlock Text="Migrate vSphere standard switches" 
+                                          FontSize="11" 
+                                          Opacity="0.7"
+                                          TextWrapping="Wrap"/>
                             </StackPanel>
+                        </CheckBox>
 
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                        <CheckBox Grid.Row="0" Grid.Column="1" 
+                                 IsChecked="{Binding MigrateDistributedSwitches}"
+                                 Margin="0,0,20,15">
+                            <StackPanel>
+                                <TextBlock Text="Distributed Switches" FontWeight="Medium"/>
+                                <TextBlock Text="Migrate VDS configurations" 
+                                          FontSize="11" 
+                                          Opacity="0.7"
+                                          TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </CheckBox>
 
-                                <ui:TextBox Grid.Column="0" 
-                                           Text="{Binding ExportFilePath}" 
-                                           PlaceholderText="Select export file location"
-                                           Margin="0,0,5,0" />
+                        <CheckBox Grid.Row="0" Grid.Column="2" 
+                                 IsChecked="{Binding MigratePortGroups}"
+                                 Margin="0,0,20,15">
+                            <StackPanel>
+                                <TextBlock Text="Port Groups" FontWeight="Medium"/>
+                                <TextBlock Text="Include all port group settings" 
+                                          FontSize="11" 
+                                          Opacity="0.7"
+                                          TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </CheckBox>
 
-                                <ui:Button Grid.Column="1" 
-                                          Content="Browse" 
-                                          Command="{Binding BrowseExportFileCommand}"
-                                          Icon="{ui:SymbolIcon Folder24}" />
-                            </Grid>
+                        <CheckBox Grid.Row="0" Grid.Column="3" 
+                                 IsChecked="{Binding MigrateVmkernelPorts}"
+                                 Margin="0,0,0,15">
+                            <StackPanel>
+                                <TextBlock Text="VMkernel Ports" FontWeight="Medium"/>
+                                <TextBlock Text="Migrate VMkernel adapters" 
+                                          FontSize="11" 
+                                          Opacity="0.7"
+                                          TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </CheckBox>
 
-                            <ui:Button Content="Export Network Configuration" 
-                                      Command="{Binding ExportNetworkConfigurationCommand}"
-                                      Icon="{ui:SymbolIcon Save24}"
-                                      IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
-                                      Appearance="Primary" />
-                        </StackPanel>
+                        <!-- Second Row of Options -->
+                        <CheckBox Grid.Row="1" Grid.Column="0" 
+                                 IsChecked="{Binding PreserveVlanIds}"
+                                 Margin="0,0,20,0">
+                            <StackPanel>
+                                <TextBlock Text="Preserve VLANs" FontWeight="Medium"/>
+                                <TextBlock Text="Keep original VLAN IDs" 
+                                          FontSize="11" 
+                                          Opacity="0.7"
+                                          TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </CheckBox>
 
-                        <!-- Right Column - Import -->
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Text="Import Configuration" FontWeight="Medium" Margin="0,0,0,8" />
+                        <CheckBox Grid.Row="1" Grid.Column="1" 
+                                 IsChecked="{Binding RecreateIfExists}"
+                                 Margin="0,0,20,0">
+                            <StackPanel>
+                                <TextBlock Text="Recreate Existing" FontWeight="Medium"/>
+                                <TextBlock Text="Replace if already exists" 
+                                          FontSize="11" 
+                                          Opacity="0.7"
+                                          TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </CheckBox>
 
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-
-                                <ui:TextBox Grid.Column="0" 
-                                           Text="{Binding ImportFilePath}" 
-                                           PlaceholderText="Select import file"
-                                           Margin="0,0,5,0" />
-
-                                <ui:Button Grid.Column="1" 
-                                          Content="Browse" 
-                                          Command="{Binding BrowseImportFileCommand}"
-                                          Icon="{ui:SymbolIcon Folder24}" />
-                            </Grid>
-
-                            <ui:Button Content="Import Network Configuration" 
-                                      Command="{Binding ImportNetworkConfigurationCommand}"
-                                      Icon="{ui:SymbolIcon ArrowImport24}"
-                                      IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
-                                      Appearance="Primary" />
-                        </StackPanel>
+                        <CheckBox Grid.Row="1" Grid.Column="2" 
+                                 IsChecked="{Binding ValidateOnly}"
+                                 Margin="0,0,20,0">
+                            <StackPanel>
+                                <TextBlock Text="Validate Only" FontWeight="Medium"/>
+                                <TextBlock Text="Check compatibility without changes" 
+                                          FontSize="11" 
+                                          Opacity="0.7"
+                                          TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </CheckBox>
                     </Grid>
-                </StackPanel>
-            </ui:CardControl>
+                </Grid>
+            </ui:Card>
 
-            <!-- Migration Actions Section -->
-            <ui:CardControl Grid.Row="5" Margin="0,0,0,20">
-                <StackPanel>
-                    <TextBlock Text="Migration Actions" FontWeight="Medium" FontSize="16" />
-                    <TextBlock Margin="0,5,0,15" 
-                              Text="Execute network migration and validation" 
-                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            <!-- Network Selection -->
+            <Grid Grid.Row="3" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="10" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
+                <!-- Source Networks -->
+                <ui:Card Grid.Column="0">
+                    <Grid Margin="20,15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*" MaxHeight="350"/>
+                        </Grid.RowDefinitions>
 
-                        <!-- Left Column - Migration Actions -->
-                        <StackPanel Grid.Column="0">
-                            <ui:Button Content="Validate Migration" 
-                                      Command="{Binding ValidateNetworkMigrationCommand}"
-                                      Icon="{ui:SymbolIcon CheckmarkCircle24}"
-                                      IsEnabled="{Binding IsMigrationInProgress, Converter={StaticResource InverseBooleanConverter}}"
-                                      Margin="0,0,0,10" />
-
-                            <ui:Button Content="Start Network Migration" 
-                                      Command="{Binding StartNetworkMigrationCommand}"
-                                      Icon="{ui:SymbolIcon Play24}"
-                                      IsEnabled="{Binding IsMigrationInProgress, Converter={StaticResource InverseBooleanConverter}}"
-                                      Appearance="Primary" />
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                            <ui:SymbolIcon Symbol="CloudFlow24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Source Networks" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center"/>
+                            <ui:Button Content="Select All"
+                                      Command="{Binding SelectAllNetworkItemsCommand}"
+                                      Appearance="Secondary"
+                                      FontSize="11"
+                                      Padding="6,2"
+                                      Margin="15,0,5,0"/>
+                            <ui:Button Content="Clear"
+                                      Command="{Binding UnselectAllNetworkItemsCommand}"
+                                      Appearance="Secondary"
+                                      FontSize="11"
+                                      Padding="6,2"/>
                         </StackPanel>
 
-                        <!-- Right Column - Migration Status -->
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Text="Migration Status" FontWeight="Medium" Margin="0,0,0,8" />
+                        <TextBlock Grid.Row="1" 
+                                  Text="{Binding MigrationStatus}" 
+                                  FontSize="12"
+                                  Opacity="0.7"
+                                  Margin="0,0,0,10"
+                                  TextWrapping="Wrap"/>
 
-                            <Grid Visibility="{Binding IsMigrationInProgress, Converter={StaticResource BoolToVisibilityConverter}}"
-                                  Margin="0,0,0,10">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding SourceNetworkTopology}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Expander Header="{Binding Name}" 
+                                                 IsExpanded="False"
+                                                 Margin="0,0,0,10">
+                                            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" 
+                                                   CornerRadius="4" 
+                                                   Padding="10"
+                                                   Margin="0,5,0,0">
+                                                <StackPanel>
+                                                    <!-- vSwitches -->
+                                                    <TextBlock Text="Virtual Switches" 
+                                                              FontWeight="Medium" 
+                                                              Margin="0,0,0,10"/>
+                                                    <ItemsControl ItemsSource="{Binding VSwitches}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" 
+                                                                       CornerRadius="3" 
+                                                                       Padding="8"
+                                                                       Margin="0,0,0,5">
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="Auto"/>
+                                                                            <ColumnDefinition Width="*"/>
+                                                                            <ColumnDefinition Width="Auto"/>
+                                                                        </Grid.ColumnDefinitions>
 
-                                <ProgressBar Grid.Row="0" 
-                                            Value="{Binding MigrationProgress}" 
-                                            Maximum="100"
-                                            Height="6"
-                                            Margin="0,0,0,5" />
+                                                                        <CheckBox Grid.Column="0" 
+                                                                                 IsChecked="{Binding IsSelected}"
+                                                                                 Margin="0,0,10,0"/>
+                                                                        
+                                                                        <StackPanel Grid.Column="1">
+                                                                            <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+                                                                            <TextBlock Text="{Binding Type}" FontSize="11" Opacity="0.7"/>
+                                                                        </StackPanel>
 
-                                <TextBlock Grid.Row="1" 
-                                          Text="{Binding MigrationProgress, StringFormat='{}{0:F0}%'}" 
-                                          HorizontalAlignment="Center"
-                                          FontSize="12"
-                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            </Grid>
+                                                                        <ui:InfoBadge Grid.Column="2" 
+                                                                                     Value="{Binding PortGroups.Count}"
+                                                                                     ToolTip="Port Groups"/>
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
 
-                            <TextBlock Text="{Binding MigrationStatus}" 
-                                      Margin="0,0,0,10"
-                                      TextWrapping="Wrap" />
+                                                    <!-- VMkernel Ports -->
+                                                    <TextBlock Text="VMkernel Ports" 
+                                                              FontWeight="Medium" 
+                                                              Margin="0,15,0,10"
+                                                              Visibility="{Binding VmKernelPorts.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                                    <ItemsControl ItemsSource="{Binding VmKernelPorts}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" 
+                                                                       CornerRadius="3" 
+                                                                       Padding="8"
+                                                                       Margin="0,0,0,5">
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="Auto"/>
+                                                                            <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
 
-                            <ui:ProgressRing IsIndeterminate="True"
-                                            Visibility="{Binding IsMigrationInProgress, Converter={StaticResource BoolToVisibilityConverter}}"
-                                            Width="32" Height="32"
-                                            HorizontalAlignment="Center" />
-                        </StackPanel>
+                                                                        <CheckBox Grid.Column="0" 
+                                                                                 IsChecked="{Binding IsSelected}"
+                                                                                 Margin="0,0,10,0"/>
+                                                                        
+                                                                        <StackPanel Grid.Column="1">
+                                                                            <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+                                                                            <TextBlock Text="{Binding IpAddress}" FontSize="11" Opacity="0.7"/>
+                                                                        </StackPanel>
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                            </Border>
+                                        </Expander>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
                     </Grid>
-                </StackPanel>
-            </ui:CardControl>
+                </ui:Card>
 
-            <!-- Log Output Section -->
-            <ui:CardControl Grid.Row="6">
-                <StackPanel>
-                    <TextBlock Text="Activity Log" FontWeight="Medium" FontSize="16" />
-                    <TextBlock Margin="0,5,0,15" 
-                              Text="Real-time network migration activity and operation logs" 
-                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <!-- Target Networks -->
+                <ui:Card Grid.Column="2">
+                    <Grid Margin="20,15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*" MaxHeight="350"/>
+                        </Grid.RowDefinitions>
 
-                    <ScrollViewer Height="200" 
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Auto"
-                                 PanningMode="Both"
-                                 CanContentScroll="False">
-                        <TextBox Text="{Binding LogOutput}"
-                                IsReadOnly="True"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                TextWrapping="Wrap"
-                                FontFamily="Consolas"
-                                FontSize="12" />
-                    </ScrollViewer>
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                            <ui:SymbolIcon Symbol="CloudSync24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Target Networks" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="1" 
+                                  Text="Existing network configuration at target" 
+                                  FontSize="12"
+                                  Opacity="0.7"
+                                  Margin="0,0,0,10"/>
+
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding TargetNetworkTopology}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Expander Header="{Binding Name}" 
+                                                 IsExpanded="False"
+                                                 Margin="0,0,0,10">
+                                            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" 
+                                                   CornerRadius="4" 
+                                                   Padding="10"
+                                                   Margin="0,5,0,0">
+                                                <StackPanel>
+                                                    <!-- vSwitches -->
+                                                    <TextBlock Text="Virtual Switches" 
+                                                              FontWeight="Medium" 
+                                                              Margin="0,0,0,10"/>
+                                                    <ItemsControl ItemsSource="{Binding VSwitches}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" 
+                                                                       CornerRadius="3" 
+                                                                       Padding="8"
+                                                                       Margin="0,0,0,5">
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="*"/>
+                                                                            <ColumnDefinition Width="Auto"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        
+                                                                        <StackPanel Grid.Column="0">
+                                                                            <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+                                                                            <TextBlock Text="{Binding Type}" FontSize="11" Opacity="0.7"/>
+                                                                        </StackPanel>
+
+                                                                        <ui:InfoBadge Grid.Column="1" 
+                                                                                     Value="{Binding PortGroups.Count}"
+                                                                                     ToolTip="Port Groups"/>
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+
+                                                    <!-- VMkernel Ports -->
+                                                    <TextBlock Text="VMkernel Ports" 
+                                                              FontWeight="Medium" 
+                                                              Margin="0,15,0,10"
+                                                              Visibility="{Binding VmKernelPorts.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                                    <ItemsControl ItemsSource="{Binding VmKernelPorts}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" 
+                                                                       CornerRadius="3" 
+                                                                       Padding="8"
+                                                                       Margin="0,0,0,5">
+                                                                    <StackPanel>
+                                                                        <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+                                                                        <TextBlock Text="{Binding IpAddress}" FontSize="11" Opacity="0.7"/>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                            </Border>
+                                        </Expander>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </ui:Card>
+            </Grid>
+
+            <!-- Action Buttons -->
+            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
+                <ui:Button Content="Export VDS Configuration" 
+                          Icon="{ui:SymbolIcon DocumentArrowLeft24}"
+                          Command="{Binding ExportNetworkConfigurationCommand}"
+                          Appearance="Secondary"
+                          Margin="0,0,10,0"
+                          Padding="15,10"/>
+                
+                <ui:Button Content="Import VDS Configuration" 
+                          Icon="{ui:SymbolIcon DocumentArrowRight24}"
+                          Command="{Binding ImportNetworkConfigurationCommand}"
+                          Appearance="Secondary"
+                          Margin="0,0,10,0"
+                          Padding="15,10"/>
+                
+                <ui:Button Content="Validate Network Migration" 
+                          Icon="{ui:SymbolIcon CheckmarkCircle24}"
+                          Command="{Binding ValidateNetworkMigrationCommand}"
+                          Appearance="Info"
+                          Margin="0,0,10,0"
+                          Padding="15,10"/>
+                
+                <ui:Button Content="Start Migration" 
+                          Icon="{ui:SymbolIcon ArrowForward24}"
+                          Command="{Binding StartNetworkMigrationCommand}"
+                          IsEnabled="{Binding IsLoadingData, Converter={StaticResource InverseBooleanConverter}}"
+                          Appearance="Primary"
+                          Padding="15,10"/>
+            </StackPanel>
+
+            <!-- Activity Log -->
+            <ui:Card Grid.Row="5">
+                <Grid Margin="20,15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                        <ui:SymbolIcon Symbol="DocumentBulletList24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Activity Log" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center"/>
+                        <ui:Button Content="Clear"
+                                  Icon="{ui:SymbolIcon Delete24}"
+                                  Command="{Binding ClearLogCommand}"
+                                  Appearance="Secondary"
+                                  FontSize="12"
+                                  Padding="8,4"
+                                  Margin="20,0,0,0"/>
+                        <ui:Button Content="Export Log"
+                                  Icon="{ui:SymbolIcon DocumentSave24}"
+                                  Command="{Binding ExportLogCommand}"
+                                  Appearance="Secondary"
+                                  FontSize="12"
+                                  Padding="8,4"
+                                  Margin="10,0,0,0"/>
+                    </StackPanel>
+
+                    <Border Grid.Row="1" 
+                           Background="{DynamicResource ControlFillColorDefaultBrush}"
+                           CornerRadius="4"
+                           Padding="10">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="200">
+                            <TextBox Text="{Binding LogOutput}"
+                                    IsReadOnly="True"
+                                    BorderThickness="0"
+                                    Background="Transparent"
+                                    FontFamily="Cascadia Code,Consolas,Courier New"
+                                    FontSize="12"
+                                    TextWrapping="Wrap"/>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </ui:Card>
+
+            <!-- Progress Overlay -->
+            <Grid Grid.Row="0" Grid.RowSpan="6" 
+                  Background="{DynamicResource ApplicationBackgroundBrush}"
+                  Opacity="0.95"
+                  Visibility="{Binding IsMigrationInProgress, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <ui:ProgressRing Width="60" Height="60" IsIndeterminate="False" Progress="{Binding MigrationProgress}"/>
+                    <TextBlock Text="Network Migration in Progress" 
+                              FontSize="16" 
+                              FontWeight="Medium"
+                              Margin="0,20,0,0"
+                              HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding MigrationStatus}" 
+                              FontSize="14" 
+                              Opacity="0.7"
+                              Margin="0,10,0,0"
+                              HorizontalAlignment="Center"
+                              TextWrapping="Wrap"
+                              MaxWidth="400"/>
+                    <ui:Button Content="Cancel"
+                              Icon="{ui:SymbolIcon Dismiss24}"
+                              Command="{Binding CancelMigrationCommand}"
+                              Appearance="Secondary"
+                              Margin="0,20,0,0"/>
                 </StackPanel>
-            </ui:CardControl>
+            </Grid>
         </Grid>
     </ScrollViewer>
 </Page>
