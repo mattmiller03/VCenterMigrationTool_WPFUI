@@ -250,13 +250,19 @@ namespace VCenterMigrationTool.Services
                     {
                         var jsonData = JsonSerializer.Deserialize<JsonElement>(content);
                         
-                        if (jsonData.TryGetProperty("value", out var valueElement) && valueElement.ValueKind == JsonValueKind.Array)
+                        // Handle case where API returns object with "value" property
+                        if (jsonData.ValueKind == JsonValueKind.Object && jsonData.TryGetProperty("value", out var valueElement) && valueElement.ValueKind == JsonValueKind.Array)
                         {
                             return valueElement.GetArrayLength();
                         }
+                        // Handle case where API returns direct array
+                        else if (jsonData.ValueKind == JsonValueKind.Array)
+                        {
+                            return jsonData.GetArrayLength();
+                        }
                         else
                         {
-                            _logger.LogWarning("vCenter API response for {Endpoint} missing 'value' array. Response: {Content}", endpoint, content);
+                            _logger.LogWarning("vCenter API response for {Endpoint} unexpected format. Expected object with 'value' property or direct array. Response: {Content}", endpoint, content);
                         }
                     }
                     catch (JsonException jsonEx)
