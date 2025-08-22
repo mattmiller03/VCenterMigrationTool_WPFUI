@@ -740,9 +740,7 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
             var exportFormat = ExportToJson ? "JSON" : "CSV";
             var parameters = new Dictionary<string, object>
                 {
-                { "VCenterServer", _sharedConnectionService.SourceConnection },
-                { "Username", "admin" }, // Will be replaced by actual username
-                { "Password", password },
+                // VCenterServer will be set by RunVCenterScriptAsync - don't override it
                 { "ExportFilePath", ExportFilePath },
                 { "ExportFormat", exportFormat },
                 { "IncludeStandardSwitches", MigrateStandardSwitches },
@@ -755,11 +753,27 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 password,
                 parameters);
 
-            MigrationStatus = "Network configuration exported successfully";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Network configuration exported to: {ExportFilePath}\n";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Export format: {exportFormat}\n";
-
-            _logger.LogInformation("Network configuration exported to {FilePath}", ExportFilePath);
+            // Check the actual script result
+            if (result.StartsWith("ERROR:") || result.Contains("failed"))
+            {
+                MigrationStatus = $"Export failed: {result}";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Export failed: {result}\n";
+                _logger.LogError("VDS export failed: {Result}", result);
+            }
+            else if (result.Contains("Export completed:"))
+            {
+                MigrationStatus = "Network configuration exported successfully";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Network configuration exported to: {ExportFilePath}\n";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Export format: {exportFormat}\n";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script result: {result}\n";
+                _logger.LogInformation("Network configuration exported to {FilePath}", ExportFilePath);
+            }
+            else
+            {
+                MigrationStatus = "Export completed with unknown result";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script result: {result}\n";
+                _logger.LogWarning("VDS export completed but result unclear: {Result}", result);
+            }
             }
         catch (Exception ex)
             {
@@ -819,9 +833,7 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
 
             var parameters = new Dictionary<string, object>
                 {
-                { "VCenterServer", _sharedConnectionService.TargetConnection },
-                { "Username", "admin" }, // Will be replaced by actual username
-                { "Password", password },
+                // VCenterServer will be set by RunVCenterScriptAsync - don't override it
                 { "ImportFilePath", ImportFilePath },
                 { "RecreateIfExists", RecreateIfExists },
                 { "ValidateOnly", ValidateOnly },
@@ -835,18 +847,34 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 password,
                 parameters);
 
-            MigrationStatus = "Network configuration imported successfully";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Network configuration imported from: {ImportFilePath}\n";
-            if (ValidateOnly)
+            // Check the actual script result
+            if (result.StartsWith("ERROR:") || result.Contains("failed"))
+            {
+                MigrationStatus = $"Import failed: {result}";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import failed: {result}\n";
+                _logger.LogError("VDS import failed: {Result}", result);
+            }
+            else if (result.Contains("Import completed:") || result.Contains("Validation completed:"))
+            {
+                MigrationStatus = ValidateOnly ? "Network validation completed successfully" : "Network configuration imported successfully";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Network configuration imported from: {ImportFilePath}\n";
+                if (ValidateOnly)
                 {
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Validation mode - no changes were made\n";
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Validation mode - no changes were made\n";
                 }
+                else
+                {
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Recreate if exists: {RecreateIfExists}\n";
+                }
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script result: {result}\n";
+                _logger.LogInformation("Network configuration imported from {FilePath}", ImportFilePath);
+            }
             else
-                {
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Recreate if exists: {RecreateIfExists}\n";
-                }
-
-            _logger.LogInformation("Network configuration imported from {FilePath}", ImportFilePath);
+            {
+                MigrationStatus = "Import completed with unknown result";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script result: {result}\n";
+                _logger.LogWarning("VDS import completed but result unclear: {Result}", result);
+            }
             }
         catch (Exception ex)
             {

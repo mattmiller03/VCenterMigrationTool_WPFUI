@@ -4,7 +4,9 @@
       "Bash(dotnet build:*)",
       "WebSearch",
       "WebFetch(domain:wpfui.lepo.co)",
-      "Bash(dotnet run:*)"
+      "Bash(dotnet run:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
