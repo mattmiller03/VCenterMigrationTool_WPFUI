@@ -191,11 +191,12 @@ try {
         "Datacenter" {
             Write-LogInfo "Migrating datacenter: $ObjectName" -Category "Migration"
             
-            # Switch to target connection
+            # Switch to target connection and verify
             $global:DefaultVIServer = $targetConnection
+            Write-LogDebug "Current connection: $($global:DefaultVIServer.Name)" -Category "Connection"
             
-            # Check if datacenter already exists
-            $existingDC = Get-Datacenter -Name $ObjectName -ErrorAction SilentlyContinue
+            # Check if datacenter already exists in TARGET vCenter
+            $existingDC = Get-Datacenter -Name $ObjectName -Server $targetConnection -ErrorAction SilentlyContinue
             if ($existingDC) {
                 Write-LogWarning "Datacenter '$ObjectName' already exists in target vCenter" -Category "Migration"
                 $finalSummary = "Datacenter already exists in target - skipped"
@@ -206,16 +207,16 @@ try {
                     $finalSummary = "Validation: Would create datacenter '$ObjectName'"
                 }
                 else {
-                    # Get root folder
-                    $rootFolder = Get-Folder -Name "Datacenters" -Type Datacenter -ErrorAction SilentlyContinue
+                    # Get root folder from TARGET vCenter
+                    $rootFolder = Get-Folder -Name "Datacenters" -Type Datacenter -Server $targetConnection -ErrorAction SilentlyContinue
                     if (-not $rootFolder) {
-                        # Fallback: get the invisible root folder
-                        $rootFolder = Get-Folder -Type Datacenter | Where-Object { $_.Name -eq "Datacenters" -or $_.Parent.Name -eq "" } | Select-Object -First 1
+                        # Fallback: get the invisible root folder from TARGET vCenter
+                        $rootFolder = Get-Folder -Type Datacenter -Server $targetConnection | Where-Object { $_.Name -eq "Datacenters" -or $_.Parent.Name -eq "" } | Select-Object -First 1
                     }
                     
                     if ($rootFolder) {
                         # Create datacenter in target
-                        $targetDC = New-Datacenter -Name $ObjectName -Location $rootFolder -ErrorAction Stop
+                        $targetDC = New-Datacenter -Name $ObjectName -Location $rootFolder -Server $targetConnection -ErrorAction Stop
                         Write-LogSuccess "Created datacenter '$($targetDC.Name)' in target vCenter" -Category "Migration"
                         $finalSummary = "Successfully migrated datacenter '$ObjectName'"
                     }
