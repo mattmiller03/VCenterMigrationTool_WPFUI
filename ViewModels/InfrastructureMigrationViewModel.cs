@@ -2,7 +2,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
@@ -16,6 +18,8 @@ namespace VCenterMigrationTool.ViewModels
         private readonly HybridPowerShellService _powerShellService;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly PersistentExternalConnectionService _persistentConnectionService;
+        private readonly CredentialService _credentialService;
+        private readonly ConfigurationService _configurationService;
         private readonly ILogger<InfrastructureMigrationViewModel> _logger;
 
         // Connection Status
@@ -103,12 +107,16 @@ namespace VCenterMigrationTool.ViewModels
             HybridPowerShellService powerShellService,
             IErrorHandlingService errorHandlingService,
             PersistentExternalConnectionService persistentConnectionService,
+            CredentialService credentialService,
+            ConfigurationService configurationService,
             ILogger<InfrastructureMigrationViewModel> logger)
         {
             _sharedConnectionService = sharedConnectionService;
             _powerShellService = powerShellService;
             _errorHandlingService = errorHandlingService;
             _persistentConnectionService = persistentConnectionService;
+            _credentialService = credentialService;
+            _configurationService = configurationService;
             _logger = logger;
         }
 
@@ -372,7 +380,7 @@ namespace VCenterMigrationTool.ViewModels
                             ["ObjectType"] = "Datacenter",
                             ["ObjectName"] = datacenter.Name,
                             ["ObjectId"] = datacenter.Id ?? "",
-                            ["ObjectPath"] = datacenter.Path ?? "",
+                            ["ObjectPath"] = "", // Datacenters don't have a path concept
                             ["LogPath"] = _configurationService.GetConfiguration().LogPath
                         };
 
