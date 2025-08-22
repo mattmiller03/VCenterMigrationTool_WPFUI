@@ -22,6 +22,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
     private readonly HybridPowerShellService _powerShellService;
     private readonly SharedConnectionService _sharedConnectionService;
     private readonly IErrorHandlingService _errorHandlingService;
+    private readonly PersistentExternalConnectionService _persistentConnectionService;
 
     // Connection Status
     [ObservableProperty] private bool _isSourceConnected;
@@ -81,12 +82,14 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
         ILogger<VCenterMigrationViewModel> logger,
         HybridPowerShellService powerShellService, 
         SharedConnectionService sharedConnectionService,
-        IErrorHandlingService errorHandlingService)
+        IErrorHandlingService errorHandlingService,
+        PersistentExternalConnectionService persistentConnectionService)
     {
         _logger = logger;
         _powerShellService = powerShellService;
         _sharedConnectionService = sharedConnectionService;
         _errorHandlingService = errorHandlingService;
+        _persistentConnectionService = persistentConnectionService;
     }
 
     public async Task OnNavigatedToAsync()
@@ -460,19 +463,39 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
     {
         try
         {
-            // Check source connection
-            var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
-            IsSourceConnected = sourceStatus.IsConnected;
-            SourceConnectionStatus = sourceStatus.IsConnected ? "Connected" : "Disconnected";
-            SourceVCenterInfo = sourceStatus.IsConnected ? 
-                $"{sourceStatus.ServerName} (v{sourceStatus.Version})" : "Not connected";
+            // Check source connection using persistent connection service
+            var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
+            IsSourceConnected = sourceConnected;
+            SourceConnectionStatus = sourceConnected ? "Connected" : "Disconnected";
+            
+            // Get connection info if connected
+            if (sourceConnected)
+            {
+                var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
+                SourceVCenterInfo = sourceStatus.IsConnected ? 
+                    $"{sourceStatus.ServerName} (v{sourceStatus.Version})" : "Connected";
+            }
+            else
+            {
+                SourceVCenterInfo = "Not connected";
+            }
 
-            // Check target connection
-            var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
-            IsTargetConnected = targetStatus.IsConnected;
-            TargetConnectionStatus = targetStatus.IsConnected ? "Connected" : "Disconnected";
-            TargetVCenterInfo = targetStatus.IsConnected ? 
-                $"{targetStatus.ServerName} (v{targetStatus.Version})" : "Not connected";
+            // Check target connection using persistent connection service
+            var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
+            IsTargetConnected = targetConnected;
+            TargetConnectionStatus = targetConnected ? "Connected" : "Disconnected";
+            
+            // Get connection info if connected
+            if (targetConnected)
+            {
+                var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
+                TargetVCenterInfo = targetStatus.IsConnected ? 
+                    $"{targetStatus.ServerName} (v{targetStatus.Version})" : "Connected";
+            }
+            else
+            {
+                TargetVCenterInfo = "Not connected";
+            }
 
             _logger.LogInformation("Connection status - Source: {Source}, Target: {Target}", 
                 SourceConnectionStatus, TargetConnectionStatus);

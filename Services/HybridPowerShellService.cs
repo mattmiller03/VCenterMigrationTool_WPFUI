@@ -256,6 +256,10 @@ public class HybridPowerShellService : IDisposable
             // Configure runspace to allow execution
             powerShell.Runspace.SessionStateProxy.SetVariable("ExecutionPolicy", "Bypass");
             
+            // Set PSScriptRoot variable so scripts can import dependencies
+            var scriptDirectory = Path.GetDirectoryName(scriptPath);
+            powerShell.Runspace.SessionStateProxy.SetVariable("PSScriptRoot", scriptDirectory);
+            
             // Read and execute script content
             var scriptContent = await File.ReadAllTextAsync(scriptPath);
             powerShell.AddScript(scriptContent);
