@@ -7,6 +7,11 @@ param(
     [bool]$SuppressConsoleOutput = $false
 )
 
+# Handle credential variable name compatibility
+if ($credential -and -not $Credentials) {
+    $Credentials = $credential
+}
+
 # Import logging functions
 . "$PSScriptRoot\Write-ScriptLog.ps1"
 
