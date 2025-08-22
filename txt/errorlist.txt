@@ -1,83 +1,532 @@
-﻿2025-08-22 09:38:14.540 -04:00 [INF] Configured log path: C:\Temp\app\logs
-2025-08-22 09:38:14.541 -04:00 [INF] Base log directory: C:\Temp\app\logs
-2025-08-22 09:38:14.543 -04:00 [INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
-2025-08-22 09:38:14.545 -04:00 [INF] Created PowerShell log directory: C:\Temp\app\logs\PowerShell
-2025-08-22 09:38:14.571 -04:00 [INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
-2025-08-22 09:38:14.585 -04:00 [INF] Trying PowerShell executable: pwsh.exe
-2025-08-22 09:38:14.587 -04:00 [INF] Creating PowerShell process with command: pwsh.exe
-2025-08-22 09:38:14.607 -04:00 [INF] Successfully started PowerShell process: pwsh.exe (PID: 44604)
-2025-08-22 09:38:14.657 -04:00 [INF] Application started. Press Ctrl+C to shut down.
-2025-08-22 09:38:14.659 -04:00 [INF] Hosting environment: Production
-2025-08-22 09:38:14.660 -04:00 [INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
-2025-08-22 09:38:15.203 -04:00 [INF] PowerShell process completed with exit code: 0
-2025-08-22 09:38:15.207 -04:00 [INF] STARTUP: PowerCLI detected and confirmed installed on startup
-2025-08-22 09:38:15.210 -04:00 [INF] PERSISTENCE: PowerCLI status saved as true
-2025-08-22 09:38:36.601 -04:00 [INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
-2025-08-22 09:38:36.831 -04:00 [INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
-2025-08-22 09:38:36.852 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 32076)
-2025-08-22 09:38:36.854 -04:00 [INF] Bypassing module import (assumed already loaded)
-2025-08-22 09:38:36.855 -04:00 [INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
-2025-08-22 09:38:47.201 -04:00 [INF] ✅ Persistent connection established to klisv0pp212.dir.ad.dla.mil (Session: "f284b76f44d1d42c2ea973570d4640e6d38f2f68")
-2025-08-22 09:38:47.205 -04:00 [INF] ✅ Persistent source connection established (Session: "f284b76f44d1d42c2ea973570d4640e6d38f2f68")
-2025-08-22 09:38:47.221 -04:00 [INF] Start processing HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
-2025-08-22 09:38:47.229 -04:00 [INF] Sending HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
-2025-08-22 09:38:48.210 -04:00 [INF] Received HTTP response headers after 976.9857ms - 201
-2025-08-22 09:38:48.213 -04:00 [INF] End processing HTTP request after 997.2539ms - 201
-2025-08-22 09:38:48.218 -04:00 [INF] Successfully authenticated to vCenter API: klisv0pp212.dir.ad.dla.mil
-2025-08-22 09:38:48.221 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
-2025-08-22 09:38:48.223 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
-2025-08-22 09:38:48.415 -04:00 [INF] Received HTTP response headers after 190.8958ms - 200
-2025-08-22 09:38:48.417 -04:00 [INF] End processing HTTP request after 196.4383ms - 200
-2025-08-22 09:38:48.467 -04:00 [WRN] Error getting count for endpoint: vcenter/vm
-System.InvalidOperationException: The requested operation requires an element of type 'Object', but the target element has type 'Array'.
-   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
-   at System.Text.Json.JsonDocument.TryGetNamedPropertyValue(Int32 index, ReadOnlySpan`1 propertyName, JsonElement& value)
-   at System.Text.Json.JsonElement.TryGetProperty(ReadOnlySpan`1 propertyName, JsonElement& value)
-   at System.Text.Json.JsonElement.TryGetProperty(String propertyName, JsonElement& value)
-   at VCenterMigrationTool.Services.VSphereApiService.GetResourceCountAsync(String baseUrl, String sessionToken, String endpoint) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 253
-2025-08-22 09:38:48.523 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
-2025-08-22 09:38:48.525 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
-2025-08-22 09:38:48.905 -04:00 [INF] Received HTTP response headers after 378.7814ms - 200
-2025-08-22 09:38:48.907 -04:00 [INF] End processing HTTP request after 384.638ms - 200
-2025-08-22 09:38:48.943 -04:00 [WRN] Error getting count for endpoint: vcenter/host
-System.InvalidOperationException: The requested operation requires an element of type 'Object', but the target element has type 'Array'.
-   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
-   at System.Text.Json.JsonDocument.TryGetNamedPropertyValue(Int32 index, ReadOnlySpan`1 propertyName, JsonElement& value)
-   at System.Text.Json.JsonElement.TryGetProperty(ReadOnlySpan`1 propertyName, JsonElement& value)
-   at System.Text.Json.JsonElement.TryGetProperty(String propertyName, JsonElement& value)
-   at VCenterMigrationTool.Services.VSphereApiService.GetResourceCountAsync(String baseUrl, String sessionToken, String endpoint) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 253
-2025-08-22 09:38:48.945 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
-2025-08-22 09:38:48.947 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
-2025-08-22 09:38:49.120 -04:00 [INF] Received HTTP response headers after 171.0992ms - 200
-2025-08-22 09:38:49.123 -04:00 [INF] End processing HTTP request after 178.169ms - 200
-2025-08-22 09:38:49.167 -04:00 [WRN] Error getting count for endpoint: vcenter/cluster
-System.InvalidOperationException: The requested operation requires an element of type 'Object', but the target element has type 'Array'.
-   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
-   at System.Text.Json.JsonDocument.TryGetNamedPropertyValue(Int32 index, ReadOnlySpan`1 propertyName, JsonElement& value)
-   at System.Text.Json.JsonElement.TryGetProperty(ReadOnlySpan`1 propertyName, JsonElement& value)
-   at System.Text.Json.JsonElement.TryGetProperty(String propertyName, JsonElement& value)
-   at VCenterMigrationTool.Services.VSphereApiService.GetResourceCountAsync(String baseUrl, String sessionToken, String endpoint) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 253
-2025-08-22 09:38:49.170 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
-2025-08-22 09:38:49.171 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
-2025-08-22 09:38:49.352 -04:00 [INF] Received HTTP response headers after 178.3333ms - 200
-2025-08-22 09:38:49.354 -04:00 [INF] End processing HTTP request after 184.2749ms - 200
-2025-08-22 09:38:49.387 -04:00 [WRN] Error getting count for endpoint: vcenter/datacenter
-System.InvalidOperationException: The requested operation requires an element of type 'Object', but the target element has type 'Array'.
-   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
-   at System.Text.Json.JsonDocument.TryGetNamedPropertyValue(Int32 index, ReadOnlySpan`1 propertyName, JsonElement& value)
-   at System.Text.Json.JsonElement.TryGetProperty(ReadOnlySpan`1 propertyName, JsonElement& value)
-   at System.Text.Json.JsonElement.TryGetProperty(String propertyName, JsonElement& value)
-   at VCenterMigrationTool.Services.VSphereApiService.GetResourceCountAsync(String baseUrl, String sessionToken, String endpoint) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 253
-2025-08-22 09:38:49.389 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
-2025-08-22 09:38:49.391 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
-2025-08-22 09:38:49.564 -04:00 [INF] Received HTTP response headers after 171.7196ms - 200
-2025-08-22 09:38:49.567 -04:00 [INF] End processing HTTP request after 177.2971ms - 200
-2025-08-22 09:38:49.598 -04:00 [WRN] Error getting count for endpoint: vcenter/datastore
-System.InvalidOperationException: The requested operation requires an element of type 'Object', but the target element has type 'Array'.
-   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
-   at System.Text.Json.JsonDocument.TryGetNamedPropertyValue(Int32 index, ReadOnlySpan`1 propertyName, JsonElement& value)
-   at System.Text.Json.JsonElement.TryGetProperty(ReadOnlySpan`1 propertyName, JsonElement& value)
-   at System.Text.Json.JsonElement.TryGetProperty(String propertyName, JsonElement& value)
-   at VCenterMigrationTool.Services.VSphereApiService.GetResourceCountAsync(String baseUrl, String sessionToken, String endpoint) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 253
-2025-08-22 09:38:49.600 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=0, Hosts=0, Clusters=0
-2025-08-22 09:38:49.602 -04:00 [INF] Retrieved inventory counts for source: VMs=0, Hosts=0
+﻿2025-08-22 09:49:14.997 -04:00 [INF] Configuration loaded successfully from C:\Users\DMM0090\AppData\Local\VCenterMigrationTool\userconfig.json
+2025-08-22 09:49:15.022 -04:00 [INF] Configured log path: C:\Temp\app\logs
+2025-08-22 09:49:15.025 -04:00 [INF] Base log directory: C:\Temp\app\logs
+2025-08-22 09:49:15.026 -04:00 [INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
+2025-08-22 09:49:15.028 -04:00 [INF] Created PowerShell log directory: C:\Temp\app\logs\PowerShell
+2025-08-22 09:49:15.055 -04:00 [INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
+2025-08-22 09:49:15.070 -04:00 [INF] Trying PowerShell executable: pwsh.exe
+2025-08-22 09:49:15.072 -04:00 [INF] Creating PowerShell process with command: pwsh.exe
+2025-08-22 09:49:15.091 -04:00 [INF] Successfully started PowerShell process: pwsh.exe (PID: 36452)
+2025-08-22 09:49:15.152 -04:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-22 09:49:15.155 -04:00 [INF] Hosting environment: Production
+2025-08-22 09:49:15.157 -04:00 [INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
+2025-08-22 09:49:15.679 -04:00 [INF] PowerShell process completed with exit code: 0
+2025-08-22 09:49:15.683 -04:00 [INF] STARTUP: PowerCLI detected and confirmed installed on startup
+2025-08-22 09:49:15.684 -04:00 [INF] PERSISTENCE: PowerCLI status saved as true
+2025-08-22 09:49:28.516 -04:00 [INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
+2025-08-22 09:49:28.800 -04:00 [INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+2025-08-22 09:49:28.827 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 24168)
+2025-08-22 09:49:28.830 -04:00 [INF] Bypassing module import (assumed already loaded)
+2025-08-22 09:49:28.832 -04:00 [INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
+2025-08-22 09:49:39.278 -04:00 [INF] ✅ Persistent connection established to klisv0pp212.dir.ad.dla.mil (Session: "ac378721416b6f7ea8a9edc7268841a78bbefb36")
+2025-08-22 09:49:39.282 -04:00 [INF] ✅ Persistent source connection established (Session: "ac378721416b6f7ea8a9edc7268841a78bbefb36")
+2025-08-22 09:49:39.298 -04:00 [INF] Start processing HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 09:49:39.302 -04:00 [INF] Sending HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 09:49:40.286 -04:00 [INF] Received HTTP response headers after 979.6939ms - 201
+2025-08-22 09:49:40.290 -04:00 [INF] End processing HTTP request after 998.0647ms - 201
+2025-08-22 09:49:40.296 -04:00 [INF] Successfully authenticated to vCenter API: klisv0pp212.dir.ad.dla.mil
+2025-08-22 09:49:40.300 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 09:49:40.304 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 09:49:40.516 -04:00 [INF] Received HTTP response headers after 210.6678ms - 200
+2025-08-22 09:49:40.521 -04:00 [INF] End processing HTTP request after 221.5699ms - 200
+2025-08-22 09:49:40.531 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 09:49:40.534 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 09:49:40.925 -04:00 [INF] Received HTTP response headers after 387.5936ms - 200
+2025-08-22 09:49:40.928 -04:00 [INF] End processing HTTP request after 397.5258ms - 200
+2025-08-22 09:49:40.931 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 09:49:40.933 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 09:49:41.112 -04:00 [INF] Received HTTP response headers after 177.1573ms - 200
+2025-08-22 09:49:41.113 -04:00 [INF] End processing HTTP request after 182.1551ms - 200
+2025-08-22 09:49:41.115 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 09:49:41.117 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 09:49:41.302 -04:00 [INF] Received HTTP response headers after 183.6885ms - 200
+2025-08-22 09:49:41.304 -04:00 [INF] End processing HTTP request after 188.5465ms - 200
+2025-08-22 09:49:41.306 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 09:49:41.308 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 09:49:41.487 -04:00 [INF] Received HTTP response headers after 177.538ms - 200
+2025-08-22 09:49:41.489 -04:00 [INF] End processing HTTP request after 182.8998ms - 200
+2025-08-22 09:49:41.491 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=105, Hosts=22, Clusters=4
+2025-08-22 09:49:41.492 -04:00 [INF] Retrieved inventory counts for source: VMs=105, Hosts=22
+2025-08-22 09:51:44.546 -04:00 [INF] === ESTABLISHING PERSISTENT TARGET CONNECTION ===
+2025-08-22 09:51:44.751 -04:00 [INF] Establishing persistent external connection to klisv0pp251.dir.ad.dla.mil (target)
+2025-08-22 09:51:44.758 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 32680)
+2025-08-22 09:51:44.761 -04:00 [INF] Bypassing module import (assumed already loaded)
+2025-08-22 09:51:44.762 -04:00 [INF] Connecting to vCenter klisv0pp251.dir.ad.dla.mil...
+2025-08-22 09:51:55.220 -04:00 [INF] ✅ Persistent connection established to klisv0pp251.dir.ad.dla.mil (Session: "42bcbb9108c71ca0dc53a2725f5edf508f8bd7fc")
+2025-08-22 09:51:55.224 -04:00 [INF] ✅ Persistent target connection established (Session: "42bcbb9108c71ca0dc53a2725f5edf508f8bd7fc")
+2025-08-22 09:51:55.227 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 09:51:55.229 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 09:51:55.709 -04:00 [INF] Received HTTP response headers after 478.8837ms - 200
+2025-08-22 09:51:55.711 -04:00 [INF] End processing HTTP request after 484.3199ms - 200
+2025-08-22 09:51:55.714 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 09:51:55.716 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 09:51:55.898 -04:00 [INF] Received HTTP response headers after 180.4675ms - 200
+2025-08-22 09:51:55.901 -04:00 [INF] End processing HTTP request after 186.9326ms - 200
+2025-08-22 09:51:55.904 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 09:51:55.907 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 09:51:56.079 -04:00 [INF] Received HTTP response headers after 170.4013ms - 200
+2025-08-22 09:51:56.081 -04:00 [INF] End processing HTTP request after 176.4465ms - 200
+2025-08-22 09:51:56.083 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 09:51:56.085 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 09:51:56.250 -04:00 [INF] Received HTTP response headers after 164.1474ms - 200
+2025-08-22 09:51:56.252 -04:00 [INF] End processing HTTP request after 169.6632ms - 200
+2025-08-22 09:51:56.254 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 09:51:56.257 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 09:51:56.432 -04:00 [INF] Received HTTP response headers after 172.9786ms - 200
+2025-08-22 09:51:56.434 -04:00 [INF] End processing HTTP request after 179.9742ms - 200
+2025-08-22 09:51:56.437 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 09:51:56.438 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 09:51:56.615 -04:00 [INF] Received HTTP response headers after 174.6528ms - 200
+2025-08-22 09:51:56.617 -04:00 [INF] End processing HTTP request after 179.8697ms - 200
+2025-08-22 09:51:56.618 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=105, Hosts=22, Clusters=4
+2025-08-22 09:51:56.620 -04:00 [INF] Retrieved inventory counts for source: VMs=105, Hosts=22
+2025-08-22 09:51:56.622 -04:00 [INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 09:51:56.624 -04:00 [INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 09:51:57.590 -04:00 [ERR] Error authenticating to vCenter API: klisv0pp251.dir.ad.dla.mil
+System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
+ ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
+   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 57
+2025-08-22 09:51:57.616 -04:00 [INF] Retrieved inventory counts for target: VMs=0, Hosts=0
+2025-08-22 09:59:52.002 -04:00 [INF] Configuration loaded successfully from C:\Users\DMM0090\AppData\Local\VCenterMigrationTool\userconfig.json
+2025-08-22 09:59:52.027 -04:00 [INF] Configured log path: C:\Temp\app\logs
+2025-08-22 09:59:52.029 -04:00 [INF] Base log directory: C:\Temp\app\logs
+2025-08-22 09:59:52.030 -04:00 [INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
+2025-08-22 09:59:52.055 -04:00 [INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
+2025-08-22 09:59:52.069 -04:00 [INF] Trying PowerShell executable: pwsh.exe
+2025-08-22 09:59:52.072 -04:00 [INF] Creating PowerShell process with command: pwsh.exe
+2025-08-22 09:59:52.093 -04:00 [INF] Successfully started PowerShell process: pwsh.exe (PID: 38660)
+2025-08-22 09:59:52.157 -04:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-22 09:59:52.160 -04:00 [INF] Hosting environment: Production
+2025-08-22 09:59:52.162 -04:00 [INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
+2025-08-22 09:59:53.060 -04:00 [INF] PowerShell process completed with exit code: 0
+2025-08-22 09:59:53.063 -04:00 [INF] STARTUP: PowerCLI detected and confirmed installed on startup
+2025-08-22 09:59:53.065 -04:00 [INF] PERSISTENCE: PowerCLI status saved as true
+2025-08-22 10:03:16.345 -04:00 [INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
+2025-08-22 10:03:16.627 -04:00 [INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+2025-08-22 10:03:16.646 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 20632)
+2025-08-22 10:03:16.649 -04:00 [INF] Bypassing module import (assumed already loaded)
+2025-08-22 10:03:16.654 -04:00 [INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
+2025-08-22 10:03:57.174 -04:00 [INF] ✅ Persistent connection established to klisv0pp212.dir.ad.dla.mil (Session: "c383c1b4f5565b9c1a17d030ca4afb65e010965a")
+2025-08-22 10:03:57.177 -04:00 [INF] ✅ Persistent source connection established (Session: "c383c1b4f5565b9c1a17d030ca4afb65e010965a")
+2025-08-22 10:03:57.192 -04:00 [INF] Start processing HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:03:57.197 -04:00 [INF] Sending HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:03:58.161 -04:00 [INF] Received HTTP response headers after 961.6295ms - 201
+2025-08-22 10:03:58.164 -04:00 [INF] End processing HTTP request after 976.4391ms - 201
+2025-08-22 10:03:58.168 -04:00 [INF] Successfully authenticated to vCenter API: klisv0pp212.dir.ad.dla.mil
+2025-08-22 10:03:58.171 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 10:03:58.172 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 10:03:58.385 -04:00 [INF] Received HTTP response headers after 210.8945ms - 200
+2025-08-22 10:03:58.386 -04:00 [INF] End processing HTTP request after 215.8756ms - 200
+2025-08-22 10:03:58.394 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 10:03:58.396 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 10:03:58.780 -04:00 [INF] Received HTTP response headers after 382.6114ms - 200
+2025-08-22 10:03:58.782 -04:00 [INF] End processing HTTP request after 387.8006ms - 200
+2025-08-22 10:03:58.783 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 10:03:58.785 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 10:03:58.962 -04:00 [INF] Received HTTP response headers after 175.4278ms - 200
+2025-08-22 10:03:58.963 -04:00 [INF] End processing HTTP request after 179.4451ms - 200
+2025-08-22 10:03:58.964 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 10:03:58.966 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 10:03:58.982 -04:00 [INF] === ESTABLISHING PERSISTENT TARGET CONNECTION ===
+2025-08-22 10:03:59.136 -04:00 [INF] Received HTTP response headers after 169.2135ms - 200
+2025-08-22 10:03:59.139 -04:00 [INF] End processing HTTP request after 174.0997ms - 200
+2025-08-22 10:03:59.140 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 10:03:59.142 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 10:03:59.188 -04:00 [INF] Establishing persistent external connection to klisv0pp251.dir.ad.dla.mil (target)
+2025-08-22 10:03:59.195 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 17952)
+2025-08-22 10:03:59.198 -04:00 [INF] Bypassing module import (assumed already loaded)
+2025-08-22 10:03:59.200 -04:00 [INF] Connecting to vCenter klisv0pp251.dir.ad.dla.mil...
+2025-08-22 10:03:59.377 -04:00 [INF] Received HTTP response headers after 233.5437ms - 200
+2025-08-22 10:03:59.384 -04:00 [INF] End processing HTTP request after 243.6192ms - 200
+2025-08-22 10:03:59.389 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=105, Hosts=22, Clusters=4
+2025-08-22 10:03:59.391 -04:00 [INF] Retrieved inventory counts for source: VMs=105, Hosts=22
+2025-08-22 10:04:09.691 -04:00 [INF] ✅ Persistent connection established to klisv0pp251.dir.ad.dla.mil (Session: "1be867b9a95082f4df72aeee18c10e281889bd49")
+2025-08-22 10:04:09.694 -04:00 [INF] ✅ Persistent target connection established (Session: "1be867b9a95082f4df72aeee18c10e281889bd49")
+2025-08-22 10:04:09.697 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:04:09.699 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:04:09.861 -04:00 [INF] Received HTTP response headers after 160.3117ms - 200
+2025-08-22 10:04:09.862 -04:00 [INF] End processing HTTP request after 165.4611ms - 200
+2025-08-22 10:04:09.864 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 10:04:09.866 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 10:04:10.050 -04:00 [INF] Received HTTP response headers after 182.9619ms - 200
+2025-08-22 10:04:10.053 -04:00 [INF] End processing HTTP request after 188.2224ms - 200
+2025-08-22 10:04:10.055 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 10:04:10.057 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 10:04:10.228 -04:00 [INF] Received HTTP response headers after 168.8994ms - 200
+2025-08-22 10:04:10.229 -04:00 [INF] End processing HTTP request after 174.1921ms - 200
+2025-08-22 10:04:10.231 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 10:04:10.234 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 10:04:10.412 -04:00 [INF] Received HTTP response headers after 176.5726ms - 200
+2025-08-22 10:04:10.414 -04:00 [INF] End processing HTTP request after 183.0616ms - 200
+2025-08-22 10:04:10.416 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 10:04:10.418 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 10:04:10.586 -04:00 [INF] Received HTTP response headers after 166.5016ms - 200
+2025-08-22 10:04:10.587 -04:00 [INF] End processing HTTP request after 171.0463ms - 200
+2025-08-22 10:04:10.589 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 10:04:10.591 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 10:04:10.764 -04:00 [INF] Received HTTP response headers after 171.2406ms - 200
+2025-08-22 10:04:10.766 -04:00 [INF] End processing HTTP request after 176.9608ms - 200
+2025-08-22 10:04:10.769 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=105, Hosts=22, Clusters=4
+2025-08-22 10:04:10.771 -04:00 [INF] Retrieved inventory counts for source: VMs=105, Hosts=22
+2025-08-22 10:04:10.773 -04:00 [INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:04:10.775 -04:00 [INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:04:11.821 -04:00 [ERR] Error authenticating to vCenter API: klisv0pp251.dir.ad.dla.mil
+System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
+ ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
+   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 57
+2025-08-22 10:04:11.851 -04:00 [INF] Retrieved inventory counts for target: VMs=0, Hosts=0
+2025-08-22 10:04:37.026 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:04:37.028 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:04:37.226 -04:00 [INF] Received HTTP response headers after 196.5173ms - 200
+2025-08-22 10:04:37.228 -04:00 [INF] End processing HTTP request after 202.1111ms - 200
+2025-08-22 10:04:37.232 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:04:37.233 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:04:37.423 -04:00 [INF] Received HTTP response headers after 188.5986ms - 200
+2025-08-22 10:04:37.425 -04:00 [INF] End processing HTTP request after 192.9631ms - 200
+2025-08-22 10:04:37.430 -04:00 [INF] source connection status: true to klisv0pp212.dir.ad.dla.mil
+2025-08-22 10:04:37.436 -04:00 [INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:04:37.438 -04:00 [INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:04:38.199 -04:00 [ERR] Error authenticating to vCenter API: klisv0pp251.dir.ad.dla.mil
+System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
+ ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
+   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 57
+2025-08-22 10:04:38.208 -04:00 [INF] target connection status: false to klisv0pp251.dir.ad.dla.mil
+2025-08-22 10:04:38.211 -04:00 [INF] Connection status - Source: Connected, Target: Disconnected
+2025-08-22 10:04:38.221 -04:00 [WRN] No source inventory available - connection may not be established or inventory not loaded
+2025-08-22 10:04:38.224 -04:00 [INF] Final count - Source: 0 clusters, Target: 0 clusters
+2025-08-22 10:04:47.912 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:04:47.915 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:04:48.090 -04:00 [INF] Received HTTP response headers after 173.0656ms - 200
+2025-08-22 10:04:48.092 -04:00 [INF] End processing HTTP request after 179.4995ms - 200
+2025-08-22 10:04:48.094 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:04:48.096 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:04:48.272 -04:00 [INF] Received HTTP response headers after 174.3191ms - 200
+2025-08-22 10:04:48.274 -04:00 [INF] End processing HTTP request after 179.6728ms - 200
+2025-08-22 10:04:48.276 -04:00 [INF] source connection status: true to klisv0pp212.dir.ad.dla.mil
+2025-08-22 10:04:48.281 -04:00 [INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:04:48.283 -04:00 [INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:04:49.084 -04:00 [ERR] Error authenticating to vCenter API: klisv0pp251.dir.ad.dla.mil
+System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
+ ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
+   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 57
+2025-08-22 10:04:49.086 -04:00 [INF] target connection status: false to klisv0pp251.dir.ad.dla.mil
+2025-08-22 10:04:52.003 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:04:52.005 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:04:52.188 -04:00 [INF] Received HTTP response headers after 181.7807ms - 200
+2025-08-22 10:04:52.190 -04:00 [INF] End processing HTTP request after 187.2503ms - 200
+2025-08-22 10:04:52.194 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:04:52.195 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:04:52.382 -04:00 [INF] Received HTTP response headers after 185.0449ms - 200
+2025-08-22 10:04:52.384 -04:00 [INF] End processing HTTP request after 190.1791ms - 200
+2025-08-22 10:04:52.386 -04:00 [INF] source connection status: true to klisv0pp212.dir.ad.dla.mil
+2025-08-22 10:04:52.394 -04:00 [INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:04:52.396 -04:00 [INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:04:53.178 -04:00 [ERR] Error authenticating to vCenter API: klisv0pp251.dir.ad.dla.mil
+System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
+ ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
+   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 57
+2025-08-22 10:04:53.181 -04:00 [INF] target connection status: false to klisv0pp251.dir.ad.dla.mil
+2025-08-22 10:04:59.366 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:04:59.367 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:04:59.538 -04:00 [INF] Received HTTP response headers after 169.2658ms - 200
+2025-08-22 10:04:59.541 -04:00 [INF] End processing HTTP request after 174.9838ms - 200
+2025-08-22 10:04:59.549 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:04:59.551 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:04:59.729 -04:00 [INF] Received HTTP response headers after 176.6977ms - 200
+2025-08-22 10:04:59.731 -04:00 [INF] End processing HTTP request after 182.3782ms - 200
+2025-08-22 10:04:59.742 -04:00 [INF] source connection status: true to klisv0pp212.dir.ad.dla.mil
+2025-08-22 10:04:59.745 -04:00 [INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:04:59.746 -04:00 [INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:05:00.514 -04:00 [ERR] Error authenticating to vCenter API: klisv0pp251.dir.ad.dla.mil
+System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
+ ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
+   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 57
+2025-08-22 10:05:00.517 -04:00 [INF] target connection status: false to klisv0pp251.dir.ad.dla.mil
+2025-08-22 10:05:00.519 -04:00 [WRN] Not all vCenter connections are available
+2025-08-22 10:11:39.600 -04:00 [INF] Application shutting down - cleaning up services
+2025-08-22 10:11:39.602 -04:00 [INF] Cleaning up 0 active PowerShell processes before shutdown
+2025-08-22 10:11:39.605 -04:00 [INF] Starting cleanup of all active PowerShell processes
+2025-08-22 10:11:39.607 -04:00 [INF] Completed cleanup of 0 PowerShell processes
+2025-08-22 10:11:39.609 -04:00 [INF] PowerShell process cleanup completed
+2025-08-22 10:11:39.611 -04:00 [INF] Cleaning up persistent vCenter connection processes
+2025-08-22 10:11:39.614 -04:00 [INF] Disposing PersistentExternalConnectionService - closing all connections
+2025-08-22 10:11:39.618 -04:00 [INF] Disconnecting from klisv0pp251.dir.ad.dla.mil (target)
+2025-08-22 10:11:39.621 -04:00 [INF] Disconnecting from klisv0pp212.dir.ad.dla.mil (source)
+2025-08-22 10:14:44.553 -04:00 [INF] Configuration loaded successfully from C:\Users\DMM0090\AppData\Local\VCenterMigrationTool\userconfig.json
+2025-08-22 10:14:44.579 -04:00 [INF] Configured log path: C:\Temp\app\logs
+2025-08-22 10:14:44.582 -04:00 [INF] Base log directory: C:\Temp\app\logs
+2025-08-22 10:14:44.583 -04:00 [INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
+2025-08-22 10:14:44.610 -04:00 [INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
+2025-08-22 10:14:44.629 -04:00 [INF] Trying PowerShell executable: pwsh.exe
+2025-08-22 10:14:44.632 -04:00 [INF] Creating PowerShell process with command: pwsh.exe
+2025-08-22 10:14:44.653 -04:00 [INF] Successfully started PowerShell process: pwsh.exe (PID: 23004)
+2025-08-22 10:14:44.723 -04:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-22 10:14:44.725 -04:00 [INF] Hosting environment: Production
+2025-08-22 10:14:44.727 -04:00 [INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
+2025-08-22 10:14:45.657 -04:00 [INF] PowerShell process completed with exit code: 0
+2025-08-22 10:14:45.661 -04:00 [INF] STARTUP: PowerCLI detected and confirmed installed on startup
+2025-08-22 10:14:45.663 -04:00 [INF] PERSISTENCE: PowerCLI status saved as true
+2025-08-22 10:15:02.633 -04:00 [INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
+2025-08-22 10:15:02.913 -04:00 [INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+2025-08-22 10:15:02.936 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 30808)
+2025-08-22 10:15:02.939 -04:00 [INF] Bypassing module import (assumed already loaded)
+2025-08-22 10:15:02.941 -04:00 [INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
+2025-08-22 10:15:42.301 -04:00 [INF] ✅ Persistent connection established to klisv0pp212.dir.ad.dla.mil (Session: "f81b01fe2abc1aec2d3c220cf291bf4a002d5df0")
+2025-08-22 10:15:42.305 -04:00 [INF] ✅ Persistent source connection established (Session: "f81b01fe2abc1aec2d3c220cf291bf4a002d5df0")
+2025-08-22 10:15:42.322 -04:00 [INF] Start processing HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:15:42.329 -04:00 [INF] Sending HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:15:43.273 -04:00 [INF] Received HTTP response headers after 940.1265ms - 201
+2025-08-22 10:15:43.276 -04:00 [INF] End processing HTTP request after 959.3915ms - 201
+2025-08-22 10:15:43.281 -04:00 [INF] Successfully authenticated to vCenter API: klisv0pp212.dir.ad.dla.mil
+2025-08-22 10:15:43.284 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 10:15:43.285 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 10:15:43.477 -04:00 [INF] Received HTTP response headers after 190.2722ms - 200
+2025-08-22 10:15:43.479 -04:00 [INF] End processing HTTP request after 195.4527ms - 200
+2025-08-22 10:15:43.485 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 10:15:43.487 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 10:15:43.866 -04:00 [INF] Received HTTP response headers after 376.8143ms - 200
+2025-08-22 10:15:43.868 -04:00 [INF] End processing HTTP request after 382.7913ms - 200
+2025-08-22 10:15:43.870 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 10:15:43.872 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 10:15:44.044 -04:00 [INF] Received HTTP response headers after 170.9907ms - 200
+2025-08-22 10:15:44.047 -04:00 [INF] End processing HTTP request after 176.2262ms - 200
+2025-08-22 10:15:44.050 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 10:15:44.052 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 10:15:44.226 -04:00 [INF] Received HTTP response headers after 171.5292ms - 200
+2025-08-22 10:15:44.228 -04:00 [INF] End processing HTTP request after 177.9813ms - 200
+2025-08-22 10:15:44.229 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 10:15:44.231 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 10:15:44.405 -04:00 [INF] Received HTTP response headers after 172.3961ms - 200
+2025-08-22 10:15:44.408 -04:00 [INF] End processing HTTP request after 178.1651ms - 200
+2025-08-22 10:15:44.410 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=105, Hosts=22, Clusters=4
+2025-08-22 10:15:44.412 -04:00 [INF] Retrieved inventory counts for source: VMs=105, Hosts=22
+2025-08-22 10:16:06.558 -04:00 [INF] === ESTABLISHING PERSISTENT TARGET CONNECTION ===
+2025-08-22 10:16:06.763 -04:00 [INF] Establishing persistent external connection to klisv0pp251.dir.ad.dla.mil (target)
+2025-08-22 10:16:06.770 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 12960)
+2025-08-22 10:16:06.773 -04:00 [INF] Bypassing module import (assumed already loaded)
+2025-08-22 10:16:06.776 -04:00 [INF] Connecting to vCenter klisv0pp251.dir.ad.dla.mil...
+2025-08-22 10:16:17.398 -04:00 [INF] ✅ Persistent connection established to klisv0pp251.dir.ad.dla.mil (Session: "f19bc56ff1cc4ee57d320a52b661e40389f1e14b")
+2025-08-22 10:16:17.401 -04:00 [INF] ✅ Persistent target connection established (Session: "f19bc56ff1cc4ee57d320a52b661e40389f1e14b")
+2025-08-22 10:16:17.404 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:16:17.406 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:16:17.594 -04:00 [INF] Received HTTP response headers after 184.6083ms - 200
+2025-08-22 10:16:17.596 -04:00 [INF] End processing HTTP request after 191.8018ms - 200
+2025-08-22 10:16:17.599 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 10:16:17.601 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-22 10:16:17.798 -04:00 [INF] Received HTTP response headers after 195.49ms - 200
+2025-08-22 10:16:17.800 -04:00 [INF] End processing HTTP request after 201.8549ms - 200
+2025-08-22 10:16:17.803 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 10:16:17.805 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-22 10:16:17.992 -04:00 [INF] Received HTTP response headers after 184.8528ms - 200
+2025-08-22 10:16:17.995 -04:00 [INF] End processing HTTP request after 191.5458ms - 200
+2025-08-22 10:16:17.997 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 10:16:17.999 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-22 10:16:18.168 -04:00 [INF] Received HTTP response headers after 167.2802ms - 200
+2025-08-22 10:16:18.170 -04:00 [INF] End processing HTTP request after 172.7525ms - 200
+2025-08-22 10:16:18.172 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 10:16:18.173 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-22 10:16:18.360 -04:00 [INF] Received HTTP response headers after 184.335ms - 200
+2025-08-22 10:16:18.362 -04:00 [INF] End processing HTTP request after 190.2899ms - 200
+2025-08-22 10:16:18.365 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 10:16:18.366 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-22 10:16:18.545 -04:00 [INF] Received HTTP response headers after 176.3034ms - 200
+2025-08-22 10:16:18.547 -04:00 [INF] End processing HTTP request after 182.3998ms - 200
+2025-08-22 10:16:18.549 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=105, Hosts=22, Clusters=4
+2025-08-22 10:16:18.552 -04:00 [INF] Retrieved inventory counts for source: VMs=105, Hosts=22
+2025-08-22 10:16:18.555 -04:00 [INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:16:18.556 -04:00 [INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:16:19.684 -04:00 [ERR] Error authenticating to vCenter API: klisv0pp251.dir.ad.dla.mil
+System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
+ ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
+   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 57
+2025-08-22 10:16:19.716 -04:00 [INF] Retrieved inventory counts for target: VMs=0, Hosts=0
+2025-08-22 10:16:41.512 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:16:41.515 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:16:41.697 -04:00 [INF] Received HTTP response headers after 180.1267ms - 200
+2025-08-22 10:16:41.699 -04:00 [INF] End processing HTTP request after 186.6037ms - 200
+2025-08-22 10:16:41.707 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:16:41.710 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:16:41.909 -04:00 [INF] Received HTTP response headers after 196.203ms - 200
+2025-08-22 10:16:41.911 -04:00 [INF] End processing HTTP request after 203.0955ms - 200
+2025-08-22 10:16:41.917 -04:00 [INF] source connection status: true to klisv0pp212.dir.ad.dla.mil
+2025-08-22 10:16:41.921 -04:00 [INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:16:41.923 -04:00 [INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:16:42.700 -04:00 [ERR] Error authenticating to vCenter API: klisv0pp251.dir.ad.dla.mil
+System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
+ ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
+   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 57
+2025-08-22 10:16:42.704 -04:00 [INF] target connection status: false to klisv0pp251.dir.ad.dla.mil
+2025-08-22 10:16:42.707 -04:00 [INF] Connection status - Source: Connected, Target: Disconnected
+2025-08-22 10:16:42.712 -04:00 [WRN] No source inventory available - connection may not be established or inventory not loaded
+2025-08-22 10:16:42.714 -04:00 [INF] Final count - Source: 0 clusters, Target: 0 clusters
+2025-08-22 10:16:50.245 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:16:50.247 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-22 10:16:50.426 -04:00 [INF] Received HTTP response headers after 176.9753ms - 200
+2025-08-22 10:16:50.428 -04:00 [INF] End processing HTTP request after 182.4924ms - 200
+2025-08-22 10:16:50.430 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:16:50.432 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-22 10:16:50.612 -04:00 [INF] Received HTTP response headers after 178.7934ms - 200
+2025-08-22 10:16:50.614 -04:00 [INF] End processing HTTP request after 183.9346ms - 200
+2025-08-22 10:16:50.617 -04:00 [INF] source connection status: true to klisv0pp212.dir.ad.dla.mil
+2025-08-22 10:16:50.620 -04:00 [INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:16:50.621 -04:00 [INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-22 10:16:51.361 -04:00 [ERR] Error authenticating to vCenter API: klisv0pp251.dir.ad.dla.mil
+System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
+ ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
+   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 57
+2025-08-22 10:16:51.364 -04:00 [INF] target connection status: false to klisv0pp251.dir.ad.dla.mil
+2025-08-22 10:16:53.380 -04:00 [INF] Loading infrastructure inventory for vCenter: klisv0pp212.dir.ad.dla.mil (connection: source)
+2025-08-22 10:16:53.487 -04:00 [INF] Loading infrastructure components for klisv0pp212.dir.ad.dla.mil
