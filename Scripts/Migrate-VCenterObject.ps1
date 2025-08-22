@@ -187,6 +187,39 @@ try {
             }
         }
         
+        "Datacenter" {
+            Write-LogInfo "Migrating datacenter: $ObjectName" -Category "Migration"
+            
+            # Switch to target connection
+            $global:DefaultVIServer = $targetConnection
+            
+            # Check if datacenter already exists
+            $existingDC = Get-Datacenter -Name $ObjectName -ErrorAction SilentlyContinue
+            if ($existingDC) {
+                Write-LogWarning "Datacenter '$ObjectName' already exists in target vCenter" -Category "Migration"
+                $finalSummary = "Datacenter already exists in target - skipped"
+            }
+            else {
+                # Get root folder
+                $rootFolder = Get-Folder -Name "Datacenters" -Type Datacenter -ErrorAction SilentlyContinue
+                if (-not $rootFolder) {
+                    # Fallback: get the invisible root folder
+                    $rootFolder = Get-Folder -Type Datacenter | Where-Object { $_.Name -eq "Datacenters" -or $_.Parent.Name -eq "" } | Select-Object -First 1
+                }
+                
+                if ($rootFolder) {
+                    # Create datacenter in target
+                    $targetDC = New-Datacenter -Name $ObjectName -Location $rootFolder -ErrorAction Stop
+                    Write-LogSuccess "Created datacenter '$($targetDC.Name)' in target vCenter" -Category "Migration"
+                    $finalSummary = "Successfully migrated datacenter '$ObjectName'"
+                }
+                else {
+                    Write-LogError "Could not find root datacenter folder in target vCenter" -Category "Migration"
+                    $finalSummary = "Failed to locate root datacenter folder"
+                }
+            }
+        }
+        
         default {
             Write-LogWarning "Migration not implemented for object type: $ObjectType" -Category "Migration"
             $finalSummary = "Migration not implemented for type '$ObjectType'"

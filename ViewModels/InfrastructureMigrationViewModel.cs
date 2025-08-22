@@ -310,16 +310,115 @@ namespace VCenterMigrationTool.ViewModels
                 MigrationProgress = 0;
                 MigrationStatus = "Starting infrastructure migration...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting infrastructure migration\n";
-                
-                // TODO: Implement actual migration logic
-                for (int i = 0; i <= 100; i += 10)
+
+                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
                 {
-                    MigrationProgress = i;
-                    await Task.Delay(200);
+                    MigrationStatus = "Source or target connection not available";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Connection not available\n";
+                    return;
                 }
+
+                // Get source credentials
+                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+
+                if (string.IsNullOrEmpty(sourcePassword) || string.IsNullOrEmpty(targetPassword))
+                {
+                    MigrationStatus = "Unable to retrieve connection credentials";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Missing credentials\n";
+                    return;
+                }
+
+                // Get source inventory for datacenter migration
+                MigrationStatus = "Loading source datacenters...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source datacenter list\n";
+                MigrationProgress = 10;
+
+                // For now, we'll migrate datacenters based on what we find in the source
+                // In a complete implementation, this would come from selected items in the UI
+                var sourceDatacenters = await GetSourceDatacentersAsync();
                 
-                MigrationStatus = "Infrastructure migration completed successfully";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Infrastructure migration completed successfully\n";
+                if (sourceDatacenters == null || !sourceDatacenters.Any())
+                {
+                    MigrationStatus = "No datacenters found in source to migrate";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: No datacenters found in source\n";
+                    return;
+                }
+
+                MigrationProgress = 20;
+                var totalDatacenters = sourceDatacenters.Count();
+                var migratedCount = 0;
+                var skippedCount = 0;
+                var errorCount = 0;
+
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Found {totalDatacenters} datacenter(s) to migrate\n";
+
+                foreach (var datacenter in sourceDatacenters)
+                {
+                    try
+                    {
+                        MigrationStatus = $"Migrating datacenter: {datacenter.Name}";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Migrating datacenter: {datacenter.Name}\n";
+
+                        // Call the migration script for each datacenter
+                        var parameters = new Dictionary<string, object>
+                        {
+                            ["SourceVCenter"] = _sharedConnectionService.SourceConnection.ServerAddress,
+                            ["SourceUsername"] = _sharedConnectionService.SourceConnection.Username,
+                            ["SourcePassword"] = sourcePassword,
+                            ["TargetVCenter"] = _sharedConnectionService.TargetConnection.ServerAddress,
+                            ["TargetUsername"] = _sharedConnectionService.TargetConnection.Username,
+                            ["TargetPassword"] = targetPassword,
+                            ["ObjectType"] = "Datacenter",
+                            ["ObjectName"] = datacenter.Name,
+                            ["ObjectId"] = datacenter.Id ?? "",
+                            ["ObjectPath"] = datacenter.Path ?? "",
+                            ["LogPath"] = _configurationService.GetConfiguration().LogPath
+                        };
+
+                        var result = await _powerShellService.RunScriptAsync("Scripts\\Migrate-VCenterObject.ps1", parameters);
+
+                        if (result.Contains("Successfully migrated"))
+                        {
+                            migratedCount++;
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Successfully migrated datacenter: {datacenter.Name}\n";
+                        }
+                        else if (result.Contains("already exists"))
+                        {
+                            skippedCount++;
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ Datacenter already exists: {datacenter.Name}\n";
+                        }
+                        else if (result.StartsWith("ERROR"))
+                        {
+                            errorCount++;
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Error migrating {datacenter.Name}: {result}\n";
+                        }
+                        else
+                        {
+                            // Log the full result for debugging
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Result for {datacenter.Name}: {result}\n";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        errorCount++;
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Exception migrating {datacenter.Name}: {ex.Message}\n";
+                        _logger.LogError(ex, "Error migrating datacenter {DatacenterName}", datacenter.Name);
+                    }
+
+                    // Update progress
+                    var currentProgress = 20 + ((migratedCount + skippedCount + errorCount) * 70 / totalDatacenters);
+                    MigrationProgress = Math.Min(currentProgress, 90);
+                }
+
+                // Final summary
+                MigrationProgress = 100;
+                MigrationStatus = $"Migration completed - {migratedCount} migrated, {skippedCount} skipped, {errorCount} errors";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Migration Summary:\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] - Migrated: {migratedCount}\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] - Skipped (already exist): {skippedCount}\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] - Errors: {errorCount}\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Infrastructure migration completed\n";
             }
             catch (Exception ex)
             {
@@ -332,6 +431,35 @@ namespace VCenterMigrationTool.ViewModels
                 IsMigrationInProgress = false;
                 OnPropertyChanged(nameof(CanValidateMigration));
                 OnPropertyChanged(nameof(CanStartMigration));
+            }
+        }
+
+        private async Task<IEnumerable<DatacenterInfo>> GetSourceDatacentersAsync()
+        {
+            try
+            {
+                var sourceInventory = _sharedConnectionService.GetSourceInventory();
+                if (sourceInventory?.Datacenters != null && sourceInventory.Datacenters.Any())
+                {
+                    return sourceInventory.Datacenters;
+                }
+
+                // If no cached inventory, try to load it
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source infrastructure data...\n";
+                var success = await _sharedConnectionService.LoadSourceInfrastructureAsync();
+                if (success)
+                {
+                    sourceInventory = _sharedConnectionService.GetSourceInventory();
+                    return sourceInventory?.Datacenters ?? new List<DatacenterInfo>();
+                }
+
+                return new List<DatacenterInfo>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading source datacenters");
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR loading source datacenters: {ex.Message}\n";
+                return new List<DatacenterInfo>();
             }
         }
     }
