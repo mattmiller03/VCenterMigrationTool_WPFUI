@@ -257,8 +257,25 @@ public class HybridPowerShellService : IDisposable
             powerShell.Runspace.SessionStateProxy.SetVariable("ExecutionPolicy", "Bypass");
             
             // Set PSScriptRoot variable so scripts can import dependencies
-            var scriptDirectory = Path.GetDirectoryName(scriptPath);
-            powerShell.Runspace.SessionStateProxy.SetVariable("PSScriptRoot", scriptDirectory);
+            var scriptDirectory = Path.GetDirectoryName(Path.GetFullPath(scriptPath));
+            if (!string.IsNullOrEmpty(scriptDirectory))
+            {
+                powerShell.Runspace.SessionStateProxy.SetVariable("PSScriptRoot", scriptDirectory);
+                _logger.LogDebug("Set PSScriptRoot to: {Directory}", scriptDirectory);
+                
+                // Pre-load Write-ScriptLog.ps1 if it exists in the same directory
+                var logScriptPath = Path.Combine(scriptDirectory, "Write-ScriptLog.ps1");
+                if (File.Exists(logScriptPath))
+                {
+                    var logScriptContent = await File.ReadAllTextAsync(logScriptPath);
+                    powerShell.AddScript(logScriptContent);
+                    _logger.LogDebug("Pre-loaded Write-ScriptLog.ps1 from: {LogScriptPath}", logScriptPath);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Could not determine script directory for: {ScriptPath}", scriptPath);
+            }
             
             // Read and execute script content
             var scriptContent = await File.ReadAllTextAsync(scriptPath);
