@@ -32,10 +32,16 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
     private string _targetVCenter = string.Empty;
 
     [ObservableProperty]
-    private bool _isConnected;
+    private bool _isSourceConnected;
 
     [ObservableProperty]
-    private string _connectionStatus = "Not Connected";
+    private string _sourceConnectionStatus = "Not Connected";
+
+    [ObservableProperty]
+    private bool _isTargetConnected;
+
+    [ObservableProperty]
+    private string _targetConnectionStatus = "Not Connected";
 
     // Data Loading Properties
     [ObservableProperty]
@@ -163,9 +169,19 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             var sourceConnection = _sharedConnectionService.SourceConnection;
             var targetConnection = _sharedConnectionService.TargetConnection;
 
-            if (sourceConnection == null || targetConnection == null)
+            // Check connection status from SharedConnectionService
+            var sourceStatus = await _sharedConnectionService.GetConnectionStatusAsync("source");
+            var targetStatus = await _sharedConnectionService.GetConnectionStatusAsync("target");
+
+            IsSourceConnected = sourceStatus.IsConnected;
+            SourceConnectionStatus = sourceStatus.IsConnected ? "Connected" : "Disconnected";
+
+            IsTargetConnected = targetStatus.IsConnected;
+            TargetConnectionStatus = targetStatus.IsConnected ? "Connected" : "Disconnected";
+
+            if (!IsSourceConnected || !IsTargetConnected)
                 {
-                ConnectionStatus = "Please configure source and target connections in Settings";
+                _logger.LogWarning("Not all vCenter connections are available");
                 return;
                 }
 
@@ -207,22 +223,20 @@ catch {
 
             if (!string.IsNullOrEmpty(result) && result.Contains("SUCCESS"))
                 {
-                IsConnected = true;
-                ConnectionStatus = "Connected to both vCenter servers";
-                _logger.LogInformation("Successfully connected to source and target vCenters");
+                _logger.LogInformation("Successfully tested vCenter connections");
                 }
             else
                 {
-                IsConnected = false;
-                ConnectionStatus = $"Connection failed: {result}";
-                _logger.LogError("Failed to connect to vCenters: {Error}", result);
+                _logger.LogError("Failed to test vCenter connections: {Error}", result);
                 }
             }
         catch (Exception ex)
             {
-            IsConnected = false;
-            ConnectionStatus = $"Error: {ex.Message}";
-            _logger.LogError(ex, "Error connecting to vCenters");
+            IsSourceConnected = false;
+            SourceConnectionStatus = "Error";
+            IsTargetConnected = false;
+            TargetConnectionStatus = "Error";
+            _logger.LogError(ex, "Error checking vCenter connections");
             }
         finally
             {
@@ -235,10 +249,10 @@ catch {
     [RelayCommand]
     private async Task LoadSourceClusters ()
         {
-        if (!IsConnected)
+        if (!IsSourceConnected)
             {
             await ConnectToVCenters();
-            if (!IsConnected) return;
+            if (!IsSourceConnected) return;
             }
 
         try
@@ -314,10 +328,10 @@ catch {
     [RelayCommand]
     private async Task LoadTargetClusters ()
         {
-        if (!IsConnected)
+        if (!IsTargetConnected)
             {
             await ConnectToVCenters();
-            if (!IsConnected) return;
+            if (!IsTargetConnected) return;
             }
 
         try
@@ -836,17 +850,6 @@ catch {
             }
         }
 
-    partial void OnIsConnectedChanged (bool value)
-        {
-        if (value)
-            {
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Connected to vCenter servers\n";
-            }
-        else
-            {
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Disconnected from vCenter servers\n";
-            }
-        }
 
     // Navigation Interface
     public void OnNavigatedTo ()

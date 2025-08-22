@@ -86,10 +86,10 @@
                         <StackPanel Grid.Row="1">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                 <Ellipse Width="12" Height="12" 
-                                         Fill="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}"
+                                         Fill="{Binding IsSourceConnected, Converter={StaticResource BoolToColorConverter}}"
                                          Margin="0,0,8,0" 
                                          VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding ConnectionStatus}" 
+                                <TextBlock Text="{Binding SourceConnectionStatus}" 
                                            FontWeight="Medium"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
@@ -97,7 +97,7 @@
                             <ui:Button Content="Load Source Clusters"
                                       Icon="{ui:SymbolIcon CloudArrowDown24}"
                                       Command="{Binding LoadSourceClustersCommand}"
-                                      IsEnabled="{Binding IsConnected}"
+                                      IsEnabled="{Binding IsSourceConnected}"
                                       Appearance="Primary"
                                       Margin="0,10,0,0"
                                       HorizontalAlignment="Stretch"/>
@@ -128,10 +128,10 @@
                         <StackPanel Grid.Row="1">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                 <Ellipse Width="12" Height="12" 
-                                         Fill="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}"
+                                         Fill="{Binding IsTargetConnected, Converter={StaticResource BoolToColorConverter}}"
                                          Margin="0,0,8,0" 
                                          VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding ConnectionStatus}" 
+                                <TextBlock Text="{Binding TargetConnectionStatus}" 
                                            FontWeight="Medium"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
@@ -139,7 +139,7 @@
                             <ui:Button Content="Load Target Clusters"
                                       Icon="{ui:SymbolIcon CloudArrowDown24}"
                                       Command="{Binding LoadTargetClustersCommand}"
-                                      IsEnabled="{Binding IsConnected}"
+                                      IsEnabled="{Binding IsTargetConnected}"
                                       Appearance="Primary"
                                       Margin="0,10,0,0"
                                       HorizontalAlignment="Stretch"/>
