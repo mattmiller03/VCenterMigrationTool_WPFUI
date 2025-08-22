@@ -774,6 +774,13 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
         }
 
     [RelayCommand]
+    private async Task ExportVdsConfiguration()
+    {
+        // Wrapper for XAML binding compatibility - calls the main export method
+        await ExportNetworkConfiguration();
+    }
+
+    [RelayCommand]
     private async Task ImportNetworkConfiguration ()
         {
         if (string.IsNullOrEmpty(ImportFilePath) || !File.Exists(ImportFilePath))
@@ -852,6 +859,13 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
             IsLoadingData = false;
             }
         }
+
+    [RelayCommand]
+    private async Task ImportVdsConfiguration()
+    {
+        // Wrapper for XAML binding compatibility - calls the main import method
+        await ImportNetworkConfiguration();
+    }
 
     // Helper Methods
     private IEnumerable<object> GetSelectedNetworkItems ()
