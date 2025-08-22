@@ -173,24 +173,22 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             TargetVCenter = targetConnection.ServerAddress;
 
             // Test connections
-            var script = @"
-                param($SourceServer, $TargetServer, $SourceUser, $SourcePass, $TargetUser, $TargetPass)
-                
-                try {
-                    # Connect to source vCenter
-                    $sourceCred = New-Object System.Management.Automation.PSCredential($SourceUser, (ConvertTo-SecureString $SourcePass -AsPlainText -Force))
-                    Connect-VIServer -Server $SourceServer -Credential $sourceCred -Force | Out-Null
-                    
-                    # Connect to target vCenter
-                    $targetCred = New-Object System.Management.Automation.PSCredential($TargetUser, (ConvertTo-SecureString $TargetPass -AsPlainText -Force))
-                    Connect-VIServer -Server $TargetServer -Credential $targetCred -Force | Out-Null
-                    
-                    Write-Output 'SUCCESS: Connected to both vCenter servers'
-                }
-                catch {
-                    Write-Error ""Failed to connect: $($_.Exception.Message)""
-                }
-            ";
+            var script = @"param($SourceServer, $TargetServer, $SourceUser, $SourcePass, $TargetUser, $TargetPass)
+
+try {
+    # Connect to source vCenter
+    $sourceCred = New-Object System.Management.Automation.PSCredential($SourceUser, (ConvertTo-SecureString $SourcePass -AsPlainText -Force))
+    Connect-VIServer -Server $SourceServer -Credential $sourceCred -Force | Out-Null
+    
+    # Connect to target vCenter
+    $targetCred = New-Object System.Management.Automation.PSCredential($TargetUser, (ConvertTo-SecureString $TargetPass -AsPlainText -Force))
+    Connect-VIServer -Server $TargetServer -Credential $targetCred -Force | Out-Null
+    
+    Write-Output 'SUCCESS: Connected to both vCenter servers'
+}
+catch {
+    Write-Error ""Failed to connect: $($_.Exception.Message)""
+}";
 
             // Get credentials using your actual CredentialService implementation
             var sourcePassword = _credentialService.GetPassword(sourceConnection);
@@ -249,28 +247,26 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             IsLoadingData = true;
             LoadingMessage = "Loading source clusters...";
 
-            var script = @"
-                param($SourceServer)
-                
-                try {
-                    $clusters = Get-Cluster -Server $SourceServer | Select-Object Name, Id, @{N='Host';E={$_.ExtensionData.Summary.NumHosts}}, @{N='VM';E={$_.ExtensionData.Summary.NumVmotionInterfaces}}
-                    
-                    $clusterData = @()
-                    foreach ($cluster in $clusters) {
-                        $clusterData += [PSCustomObject]@{
-                            Name = $cluster.Name
-                            Id = $cluster.Id
-                            HostCount = $cluster.Host
-                            VmCount = $cluster.VM
-                        }
-                    }
-                    
-                    return $clusterData | ConvertTo-Json -Depth 3
-                }
-                catch {
-                    Write-Error ""Failed to load clusters: $($_.Exception.Message)""
-                }
-            ";
+            var script = @"param($SourceServer)
+
+try {
+    $clusters = Get-Cluster -Server $SourceServer | Select-Object Name, Id, @{N='Host';E={$_.ExtensionData.Summary.NumHosts}}, @{N='VM';E={$_.ExtensionData.Summary.NumVmotionInterfaces}}
+    
+    $clusterData = @()
+    foreach ($cluster in $clusters) {
+        $clusterData += [PSCustomObject]@{
+            Name = $cluster.Name
+            Id = $cluster.Id
+            HostCount = $cluster.Host
+            VmCount = $cluster.VM
+        }
+    }
+    
+    return $clusterData | ConvertTo-Json -Depth 3
+}
+catch {
+    Write-Error ""Failed to load clusters: $($_.Exception.Message)""
+}";
 
             var parameters = new Dictionary<string, object>
                 {
@@ -330,28 +326,26 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             IsLoadingData = true;
             LoadingMessage = "Loading target clusters...";
 
-            var script = @"
-                param($TargetServer)
-                
-                try {
-                    $clusters = Get-Cluster -Server $TargetServer | Select-Object Name, Id, @{N='Host';E={$_.ExtensionData.Summary.NumHosts}}, @{N='VM';E={$_.ExtensionData.Summary.NumVmotionInterfaces}}
-                    
-                    $clusterData = @()
-                    foreach ($cluster in $clusters) {
-                        $clusterData += [PSCustomObject]@{
-                            Name = $cluster.Name
-                            Id = $cluster.Id
-                            HostCount = $cluster.Host
-                            VmCount = $cluster.VM
-                        }
-                    }
-                    
-                    return $clusterData | ConvertTo-Json -Depth 3
-                }
-                catch {
-                    Write-Error ""Failed to load clusters: $($_.Exception.Message)""
-                }
-            ";
+            var script = @"param($TargetServer)
+
+try {
+    $clusters = Get-Cluster -Server $TargetServer | Select-Object Name, Id, @{N='Host';E={$_.ExtensionData.Summary.NumHosts}}, @{N='VM';E={$_.ExtensionData.Summary.NumVmotionInterfaces}}
+    
+    $clusterData = @()
+    foreach ($cluster in $clusters) {
+        $clusterData += [PSCustomObject]@{
+            Name = $cluster.Name
+            Id = $cluster.Id
+            HostCount = $cluster.Host
+            VmCount = $cluster.VM
+        }
+    }
+    
+    return $clusterData | ConvertTo-Json -Depth 3
+}
+catch {
+    Write-Error ""Failed to load clusters: $($_.Exception.Message)""
+}";
 
             var parameters = new Dictionary<string, object>
                 {
