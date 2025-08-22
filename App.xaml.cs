@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -95,7 +96,13 @@ public partial class App
             {
                 return new HttpClientHandler()
                 {
-                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => {
+                        // Accept all SSL certificates for vCenter API connections
+                        return true;
+                    },
+                    // Additional SSL/TLS settings for maximum compatibility
+                    SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13,
+                    CheckCertificateRevocationList = false
                 };
             });
             services.AddSingleton<VSphereApiService>();
