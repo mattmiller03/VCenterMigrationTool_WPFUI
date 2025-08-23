@@ -26,31 +26,18 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
     private readonly PersistentExternalConnectionService _persistentConnectionService;
     private readonly ILogger<NetworkMigrationViewModel> _logger;
 
-    // Source Network Data
+    // vDS Configuration Data
     [ObservableProperty]
-    private ObservableCollection<EsxiHost> _sourceHosts = new();
+    private ObservableCollection<VirtualSwitchInfo> _sourceVDSSwitches = new();
 
     [ObservableProperty]
-    private EsxiHost? _selectedSourceHost;
+    private VirtualSwitchInfo? _selectedSourceVDS;
 
     [ObservableProperty]
-    private ObservableCollection<NetworkHostNode> _sourceNetworkTopology = new();
+    private ObservableCollection<PortGroupInfo> _sourcePortGroups = new();
 
     [ObservableProperty]
-    private NetworkHostNode? _selectedSourceNetworkHost;
-
-    // Target Network Data
-    [ObservableProperty]
-    private ObservableCollection<EsxiHost> _targetHosts = new();
-
-    [ObservableProperty]
-    private EsxiHost? _selectedTargetHost;
-
-    [ObservableProperty]
-    private ObservableCollection<NetworkHostNode> _targetNetworkTopology = new();
-
-    [ObservableProperty]
-    private NetworkHostNode? _selectedTargetNetworkHost;
+    private PortGroupInfo? _selectedSourcePortGroup;
 
     // Migration Configuration
     [ObservableProperty]
