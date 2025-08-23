@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Imports Virtual Distributed Switch (vDS) and Port Groups using PowerCLI 13.x
+    Imports Virtual Distributed Switch (vDS) using PowerCLI 13.x native New-VDSwitch -BackupPath cmdlet
 .DESCRIPTION
-    Connects to target vCenter and recreates vDS switches with their port groups
-    from an exported configuration file.
+    Connects to target vCenter and recreates vDS switches from native PowerCLI backup files
+    using the New-VDSwitch -BackupPath cmdlet for complete configuration restoration.
 .NOTES
-    Version: 1.0 - PowerCLI 13.x optimized
+    Version: 2.0 - Using native PowerCLI New-VDSwitch -BackupPath cmdlet
     Requires: VMware.PowerCLI 13.x or later
 #>
 param(
@@ -46,26 +46,43 @@ Start-ScriptLogging -ScriptName "Import-VDS" -LogPath $LogPath -SuppressConsoleO
 $scriptSuccess = $false
 $finalSummary = ""
 $importStats = @{
-    SwitchesCreated = 0
+    SwitchesRestored = 0
     SwitchesSkipped = 0
-    PortGroupsCreated = 0
-    PortGroupsSkipped = 0
     Errors = 0
 }
 
 try {
-    Write-LogInfo "Starting vDS import process" -Category "Initialization"
+    Write-LogInfo "Starting vDS import process using native New-VDSwitch -BackupPath cmdlet" -Category "Initialization"
     
     # Validate import file exists
     if (-not (Test-Path $ImportPath)) {
         throw "Import file not found: $ImportPath"
     }
     
-    Write-LogInfo "Reading import file: $ImportPath" -Category "Import"
+    Write-LogInfo "Reading import reference file: $ImportPath" -Category "Import"
     $importContent = Get-Content -Path $ImportPath -Raw
-    $importData = $importContent | ConvertFrom-Json
+    $importReference = $importContent | ConvertFrom-Json
     
-    Write-LogInfo "Import file contains $($importData.TotalSwitches) vDS switches and $($importData.TotalPortGroups) port groups" -Category "Import"
+    # Check if this is a native VDS backup
+    if ($importReference.ExportType -ne "VDS_Native_Backup") {
+        throw "Invalid import file format. Expected VDS_Native_Backup, got: $($importReference.ExportType)"
+    }
+    
+    $vdsExportDir = $importReference.ExportDirectory
+    $manifestFile = $importReference.ManifestFile
+    
+    if (-not (Test-Path $vdsExportDir)) {
+        throw "VDS export directory not found: $vdsExportDir"
+    }
+    
+    if (-not (Test-Path $manifestFile)) {
+        throw "Manifest file not found: $manifestFile"
+    }
+    
+    # Read manifest
+    Write-LogInfo "Reading export manifest: $manifestFile" -Category "Import"
+    $manifest = Get-Content -Path $manifestFile -Raw | ConvertFrom-Json
+    Write-LogInfo "Manifest contains $($manifest.TotalSwitches) vDS switches from $($manifest.SourceVCenter)" -Category "Import"
     
     if ($ValidateOnly) {
         Write-LogInfo "VALIDATION MODE: No changes will be made to the target vCenter" -Category "Validation"
@@ -102,184 +119,83 @@ try {
         Write-LogInfo "Using datacenter: $($datacenter.Name)" -Category "Import"
     }
     
-    # Process each vDS
-    foreach ($vdsData in $importData.VDSSwitches) {
+    # Process each vDS from the manifest
+    foreach ($vdsInfo in $manifest.ExportedSwitches) {
         try {
-            Write-LogInfo "Processing vDS: $($vdsData.Name)" -Category "Import"
+            Write-LogInfo "Processing vDS: $($vdsInfo.Name)" -Category "Import"
+            
+            # Check if backup file exists
+            if (-not (Test-Path $vdsInfo.BackupFile)) {
+                Write-LogError "Backup file not found: $($vdsInfo.BackupFile)" -Category "Error"
+                $importStats.Errors++
+                continue
+            }
             
             # Check if vDS already exists
-            $existingVds = Get-VDSwitch -Name $vdsData.Name -ErrorAction SilentlyContinue
+            $existingVds = Get-VDSwitch -Name $vdsInfo.Name -ErrorAction SilentlyContinue
             
             if ($existingVds) {
                 if ($OverwriteExisting -and -not $ValidateOnly) {
-                    Write-LogWarning "Removing existing vDS: $($vdsData.Name)" -Category "Import"
+                    Write-LogWarning "Removing existing vDS: $($vdsInfo.Name)" -Category "Import"
                     Remove-VDSwitch -VDSwitch $existingVds -Confirm:$false -ErrorAction Stop
                     $existingVds = $null
                 }
                 else {
-                    Write-LogWarning "vDS '$($vdsData.Name)' already exists - skipping" -Category "Import"
+                    Write-LogWarning "vDS '$($vdsInfo.Name)' already exists - skipping" -Category "Import"
                     $importStats.SwitchesSkipped++
-                    
-                    # Still process port groups if vDS exists
-                    $targetVds = $existingVds
-                }
-            }
-            
-            # Create vDS if it doesn't exist
-            if (-not $existingVds) {
-                if ($ValidateOnly) {
-                    Write-LogInfo "VALIDATION: Would create vDS '$($vdsData.Name)' with $($vdsData.MaxPorts) max ports" -Category "Validation"
-                    $importStats.SwitchesCreated++
-                    
-                    # Validate port groups
-                    foreach ($pgData in $vdsData.PortGroups) {
-                        Write-LogInfo "VALIDATION: Would create port group '$($pgData.Name)' with $($pgData.NumPorts) ports" -Category "Validation"
-                        $importStats.PortGroupsCreated++
-                    }
                     continue
                 }
-                else {
-                    Write-LogInfo "Creating vDS: $($vdsData.Name)" -Category "Import"
-                    
-                    # Create the vDS with basic configuration
-                    $vdsParams = @{
-                        Name = $vdsData.Name
-                        Location = $datacenter
-                        NumUplinkPorts = if ($vdsData.NumUplinkPorts) { $vdsData.NumUplinkPorts } else { 4 }
-                        Version = if ($vdsData.Version) { $vdsData.Version } else { "7.0.0" }
-                        Mtu = if ($vdsData.Mtu) { $vdsData.Mtu } else { 1500 }
-                        ContactName = $vdsData.ContactName
-                        ContactDetails = $vdsData.ContactDetails
-                        Notes = $vdsData.Notes
-                    }
-                    
-                    $targetVds = New-VDSwitch @vdsParams -ErrorAction Stop
-                    Write-LogSuccess "Created vDS: $($targetVds.Name)" -Category "Import"
-                    $importStats.SwitchesCreated++
-                    
-                    # Configure additional vDS settings if needed
-                    if ($vdsData.MaxPorts -and $vdsData.MaxPorts -ne $targetVds.MaxPorts) {
-                        Set-VDSwitch -VDSwitch $targetVds -MaxPorts $vdsData.MaxPorts -Confirm:$false
-                        Write-LogInfo "Set MaxPorts to $($vdsData.MaxPorts)" -Category "Import"
-                    }
-                    
-                    # Configure uplink names if provided
-                    if ($vdsData.UplinkPortNames -and $vdsData.UplinkPortNames.Count -gt 0) {
-                        $uplinkPolicy = New-Object VMware.VimAutomation.Vds.Types.V1.VDUplinkPortPolicy
-                        $uplinkPolicy.UplinkPortName = $vdsData.UplinkPortNames
-                        Set-VDSwitch -VDSwitch $targetVds -UplinkPortPolicy $uplinkPolicy -Confirm:$false
-                        Write-LogInfo "Configured uplink port names" -Category "Import"
-                    }
-                }
             }
             
-            # Process port groups
-            if ($targetVds -and -not $ValidateOnly) {
-                foreach ($pgData in $vdsData.PortGroups) {
-                    try {
-                        Write-LogInfo "Processing port group: $($pgData.Name)" -Category "Import"
-                        
-                        # Check if port group already exists
-                        $existingPg = Get-VDPortgroup -VDSwitch $targetVds -Name $pgData.Name -ErrorAction SilentlyContinue
-                        
-                        if ($existingPg) {
-                            if ($OverwriteExisting) {
-                                Write-LogWarning "Removing existing port group: $($pgData.Name)" -Category "Import"
-                                Remove-VDPortgroup -VDPortgroup $existingPg -Confirm:$false -ErrorAction Stop
-                                $existingPg = $null
-                            }
-                            else {
-                                Write-LogWarning "Port group '$($pgData.Name)' already exists - skipping" -Category "Import"
-                                $importStats.PortGroupsSkipped++
-                                continue
-                            }
-                        }
-                        
-                        # Create port group
-                        Write-LogInfo "Creating port group: $($pgData.Name)" -Category "Import"
-                        
-                        $pgParams = @{
-                            VDSwitch = $targetVds
-                            Name = $pgData.Name
-                            NumPorts = if ($pgData.NumPorts) { $pgData.NumPorts } else { 128 }
-                            PortBinding = if ($pgData.PortBinding) { $pgData.PortBinding } else { "Static" }
-                            Notes = $pgData.Notes
-                        }
-                        
-                        # Configure VLAN
-                        if ($pgData.VlanConfiguration) {
-                            switch ($pgData.VlanConfiguration.Type) {
-                                "VLAN" {
-                                    if ($pgData.VlanConfiguration.VlanId -gt 0) {
-                                        $pgParams.VlanId = $pgData.VlanConfiguration.VlanId
-                                        Write-LogDebug "Setting VLAN ID: $($pgData.VlanConfiguration.VlanId)" -Category "Import"
-                                    }
-                                }
-                                "Trunk" {
-                                    if ($pgData.VlanConfiguration.VlanTrunkRange) {
-                                        # Convert trunk range to string format "1-4094"
-                                        $trunkRange = $pgData.VlanConfiguration.VlanTrunkRange -join ","
-                                        $pgParams.VlanTrunkRange = $trunkRange
-                                        Write-LogDebug "Setting VLAN Trunk Range: $trunkRange" -Category "Import"
-                                    }
-                                }
-                                "PrivateVLAN" {
-                                    if ($pgData.VlanConfiguration.PrivateVlanId -gt 0) {
-                                        # Private VLAN requires additional configuration
-                                        Write-LogWarning "Private VLAN configuration not fully implemented" -Category "Import"
-                                    }
-                                }
-                            }
-                        }
-                        
-                        $newPg = New-VDPortgroup @pgParams -ErrorAction Stop
-                        Write-LogSuccess "Created port group: $($newPg.Name)" -Category "Import"
-                        
-                        # Configure advanced port group settings
-                        $pgSpec = New-Object VMware.Vim.DVPortgroupConfigSpec
-                        $pgSpec.ConfigVersion = $newPg.ExtensionData.Config.ConfigVersion
-                        
-                        # Security Policy
-                        if ($pgData.SecurityPolicy) {
-                            $pgSpec.DefaultPortConfig = New-Object VMware.Vim.VMwareDVSPortSetting
-                            $pgSpec.DefaultPortConfig.SecurityPolicy = New-Object VMware.Vim.DVSSecurityPolicy
-                            
-                            $pgSpec.DefaultPortConfig.SecurityPolicy.AllowPromiscuous = New-Object VMware.Vim.BoolPolicy
-                            $pgSpec.DefaultPortConfig.SecurityPolicy.AllowPromiscuous.Value = $pgData.SecurityPolicy.AllowPromiscuous
-                            $pgSpec.DefaultPortConfig.SecurityPolicy.AllowPromiscuous.Inherited = $false
-                            
-                            $pgSpec.DefaultPortConfig.SecurityPolicy.ForgedTransmits = New-Object VMware.Vim.BoolPolicy
-                            $pgSpec.DefaultPortConfig.SecurityPolicy.ForgedTransmits.Value = $pgData.SecurityPolicy.ForgedTransmits
-                            $pgSpec.DefaultPortConfig.SecurityPolicy.ForgedTransmits.Inherited = $false
-                            
-                            $pgSpec.DefaultPortConfig.SecurityPolicy.MacChanges = New-Object VMware.Vim.BoolPolicy
-                            $pgSpec.DefaultPortConfig.SecurityPolicy.MacChanges.Value = $pgData.SecurityPolicy.MacChanges
-                            $pgSpec.DefaultPortConfig.SecurityPolicy.MacChanges.Inherited = $false
-                            
-                            $newPg.ExtensionData.ReconfigureDVPortgroup($pgSpec)
-                            Write-LogDebug "Configured security policy for port group: $($pgData.Name)" -Category "Import"
-                        }
-                        
-                        # Auto-expand setting
-                        if ($pgData.AutoExpand -eq $true) {
-                            $pgSpec = New-Object VMware.Vim.DVPortgroupConfigSpec
-                            $pgSpec.ConfigVersion = $newPg.ExtensionData.Config.ConfigVersion
-                            $pgSpec.AutoExpand = $true
-                            $newPg.ExtensionData.ReconfigureDVPortgroup($pgSpec)
-                            Write-LogDebug "Enabled auto-expand for port group: $($pgData.Name)" -Category "Import"
-                        }
-                        
-                        $importStats.PortGroupsCreated++
-                        
-                    } catch {
-                        Write-LogError "Failed to create port group '$($pgData.Name)': $($_.Exception.Message)" -Category "Error"
-                        $importStats.Errors++
+            if ($ValidateOnly) {
+                Write-LogInfo "VALIDATION: Would restore vDS '$($vdsInfo.Name)' from backup $($vdsInfo.BackupFile)" -Category "Validation"
+                $importStats.SwitchesRestored++
+                continue
+            }
+            
+            # Restore vDS using native New-VDSwitch -BackupPath
+            Write-LogInfo "Restoring vDS '$($vdsInfo.Name)' from backup: $($vdsInfo.BackupFile)" -Category "Import"
+            
+            try {
+                $restoredVds = New-VDSwitch -Name $vdsInfo.Name -Location $datacenter -BackupPath $vdsInfo.BackupFile -ErrorAction Stop
+                
+                if ($restoredVds) {
+                    Write-LogSuccess "Successfully restored vDS: $($restoredVds.Name)" -Category "Import"
+                    $importStats.SwitchesRestored++
+                    
+                    # Get port group count for logging
+                    $portGroups = Get-VDPortgroup -VDSwitch $restoredVds | Where-Object { -not $_.IsUplink }
+                    Write-LogInfo "Restored vDS contains $($portGroups.Count) port groups" -Category "Import"
+                }
+                else {
+                    throw "New-VDSwitch returned null"
+                }
+                
+            } catch {
+                # If restore fails due to name conflict, try with a temporary name and rename
+                if ($_.Exception.Message -match "already exists" -or $_.Exception.Message -match "duplicate") {
+                    Write-LogWarning "Name conflict detected, attempting alternative restore method..." -Category "Import"
+                    
+                    $tempName = "$($vdsInfo.Name)_temp_$(Get-Random)"
+                    $tempVds = New-VDSwitch -Name $tempName -Location $datacenter -BackupPath $vdsInfo.BackupFile -ErrorAction Stop
+                    
+                    if ($tempVds) {
+                        # Rename to original name
+                        $restoredVds = Set-VDSwitch -VDSwitch $tempVds -Name $vdsInfo.Name -Confirm:$false -ErrorAction Stop
+                        Write-LogSuccess "Successfully restored vDS with rename: $($restoredVds.Name)" -Category "Import"
+                        $importStats.SwitchesRestored++
                     }
+                    else {
+                        throw "Failed to restore with temporary name"
+                    }
+                }
+                else {
+                    throw $_
                 }
             }
             
         } catch {
-            Write-LogError "Failed to process vDS '$($vdsData.Name)': $($_.Exception.Message)" -Category "Error"
+            Write-LogError "Failed to restore vDS '$($vdsInfo.Name)': $($_.Exception.Message)" -Category "Error"
             $importStats.Errors++
         }
     }
@@ -288,12 +204,12 @@ try {
     $scriptSuccess = ($importStats.Errors -eq 0)
     
     if ($ValidateOnly) {
-        $finalSummary = "Validation complete: Would create $($importStats.SwitchesCreated) switches and $($importStats.PortGroupsCreated) port groups"
+        $finalSummary = "Validation complete: Would restore $($importStats.SwitchesRestored) vDS switches"
     }
     else {
-        $finalSummary = "Import complete: Created $($importStats.SwitchesCreated) switches and $($importStats.PortGroupsCreated) port groups"
-        if ($importStats.SwitchesSkipped -gt 0 -or $importStats.PortGroupsSkipped -gt 0) {
-            $finalSummary += " (Skipped: $($importStats.SwitchesSkipped) switches, $($importStats.PortGroupsSkipped) port groups)"
+        $finalSummary = "Import complete: Restored $($importStats.SwitchesRestored) vDS switches using native PowerCLI backup"
+        if ($importStats.SwitchesSkipped -gt 0) {
+            $finalSummary += " (Skipped: $($importStats.SwitchesSkipped) switches)"
         }
         if ($importStats.Errors -gt 0) {
             $finalSummary += " - $($importStats.Errors) errors occurred"

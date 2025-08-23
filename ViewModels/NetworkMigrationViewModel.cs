@@ -208,10 +208,11 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 password,
                 parameters);
 
-            string networkResult = null;
+            // Parse the export result - the script now creates a reference file and backup directory
             if (exportResult.StartsWith("SUCCESS:") && File.Exists(tempExportPath))
             {
-                networkResult = await File.ReadAllTextAsync(tempExportPath);
+                var exportReference = await File.ReadAllTextAsync(tempExportPath);
+                await LoadNativeVDSBackupData(exportReference);
                 // Clean up temp file
                 File.Delete(tempExportPath);
             }
@@ -219,16 +220,6 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
             {
                 MigrationStatus = $"Failed to export VDS data: {exportResult}";
                 return;
-            }
-
-            // Parse VDS export JSON data
-            if (!string.IsNullOrEmpty(networkResult))
-            {
-                await LoadExportedVDSDataFromJson(networkResult);
-            }
-            else
-            {
-                MigrationStatus = "No VDS data returned from script";
             }
 
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded source network data\n";
@@ -287,41 +278,51 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 password,
                 parameters);
 
-            string targetResult = null;
+            // Parse target VDS data for informational purposes
             if (exportResult.StartsWith("SUCCESS:") && File.Exists(tempExportPath))
             {
-                targetResult = await File.ReadAllTextAsync(tempExportPath);
-                // Clean up temp file
-                File.Delete(tempExportPath);
-            }
-            else
-            {
-                MigrationStatus = $"Failed to export target VDS data: {exportResult}";
-                return;
-            }
-
-            // Parse target VDS export JSON data (for informational purposes)
-            if (!string.IsNullOrEmpty(targetResult))
-            {
+                var targetReference = await File.ReadAllTextAsync(tempExportPath);
+                
                 try
                 {
-                    var exportData = JsonSerializer.Deserialize<JsonElement>(targetResult);
+                    var reference = JsonSerializer.Deserialize<JsonElement>(targetReference);
                     
-                    int targetSwitches = 0, targetPortGroups = 0;
-                    if (exportData.TryGetProperty("TotalSwitches", out var switches))
+                    int targetSwitches = 0;
+                    if (reference.TryGetProperty("TotalSwitches", out var totalElement))
                     {
-                        targetSwitches = switches.GetInt32();
+                        targetSwitches = totalElement.GetInt32();
                     }
                     
-                    if (exportData.TryGetProperty("TotalPortGroups", out var portGroups))
+                    // Try to get port group count from manifest if available
+                    int targetPortGroups = 0;
+                    if (reference.TryGetProperty("ManifestFile", out var manifestElement))
                     {
-                        targetPortGroups = portGroups.GetInt32();
+                        var manifestFile = manifestElement.GetString();
+                        if (File.Exists(manifestFile))
+                        {
+                            var manifestJson = await File.ReadAllTextAsync(manifestFile);
+                            var manifest = JsonSerializer.Deserialize<JsonElement>(manifestJson);
+                            
+                            if (manifest.TryGetProperty("ExportedSwitches", out var switchesElement))
+                            {
+                                foreach (var switchElement in switchesElement.EnumerateArray())
+                                {
+                                    if (switchElement.TryGetProperty("PortGroupCount", out var countElement))
+                                    {
+                                        targetPortGroups += countElement.GetInt32();
+                                    }
+                                }
+                            }
+                        }
                     }
                     
-                    MigrationStatus = $"Target: {targetSwitches} vDS switches, {targetPortGroups} port groups";
+                    MigrationStatus = $"Target: {targetSwitches} vDS switches, {targetPortGroups} port groups (Native Backup)";
                     LogOutput += $"[{DateTime.Now:HH:mm:ss}] Target vCenter has {targetSwitches} vDS switches and {targetPortGroups} port groups\n";
                     _logger.LogInformation("Target vCenter has {Switches} switches, {PortGroups} port groups", 
                         targetSwitches, targetPortGroups);
+                    
+                    // Clean up temp file
+                    File.Delete(tempExportPath);
                 }
                 catch (JsonException ex)
                 {
@@ -802,7 +803,28 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
             if (File.Exists(exportPath))
             {
                 var jsonContent = await File.ReadAllTextAsync(exportPath);
-                await LoadExportedVDSDataFromJson(jsonContent);
+                
+                // Detect if this is a native backup reference or old format JSON
+                try
+                {
+                    var testParse = JsonSerializer.Deserialize<JsonElement>(jsonContent);
+                    if (testParse.TryGetProperty("ExportType", out var exportTypeElement) &&
+                        exportTypeElement.GetString() == "VDS_Native_Backup")
+                    {
+                        // This is a native backup reference
+                        await LoadNativeVDSBackupData(jsonContent);
+                    }
+                    else
+                    {
+                        // This is the old format JSON
+                        await LoadExportedVDSDataFromJson(jsonContent);
+                    }
+                }
+                catch
+                {
+                    // Fallback to old format
+                    await LoadExportedVDSDataFromJson(jsonContent);
+                }
             }
         }
         catch (Exception ex)
@@ -898,6 +920,107 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
         {
             MigrationStatus = $"Error loading VDS data: {ex.Message}";
             _logger.LogError(ex, "Could not load VDS data");
+        }
+    }
+    
+    private async Task LoadNativeVDSBackupData(string referenceJson)
+    {
+        try
+        {
+            var reference = JsonSerializer.Deserialize<JsonElement>(referenceJson);
+            
+            if (!reference.TryGetProperty("ExportType", out var exportTypeElement) || 
+                exportTypeElement.GetString() != "VDS_Native_Backup")
+            {
+                MigrationStatus = "Invalid export format - not a native VDS backup";
+                return;
+            }
+            
+            // Clear existing data
+            SourceVDSSwitches.Clear();
+            SourcePortGroups.Clear();
+            
+            // Get manifest file path
+            if (reference.TryGetProperty("ManifestFile", out var manifestElement))
+            {
+                var manifestFile = manifestElement.GetString();
+                if (File.Exists(manifestFile))
+                {
+                    var manifestJson = await File.ReadAllTextAsync(manifestFile);
+                    var manifest = JsonSerializer.Deserialize<JsonElement>(manifestJson);
+                    
+                    // Parse exported switches from manifest
+                    if (manifest.TryGetProperty("ExportedSwitches", out var switchesElement))
+                    {
+                        foreach (var switchElement in switchesElement.EnumerateArray())
+                        {
+                            if (switchElement.ValueKind == JsonValueKind.Object)
+                            {
+                                var vdsInfo = new VirtualSwitchInfo
+                                {
+                                    Name = switchElement.TryGetProperty("Name", out var nameElement) ? nameElement.GetString() ?? "" : "",
+                                    Type = "VmwareDistributedVirtualSwitch"
+                                };
+                                
+                                SourceVDSSwitches.Add(vdsInfo);
+                                
+                                // Create placeholder port groups based on count
+                                if (switchElement.TryGetProperty("PortGroupCount", out var countElement))
+                                {
+                                    var portGroupCount = countElement.GetInt32();
+                                    for (int i = 0; i < portGroupCount; i++)
+                                    {
+                                        var portGroup = new PortGroupInfo
+                                        {
+                                            Name = $"{vdsInfo.Name}-PortGroup-{i+1}",
+                                            Type = "DistributedVirtualPortgroup",
+                                            IsSelected = false,
+                                            VlanId = 0
+                                        };
+                                        
+                                        SourcePortGroups.Add(portGroup);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Update statistics from reference
+                    if (reference.TryGetProperty("TotalSwitches", out var totalElement))
+                    {
+                        TotalVDSSwitches = totalElement.GetInt32();
+                    }
+                    else
+                    {
+                        TotalVDSSwitches = SourceVDSSwitches.Count;
+                    }
+                    
+                    TotalPortGroups = SourcePortGroups.Count;
+                    
+                    VdsStatus = $"✅ {TotalVDSSwitches} vDS switches, {TotalPortGroups} port groups (Native Backup)";
+                    MigrationStatus = $"Loaded {TotalVDSSwitches} vDS switches and {TotalPortGroups} port groups from native backup";
+                    _logger.LogInformation("Loaded native VDS backup data: {Switches} switches, {PortGroups} port groups", 
+                        TotalVDSSwitches, TotalPortGroups);
+                }
+                else
+                {
+                    MigrationStatus = "Manifest file not found for VDS backup";
+                }
+            }
+            else
+            {
+                MigrationStatus = "Invalid backup reference - no manifest file specified";
+            }
+        }
+        catch (JsonException ex)
+        {
+            MigrationStatus = $"Failed to parse native VDS backup data: {ex.Message}";
+            _logger.LogError(ex, "Could not parse native VDS backup JSON data");
+        }
+        catch (Exception ex)
+        {
+            MigrationStatus = $"Error loading native VDS backup data: {ex.Message}";
+            _logger.LogError(ex, "Could not load native VDS backup data");
         }
     }
     

@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Exports Virtual Distributed Switch (vDS) and Port Groups using PowerCLI 13.x
+    Exports Virtual Distributed Switch (vDS) using PowerCLI 13.x native Export-VDSwitch cmdlet
 .DESCRIPTION
-    Connects to vCenter and exports all vDS switches with their port groups,
-    including complete configuration for migration purposes.
+    Connects to vCenter and exports all vDS switches using the native PowerCLI
+    Export-VDSwitch cmdlet for complete configuration backup.
 .NOTES
-    Version: 1.0 - PowerCLI 13.x optimized
+    Version: 2.0 - Using native PowerCLI Export-VDSwitch cmdlet
     Requires: VMware.PowerCLI 13.x or later
 #>
 param(
@@ -36,16 +36,14 @@ Start-ScriptLogging -ScriptName "Export-VDS" -LogPath $LogPath -SuppressConsoleO
 
 $scriptSuccess = $false
 $finalSummary = ""
-$exportData = @{
-    ExportDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    SourceVCenter = $VCenterServer
-    VDSSwitches = @()
-    TotalSwitches = 0
-    TotalPortGroups = 0
+$exportStats = @{
+    SwitchesExported = 0
+    BackupFilesCreated = 0
+    Errors = 0
 }
 
 try {
-    Write-LogInfo "Starting vDS export process" -Category "Initialization"
+    Write-LogInfo "Starting vDS export process using native Export-VDSwitch cmdlet" -Category "Initialization"
     
     # Import PowerCLI if needed
     if (-not $BypassModuleCheck) {
@@ -69,150 +67,102 @@ try {
     
     if (-not $vdSwitches) {
         Write-LogWarning "No Virtual Distributed Switches found in vCenter" -Category "Discovery"
+        $finalSummary = "No vDS switches found to export"
+        Write-Output "SUCCESS: $finalSummary"
     }
     else {
         Write-LogInfo "Found $($vdSwitches.Count) Virtual Distributed Switches" -Category "Discovery"
         
+        # Ensure export directory exists
+        $exportDir = Split-Path -Parent $ExportPath
+        if (-not (Test-Path $exportDir)) {
+            New-Item -ItemType Directory -Path $exportDir -Force | Out-Null
+            Write-LogInfo "Created export directory: $exportDir" -Category "Export"
+        }
+        
+        # Create a master export directory for all VDS backups
+        $exportBaseName = [System.IO.Path]::GetFileNameWithoutExtension($ExportPath)
+        $vdsExportDir = Join-Path $exportDir $exportBaseName
+        if (-not (Test-Path $vdsExportDir)) {
+            New-Item -ItemType Directory -Path $vdsExportDir -Force | Out-Null
+            Write-LogInfo "Created VDS export directory: $vdsExportDir" -Category "Export"
+        }
+        
+        # Export each vDS using native Export-VDSwitch cmdlet
+        $exportedSwitches = @()
         foreach ($vds in $vdSwitches) {
-            Write-LogInfo "Processing vDS: $($vds.Name)" -Category "Export"
-            
-            # Create vDS export object with comprehensive configuration
-            $vdsExport = @{
-                Name = $vds.Name
-                Uuid = $vds.ExtensionData.Uuid
-                Version = $vds.Version
-                Vendor = $vds.ExtensionData.Summary.ProductInfo.Vendor
-                MaxPorts = $vds.MaxPorts
-                Mtu = $vds.Mtu
-                NumPorts = $vds.NumPorts
-                NumUplinkPorts = $vds.ExtensionData.Config.NumUplinkPorts
-                UplinkPortNames = $vds.ExtensionData.Config.UplinkPortPolicy.UplinkPortName
-                Notes = $vds.Notes
-                ContactName = $vds.ContactName
-                ContactDetails = $vds.ContactDetails
-                NetworkIOControlEnabled = $vds.ExtensionData.Config.NetworkResourceManagementEnabled
-                LinkDiscoveryProtocol = $vds.LinkDiscoveryProtocol
-                LinkDiscoveryProtocolOperation = $vds.LinkDiscoveryProtocolOperation
-                PortGroups = @()
+            try {
+                Write-LogInfo "Exporting vDS: $($vds.Name)" -Category "Export"
+                
+                # Create backup file path for this vDS
+                $vdsBackupFile = Join-Path $vdsExportDir "$($vds.Name)_backup.zip"
+                
+                # Use native Export-VDSwitch cmdlet
+                Export-VDSwitch -VDSwitch $vds -Destination $vdsBackupFile -ErrorAction Stop
+                
+                if (Test-Path $vdsBackupFile) {
+                    $fileSize = (Get-Item $vdsBackupFile).Length
+                    Write-LogSuccess "Exported vDS '$($vds.Name)' to $vdsBackupFile (Size: $($fileSize / 1KB) KB)" -Category "Export"
+                    
+                    # Add to exported switches list
+                    $exportedSwitches += @{
+                        Name = $vds.Name
+                        BackupFile = $vdsBackupFile
+                        Size = $fileSize
+                        Uuid = $vds.ExtensionData.Uuid
+                        Version = $vds.Version
+                        NumPorts = $vds.NumPorts
+                        PortGroupCount = (Get-VDPortgroup -VDSwitch $vds | Where-Object { -not $_.IsUplink }).Count
+                    }
+                    
+                    $exportStats.SwitchesExported++
+                    $exportStats.BackupFilesCreated++
+                }
+                else {
+                    throw "Backup file was not created: $vdsBackupFile"
+                }
+                
+            } catch {
+                Write-LogError "Failed to export vDS '$($vds.Name)': $($_.Exception.Message)" -Category "Error"
+                $exportStats.Errors++
             }
-            
-            # Get all port groups for this vDS
-            Write-LogInfo "Retrieving port groups for vDS: $($vds.Name)" -Category "Export"
-            $portGroups = Get-VDPortgroup -VDSwitch $vds
-            
-            foreach ($pg in $portGroups) {
-                # Skip uplink port groups
-                if ($pg.IsUplink) {
-                    Write-LogDebug "Skipping uplink port group: $($pg.Name)" -Category "Export"
-                    continue
-                }
-                
-                Write-LogDebug "Processing port group: $($pg.Name)" -Category "Export"
-                
-                # Extract VLAN configuration
-                $vlanConfig = @{
-                    Type = "None"
-                    VlanId = 0
-                    VlanTrunkRange = @()
-                    PrivateVlanId = 0
-                }
-                
-                if ($pg.VlanConfiguration) {
-                    if ($pg.VlanConfiguration.VlanId) {
-                        $vlanConfig.Type = "VLAN"
-                        $vlanConfig.VlanId = $pg.VlanConfiguration.VlanId
-                    }
-                    elseif ($pg.VlanConfiguration.VlanType -eq "Trunk") {
-                        $vlanConfig.Type = "Trunk"
-                        $vlanConfig.VlanTrunkRange = $pg.VlanConfiguration.Ranges
-                    }
-                    elseif ($pg.VlanConfiguration.PrivateVlanId) {
-                        $vlanConfig.Type = "PrivateVLAN"
-                        $vlanConfig.PrivateVlanId = $pg.VlanConfiguration.PrivateVlanId
-                    }
-                }
-                
-                # Create port group export object
-                $pgExport = @{
-                    Name = $pg.Name
-                    Key = $pg.Key
-                    NumPorts = $pg.NumPorts
-                    PortBinding = $pg.PortBinding
-                    Notes = $pg.Notes
-                    VlanConfiguration = $vlanConfig
-                    AutoExpand = $pg.ExtensionData.Config.AutoExpand
-                    ConfigVersion = $pg.ExtensionData.Config.ConfigVersion
-                    Type = $pg.ExtensionData.Config.Type
-                    BackingType = if ($pg.ExtensionData.Config.BackingType) { $pg.ExtensionData.Config.BackingType } else { "standard" }
-                    
-                    # Security Policy
-                    SecurityPolicy = @{
-                        AllowPromiscuous = $pg.ExtensionData.Config.DefaultPortConfig.SecurityPolicy.AllowPromiscuous.Value
-                        ForgedTransmits = $pg.ExtensionData.Config.DefaultPortConfig.SecurityPolicy.ForgedTransmits.Value
-                        MacChanges = $pg.ExtensionData.Config.DefaultPortConfig.SecurityPolicy.MacChanges.Value
-                    }
-                    
-                    # Teaming Policy
-                    TeamingPolicy = @{
-                        Policy = if ($pg.ExtensionData.Config.DefaultPortConfig.UplinkTeamingPolicy.Policy.Value) {
-                            $pg.ExtensionData.Config.DefaultPortConfig.UplinkTeamingPolicy.Policy.Value
-                        } else { "loadbalance_srcid" }
-                        ReversePolicy = $pg.ExtensionData.Config.DefaultPortConfig.UplinkTeamingPolicy.ReversePolicy.Value
-                        NotifySwitches = $pg.ExtensionData.Config.DefaultPortConfig.UplinkTeamingPolicy.NotifySwitches.Value
-                        RollingOrder = $pg.ExtensionData.Config.DefaultPortConfig.UplinkTeamingPolicy.RollingOrder.Value
-                    }
-                    
-                    # Traffic Shaping (if configured)
-                    TrafficShaping = @{
-                        Enabled = $pg.ExtensionData.Config.DefaultPortConfig.InShapingPolicy.Enabled.Value
-                        AverageBandwidth = if ($pg.ExtensionData.Config.DefaultPortConfig.InShapingPolicy.AverageBandwidth) {
-                            $pg.ExtensionData.Config.DefaultPortConfig.InShapingPolicy.AverageBandwidth.Value
-                        } else { 0 }
-                        PeakBandwidth = if ($pg.ExtensionData.Config.DefaultPortConfig.InShapingPolicy.PeakBandwidth) {
-                            $pg.ExtensionData.Config.DefaultPortConfig.InShapingPolicy.PeakBandwidth.Value
-                        } else { 0 }
-                        BurstSize = if ($pg.ExtensionData.Config.DefaultPortConfig.InShapingPolicy.BurstSize) {
-                            $pg.ExtensionData.Config.DefaultPortConfig.InShapingPolicy.BurstSize.Value
-                        } else { 0 }
-                    }
-                }
-                
-                $vdsExport.PortGroups += $pgExport
-                $exportData.TotalPortGroups++
-            }
-            
-            $exportData.VDSSwitches += $vdsExport
-            $exportData.TotalSwitches++
-            
-            Write-LogSuccess "Exported vDS '$($vds.Name)' with $($vdsExport.PortGroups.Count) port groups" -Category "Export"
+        }
+        
+        # Create summary manifest file
+        $manifestFile = Join-Path $vdsExportDir "export_manifest.json"
+        $manifest = @{
+            ExportDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+            SourceVCenter = $VCenterServer
+            ExportMethod = "Native Export-VDSwitch"
+            TotalSwitches = $vdSwitches.Count
+            SuccessfulExports = $exportStats.SwitchesExported
+            FailedExports = $exportStats.Errors
+            ExportedSwitches = $exportedSwitches
+        }
+        
+        $manifest | ConvertTo-Json -Depth 5 | Out-File -FilePath $manifestFile -Encoding UTF8
+        Write-LogInfo "Created export manifest: $manifestFile" -Category "Export"
+        
+        # Create main export path as a reference file
+        $exportReference = @{
+            ExportType = "VDS_Native_Backup"
+            ExportDirectory = $vdsExportDir
+            ManifestFile = $manifestFile
+            TotalSwitches = $exportStats.SwitchesExported
+            ExportDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        }
+        $exportReference | ConvertTo-Json | Out-File -FilePath $ExportPath -Encoding UTF8
+        
+        $scriptSuccess = ($exportStats.Errors -eq 0)
+        if ($scriptSuccess) {
+            $finalSummary = "Successfully exported $($exportStats.SwitchesExported) vDS switches using native PowerCLI backup"
+            Write-Output "SUCCESS: Exported $($exportStats.SwitchesExported) vDS switches to $vdsExportDir"
+        }
+        else {
+            $finalSummary = "Exported $($exportStats.SwitchesExported) vDS switches with $($exportStats.Errors) errors"
+            Write-Output "WARNING: $finalSummary"
         }
     }
-    
-    # Ensure export directory exists
-    $exportDir = Split-Path -Parent $ExportPath
-    if (-not (Test-Path $exportDir)) {
-        New-Item -ItemType Directory -Path $exportDir -Force | Out-Null
-        Write-LogInfo "Created export directory: $exportDir" -Category "Export"
-    }
-    
-    # Export to JSON file
-    Write-LogInfo "Writing export data to: $ExportPath" -Category "Export"
-    $exportData | ConvertTo-Json -Depth 10 | Out-File -FilePath $ExportPath -Encoding UTF8
-    
-    # Verify the export file was created
-    if (Test-Path $ExportPath) {
-        $fileSize = (Get-Item $ExportPath).Length
-        Write-LogSuccess "Export file created successfully (Size: $($fileSize / 1KB) KB)" -Category "Export"
-    }
-    else {
-        throw "Export file was not created at: $ExportPath"
-    }
-    
-    $scriptSuccess = $true
-    $finalSummary = "Successfully exported $($exportData.TotalSwitches) vDS switches with $($exportData.TotalPortGroups) port groups"
-    
-    # Output summary for the application
-    Write-Output "SUCCESS: Exported $($exportData.TotalSwitches) vDS switches and $($exportData.TotalPortGroups) port groups to $ExportPath"
     
 } catch {
     $scriptSuccess = $false
