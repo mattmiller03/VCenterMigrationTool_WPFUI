@@ -86,7 +86,7 @@
                         </StackPanel>
                         
                         <StackPanel Grid.Row="1" Margin="0,0,0,15">
-                            <TextBlock Text="{Binding SourceNetworkTopology.Count, StringFormat='🔌 {0} hosts loaded'}" 
+                            <TextBlock Text="{Binding TotalVDSSwitches, StringFormat='🔌 {0} vDS switches loaded'}" 
                                        FontWeight="Medium"
                                        Margin="0,0,0,5"/>
                             <TextBlock Text="Network topology loaded" 
@@ -127,7 +127,7 @@
                         </StackPanel>
                         
                         <StackPanel Grid.Row="1" Margin="0,0,0,15">
-                            <TextBlock Text="{Binding TargetNetworkTopology.Count, StringFormat='🔌 {0} hosts loaded'}" 
+                            <TextBlock Text="{Binding TotalPortGroups, StringFormat='🔌 {0} port groups loaded'}" 
                                        FontWeight="Medium"
                                        Margin="0,0,0,5"/>
                             <TextBlock Text="Network topology loaded" 
@@ -292,7 +292,7 @@
                                   TextWrapping="Wrap"/>
 
                         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding SourceNetworkTopology}">
+                            <ItemsControl ItemsSource="{Binding SourceVDSSwitches}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Expander Header="{Binding Name}" 
@@ -401,7 +401,7 @@
                                   Margin="0,0,0,10"/>
 
                         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding TargetNetworkTopology}">
+                            <ItemsControl ItemsSource="{Binding SourcePortGroups}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Expander Header="{Binding Name}" 
