@@ -190,152 +190,45 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 return;
                 }
 
-            // Load ESXi hosts first
-            var hostResult = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Get-EsxiHosts.ps1",
-                _sharedConnectionService.SourceConnection,
-                password);
-
-            // Parse host data and populate SourceHosts
-            // TODO: Implement JSON parsing when script returns structured data
-
-            // Load network topology
-            var networkResult = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Get-NetworkTopology.ps1",
-                _sharedConnectionService.SourceConnection,
-                password);
-
-            // Parse network topology JSON data
-            if (!string.IsNullOrEmpty(networkResult))
+            // Create a temporary export file to load VDS data
+            var tempExportPath = Path.GetTempFileName();
+            tempExportPath = Path.ChangeExtension(tempExportPath, ".json");
+            
+            var parameters = new Dictionary<string, object>
             {
-                try
-                {
-                    // Clean the result - remove any non-JSON content
-                    networkResult = networkResult.Trim();
-                    
-                    // Find the start of JSON (either [ or {)
-                    int jsonStart = networkResult.IndexOfAny(new[] { '[', '{' });
-                    if (jsonStart > 0)
-                    {
-                        networkResult = networkResult.Substring(jsonStart);
-                    }
-                    
-                    // Find the end of JSON (matching ] or })
-                    int jsonEnd = networkResult.LastIndexOfAny(new[] { ']', '}' });
-                    if (jsonEnd > 0 && jsonEnd < networkResult.Length - 1)
-                    {
-                        networkResult = networkResult.Substring(0, jsonEnd + 1);
-                    }
-                    
-                    var networkData = JsonSerializer.Deserialize<JsonElement[]>(networkResult);
-                    foreach (var hostData in networkData)
-                    {
-                        // Validate that hostData is an object before accessing properties
-                        if (hostData.ValueKind != JsonValueKind.Object)
-                        {
-                            _logger.LogWarning("Expected object but got {ValueKind} in network data", hostData.ValueKind);
-                            continue;
-                        }
+                { "ExportPath", tempExportPath },
+                { "LogPath", _configurationService.GetConfiguration().LogPath },
+                { "BypassModuleCheck", true }
+            };
 
-                        var hostNode = new NetworkHostNode
-                        {
-                            Name = hostData.TryGetProperty("HostName", out var hostNameElement) ? hostNameElement.GetString() ?? "" : ""
-                        };
+            // Load VDS configuration using Export-VDS.ps1 script
+            var exportResult = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Export-VDS.ps1",
+                _sharedConnectionService.SourceConnection,
+                password,
+                parameters);
 
-                        // Parse vSwitches
-                        if (hostData.TryGetProperty("VSwitches", out var vSwitchesElement))
-                        {
-                            foreach (var vSwitchData in vSwitchesElement.EnumerateArray())
-                            {
-                                var vSwitch = new VSwitchInfo
-                                {
-                                    Name = vSwitchData.TryGetProperty("Name", out var nameElement) ? nameElement.GetString() ?? "" : "",
-                                    Type = vSwitchData.TryGetProperty("Type", out var typeElement) ? typeElement.GetString() ?? "Standard" : "Standard",
-                                    IsSelected = vSwitchData.TryGetProperty("IsSelected", out var selectedElement) 
-                                        ? selectedElement.GetBoolean() 
-                                        : false
-                                };
-
-                                // Parse port groups
-                                if (vSwitchData.TryGetProperty("PortGroups", out var portGroupsElement))
-                                {
-                                    foreach (var portGroupData in portGroupsElement.EnumerateArray())
-                                    {
-                                        var portGroup = new PortGroupInfo
-                                        {
-                                            Name = portGroupData.TryGetProperty("Name", out var pgNameElement) ? pgNameElement.GetString() ?? "" : "",
-                                            VlanId = portGroupData.TryGetProperty("VlanId", out var vlanElement) 
-                                                ? vlanElement.GetInt32() 
-                                                : 0,
-                                            Type = vSwitch.Type,
-                                            IsSelected = portGroupData.TryGetProperty("IsSelected", out var pgSelectedElement) 
-                                                ? pgSelectedElement.GetBoolean() 
-                                                : false
-                                        };
-                                        vSwitch.PortGroups.Add(portGroup);
-                                    }
-                                }
-                                hostNode.VSwitches.Add(vSwitch);
-                            }
-                        }
-
-                        // Parse VMkernel ports
-                        if (hostData.TryGetProperty("VmKernelPorts", out var vmkElement))
-                        {
-                            foreach (var vmkData in vmkElement.EnumerateArray())
-                            {
-                                var vmkPort = new VmKernelPortInfo
-                                {
-                                    Name = vmkData.TryGetProperty("Name", out var vmkNameElement) ? vmkNameElement.GetString() ?? "" : "",
-                                    IpAddress = vmkData.TryGetProperty("IpAddress", out var ipElement) 
-                                        ? ipElement.GetString() ?? "" 
-                                        : ""
-                                };
-                                hostNode.VmKernelPorts.Add(vmkPort);
-                            }
-                        }
-
-                        // Process vDS switches from network topology
-                        foreach (var vSwitch in hostNode.VSwitches.Where(vs => vs.Type == "DistributedSwitch"))
-                        {
-                            var vdsInfo = new VirtualSwitchInfo
-                            {
-                                Name = vSwitch.Name,
-                                Type = "VmwareDistributedVirtualSwitch"
-                                // VirtualSwitchInfo doesn't have NumPorts property
-                            };
-                            
-                            if (!SourceVDSSwitches.Any(vds => vds.Name == vdsInfo.Name))
-                            {
-                                SourceVDSSwitches.Add(vdsInfo);
-                            }
-                            
-                            // Add port groups
-                            foreach (var pg in vSwitch.PortGroups)
-                            {
-                                if (!SourcePortGroups.Any(spg => spg.Name == pg.Name))
-                                {
-                                    SourcePortGroups.Add(pg);
-                                }
-                            }
-                        }
-                    }
-                    
-                    TotalVDSSwitches = SourceVDSSwitches.Count;
-                    TotalPortGroups = SourcePortGroups.Count;
-                    VdsStatus = $"✅ {TotalVDSSwitches} vDS switches, {TotalPortGroups} port groups";
-                    MigrationStatus = $"Loaded {TotalVDSSwitches} vDS switches and {TotalPortGroups} port groups";
-                }
-                catch (JsonException ex)
-                {
-                    MigrationStatus = $"Failed to parse network topology data: {ex.Message}";
-                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] JSON parsing error: {ex.Message}\n";
-                    _logger.LogError(ex, "Error parsing network topology JSON");
-                }
+            string networkResult = null;
+            if (exportResult.StartsWith("SUCCESS:") && File.Exists(tempExportPath))
+            {
+                networkResult = await File.ReadAllTextAsync(tempExportPath);
+                // Clean up temp file
+                File.Delete(tempExportPath);
             }
             else
             {
-                MigrationStatus = "No network topology data returned from script";
+                MigrationStatus = $"Failed to export VDS data: {exportResult}";
+                return;
+            }
+
+            // Parse VDS export JSON data
+            if (!string.IsNullOrEmpty(networkResult))
+            {
+                await LoadExportedVDSDataFromJson(networkResult);
+            }
+            else
+            {
+                MigrationStatus = "No VDS data returned from script";
             }
 
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded source network data\n";
@@ -376,100 +269,70 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 return;
                 }
 
-            // Load target network data using new credential method
-            var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Get-NetworkTopology.ps1",
-                _sharedConnectionService.TargetConnection,
-                password);
+            // Create a temporary export file to load target VDS data
+            var tempExportPath = Path.GetTempFileName();
+            tempExportPath = Path.ChangeExtension(tempExportPath, ".json");
+            
+            var parameters = new Dictionary<string, object>
+            {
+                { "ExportPath", tempExportPath },
+                { "LogPath", _configurationService.GetConfiguration().LogPath },
+                { "BypassModuleCheck", true }
+            };
 
-            // Parse network topology JSON data
-            if (!string.IsNullOrEmpty(result))
+            // Load target VDS configuration using Export-VDS.ps1 script
+            var exportResult = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Export-VDS.ps1",
+                _sharedConnectionService.TargetConnection,
+                password,
+                parameters);
+
+            string targetResult = null;
+            if (exportResult.StartsWith("SUCCESS:") && File.Exists(tempExportPath))
+            {
+                targetResult = await File.ReadAllTextAsync(tempExportPath);
+                // Clean up temp file
+                File.Delete(tempExportPath);
+            }
+            else
+            {
+                MigrationStatus = $"Failed to export target VDS data: {exportResult}";
+                return;
+            }
+
+            // Parse target VDS export JSON data (for informational purposes)
+            if (!string.IsNullOrEmpty(targetResult))
             {
                 try
                 {
-                    var networkData = JsonSerializer.Deserialize<JsonElement[]>(result);
-                    foreach (var hostData in networkData)
+                    var exportData = JsonSerializer.Deserialize<JsonElement>(targetResult);
+                    
+                    int targetSwitches = 0, targetPortGroups = 0;
+                    if (exportData.TryGetProperty("TotalSwitches", out var switches))
                     {
-                        // Validate that hostData is an object before accessing properties
-                        if (hostData.ValueKind != JsonValueKind.Object)
-                        {
-                            _logger.LogWarning("Expected object but got {ValueKind} in target network data", hostData.ValueKind);
-                            continue;
-                        }
-
-                        var hostNode = new NetworkHostNode
-                        {
-                            Name = hostData.TryGetProperty("HostName", out var hostNameElement) ? hostNameElement.GetString() ?? "" : ""
-                        };
-
-                        // Parse vSwitches
-                        if (hostData.TryGetProperty("VSwitches", out var vSwitchesElement))
-                        {
-                            foreach (var vSwitchData in vSwitchesElement.EnumerateArray())
-                            {
-                                var vSwitch = new VSwitchInfo
-                                {
-                                    Name = vSwitchData.TryGetProperty("Name", out var nameElement) ? nameElement.GetString() ?? "" : "",
-                                    Type = vSwitchData.TryGetProperty("Type", out var typeElement) ? typeElement.GetString() ?? "Standard" : "Standard",
-                                    IsSelected = vSwitchData.TryGetProperty("IsSelected", out var selectedElement) 
-                                        ? selectedElement.GetBoolean() 
-                                        : false
-                                };
-
-                                // Parse port groups
-                                if (vSwitchData.TryGetProperty("PortGroups", out var portGroupsElement))
-                                {
-                                    foreach (var portGroupData in portGroupsElement.EnumerateArray())
-                                    {
-                                        var portGroup = new PortGroupInfo
-                                        {
-                                            Name = portGroupData.TryGetProperty("Name", out var pgNameElement) ? pgNameElement.GetString() ?? "" : "",
-                                            VlanId = portGroupData.TryGetProperty("VlanId", out var vlanElement) 
-                                                ? vlanElement.GetInt32() 
-                                                : 0,
-                                            Type = vSwitch.Type,
-                                            IsSelected = portGroupData.TryGetProperty("IsSelected", out var pgSelectedElement) 
-                                                ? pgSelectedElement.GetBoolean() 
-                                                : false
-                                        };
-                                        vSwitch.PortGroups.Add(portGroup);
-                                    }
-                                }
-                                hostNode.VSwitches.Add(vSwitch);
-                            }
-                        }
-
-                        // Parse VMkernel ports
-                        if (hostData.TryGetProperty("VmKernelPorts", out var vmkElement))
-                        {
-                            foreach (var vmkData in vmkElement.EnumerateArray())
-                            {
-                                var vmkPort = new VmKernelPortInfo
-                                {
-                                    Name = vmkData.TryGetProperty("Name", out var vmkNameElement) ? vmkNameElement.GetString() ?? "" : "",
-                                    IpAddress = vmkData.TryGetProperty("IpAddress", out var ipElement) 
-                                        ? ipElement.GetString() ?? "" 
-                                        : ""
-                                };
-                                hostNode.VmKernelPorts.Add(vmkPort);
-                            }
-                        }
-
-                        // Target network topology processing would go here if needed
+                        targetSwitches = switches.GetInt32();
                     }
                     
-                    MigrationStatus = "Target vCenter connection verified";
+                    if (exportData.TryGetProperty("TotalPortGroups", out var portGroups))
+                    {
+                        targetPortGroups = portGroups.GetInt32();
+                    }
+                    
+                    MigrationStatus = $"Target: {targetSwitches} vDS switches, {targetPortGroups} port groups";
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Target vCenter has {targetSwitches} vDS switches and {targetPortGroups} port groups\n";
+                    _logger.LogInformation("Target vCenter has {Switches} switches, {PortGroups} port groups", 
+                        targetSwitches, targetPortGroups);
                 }
                 catch (JsonException ex)
                 {
-                    MigrationStatus = $"Failed to parse target network topology data: {ex.Message}";
+                    MigrationStatus = $"Failed to parse target VDS data: {ex.Message}";
                     LogOutput += $"[{DateTime.Now:HH:mm:ss}] JSON parsing error: {ex.Message}\n";
-                    _logger.LogError(ex, "Error parsing target network topology JSON");
+                    _logger.LogError(ex, "Error parsing target VDS JSON");
                 }
             }
             else
             {
-                MigrationStatus = "No target network topology data returned from script";
+                MigrationStatus = "No target VDS data returned from script";
             }
 
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded target network data\n";
@@ -757,36 +620,41 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 return;
                 }
 
-            var exportFormat = ExportToJson ? "JSON" : "CSV";
+            // Ensure export path has .json extension for new script
+            if (!ExportFilePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                ExportFilePath = Path.ChangeExtension(ExportFilePath, ".json");
+            }
+            
             var parameters = new Dictionary<string, object>
                 {
                 // VCenterServer will be set by RunVCenterScriptAsync - don't override it
-                { "ExportFilePath", ExportFilePath },
-                { "ExportFormat", exportFormat },
-                { "IncludeStandardSwitches", MigrateStandardSwitches },
+                { "ExportPath", ExportFilePath },
+                { "LogPath", _configurationService.GetConfiguration().LogPath },
                 { "BypassModuleCheck", true }
                 };
 
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Export-VDSConfiguration.ps1",
+                "Scripts\\Export-VDS.ps1",
                 _sharedConnectionService.SourceConnection,
                 password,
                 parameters);
 
             // Check the actual script result
-            if (result.StartsWith("ERROR:") || result.Contains("failed"))
+            if (result.StartsWith("ERROR:") || result.Contains("failed", StringComparison.OrdinalIgnoreCase))
             {
                 MigrationStatus = $"Export failed: {result}";
                 LogOutput += $"[{DateTime.Now:HH:mm:ss}] Export failed: {result}\n";
                 _logger.LogError("VDS export failed: {Result}", result);
             }
-            else if (result.Contains("Export completed:"))
+            else if (result.StartsWith("SUCCESS:"))
             {
-                MigrationStatus = "Network configuration exported successfully";
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Network configuration exported to: {ExportFilePath}\n";
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Export format: {exportFormat}\n";
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script result: {result}\n";
-                _logger.LogInformation("Network configuration exported to {FilePath}", ExportFilePath);
+                MigrationStatus = "VDS configuration exported successfully";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] {result}\n";
+                _logger.LogInformation("VDS configuration exported to {FilePath}", ExportFilePath);
+                
+                // Load the exported data to update UI
+                await LoadExportedVDSData(ExportFilePath);
             }
             else
             {
@@ -854,15 +722,15 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
             var parameters = new Dictionary<string, object>
                 {
                 // VCenterServer will be set by RunVCenterScriptAsync - don't override it
-                { "ImportFilePath", ImportFilePath },
-                { "RecreateIfExists", RecreateIfExists },
+                { "ImportPath", ImportFilePath },
+                { "OverwriteExisting", RecreateIfExists },
                 { "ValidateOnly", ValidateOnly },
-                { "NetworkMappings", networkMappingsDict },
+                { "LogPath", _configurationService.GetConfiguration().LogPath },
                 { "BypassModuleCheck", true }
                 };
 
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Import-VDSConfiguration.ps1",
+                "Scripts\\Import-VDS.ps1",
                 _sharedConnectionService.TargetConnection,
                 password,
                 parameters);
@@ -926,4 +794,118 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
 
         return items;
         }
+        
+    private async Task LoadExportedVDSData(string exportPath)
+    {
+        try
+        {
+            if (File.Exists(exportPath))
+            {
+                var jsonContent = await File.ReadAllTextAsync(exportPath);
+                await LoadExportedVDSDataFromJson(jsonContent);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not load exported vDS data file");
+        }
+    }
+    
+    private async Task LoadExportedVDSDataFromJson(string jsonContent)
+    {
+        try
+        {
+            var exportData = JsonSerializer.Deserialize<JsonElement>(jsonContent);
+            
+            // Clear existing data
+            SourceVDSSwitches.Clear();
+            SourcePortGroups.Clear();
+            
+            // Parse VDS switches
+            if (exportData.TryGetProperty("VDSSwitches", out var vdsSwitchesElement))
+            {
+                foreach (var vdsElement in vdsSwitchesElement.EnumerateArray())
+                {
+                    if (vdsElement.ValueKind == JsonValueKind.Object)
+                    {
+                        var vdsInfo = new VirtualSwitchInfo
+                        {
+                            Name = vdsElement.TryGetProperty("Name", out var nameElement) ? nameElement.GetString() ?? "" : "",
+                            Type = "VmwareDistributedVirtualSwitch"
+                        };
+                        
+                        SourceVDSSwitches.Add(vdsInfo);
+                        
+                        // Parse port groups for this VDS
+                        if (vdsElement.TryGetProperty("PortGroups", out var portGroupsElement))
+                        {
+                            foreach (var pgElement in portGroupsElement.EnumerateArray())
+                            {
+                                if (pgElement.ValueKind == JsonValueKind.Object)
+                                {
+                                    var portGroup = new PortGroupInfo
+                                    {
+                                        Name = pgElement.TryGetProperty("Name", out var pgNameElement) ? pgNameElement.GetString() ?? "" : "",
+                                        Type = "DistributedVirtualPortgroup",
+                                        IsSelected = false
+                                    };
+                                    
+                                    // Parse VLAN configuration
+                                    if (pgElement.TryGetProperty("VlanConfiguration", out var vlanElement) &&
+                                        vlanElement.TryGetProperty("VlanId", out var vlanIdElement))
+                                    {
+                                        portGroup.VlanId = vlanIdElement.GetInt32();
+                                    }
+                                    
+                                    SourcePortGroups.Add(portGroup);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Update statistics
+            if (exportData.TryGetProperty("TotalSwitches", out var switches))
+            {
+                TotalVDSSwitches = switches.GetInt32();
+            }
+            else
+            {
+                TotalVDSSwitches = SourceVDSSwitches.Count;
+            }
+            
+            if (exportData.TryGetProperty("TotalPortGroups", out var portGroups))
+            {
+                TotalPortGroups = portGroups.GetInt32();
+            }
+            else
+            {
+                TotalPortGroups = SourcePortGroups.Count;
+            }
+            
+            VdsStatus = $"✅ {TotalVDSSwitches} vDS switches, {TotalPortGroups} port groups";
+            MigrationStatus = $"Loaded {TotalVDSSwitches} vDS switches and {TotalPortGroups} port groups";
+            _logger.LogInformation("Loaded exported vDS data: {Switches} switches, {PortGroups} port groups", 
+                TotalVDSSwitches, TotalPortGroups);
+        }
+        catch (JsonException ex)
+        {
+            MigrationStatus = $"Failed to parse VDS data: {ex.Message}";
+            _logger.LogError(ex, "Could not parse VDS JSON data");
+        }
+        catch (Exception ex)
+        {
+            MigrationStatus = $"Error loading VDS data: {ex.Message}";
+            _logger.LogError(ex, "Could not load VDS data");
+        }
+    }
+    
+    // Property for datacenter selection
+    private string _selectedDatacenter = string.Empty;
+    public string SelectedDatacenter
+    {
+        get => _selectedDatacenter;
+        set => SetProperty(ref _selectedDatacenter, value);
+    }
     }
