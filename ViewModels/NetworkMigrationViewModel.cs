@@ -190,35 +190,28 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 return;
                 }
 
-            // Create a temporary export file to load VDS data
-            var tempExportPath = Path.GetTempFileName();
-            tempExportPath = Path.ChangeExtension(tempExportPath, ".json");
-            
             var parameters = new Dictionary<string, object>
             {
-                { "ExportPath", tempExportPath },
                 { "LogPath", _configurationService.GetConfiguration().LogPath },
                 { "BypassModuleCheck", true }
             };
 
-            // Load VDS configuration using Export-VDS.ps1 script
-            var exportResult = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Export-VDS.ps1",
+            // Discover VDS switches using lightweight discovery script
+            var discoveryResult = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Get-VDSSwitches.ps1",
                 _sharedConnectionService.SourceConnection,
                 password,
                 parameters);
 
-            // Parse the export result - the script now creates a reference file and backup directory
-            if (exportResult.StartsWith("SUCCESS:") && File.Exists(tempExportPath))
+            // Parse the discovery result
+            if (!string.IsNullOrEmpty(discoveryResult) && !discoveryResult.StartsWith("ERROR:"))
             {
-                var exportReference = await File.ReadAllTextAsync(tempExportPath);
-                await LoadNativeVDSBackupData(exportReference);
-                // Clean up temp file
-                File.Delete(tempExportPath);
+                await LoadDiscoveredVDSData(discoveryResult);
             }
             else
             {
-                MigrationStatus = $"Failed to export VDS data: {exportResult}";
+                MigrationStatus = $"Failed to discover VDS switches: {discoveryResult}";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Discovery error: {discoveryResult}\n";
                 return;
             }
 
@@ -679,8 +672,89 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
     [RelayCommand]
     private async Task ExportVdsConfiguration()
     {
-        // Wrapper for XAML binding compatibility - calls the main export method
-        await ExportNetworkConfiguration();
+        if (_sharedConnectionService.SourceConnection == null)
+        {
+            MigrationStatus = "No source vCenter connection available";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Export error: No source vCenter connection\n";
+            return;
+        }
+
+        try
+        {
+            IsLoadingData = true;
+            MigrationStatus = "Exporting vDS configuration to backup folder...";
+
+            var password = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+            if (string.IsNullOrEmpty(password))
+            {
+                MigrationStatus = "Error: No password found for source connection";
+                return;
+            }
+
+            // Get the configured export path (backup folder)
+            var config = _configurationService.GetConfiguration();
+            var exportPath = config.ExportPath;
+            
+            if (string.IsNullOrEmpty(exportPath))
+            {
+                MigrationStatus = "Error: No export path configured in settings";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Export error: Export path not configured\n";
+                return;
+            }
+
+            // Ensure export directory exists
+            if (!Directory.Exists(exportPath))
+            {
+                Directory.CreateDirectory(exportPath);
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Created export directory: {exportPath}\n";
+            }
+
+            var parameters = new Dictionary<string, object>
+            {
+                { "ExportPath", exportPath },
+                { "LogPath", config.LogPath },
+                { "BypassModuleCheck", true }
+            };
+
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Starting VDS backup export to: {exportPath}\n";
+
+            var result = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Export-VDS.ps1",
+                _sharedConnectionService.SourceConnection,
+                password,
+                parameters);
+
+            // Check the actual script result
+            if (result.StartsWith("ERROR:") || result.Contains("failed", StringComparison.OrdinalIgnoreCase))
+            {
+                MigrationStatus = $"VDS export failed: {result}";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Export failed: {result}\n";
+                _logger.LogError("VDS export failed: {Result}", result);
+            }
+            else if (result.StartsWith("SUCCESS:"))
+            {
+                MigrationStatus = "VDS configuration exported successfully to backup folder";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] {result}\n";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] VDS backup files saved to: {exportPath}\n";
+                _logger.LogInformation("VDS configuration exported to backup folder: {ExportPath}", exportPath);
+            }
+            else
+            {
+                MigrationStatus = "VDS export completed with unknown result";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script result: {result}\n";
+                _logger.LogWarning("VDS export completed but result unclear: {Result}", result);
+            }
+        }
+        catch (Exception ex)
+        {
+            MigrationStatus = $"VDS export failed: {ex.Message}";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
+            _logger.LogError(ex, "Error exporting VDS configuration");
+        }
+        finally
+        {
+            IsLoadingData = false;
+        }
     }
 
     [RelayCommand]
@@ -780,8 +854,102 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
     [RelayCommand]
     private async Task ImportVdsConfiguration()
     {
-        // Wrapper for XAML binding compatibility - calls the main import method
-        await ImportNetworkConfiguration();
+        if (_sharedConnectionService.TargetConnection == null)
+        {
+            MigrationStatus = "No target vCenter connection available";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import error: No target vCenter connection\n";
+            return;
+        }
+
+        try
+        {
+            IsLoadingData = true;
+            MigrationStatus = "Importing vDS configuration from backup folder...";
+
+            var password = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+            if (string.IsNullOrEmpty(password))
+            {
+                MigrationStatus = "Error: No password found for target connection";
+                return;
+            }
+
+            // Get the configured export path (backup folder)
+            var config = _configurationService.GetConfiguration();
+            var backupPath = config.ExportPath;
+            
+            if (string.IsNullOrEmpty(backupPath))
+            {
+                MigrationStatus = "Error: No backup path configured in settings";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import error: Backup path not configured\n";
+                return;
+            }
+
+            // Check if backup directory exists
+            if (!Directory.Exists(backupPath))
+            {
+                MigrationStatus = $"Error: Backup directory does not exist: {backupPath}";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import error: Backup directory not found\n";
+                return;
+            }
+
+            var parameters = new Dictionary<string, object>
+            {
+                { "ImportPath", backupPath },
+                { "OverwriteExisting", RecreateIfExists },
+                { "ValidateOnly", ValidateOnly },
+                { "LogPath", config.LogPath },
+                { "BypassModuleCheck", true }
+            };
+
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Starting VDS import from backup folder: {backupPath}\n";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Validate only: {ValidateOnly}\n";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Replace existing: {RecreateIfExists}\n";
+
+            var result = await _powerShellService.RunVCenterScriptAsync(
+                "Scripts\\Import-VDS.ps1",
+                _sharedConnectionService.TargetConnection,
+                password,
+                parameters);
+
+            // Check the actual script result
+            if (result.StartsWith("ERROR:") || result.Contains("failed", StringComparison.OrdinalIgnoreCase))
+            {
+                MigrationStatus = $"VDS import failed: {result}";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import failed: {result}\n";
+                _logger.LogError("VDS import failed: {Result}", result);
+            }
+            else if (result.Contains("Import completed:") || result.Contains("Validation completed:"))
+            {
+                MigrationStatus = ValidateOnly ? "VDS validation completed successfully" : "VDS configuration imported successfully";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] VDS configuration imported from backup folder: {backupPath}\n";
+                if (ValidateOnly)
+                {
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Validation mode - no changes were made\n";
+                }
+                else
+                {
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Replace existing: {RecreateIfExists}\n";
+                }
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script result: {result}\n";
+                _logger.LogInformation("VDS configuration imported from backup folder: {BackupPath}", backupPath);
+            }
+            else
+            {
+                MigrationStatus = "VDS import completed with unknown result";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script result: {result}\n";
+                _logger.LogWarning("VDS import completed but result unclear: {Result}", result);
+            }
+        }
+        catch (Exception ex)
+        {
+            MigrationStatus = $"VDS import failed: {ex.Message}";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
+            _logger.LogError(ex, "Error importing VDS configuration");
+        }
+        finally
+        {
+            IsLoadingData = false;
+        }
     }
 
     // Helper Methods
@@ -1024,6 +1192,131 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
         }
     }
     
+    private async Task LoadDiscoveredVDSData(string discoveryJson)
+    {
+        try
+        {
+            var discoveryData = JsonSerializer.Deserialize<JsonElement>(discoveryJson);
+            
+            // Clear existing data
+            SourceVDSSwitches.Clear();
+            SourcePortGroups.Clear();
+            
+            // Parse VDS switches from discovery
+            if (discoveryData.TryGetProperty("VDSSwitches", out var vdsSwitchesElement))
+            {
+                foreach (var vdsElement in vdsSwitchesElement.EnumerateArray())
+                {
+                    if (vdsElement.ValueKind == JsonValueKind.Object)
+                    {
+                        var vdsInfo = new VirtualSwitchInfo
+                        {
+                            Name = vdsElement.TryGetProperty("Name", out var nameElement) ? nameElement.GetString() ?? "" : "",
+                            Type = vdsElement.TryGetProperty("Type", out var typeElement) ? typeElement.GetString() ?? "VmwareDistributedVirtualSwitch" : "VmwareDistributedVirtualSwitch"
+                        };
+                        
+                        // Add version and UUID if available
+                        if (vdsElement.TryGetProperty("Version", out var versionElement))
+                        {
+                            vdsInfo.Version = versionElement.GetString() ?? "";
+                        }
+                        
+                        if (vdsElement.TryGetProperty("Uuid", out var uuidElement))
+                        {
+                            vdsInfo.Uuid = uuidElement.GetString() ?? "";
+                        }
+                        
+                        SourceVDSSwitches.Add(vdsInfo);
+                        
+                        // Parse port groups for this VDS
+                        if (vdsElement.TryGetProperty("PortGroups", out var portGroupsElement))
+                        {
+                            foreach (var pgElement in portGroupsElement.EnumerateArray())
+                            {
+                                if (pgElement.ValueKind == JsonValueKind.Object)
+                                {
+                                    var portGroup = new PortGroupInfo
+                                    {
+                                        Name = pgElement.TryGetProperty("Name", out var pgNameElement) ? pgNameElement.GetString() ?? "" : "",
+                                        Type = pgElement.TryGetProperty("Type", out var pgTypeElement) ? pgTypeElement.GetString() ?? "DistributedVirtualPortgroup" : "DistributedVirtualPortgroup",
+                                        IsSelected = pgElement.TryGetProperty("IsSelected", out var selectedElement) ? selectedElement.GetBoolean() : false
+                                    };
+                                    
+                                    // Parse VLAN ID
+                                    if (pgElement.TryGetProperty("VlanId", out var vlanIdElement))
+                                    {
+                                        portGroup.VlanId = vlanIdElement.GetInt32();
+                                    }
+                                    
+                                    // Parse number of ports
+                                    if (pgElement.TryGetProperty("NumPorts", out var numPortsElement))
+                                    {
+                                        portGroup.NumPorts = numPortsElement.GetInt32();
+                                    }
+                                    
+                                    SourcePortGroups.Add(portGroup);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Update statistics from discovery data
+            if (discoveryData.TryGetProperty("TotalSwitches", out var totalSwitchesElement))
+            {
+                TotalVDSSwitches = totalSwitchesElement.GetInt32();
+            }
+            else
+            {
+                TotalVDSSwitches = SourceVDSSwitches.Count;
+            }
+            
+            if (discoveryData.TryGetProperty("TotalPortGroups", out var totalPortGroupsElement))
+            {
+                TotalPortGroups = totalPortGroupsElement.GetInt32();
+            }
+            else
+            {
+                TotalPortGroups = SourcePortGroups.Count;
+            }
+            
+            // Update source information
+            var sourceVCenter = "Unknown";
+            if (discoveryData.TryGetProperty("SourceVCenter", out var sourceElement))
+            {
+                sourceVCenter = sourceElement.GetString() ?? "Unknown";
+            }
+            
+            var discoveryDate = "Unknown";
+            if (discoveryData.TryGetProperty("DiscoveryDate", out var dateElement))
+            {
+                discoveryDate = dateElement.GetString() ?? "Unknown";
+            }
+            
+            VdsStatus = $"✅ {TotalVDSSwitches} vDS switches, {TotalPortGroups} port groups discovered";
+            MigrationStatus = $"Discovered {TotalVDSSwitches} vDS switches and {TotalPortGroups} port groups from {sourceVCenter}";
+            
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Discovery completed: {TotalVDSSwitches} switches, {TotalPortGroups} port groups\n";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Source: {sourceVCenter} (discovered {discoveryDate})\n";
+            
+            _logger.LogInformation("Loaded discovered VDS data: {Switches} switches, {PortGroups} port groups from {Source}", 
+                TotalVDSSwitches, TotalPortGroups, sourceVCenter);
+        }
+        catch (JsonException ex)
+        {
+            MigrationStatus = $"Failed to parse VDS discovery data: {ex.Message}";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] JSON parsing error: {ex.Message}\n";
+            _logger.LogError(ex, "Could not parse VDS discovery JSON data");
+        }
+        catch (Exception ex)
+        {
+            MigrationStatus = $"Error loading VDS discovery data: {ex.Message}";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Discovery data error: {ex.Message}\n";
+            _logger.LogError(ex, "Could not load VDS discovery data");
+        }
+    }
+
     // Property for datacenter selection
     private string _selectedDatacenter = string.Empty;
     public string SelectedDatacenter

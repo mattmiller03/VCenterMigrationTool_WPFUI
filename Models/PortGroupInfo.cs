@@ -15,4 +15,7 @@ public partial class PortGroupInfo : ObservableObject
 
     [ObservableProperty]
     private string _type = "Standard"; // "Standard" or "Distributed"
+
+    [ObservableProperty]
+    private int _numPorts = 0;
 }

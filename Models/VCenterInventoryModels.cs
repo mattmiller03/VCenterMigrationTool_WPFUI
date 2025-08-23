@@ -79,6 +79,8 @@ public class VirtualSwitchInfo
     public int PortGroupCount { get; set; }
     public string[] ConnectedHosts { get; set; } = Array.Empty<string>();
     public string DatacenterName { get; set; } = string.Empty;
+    public string Version { get; set; } = string.Empty;
+    public string Uuid { get; set; } = string.Empty;
 }
 
 /// <summary>
