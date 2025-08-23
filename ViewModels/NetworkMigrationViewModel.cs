@@ -898,21 +898,39 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 return;
             }
 
-            // Find the most recent export reference file (JSON files in backup directory)
-            var jsonFiles = Directory.GetFiles(backupPath, "*.json", SearchOption.TopDirectoryOnly)
-                .Where(f => !Path.GetFileName(f).StartsWith("export_manifest", StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(f => File.GetCreationTime(f))
+            // Find the most recent export subdirectory (timestamped folders)
+            var exportSubdirectories = Directory.GetDirectories(backupPath)
+                .Where(d => {
+                    var dirName = Path.GetFileName(d);
+                    return dirName.StartsWith("VDS_Export_", StringComparison.OrdinalIgnoreCase);
+                })
+                .OrderByDescending(d => Directory.GetCreationTime(d))
                 .ToList();
 
-            if (!jsonFiles.Any())
+            if (!exportSubdirectories.Any())
             {
-                MigrationStatus = "Error: No VDS export reference files found in backup directory";
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import error: No export reference files (*.json) found\n";
+                MigrationStatus = "Error: No VDS export subdirectories found in backup directory";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import error: No VDS export folders found\n";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Looking for folders like 'VDS_Export_YYYYMMDD_HHMMSS' in: {backupPath}\n";
                 return;
             }
 
-            var latestExportFile = jsonFiles.First();
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Found export reference file: {Path.GetFileName(latestExportFile)}\n";
+            var latestExportDir = exportSubdirectories.First();
+            var latestExportDirName = Path.GetFileName(latestExportDir);
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Found latest export directory: {latestExportDirName}\n";
+
+            // Look for the reference JSON file in the main backup directory
+            var referenceFileName = $"{latestExportDirName}.json";
+            var latestExportFile = Path.Combine(backupPath, referenceFileName);
+            
+            if (!File.Exists(latestExportFile))
+            {
+                MigrationStatus = $"Error: Export reference file not found: {referenceFileName}";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import error: Reference file not found\n";
+                return;
+            }
+
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Found export reference file: {referenceFileName}\n";
 
             // Validate that it's a VDS export reference file
             try
