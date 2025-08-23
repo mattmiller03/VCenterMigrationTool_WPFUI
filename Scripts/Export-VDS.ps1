@@ -29,7 +29,26 @@ param(
 )
 
 # Import logging functions
-. "$PSScriptRoot\Write-ScriptLog.ps1"
+$ScriptDir = if ($PSScriptRoot) { 
+    $PSScriptRoot 
+} else { 
+    Split-Path -Parent $MyInvocation.MyCommand.Path 
+}
+$LoggingScript = Join-Path $ScriptDir "Write-ScriptLog.ps1"
+
+try {
+    if (Test-Path $LoggingScript) {
+        . $LoggingScript
+    } else {
+        throw "Write-ScriptLog.ps1 not found at: $LoggingScript"
+    }
+} catch {
+    Write-Error "Failed to import Write-ScriptLog.ps1: $($_.Exception.Message)"
+    Write-Error "Script directory: $ScriptDir"
+    Write-Error "Looking for: $LoggingScript"
+    Write-Error "File exists: $(Test-Path $LoggingScript)"
+    throw "Cannot continue without logging functions"
+}
 
 # Start logging
 Start-ScriptLogging -ScriptName "Export-VDS" -LogPath $LogPath -SuppressConsoleOutput $SuppressConsoleOutput
