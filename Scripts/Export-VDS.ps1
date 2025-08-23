@@ -202,26 +202,66 @@ try {
                     $fileSize = (Get-Item $vdsBackupFile).Length
                     Write-LogSuccess "Exported vDS '$($vds.Name)' to $vdsBackupFile (Size: $($fileSize / 1KB) KB)" -Category "Export"
                     
-                    # Get datacenter and folder information for this vDS
-                    $vdsDatacenter = $vds | Get-Datacenter
-                    $datacenterName = if ($vdsDatacenter) { $vdsDatacenter.Name } else { "Unknown" }
+                    # Get datacenter and folder information for this vDS using multiple methods
+                    $datacenterName = "Unknown"
+                    $folderPathString = "Root"
                     
-                    # Get the parent folder path for this vDS
-                    $vdsFolder = $vds.Parent
-                    $folderPath = @()
-                    $currentFolder = $vdsFolder
-                    
-                    # Walk up the folder hierarchy to build the complete path
-                    while ($currentFolder -and $currentFolder.Name -ne $datacenterName) {
-                        $folderPath = @($currentFolder.Name) + $folderPath
-                        $currentFolder = $currentFolder.Parent
-                    }
-                    
-                    # Create the folder path string
-                    $folderPathString = if ($folderPath.Count -gt 0) { 
-                        $folderPath -join "/" 
-                    } else { 
-                        "Root" 
+                    try {
+                        # Method 1: Try using the VDS ExtensionData to get parent references
+                        Write-LogInfo "Determining location for vDS: $($vds.Name)" -Category "Export"
+                        Write-LogInfo "VDS ExtensionData Type: $($vds.ExtensionData.GetType().Name)" -Category "Export"
+                        
+                        # Method 2: Use Get-View to get detailed object information
+                        $vdsView = Get-View -VIObject $vds -ErrorAction Stop
+                        Write-LogInfo "VDS View obtained for: $($vds.Name)" -Category "Export"
+                        
+                        # Get parent folder from the VDS view
+                        if ($vdsView.Parent) {
+                            $parentView = Get-View -Id $vdsView.Parent -ErrorAction Stop
+                            Write-LogInfo "Parent object type: $($parentView.GetType().Name), Name: $($parentView.Name)" -Category "Export"
+                            
+                            # Build folder path by walking up the hierarchy
+                            $folderPath = @()
+                            $currentView = $parentView
+                            
+                            while ($currentView -and $currentView.GetType().Name -ne "Datacenter") {
+                                if ($currentView.Name) {
+                                    $folderPath = @($currentView.Name) + $folderPath
+                                    Write-LogInfo "Added to path: $($currentView.Name) (Type: $($currentView.GetType().Name))" -Category "Export"
+                                }
+                                
+                                if ($currentView.Parent) {
+                                    $currentView = Get-View -Id $currentView.Parent -ErrorAction Stop
+                                } else {
+                                    break
+                                }
+                            }
+                            
+                            # The final currentView should be the datacenter
+                            if ($currentView -and $currentView.GetType().Name -eq "Datacenter") {
+                                $datacenterName = $currentView.Name
+                                Write-LogInfo "Found datacenter: $datacenterName" -Category "Export"
+                            }
+                            
+                            # Create folder path string
+                            if ($folderPath.Count -gt 0) {
+                                $folderPathString = $folderPath -join "/"
+                            }
+                        }
+                        
+                        # Method 3: Fallback to PowerCLI cmdlet if above methods fail
+                        if ($datacenterName -eq "Unknown") {
+                            Write-LogWarning "Using fallback method to get datacenter for vDS: $($vds.Name)" -Category "Export"
+                            $vdsDatacenter = $vds | Get-Datacenter -ErrorAction SilentlyContinue
+                            if ($vdsDatacenter) {
+                                $datacenterName = $vdsDatacenter.Name
+                                Write-LogInfo "Fallback method found datacenter: $datacenterName" -Category "Export"
+                            }
+                        }
+                        
+                    } catch {
+                        Write-LogError "Error getting location info for vDS '$($vds.Name)': $($_.Exception.Message)" -Category "Export"
+                        Write-LogError "Stack trace: $($_.ScriptStackTrace)" -Category "Export"
                     }
                     
                     Write-LogInfo "vDS '$($vds.Name)' located in datacenter '$datacenterName' at folder path: $folderPathString" -Category "Export"
