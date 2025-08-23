@@ -202,20 +202,27 @@ try {
     $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
     Write-LogSuccess "Connected to vCenter: $($viConnection.Name) (v$($viConnection.Version))" -Category "Connection"
     
-    # Get target datacenter
-    if ($DatacenterName) {
-        $datacenter = Get-Datacenter -Name $DatacenterName -ErrorAction SilentlyContinue
-        if (-not $datacenter) {
-            throw "Datacenter '$DatacenterName' not found in target vCenter"
-        }
+    # Get available datacenters for datacenter mapping
+    $availableDatacenters = Get-Datacenter
+    if (-not $availableDatacenters) {
+        throw "No datacenters found in target vCenter"
     }
-    else {
-        $datacenter = Get-Datacenter | Select-Object -First 1
-        if (-not $datacenter) {
-            throw "No datacenters found in target vCenter"
+    
+    Write-LogInfo "Available target datacenters: $($availableDatacenters.Name -join ', ')" -Category "Import"
+    
+    # Set default datacenter for cases where original DC is not found
+    $defaultDatacenter = if ($DatacenterName) {
+        $specifiedDC = $availableDatacenters | Where-Object { $_.Name -eq $DatacenterName }
+        if ($specifiedDC) { 
+            $specifiedDC 
+        } else { 
+            throw "Specified datacenter '$DatacenterName' not found in target vCenter"
         }
-        Write-LogInfo "Using datacenter: $($datacenter.Name)" -Category "Import"
+    } else {
+        $availableDatacenters | Select-Object -First 1
     }
+    
+    Write-LogInfo "Default datacenter for missing mappings: $($defaultDatacenter.Name)" -Category "Import"
     
     # Process each vDS from the manifest
     foreach ($vdsInfo in $manifest.ExportedSwitches) {
@@ -251,11 +258,25 @@ try {
                 continue
             }
             
+            # Determine target datacenter for this vDS
+            $targetDatacenter = $defaultDatacenter
+            if ($vdsInfo.DatacenterName -and $vdsInfo.DatacenterName -ne "Unknown") {
+                $matchingDatacenter = $availableDatacenters | Where-Object { $_.Name -eq $vdsInfo.DatacenterName }
+                if ($matchingDatacenter) {
+                    $targetDatacenter = $matchingDatacenter
+                    Write-LogInfo "Using original datacenter '$($targetDatacenter.Name)' for vDS '$($vdsInfo.Name)'" -Category "Import"
+                } else {
+                    Write-LogWarning "Original datacenter '$($vdsInfo.DatacenterName)' not found, using default '$($defaultDatacenter.Name)'" -Category "Import"
+                }
+            } else {
+                Write-LogWarning "No datacenter info in export for vDS '$($vdsInfo.Name)', using default '$($defaultDatacenter.Name)'" -Category "Import"
+            }
+
             # Restore vDS using native New-VDSwitch -BackupPath
-            Write-LogInfo "Restoring vDS '$($vdsInfo.Name)' from backup: $($vdsInfo.BackupFile)" -Category "Import"
+            Write-LogInfo "Restoring vDS '$($vdsInfo.Name)' to datacenter '$($targetDatacenter.Name)' from backup: $($vdsInfo.BackupFile)" -Category "Import"
             
             try {
-                $restoredVds = New-VDSwitch -Name $vdsInfo.Name -Location $datacenter -BackupPath $vdsInfo.BackupFile -ErrorAction Stop
+                $restoredVds = New-VDSwitch -Name $vdsInfo.Name -Location $targetDatacenter -BackupPath $vdsInfo.BackupFile -ErrorAction Stop
                 
                 if ($restoredVds) {
                     Write-LogSuccess "Successfully restored vDS: $($restoredVds.Name)" -Category "Import"

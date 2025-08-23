@@ -202,6 +202,10 @@ try {
                     $fileSize = (Get-Item $vdsBackupFile).Length
                     Write-LogSuccess "Exported vDS '$($vds.Name)' to $vdsBackupFile (Size: $($fileSize / 1KB) KB)" -Category "Export"
                     
+                    # Get datacenter information for this vDS
+                    $vdsDatacenter = $vds | Get-Datacenter
+                    $datacenterName = if ($vdsDatacenter) { $vdsDatacenter.Name } else { "Unknown" }
+                    
                     # Add to exported switches list
                     $exportedSwitches += @{
                         Name = $vds.Name
@@ -211,6 +215,7 @@ try {
                         Version = $vds.Version
                         NumPorts = $vds.NumPorts
                         PortGroupCount = (Get-VDPortgroup -VDSwitch $vds | Where-Object { -not $_.IsUplink }).Count
+                        DatacenterName = $datacenterName
                     }
                     
                     $exportStats.SwitchesExported++
