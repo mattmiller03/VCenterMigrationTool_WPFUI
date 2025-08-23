@@ -19,14 +19,20 @@ function Initialize-LogPath {
     
     # Determine the base log directory
     # The app log goes here, PowerShell logs go in a PowerShell subfolder
-    if ($LogPath) {
-        # Check if the provided path is a directory or file
+    if ($LogPath -and $LogPath -ne "") {
+        # Always use the LogPath as the base directory
+        # If it points to a file, get the directory; otherwise use as-is
         if ([System.IO.Path]::HasExtension($LogPath)) {
             # It's a file path (probably the app log), extract the directory
             $Global:ConfiguredLogPath = [System.IO.Path]::GetDirectoryName($LogPath)
         } else {
             # It's a directory path, use it directly
             $Global:ConfiguredLogPath = $LogPath
+        }
+        
+        # Ensure we have a valid path
+        if ([string]::IsNullOrEmpty($Global:ConfiguredLogPath)) {
+            $Global:ConfiguredLogPath = [System.IO.Path]::GetDirectoryName($LogPath)
         }
         if (-not $SuppressConsoleOutput) {
             Write-Host "PowerShell logs will be saved in: $Global:ConfiguredLogPath\PowerShell" -ForegroundColor Cyan

@@ -19,7 +19,10 @@ param(
     [string]$LogPath,
 
     [Parameter()]
-    [bool]$SuppressConsoleOutput = $false
+    [bool]$SuppressConsoleOutput = $false,
+    
+    [Parameter()]
+    [bool]$BypassModuleCheck = $false
 )
 
 # Import logging functions
@@ -37,9 +40,11 @@ $hostCount = 0
 
 try {
     # Import PowerCLI
-    Write-LogInfo "Importing PowerCLI modules..." -Category "Initialization"
-    Import-Module VMware.VimAutomation.Core -ErrorAction Stop
-    Write-LogSuccess "PowerCLI modules imported successfully" -Category "Initialization"
+    if (-not $BypassModuleCheck) {
+        Write-LogInfo "Importing PowerCLI modules..." -Category "Initialization"
+        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
+        Write-LogSuccess "PowerCLI modules imported successfully" -Category "Initialization"
+    }
 
     # Connect to vCenter using provided credentials
     Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"

@@ -210,6 +210,23 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
             {
                 try
                 {
+                    // Clean the result - remove any non-JSON content
+                    networkResult = networkResult.Trim();
+                    
+                    // Find the start of JSON (either [ or {)
+                    int jsonStart = networkResult.IndexOfAny(new[] { '[', '{' });
+                    if (jsonStart > 0)
+                    {
+                        networkResult = networkResult.Substring(jsonStart);
+                    }
+                    
+                    // Find the end of JSON (matching ] or })
+                    int jsonEnd = networkResult.LastIndexOfAny(new[] { ']', '}' });
+                    if (jsonEnd > 0 && jsonEnd < networkResult.Length - 1)
+                    {
+                        networkResult = networkResult.Substring(0, jsonEnd + 1);
+                    }
+                    
                     var networkData = JsonSerializer.Deserialize<JsonElement[]>(networkResult);
                     foreach (var hostData in networkData)
                     {

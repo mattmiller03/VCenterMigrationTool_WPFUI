@@ -135,7 +135,12 @@ try {
         Write-LogDebug "Host '$($vmHost.Name)' summary: $($hostNetworkConfig.VSwitches.Count) vSwitches, $($hostNetworkConfig.VmKernelPorts.Count) VMkernel ports." -Category "Discovery"
     }
     
-    $jsonOutput = $networkTopology | ConvertTo-Json -Depth 10
+    # Ensure clean JSON output
+    if ($networkTopology.Count -eq 0) {
+        $jsonOutput = "[]"
+    } else {
+        $jsonOutput = $networkTopology | ConvertTo-Json -Depth 10
+    }
     
     $scriptSuccess = $true
     $finalSummary = "Network topology discovery completed successfully. Processed $($stats.HostsProcessed) hosts."

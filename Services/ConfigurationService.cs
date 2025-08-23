@@ -96,7 +96,20 @@ namespace VCenterMigrationTool.Services
                     };
                     
                     var config = JsonSerializer.Deserialize<AppConfig>(jsonString, options);
-                    _logger.LogInformation("Configuration loaded successfully from {ConfigPath}", _configFilePath);
+                    
+                    // Ensure LogPath is set even if not in the saved config
+                    if (config != null && string.IsNullOrEmpty(config.LogPath))
+                    {
+                        config.LogPath = Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
+                            "VCenterMigrationTool", 
+                            "Logs");
+                        _logger.LogInformation("LogPath was empty, set to default: {LogPath}", config.LogPath);
+                        SaveConfiguration(config); // Save the updated config with LogPath
+                    }
+                    
+                    _logger.LogInformation("Configuration loaded from {ConfigPath} with LogPath: {LogPath}", 
+                        _configFilePath, config?.LogPath ?? "null");
                     return config ?? CreateDefaultConfiguration();
                 }
                 else
