@@ -202,9 +202,29 @@ try {
                     $fileSize = (Get-Item $vdsBackupFile).Length
                     Write-LogSuccess "Exported vDS '$($vds.Name)' to $vdsBackupFile (Size: $($fileSize / 1KB) KB)" -Category "Export"
                     
-                    # Get datacenter information for this vDS
+                    # Get datacenter and folder information for this vDS
                     $vdsDatacenter = $vds | Get-Datacenter
                     $datacenterName = if ($vdsDatacenter) { $vdsDatacenter.Name } else { "Unknown" }
+                    
+                    # Get the parent folder path for this vDS
+                    $vdsFolder = $vds.Parent
+                    $folderPath = @()
+                    $currentFolder = $vdsFolder
+                    
+                    # Walk up the folder hierarchy to build the complete path
+                    while ($currentFolder -and $currentFolder.Name -ne $datacenterName) {
+                        $folderPath = @($currentFolder.Name) + $folderPath
+                        $currentFolder = $currentFolder.Parent
+                    }
+                    
+                    # Create the folder path string
+                    $folderPathString = if ($folderPath.Count -gt 0) { 
+                        $folderPath -join "/" 
+                    } else { 
+                        "Root" 
+                    }
+                    
+                    Write-LogInfo "vDS '$($vds.Name)' located in datacenter '$datacenterName' at folder path: $folderPathString" -Category "Export"
                     
                     # Add to exported switches list
                     $exportedSwitches += @{
@@ -216,6 +236,7 @@ try {
                         NumPorts = $vds.NumPorts
                         PortGroupCount = (Get-VDPortgroup -VDSwitch $vds | Where-Object { -not $_.IsUplink }).Count
                         DatacenterName = $datacenterName
+                        FolderPath = $folderPathString
                     }
                     
                     $exportStats.SwitchesExported++

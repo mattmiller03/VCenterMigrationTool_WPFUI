@@ -272,11 +272,50 @@ try {
                 Write-LogWarning "No datacenter info in export for vDS '$($vdsInfo.Name)', using default '$($defaultDatacenter.Name)'" -Category "Import"
             }
 
+            # Determine target folder location within the datacenter
+            $targetLocation = $targetDatacenter
+            $folderPathInfo = if ($vdsInfo.FolderPath -and $vdsInfo.FolderPath -ne "Root") {
+                Write-LogInfo "Original folder path for vDS '$($vdsInfo.Name)': $($vdsInfo.FolderPath)" -Category "Import"
+                $vdsInfo.FolderPath
+            } else {
+                Write-LogInfo "vDS '$($vdsInfo.Name)' was in datacenter root" -Category "Import"
+                $null
+            }
+            
+            # Create or find the target folder structure if needed
+            if ($folderPathInfo) {
+                $folderParts = $folderPathInfo -split "/"
+                $currentLocation = $targetDatacenter
+                
+                foreach ($folderName in $folderParts) {
+                    # Check if folder exists
+                    $existingFolder = Get-Folder -Name $folderName -Location $currentLocation -Type Network -ErrorAction SilentlyContinue
+                    if ($existingFolder) {
+                        Write-LogInfo "Found existing folder: $folderName" -Category "Import"
+                        $currentLocation = $existingFolder
+                    } else {
+                        if (-not $ValidateOnly) {
+                            Write-LogInfo "Creating folder: $folderName" -Category "Import"
+                            $currentLocation = New-Folder -Name $folderName -Location $currentLocation -ErrorAction Stop
+                        } else {
+                            Write-LogInfo "VALIDATION: Would create folder '$folderName' in location '$($currentLocation.Name)'" -Category "Validation"
+                        }
+                    }
+                }
+                $targetLocation = $currentLocation
+            }
+            
+            $locationDescription = if ($targetLocation -eq $targetDatacenter) {
+                "datacenter root '$($targetDatacenter.Name)'"
+            } else {
+                "folder '$($targetLocation.Name)' in datacenter '$($targetDatacenter.Name)'"
+            }
+
             # Restore vDS using native New-VDSwitch -BackupPath
-            Write-LogInfo "Restoring vDS '$($vdsInfo.Name)' to datacenter '$($targetDatacenter.Name)' from backup: $($vdsInfo.BackupFile)" -Category "Import"
+            Write-LogInfo "Restoring vDS '$($vdsInfo.Name)' to $locationDescription from backup: $($vdsInfo.BackupFile)" -Category "Import"
             
             try {
-                $restoredVds = New-VDSwitch -Name $vdsInfo.Name -Location $targetDatacenter -BackupPath $vdsInfo.BackupFile -ErrorAction Stop
+                $restoredVds = New-VDSwitch -Name $vdsInfo.Name -Location $targetLocation -BackupPath $vdsInfo.BackupFile -ErrorAction Stop
                 
                 if ($restoredVds) {
                     Write-LogSuccess "Successfully restored vDS: $($restoredVds.Name)" -Category "Import"
