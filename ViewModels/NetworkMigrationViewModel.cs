@@ -892,16 +892,53 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 return;
             }
 
+            // Find the most recent export reference file (JSON files in backup directory)
+            var jsonFiles = Directory.GetFiles(backupPath, "*.json", SearchOption.TopDirectoryOnly)
+                .Where(f => !Path.GetFileName(f).StartsWith("export_manifest", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(f => File.GetCreationTime(f))
+                .ToList();
+
+            if (!jsonFiles.Any())
+            {
+                MigrationStatus = "Error: No VDS export reference files found in backup directory";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import error: No export reference files (*.json) found\n";
+                return;
+            }
+
+            var latestExportFile = jsonFiles.First();
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Found export reference file: {Path.GetFileName(latestExportFile)}\n";
+
+            // Validate that it's a VDS export reference file
+            try
+            {
+                var testContent = File.ReadAllText(latestExportFile);
+                var testJson = JsonSerializer.Deserialize<JsonElement>(testContent);
+                
+                if (!testJson.TryGetProperty("ExportType", out var exportType) || 
+                    exportType.GetString() != "VDS_Native_Backup")
+                {
+                    MigrationStatus = "Error: Invalid export reference file format";
+                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import error: Not a valid VDS backup reference file\n";
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                MigrationStatus = $"Error: Unable to read export reference file: {ex.Message}";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Import error: Failed to validate reference file\n";
+                return;
+            }
+
             var parameters = new Dictionary<string, object>
             {
-                { "ImportPath", backupPath },
+                { "ImportPath", latestExportFile },
                 { "OverwriteExisting", RecreateIfExists },
                 { "ValidateOnly", ValidateOnly },
                 { "LogPath", config.LogPath },
                 { "BypassModuleCheck", true }
             };
 
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Starting VDS import from backup folder: {backupPath}\n";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Starting VDS import from reference file: {latestExportFile}\n";
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Validate only: {ValidateOnly}\n";
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Replace existing: {RecreateIfExists}\n";
 
@@ -922,6 +959,7 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
             {
                 MigrationStatus = ValidateOnly ? "VDS validation completed successfully" : "VDS configuration imported successfully";
                 LogOutput += $"[{DateTime.Now:HH:mm:ss}] VDS configuration imported from backup folder: {backupPath}\n";
+                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Used reference file: {Path.GetFileName(latestExportFile)}\n";
                 if (ValidateOnly)
                 {
                     LogOutput += $"[{DateTime.Now:HH:mm:ss}] Validation mode - no changes were made\n";
@@ -931,7 +969,7 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                     LogOutput += $"[{DateTime.Now:HH:mm:ss}] Replace existing: {RecreateIfExists}\n";
                 }
                 LogOutput += $"[{DateTime.Now:HH:mm:ss}] Script result: {result}\n";
-                _logger.LogInformation("VDS configuration imported from backup folder: {BackupPath}", backupPath);
+                _logger.LogInformation("VDS configuration imported from backup folder: {BackupPath} using reference file: {ReferenceFile}", backupPath, latestExportFile);
             }
             else
             {
