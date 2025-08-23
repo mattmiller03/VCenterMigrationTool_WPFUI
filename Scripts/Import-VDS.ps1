@@ -37,26 +37,105 @@ param(
     [bool]$SuppressConsoleOutput = $false
 )
 
-# Import logging functions
-$ScriptDir = if ($PSScriptRoot) { 
-    $PSScriptRoot 
-} else { 
-    Split-Path -Parent $MyInvocation.MyCommand.Path 
-}
-$LoggingScript = Join-Path $ScriptDir "Write-ScriptLog.ps1"
+# Embedded logging functions for SDK execution compatibility
+$Global:ScriptLogFile = $null
+$Global:SuppressConsoleOutput = $false
 
-try {
-    if (Test-Path $LoggingScript) {
-        . $LoggingScript
-    } else {
-        throw "Write-ScriptLog.ps1 not found at: $LoggingScript"
+function Write-LogInfo { 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+    $logEntry = "$timestamp [Info] [$Category] $Message"
+    if (-not $Global:SuppressConsoleOutput) { Write-Host $logEntry -ForegroundColor White }
+    if ($Global:ScriptLogFile) { $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }
+}
+
+function Write-LogSuccess { 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+    $logEntry = "$timestamp [Success] [$Category] $Message"
+    if (-not $Global:SuppressConsoleOutput) { Write-Host $logEntry -ForegroundColor Green }
+    if ($Global:ScriptLogFile) { $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }
+}
+
+function Write-LogWarning { 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+    $logEntry = "$timestamp [Warning] [$Category] $Message"
+    if (-not $Global:SuppressConsoleOutput) { Write-Host $logEntry -ForegroundColor Yellow }
+    if ($Global:ScriptLogFile) { $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }
+}
+
+function Write-LogError { 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+    $logEntry = "$timestamp [Error] [$Category] $Message"
+    if (-not $Global:SuppressConsoleOutput) { Write-Host $logEntry -ForegroundColor Red }
+    if ($Global:ScriptLogFile) { $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }
+}
+
+function Start-ScriptLogging {
+    param(
+        [string]$ScriptName = '',
+        [string]$LogPath = $null,
+        [bool]$SuppressConsoleOutput = $false
+    )
+    
+    $Global:SuppressConsoleOutput = $SuppressConsoleOutput
+    
+    if ($LogPath) {
+        if ([System.IO.Path]::HasExtension($LogPath)) {
+            $logDir = [System.IO.Path]::GetDirectoryName($LogPath)
+        } else {
+            $logDir = $LogPath
+        }
+        
+        $psLogDir = Join-Path $logDir "PowerShell"
+        if (-not (Test-Path $psLogDir)) {
+            New-Item -ItemType Directory -Path $psLogDir -Force | Out-Null
+        }
+        
+        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+        $sessionId = [System.Guid]::NewGuid().ToString("N").Substring(0, 8)
+        $Global:ScriptLogFile = Join-Path $psLogDir "${ScriptName}_${timestamp}_${sessionId}.log"
+        
+        $separator = "=" * 80
+        "$separator" | Out-File -FilePath $Global:ScriptLogFile -Encoding UTF8
+        "SCRIPT START: $ScriptName" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        "$separator" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
     }
-} catch {
-    Write-Error "Failed to import Write-ScriptLog.ps1: $($_.Exception.Message)"
-    Write-Error "Script directory: $ScriptDir"
-    Write-Error "Looking for: $LoggingScript"
-    Write-Error "File exists: $(Test-Path $LoggingScript)"
-    throw "Cannot continue without logging functions"
+}
+
+function Stop-ScriptLogging {
+    param(
+        [bool]$Success = $true,
+        [string]$Summary = "",
+        [hashtable]$Statistics = @{}
+    )
+    
+    if ($Global:ScriptLogFile) {
+        $separator = "=" * 80
+        "$separator" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        if ($Success) {
+            "SCRIPT COMPLETED SUCCESSFULLY" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        } else {
+            "SCRIPT FAILED" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        }
+        
+        if ($Summary) {
+            "Summary: $Summary" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        }
+        
+        if ($Statistics.Count -gt 0) {
+            "Statistics:" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+            foreach ($key in $Statistics.Keys) {
+                "    $key = $($Statistics[$key])" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+            }
+        }
+        
+        "End Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        "$separator" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+    }
 }
 
 # Start logging
