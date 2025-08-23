@@ -709,14 +709,20 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
                 LogOutput += $"[{DateTime.Now:HH:mm:ss}] Created export directory: {exportPath}\n";
             }
 
+            // Create a timestamped reference file name for this export
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var referenceFileName = $"VDS_Export_{timestamp}.json";
+            var referenceFilePath = Path.Combine(exportPath, referenceFileName);
+
             var parameters = new Dictionary<string, object>
             {
-                { "ExportPath", exportPath },
+                { "ExportPath", referenceFilePath },
                 { "LogPath", config.LogPath },
                 { "BypassModuleCheck", true }
             };
 
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Starting VDS backup export to: {exportPath}\n";
+            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Reference file: {referenceFileName}\n";
 
             var result = await _powerShellService.RunVCenterScriptAsync(
                 "Scripts\\Export-VDS.ps1",
