@@ -856,7 +856,7 @@ function Start-ScriptLogging {{
 # Start logging
 Start-ScriptLogging -ScriptName ""TagCategoryDiscovery"" -LogPath ""{logPath.Replace("\\", "\\\\")}""
 
-Write-LogInfo ""Starting tag and category discovery"" -Category ""Discovery""
+Write-LogInfo ""Starting optimized tag and category discovery"" -Category ""Discovery""
 
 try {{
     # Initialize result object
@@ -902,23 +902,43 @@ try {{
         Write-LogInfo ""No tag categories found"" -Category ""Discovery""
     }}
     
-    # Get all tags
-    Write-LogInfo ""Retrieving tags..."" -Category ""Discovery""
+    # OPTIMIZED: Get all tags and all tag assignments in bulk operations
+    Write-LogInfo ""Retrieving all tags (bulk operation)..."" -Category ""Discovery""
     $allTags = Get-Tag -ErrorAction SilentlyContinue
     
     if ($allTags -and $allTags.Count -gt 0) {{
-        Write-LogInfo ""Found $($allTags.Count) tags"" -Category ""Discovery""
+        Write-LogInfo ""Found $($allTags.Count) tags - now retrieving assignments in bulk"" -Category ""Discovery""
+        
+        # OPTIMIZATION: Get all tag assignments in one operation instead of per-tag
+        $allAssignments = @()
+        try {{
+            Write-LogInfo ""Retrieving all tag assignments (bulk operation)..."" -Category ""Discovery""
+            $allAssignments = Get-TagAssignment -ErrorAction SilentlyContinue
+            Write-LogInfo ""Retrieved $($allAssignments.Count) total tag assignments"" -Category ""Discovery""
+        }} catch {{
+            Write-LogWarning ""Could not retrieve bulk tag assignments: $($_.Exception.Message)"" -Category ""Discovery""
+            $allAssignments = @()
+        }}
+        
+        # Create a hashtable for fast assignment counting
+        $assignmentCounts = @{{}}
+        foreach ($assignment in $allAssignments) {{
+            if ($assignment.Tag -and $assignment.Tag.Id) {{
+                $tagId = $assignment.Tag.Id.ToString()
+                if (-not $assignmentCounts.ContainsKey($tagId)) {{
+                    $assignmentCounts[$tagId] = 0
+                }}
+                $assignmentCounts[$tagId]++
+            }}
+        }}
+        
+        Write-LogInfo ""Processing $($allTags.Count) tags with pre-calculated assignment counts"" -Category ""Discovery""
         
         foreach ($tag in $allTags) {{
-            Write-LogInfo ""Processing tag: $($tag.Name)"" -Category ""Discovery""
-            
-            # Count assigned objects for this tag
+            # Get assignment count from hashtable (much faster than individual queries)
             $assignedCount = 0
-            try {{
-                $assignedObjects = Get-TagAssignment -Tag $tag -ErrorAction SilentlyContinue
-                $assignedCount = if ($assignedObjects) {{ @($assignedObjects).Count }} else {{ 0 }}
-            }} catch {{
-                Write-LogWarning ""Could not count assignments for tag '$($tag.Name)': $($_.Exception.Message)"" -Category ""Discovery""
+            if ($tag.Id -and $assignmentCounts.ContainsKey($tag.Id.ToString())) {{
+                $assignedCount = $assignmentCounts[$tag.Id.ToString()]
             }}
             
             $tagInfo = @{{
@@ -926,13 +946,13 @@ try {{
                 Id = if ($tag.Id) {{ $tag.Id.ToString() }} else {{ """" }}
                 CategoryName = if ($tag.Category -and $tag.Category.Name) {{ $tag.Category.Name.ToString() }} else {{ """" }}
                 Description = if ($tag.Description) {{ $tag.Description.ToString() }} else {{ """" }}
-                AssignedObjectCount = $assignedCount
+                AssignedObjectCount = [int]$assignedCount
             }}
             
             $result.Tags += $tagInfo
         }}
         
-        Write-LogSuccess ""Successfully processed $($result.Tags.Count) tags"" -Category ""Discovery""
+        Write-LogSuccess ""Successfully processed $($result.Tags.Count) tags with assignment counts"" -Category ""Discovery""
     }} else {{
         Write-LogInfo ""No tags found"" -Category ""Discovery""
     }}
@@ -968,12 +988,13 @@ try {{
     {
         try
         {
-            _logger.LogInformation("Loading tags and categories for {VCenterName}", vCenterName);
+            _logger.LogInformation("Loading tags and categories for {VCenterName} (extended timeout for large datasets)", vCenterName);
             
             var logPath = await GetLogPathAsync();
             var script = await BuildTagsAndCategoriesScriptWithLoggingAsync(vCenterName, logPath);
             
-            var tagCategoryData = await ExecuteAndDeserializeAsync<TagCategoryData>(script, connectionType, "TagsAndCategories", vCenterName);
+            // Use extended timeout for tag operations due to potential large datasets
+            var tagCategoryData = await ExecuteWithExtendedTimeoutAsync<TagCategoryData>(script, connectionType, "TagsAndCategories", vCenterName, TimeSpan.FromMinutes(15));
             
             if (tagCategoryData != null && tagCategoryData.Length > 0)
             {
@@ -1707,6 +1728,65 @@ try {{
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load {ObjectType} for {VCenterName}", objectType, vCenterName);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Execute PowerShell script with extended timeout and safely deserialize JSON response
+    /// </summary>
+    private async Task<T[]?> ExecuteWithExtendedTimeoutAsync<T>(string script, string connectionType, string objectType, string vCenterName, TimeSpan timeout)
+    {
+        try
+        {
+            _logger.LogInformation("Executing {ObjectType} script with extended timeout ({TimeoutMinutes} minutes) for {VCenterName}", 
+                objectType, timeout.TotalMinutes, vCenterName);
+            
+            // Check if the service supports custom timeout through reflection or dynamic invocation
+            var serviceType = _persistentConnectionService.GetType();
+            var extendedTimeoutMethod = serviceType.GetMethod("ExecuteCommandWithTimeoutAsync", new[] { typeof(string), typeof(string), typeof(TimeSpan) });
+            
+            string result;
+            if (extendedTimeoutMethod != null)
+            {
+                // Service supports extended timeout
+                var task = (Task<string>)extendedTimeoutMethod.Invoke(_persistentConnectionService, new object[] { connectionType, script, timeout })!;
+                result = await task;
+                _logger.LogInformation("Script executed successfully with extended timeout for {ObjectType}", objectType);
+            }
+            else
+            {
+                // Fallback to default timeout with warning
+                _logger.LogWarning("Extended timeout not supported by connection service, using default timeout for {ObjectType}", objectType);
+                result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
+            }
+
+            if (!string.IsNullOrEmpty(result))
+            {
+                // Check if result looks like JSON before attempting to deserialize
+                if (result.TrimStart().StartsWith("[") || result.TrimStart().StartsWith("{"))
+                {
+                    var objects = JsonSerializer.Deserialize<T[]>(result);
+                    if (objects != null)
+                    {
+                        _logger.LogInformation("Loaded {Count} {ObjectType} for {VCenterName} with extended timeout", objects.Length, objectType, vCenterName);
+                        return objects;
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Invalid JSON response for {ObjectType} from {VCenterName}: {Response}", objectType, vCenterName, result);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Empty response for {ObjectType} from {VCenterName}", objectType, vCenterName);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load {ObjectType} for {VCenterName} with extended timeout", objectType, vCenterName);
         }
 
         return null;
