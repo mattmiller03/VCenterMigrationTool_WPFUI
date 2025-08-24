@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
-using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using System.IO;
+using System.Linq;
 
 namespace VCenterMigrationTool.Services;
 
@@ -13,14 +15,19 @@ namespace VCenterMigrationTool.Services;
 public class VCenterInventoryService
 {
     private readonly PersistentExternalConnectionService _persistentConnectionService;
+    private readonly HybridPowerShellService _hybridPowerShellService;
     private readonly ILogger<VCenterInventoryService> _logger;
     
     private readonly Dictionary<string, VCenterInventory> _inventoryCache = new();
     private readonly object _cacheLock = new();
 
-    public VCenterInventoryService(PersistentExternalConnectionService persistentConnectionService, ILogger<VCenterInventoryService> logger)
+    public VCenterInventoryService(
+        PersistentExternalConnectionService persistentConnectionService, 
+        HybridPowerShellService hybridPowerShellService,
+        ILogger<VCenterInventoryService> logger)
     {
         _persistentConnectionService = persistentConnectionService;
+        _hybridPowerShellService = hybridPowerShellService;
         _logger = logger;
     }
 
@@ -778,8 +785,213 @@ public class VCenterInventoryService
 
     private async Task LoadRolesAndPermissionsAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
-        // Placeholder - roles/permissions discovery is optional for MVP
-        await Task.CompletedTask;
+        try
+        {
+            _logger.LogInformation("Loading roles and permissions for {VCenterName} using SSO Admin script", vCenterName);
+            
+            // Create parameters for Get-SSOAdminConfig.ps1
+            var parameters = new Dictionary<string, object>
+            {
+                { "VCenterServer", vCenterName },
+                { "IncludeRoles", true },
+                { "IncludePermissions", true },
+                { "IncludeSSOUsers", false }, // Optional for performance
+                { "IncludeSSOGroups", false }, // Optional for performance
+                { "BypassModuleCheck", false }
+            };
+
+            // Execute the SSO Admin config script
+            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-SSOAdminConfig.ps1");
+            var result = await _hybridPowerShellService.RunScriptWithCredentialObjectAsync(
+                scriptPath, username, password, parameters);
+
+            if (result.StartsWith("SUCCESS:") || result.TrimStart().StartsWith("{"))
+            {
+                // Parse the JSON output from the script
+                var jsonStart = result.IndexOf('{');
+                if (jsonStart >= 0)
+                {
+                    var jsonContent = result.Substring(jsonStart);
+                    var ssoData = JsonSerializer.Deserialize<SSOAdminConfigData>(jsonContent);
+                    
+                    if (ssoData != null)
+                    {
+                        // Process roles
+                        if (ssoData.Roles != null)
+                        {
+                            foreach (var role in ssoData.Roles)
+                            {
+                                var roleInfo = new RoleInfo
+                                {
+                                    Name = role.Name ?? "",
+                                    Id = role.Id ?? "",
+                                    IsSystem = role.IsSystem,
+                                    Privileges = role.Privileges ?? Array.Empty<string>(),
+                                    AssignmentCount = role.AssignmentCount
+                                };
+                                inventory.Roles.Add(roleInfo);
+                            }
+                        }
+
+                        // Process permissions
+                        if (ssoData.Permissions != null)
+                        {
+                            foreach (var perm in ssoData.Permissions)
+                            {
+                                var permissionInfo = new PermissionInfo
+                                {
+                                    Id = perm.Id ?? Guid.NewGuid().ToString(),
+                                    Principal = perm.Principal ?? "",
+                                    RoleName = perm.Role ?? "",
+                                    EntityName = perm.Entity ?? "",
+                                    EntityType = perm.EntityType ?? "",
+                                    Propagate = perm.Propagate
+                                };
+                                inventory.Permissions.Add(permissionInfo);
+                            }
+                        }
+
+                        // Process global permissions
+                        if (ssoData.GlobalPermissions != null)
+                        {
+                            foreach (var globalPerm in ssoData.GlobalPermissions)
+                            {
+                                var permissionInfo = new PermissionInfo
+                                {
+                                    Id = globalPerm.Id ?? Guid.NewGuid().ToString(),
+                                    Principal = globalPerm.Principal ?? "",
+                                    RoleName = globalPerm.Role ?? "",
+                                    EntityName = "Root",
+                                    EntityType = "Root",
+                                    Propagate = globalPerm.Propagate
+                                };
+                                inventory.Permissions.Add(permissionInfo);
+                            }
+                        }
+
+                        _logger.LogInformation("Successfully loaded {RoleCount} roles and {PermissionCount} permissions for {VCenterName}", 
+                            inventory.Roles.Count, inventory.Permissions.Count, vCenterName);
+                    }
+                }
+            }
+            else if (result.StartsWith("ERROR:"))
+            {
+                _logger.LogWarning("SSO Admin script returned error for {VCenterName}: {Error}", vCenterName, result);
+                // Fallback to basic role/permission discovery
+                await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
+            }
+            else
+            {
+                _logger.LogWarning("Unexpected result from SSO Admin script for {VCenterName}: {Result}", vCenterName, result);
+                // Fallback to basic role/permission discovery
+                await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load roles and permissions using SSO Admin script for {VCenterName}", vCenterName);
+            // Fallback to basic role/permission discovery
+            await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
+        }
+    }
+
+    private async Task LoadBasicRolesAndPermissionsAsync(string vCenterName, VCenterInventory inventory, string connectionType)
+    {
+        try
+        {
+            _logger.LogInformation("Loading basic roles and permissions for {VCenterName} as fallback", vCenterName);
+            
+            // Basic roles discovery script
+            var rolesScript = @"
+                $roles = Get-VIRole | Where-Object { $_.IsSystem -eq $false }
+                $roleData = $roles | ForEach-Object {
+                    $assignmentCount = 0
+                    try {
+                        $assignments = Get-VIPermission | Where-Object { $_.Role -eq $_.Name }
+                        $assignmentCount = @($assignments).Count
+                    } catch {}
+                    
+                    @{
+                        Name = $_.Name
+                        Id = $_.Id
+                        Description = $_.Description
+                        IsSystem = $_.IsSystem
+                        Privileges = @($_.PrivilegeList)
+                        AssignmentCount = $assignmentCount
+                    }
+                }
+                $roleData | ConvertTo-Json -Depth 3
+            ";
+
+            var roleResult = await _persistentConnectionService.ExecuteCommandAsync(connectionType, rolesScript);
+            if (!string.IsNullOrEmpty(roleResult))
+            {
+                var roles = JsonSerializer.Deserialize<BasicRoleData[]>(roleResult);
+                if (roles != null)
+                {
+                    foreach (var role in roles)
+                    {
+                        var roleInfo = new RoleInfo
+                        {
+                            Name = role.Name ?? "",
+                            Id = role.Id ?? "",
+                            IsSystem = role.IsSystem,
+                            Privileges = role.Privileges ?? Array.Empty<string>(),
+                            AssignmentCount = role.AssignmentCount
+                        };
+                        inventory.Roles.Add(roleInfo);
+                    }
+                }
+            }
+
+            // Basic permissions discovery script
+            var permissionsScript = @"
+                $permissions = Get-VIPermission
+                $permData = $permissions | ForEach-Object {
+                    @{
+                        Id = [System.Guid]::NewGuid().ToString()
+                        Principal = $_.Principal
+                        PrincipalType = if ($_.IsGroup) { 'Group' } else { 'User' }
+                        Role = $_.Role
+                        Entity = if ($_.Entity) { $_.Entity.Name } else { 'Root' }
+                        EntityType = if ($_.Entity) { $_.Entity.GetType().Name } else { 'Root' }
+                        EntityId = if ($_.Entity) { $_.Entity.Id } else { 'Root' }
+                        Propagate = $_.Propagate
+                        Type = 'Permission'
+                    }
+                }
+                $permData | ConvertTo-Json -Depth 2
+            ";
+
+            var permResult = await _persistentConnectionService.ExecuteCommandAsync(connectionType, permissionsScript);
+            if (!string.IsNullOrEmpty(permResult))
+            {
+                var permissions = JsonSerializer.Deserialize<BasicPermissionData[]>(permResult);
+                if (permissions != null)
+                {
+                    foreach (var perm in permissions)
+                    {
+                        var permissionInfo = new PermissionInfo
+                        {
+                            Id = perm.Id ?? Guid.NewGuid().ToString(),
+                            Principal = perm.Principal ?? "",
+                            RoleName = perm.Role ?? "",
+                            EntityName = perm.Entity ?? "",
+                            EntityType = perm.EntityType ?? "",
+                            Propagate = perm.Propagate
+                        };
+                        inventory.Permissions.Add(permissionInfo);
+                    }
+                }
+            }
+
+            _logger.LogInformation("Loaded {RoleCount} basic roles and {PermissionCount} basic permissions for {VCenterName}", 
+                inventory.Roles.Count, inventory.Permissions.Count, vCenterName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load basic roles and permissions for {VCenterName}", vCenterName);
+        }
     }
 
     private async Task LoadCustomAttributesAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
@@ -846,4 +1058,93 @@ public class InventoryUpdatedEventArgs : EventArgs
         VCenterName = vCenterName;
         Inventory = inventory;
     }
+}
+
+/// <summary>
+/// Data structures for deserializing SSO Admin Config script output
+/// </summary>
+public class SSOAdminConfigData
+{
+    public string? CollectionDate { get; set; }
+    public string? VCenterServer { get; set; }
+    public List<SSORoleData>? Roles { get; set; }
+    public List<SSOPermissionData>? Permissions { get; set; }
+    public List<SSOPermissionData>? GlobalPermissions { get; set; }
+    public List<SSOUserData>? SSOUsers { get; set; }
+    public List<SSOGroupData>? SSOGroups { get; set; }
+    public int TotalRoles { get; set; }
+    public int TotalPermissions { get; set; }
+}
+
+public class SSORoleData
+{
+    public string? Name { get; set; }
+    public string? Id { get; set; }
+    public bool IsSystem { get; set; }
+    public string? Description { get; set; }
+    public string[]? Privileges { get; set; }
+    public int AssignmentCount { get; set; }
+    public string? Type { get; set; }
+}
+
+public class SSOPermissionData
+{
+    public string? Id { get; set; }
+    public string? Principal { get; set; }
+    public string? PrincipalType { get; set; }
+    public string? Role { get; set; }
+    public string? Entity { get; set; }
+    public string? EntityType { get; set; }
+    public string? EntityId { get; set; }
+    public bool Propagate { get; set; }
+    public string? Type { get; set; }
+}
+
+public class SSOUserData
+{
+    public string? Name { get; set; }
+    public string? Domain { get; set; }
+    public string? Email { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Description { get; set; }
+    public bool Disabled { get; set; }
+    public string? Type { get; set; }
+}
+
+public class SSOGroupData
+{
+    public string? Name { get; set; }
+    public string? Domain { get; set; }
+    public string? Description { get; set; }
+    public string? Type { get; set; }
+}
+
+/// <summary>
+/// Basic role data for fallback scenarios
+/// </summary>
+public class BasicRoleData
+{
+    public string? Name { get; set; }
+    public string? Id { get; set; }
+    public string? Description { get; set; }
+    public bool IsSystem { get; set; }
+    public string[]? Privileges { get; set; }
+    public int AssignmentCount { get; set; }
+}
+
+/// <summary>
+/// Basic permission data for fallback scenarios
+/// </summary>
+public class BasicPermissionData
+{
+    public string? Id { get; set; }
+    public string? Principal { get; set; }
+    public string? PrincipalType { get; set; }
+    public string? Role { get; set; }
+    public string? Entity { get; set; }
+    public string? EntityType { get; set; }
+    public string? EntityId { get; set; }
+    public bool Propagate { get; set; }
+    public string? Type { get; set; }
 }
