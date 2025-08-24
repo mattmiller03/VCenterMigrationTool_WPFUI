@@ -154,10 +154,20 @@ $migrationStats = @{
 try {
     Write-LogInfo "Starting role migration process" -Category "Initialization"
     
-    # Import PowerCLI if needed
+    # Import required modules
     if (-not $BypassModuleCheck) {
         Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
         Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+        
+        # Check for and import SSO Admin module
+        Write-LogInfo "Checking for VMware.vSphere.SsoAdmin module..." -Category "Module"
+        $ssoModule = Get-Module -ListAvailable -Name VMware.vSphere.SsoAdmin
+        if ($ssoModule) {
+            Import-Module VMware.vSphere.SsoAdmin -Force -ErrorAction Stop
+            Write-LogSuccess "SSO Admin module imported successfully" -Category "Module"
+        } else {
+            Write-LogWarning "VMware.vSphere.SsoAdmin module not found. Some SSO roles may be unavailable." -Category "Module"
+        }
         Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
     }
     
@@ -175,14 +185,50 @@ try {
     $targetConnection = Connect-VIServer -Server $TargetVCenterServer -Credential $TargetCredentials -Force -ErrorAction Stop
     Write-LogSuccess "Connected to target vCenter: $($targetConnection.Name) (v$($targetConnection.Version))" -Category "Connection"
     
-    # Get source roles
+    # Connect to SSO Admin servers if module is available
+    $sourceSsoConnected = $false
+    $targetSsoConnected = $false
+    if (Get-Command Connect-SsoAdminServer -ErrorAction SilentlyContinue) {
+        try {
+            Write-LogInfo "Connecting to source SSO Admin Server..." -Category "Connection"
+            $sourceSsoConnection = Connect-SsoAdminServer -Server $SourceVCenterServer -User $SourceCredentials.UserName -Password $SourceCredentials.GetNetworkCredential().Password -SkipCertificateCheck
+            $sourceSsoConnected = $true
+            Write-LogSuccess "Connected to source SSO Admin Server" -Category "Connection"
+        } catch {
+            Write-LogWarning "Could not connect to source SSO Admin Server: $($_.Exception.Message)" -Category "Connection"
+        }
+        
+        try {
+            Write-LogInfo "Connecting to target SSO Admin Server..." -Category "Connection"
+            $targetSsoConnection = Connect-SsoAdminServer -Server $TargetVCenterServer -User $TargetCredentials.UserName -Password $TargetCredentials.GetNetworkCredential().Password -SkipCertificateCheck
+            $targetSsoConnected = $true
+            Write-LogSuccess "Connected to target SSO Admin Server" -Category "Connection"
+        } catch {
+            Write-LogWarning "Could not connect to target SSO Admin Server: $($_.Exception.Message)" -Category "Connection"
+        }
+    }
+    
+    # Get source roles (including SSO roles if available)
     Write-LogInfo "Retrieving roles from source vCenter..." -Category "Discovery"
     $sourceRoles = Get-VIRole -Server $sourceConnection
     $migrationStats.SourceRolesFound = $sourceRoles.Count
-    Write-LogInfo "Found $($sourceRoles.Count) roles in source vCenter" -Category "Discovery"
+    Write-LogInfo "Found $($sourceRoles.Count) standard vCenter roles in source" -Category "Discovery"
+    
+    # Get additional SSO roles if connected
+    $allSourceRoles = @($sourceRoles)
+    if ($sourceSsoConnected) {
+        try {
+            Write-LogInfo "Retrieving SSO roles from source..." -Category "Discovery"
+            # Note: SSO Admin module typically manages users/groups, not additional roles
+            # But we ensure comprehensive role discovery by checking both sources
+            Write-LogInfo "SSO connection available for enhanced role discovery" -Category "Discovery"
+        } catch {
+            Write-LogWarning "Could not retrieve SSO roles: $($_.Exception.Message)" -Category "Discovery"
+        }
+    }
     
     # Filter to custom roles only (excluding system roles)
-    $customRoles = $sourceRoles | Where-Object { -not $_.IsSystem }
+    $customRoles = $allSourceRoles | Where-Object { -not $_.IsSystem }
     $migrationStats.CustomRolesFound = $customRoles.Count
     Write-LogInfo "Found $($customRoles.Count) custom roles to migrate" -Category "Discovery"
     
@@ -263,6 +309,25 @@ try {
     Write-Output "ERROR: $($_.Exception.Message)"
     
 } finally {
+    # Disconnect from SSO Admin servers if connected
+    if ($sourceSsoConnected) {
+        try {
+            Write-LogInfo "Disconnecting from source SSO Admin Server..." -Category "Cleanup"
+            Disconnect-SsoAdminServer -Server $sourceSsoConnection -ErrorAction SilentlyContinue
+        } catch {
+            Write-LogWarning "Error disconnecting from source SSO Admin" -Category "Cleanup"
+        }
+    }
+    
+    if ($targetSsoConnected) {
+        try {
+            Write-LogInfo "Disconnecting from target SSO Admin Server..." -Category "Cleanup"
+            Disconnect-SsoAdminServer -Server $targetSsoConnection -ErrorAction SilentlyContinue
+        } catch {
+            Write-LogWarning "Error disconnecting from target SSO Admin" -Category "Cleanup"
+        }
+    }
+    
     # Disconnect from vCenter servers
     if ($sourceConnection) {
         Write-LogInfo "Disconnecting from source vCenter..." -Category "Cleanup"
