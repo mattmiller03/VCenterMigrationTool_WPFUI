@@ -1,38 +1,48 @@
-﻿2025-08-23 11:21:44.889 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  ================================================================================
-2025-08-23 11:21:44.931 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  SCRIPT START: Export-VDS
-2025-08-23 11:21:44.957 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  Session ID: 4e32ffb1
-2025-08-23 11:21:44.987 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  User: DMM0090@DAYL6Y3K504
-2025-08-23 11:21:45.020 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  PowerShell Version: 7.4.6
-2025-08-23 11:21:45.042 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  Start Time: 2025-08-23 11:21:45
-2025-08-23 11:21:45.090 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  ================================================================================
-2025-08-23 11:21:45.094 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Initialization] Starting vDS export process using native Export-VDSwitch cmdlet
-2025-08-23 11:21:52.247 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Connection] Connecting to vCenter: klisv0pp212.dir.ad.dla.mil
-2025-08-23 11:21:57.237 [Success] [4e32ffb1] [Write-ScriptLog.ps1] [Connection] Connected to vCenter: klisv0pp212.dir.ad.dla.mil (v7.0.3)
-2025-08-23 11:21:57.281 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Discovery] Retrieving Virtual Distributed Switches...
-2025-08-23 11:22:02.325 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Discovery] Found 8 Virtual Distributed Switches
-2025-08-23 11:22:02.372 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Created VDS export directory: C:\Users\DMM0090\AppData\Local\Temp\tmp34vp1y
-2025-08-23 11:22:02.409 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exporting vDS: vDS - Kleber HX - vMotion
-2025-08-23 11:22:04.135 [Success] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exported vDS 'vDS - Kleber HX - vMotion' to C:\Users\DMM0090\AppData\Local\Temp\tmp34vp1y\vDS - Kleber HX - vMotion_backup.zip (Size: 6.7734375 KB)
-2025-08-23 11:22:04.801 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exporting vDS: vDS - Kleber HX - VM
-2025-08-23 11:22:09.834 [Success] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exported vDS 'vDS - Kleber HX - VM' to C:\Users\DMM0090\AppData\Local\Temp\tmp34vp1y\vDS - Kleber HX - VM_backup.zip (Size: 20.5478515625 KB)
-2025-08-23 11:22:12.314 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exporting vDS: vDS - Sigonella HX - vMotion
-2025-08-23 11:22:13.790 [Success] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exported vDS 'vDS - Sigonella HX - vMotion' to C:\Users\DMM0090\AppData\Local\Temp\tmp34vp1y\vDS - Sigonella HX - vMotion_backup.zip (Size: 6.6943359375 KB)
-2025-08-23 11:22:14.361 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exporting vDS: vDS - Sigonella HX - VM
-2025-08-23 11:22:15.786 [Success] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exported vDS 'vDS - Sigonella HX - VM' to C:\Users\DMM0090\AppData\Local\Temp\tmp34vp1y\vDS - Sigonella HX - VM_backup.zip (Size: 6.7265625 KB)
-2025-08-23 11:22:16.348 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exporting vDS: vDS - Germersheim HX - VM
-2025-08-23 11:22:18.129 [Success] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exported vDS 'vDS - Germersheim HX - VM' to C:\Users\DMM0090\AppData\Local\Temp\tmp34vp1y\vDS - Germersheim HX - VM_backup.zip (Size: 8.09765625 KB)
-2025-08-23 11:22:18.907 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exporting vDS: vDS - Germersheim HX - vMotion
-2025-08-23 11:22:20.352 [Success] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exported vDS 'vDS - Germersheim HX - vMotion' to C:\Users\DMM0090\AppData\Local\Temp\tmp34vp1y\vDS - Germersheim HX - vMotion_backup.zip (Size: 6.6435546875 KB)
-2025-08-23 11:22:20.942 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exporting vDS: vDS - Bahrain HX - vMotion
-2025-08-23 11:22:22.345 [Success] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exported vDS 'vDS - Bahrain HX - vMotion' to C:\Users\DMM0090\AppData\Local\Temp\tmp34vp1y\vDS - Bahrain HX - vMotion_backup.zip (Size: 6.6982421875 KB)
-2025-08-23 11:22:22.920 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exporting vDS: vDS - Bahrain HX - VM
-2025-08-23 11:22:24.722 [Success] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Exported vDS 'vDS - Bahrain HX - VM' to C:\Users\DMM0090\AppData\Local\Temp\tmp34vp1y\vDS - Bahrain HX - VM_backup.zip (Size: 8.03125 KB)
-2025-08-23 11:22:25.521 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Export] Created export manifest: C:\Users\DMM0090\AppData\Local\Temp\tmp34vp1y\export_manifest.json
-2025-08-23 11:22:25.567 [Info] [4e32ffb1] [Write-ScriptLog.ps1] [Cleanup] Disconnecting from vCenter...
-2025-08-23 11:22:25.937 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  ================================================================================
-2025-08-23 11:22:25.938 [Success] [4e32ffb1] [Write-ScriptLog.ps1]  SCRIPT COMPLETED SUCCESSFULLY
-2025-08-23 11:22:25.958 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  Summary: Successfully exported 8 vDS switches using native PowerCLI backup
-2025-08-23 11:22:26.001 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  Duration: 00:00:41.054
-2025-08-23 11:22:26.022 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  End Time: 2025-08-23 11:22:26
-2025-08-23 11:22:26.050 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  Session ID: 4e32ffb1
-2025-08-23 11:22:26.069 [Info] [4e32ffb1] [Write-ScriptLog.ps1]  ================================================================================
+﻿[19:38:14 INF] Configured log path: C:\Temp\app\logs
+[19:38:14 INF] Base log directory: C:\Temp\app\logs
+[19:38:14 INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
+[19:38:14 INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
+[19:38:14 INF] Trying PowerShell executable: pwsh.exe
+[19:38:14 INF] Creating PowerShell process with command: pwsh.exe
+[19:38:14 INF] Successfully started PowerShell process: pwsh.exe (PID: 26500)
+[19:38:15 INF] Application started. Press Ctrl+C to shut down.
+[19:38:15 INF] Hosting environment: Production
+[19:38:15 INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationUI.dll'. Symbol loading disabled by Include/Exclude setting.
+[19:38:15 INF] PowerShell process completed with exit code: 0
+[19:38:15 INF] STARTUP: PowerCLI detected and confirmed installed on startup
+[19:38:15 INF] PERSISTENCE: PowerCLI status saved as true
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Formatters.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\Accessibility.dll'. Module was built without symbols.
+[19:38:24 INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
+[19:38:24 INF] Selected Source Profile: klisv0pp212.dir.ad.dla.mil | User: administrator@DLA-KLEBER.local
+[19:38:24 INF] PowerCLI Bypass Status: true
+[19:38:24 INF] STEP 1: Retrieving stored credentials for profile: Prod -Kleber v7
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Meziantou.Framework.Win32.CredentialManager.dll'. 
+[19:38:24 INF] STEP 1: Using stored credentials
+[19:38:24 INF] STEP 2: Starting persistent connection to klisv0pp212.dir.ad.dla.mil
+[19:38:25 INF] STEP 2: Calling PersistentConnectionService.ConnectAsync with bypass=true
+[19:38:25 INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+[19:38:25 INF] Started persistent PowerShell process: pwsh.exe (PID: 14456)
+[19:38:25 INF] Bypassing module import (assumed already loaded)
+[19:38:25 INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
+[19:38:27 WRN] Connection result did not contain CONNECTION_SUCCESS. Full result: ERROR: No active connection for source
+[19:38:27 ERR] Connection failed: Connection failed - Result: ERROR: No active connection for source
+[19:38:27 INF] Disconnecting from klisv0pp212.dir.ad.dla.mil (source)
+[19:38:27 INF] ✅ Disconnected from klisv0pp212.dir.ad.dla.mil
+[19:38:27 INF] STEP 2: ConnectAsync returned - Success: false | Message: Connection failed - Result: ERROR: No active connection for source | SessionId: null
+[19:38:27 ERR] STEP 2: Connection FAILED - Success=false | Message=Connection failed - Result: ERROR: No active connection for source
+[19:38:27 ERR] ❌ Failed to establish persistent connection: Connection failed - Result: ERROR: No active connection for source
+The thread '.NET TP Wait' (21492) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (20172) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (32592) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (12608) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (30640) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (24752) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (26040) has exited with code 0 (0x0).
+[19:38:56 INF] Activity logs cleared by user
+The thread 33216 has exited with code 0 (0x0).
+The thread '.NET TP Worker' (33100) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (8272) has exited with code 0 (0x0).
+The program '[27692] VCenterMigrationTool.exe: Program Trace' has exited with code 0 (0x0).
+The program '[27692] VCenterMigrationTool.exe' has exited with code 4294967295 (0xffffffff).
