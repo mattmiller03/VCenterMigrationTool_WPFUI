@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
@@ -16,6 +17,7 @@ namespace VCenterMigrationTool.ViewModels
         private readonly HybridPowerShellService _powerShellService;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly PersistentExternalConnectionService _persistentConnectionService;
+        private readonly CredentialService _credentialService;
         private readonly ILogger<AdminConfigMigrationViewModel> _logger;
 
         // Connection Status
@@ -118,12 +120,14 @@ namespace VCenterMigrationTool.ViewModels
             HybridPowerShellService powerShellService,
             IErrorHandlingService errorHandlingService,
             PersistentExternalConnectionService persistentConnectionService,
+            CredentialService credentialService,
             ILogger<AdminConfigMigrationViewModel> logger)
         {
             _sharedConnectionService = sharedConnectionService;
             _powerShellService = powerShellService;
             _errorHandlingService = errorHandlingService;
             _persistentConnectionService = persistentConnectionService;
+            _credentialService = credentialService;
             _logger = logger;
         }
 
@@ -302,8 +306,49 @@ namespace VCenterMigrationTool.ViewModels
                 MigrationStatus = "Validating admin config migration...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting migration validation\n";
                 
-                // TODO: Implement validation logic
-                await Task.Delay(2000);
+                var originalValidateOnly = ValidateOnly;
+                ValidateOnly = true; // Force validation mode
+                
+                try
+                {
+                    // Run validation by calling migration methods in validate-only mode
+                    var totalSteps = GetEnabledMigrationStepsCount();
+                    var currentStep = 0;
+                    
+                    if (MigrateRoles)
+                    {
+                        await MigrateRolesAsync();
+                        currentStep++;
+                    }
+                    
+                    if (MigrateFolders)
+                    {
+                        await MigrateFoldersAsync();
+                        currentStep++;
+                    }
+                    
+                    if (MigrateTags)
+                    {
+                        await MigrateTagsAsync();
+                        currentStep++;
+                    }
+                    
+                    if (MigrateCustomAttributes)
+                    {
+                        await MigrateCustomAttributesAsync();
+                        currentStep++;
+                    }
+                    
+                    if (MigratePermissions)
+                    {
+                        await MigratePermissionsAsync();
+                        currentStep++;
+                    }
+                }
+                finally
+                {
+                    ValidateOnly = originalValidateOnly; // Restore original setting
+                }
                 
                 MigrationStatus = "Admin config migration validation completed";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Migration validation completed successfully\n";
@@ -326,13 +371,46 @@ namespace VCenterMigrationTool.ViewModels
                 MigrationStatus = "Starting admin config migration...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting admin config migration\n";
                 
-                // TODO: Implement actual migration logic
-                for (int i = 0; i <= 100; i += 10)
+                var totalSteps = GetEnabledMigrationStepsCount();
+                var currentStep = 0;
+                
+                // Migrate selected components
+                if (MigrateRoles)
                 {
-                    MigrationProgress = i;
-                    await Task.Delay(200);
+                    await MigrateRolesAsync();
+                    currentStep++;
+                    MigrationProgress = (double)currentStep / totalSteps * 100;
                 }
                 
+                if (MigrateFolders)
+                {
+                    await MigrateFoldersAsync();
+                    currentStep++;
+                    MigrationProgress = (double)currentStep / totalSteps * 100;
+                }
+                
+                if (MigrateTags)
+                {
+                    await MigrateTagsAsync();
+                    currentStep++;
+                    MigrationProgress = (double)currentStep / totalSteps * 100;
+                }
+                
+                if (MigrateCustomAttributes)
+                {
+                    await MigrateCustomAttributesAsync();
+                    currentStep++;
+                    MigrationProgress = (double)currentStep / totalSteps * 100;
+                }
+                
+                if (MigratePermissions)
+                {
+                    await MigratePermissionsAsync();
+                    currentStep++;
+                    MigrationProgress = (double)currentStep / totalSteps * 100;
+                }
+                
+                MigrationProgress = 100;
                 MigrationStatus = "Admin config migration completed successfully";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Admin config migration completed successfully\n";
             }
@@ -347,6 +425,286 @@ namespace VCenterMigrationTool.ViewModels
                 IsMigrationInProgress = false;
                 OnPropertyChanged(nameof(CanValidateMigration));
                 OnPropertyChanged(nameof(CanStartMigration));
+            }
+        }
+
+        private int GetEnabledMigrationStepsCount()
+        {
+            int steps = 0;
+            if (MigrateRoles) steps++;
+            if (MigrateFolders) steps++;
+            if (MigrateTags) steps++;
+            if (MigrateCustomAttributes) steps++;
+            if (MigratePermissions) steps++;
+            return Math.Max(1, steps); // Ensure at least 1 to avoid division by zero
+        }
+
+        private async Task MigrateRolesAsync()
+        {
+            try
+            {
+                MigrationStatus = "Migrating roles...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting role migration\n";
+                
+                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
+                {
+                    throw new InvalidOperationException("Source or target connection not available");
+                }
+
+                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+                
+                var parameters = new Dictionary<string, object>
+                {
+                    { "SourceVCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
+                    { "TargetVCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
+                    { "ValidateOnly", ValidateOnly },
+                    { "OverwriteExisting", true },
+                    { "BypassModuleCheck", true }
+                };
+
+                var result = await _powerShellService.RunDualVCenterScriptAsync(
+                    "Scripts\\Migrate-Roles.ps1",
+                    _sharedConnectionService.SourceConnection,
+                    sourcePassword,
+                    _sharedConnectionService.TargetConnection,
+                    targetPassword,
+                    parameters);
+
+                if (result.StartsWith("SUCCESS:"))
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Roles migration completed\n";
+                }
+                else if (result.StartsWith("ERROR:"))
+                {
+                    throw new Exception(result.Substring(6));
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Roles migration result: {result}\n";
+                }
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Roles migration failed: {ex.Message}\n";
+                _logger.LogError(ex, "Error during roles migration");
+                throw;
+            }
+        }
+
+        private async Task MigrateFoldersAsync()
+        {
+            try
+            {
+                MigrationStatus = "Migrating folders...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting folder migration\n";
+                
+                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
+                {
+                    throw new InvalidOperationException("Source or target connection not available");
+                }
+
+                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+                
+                var parameters = new Dictionary<string, object>
+                {
+                    { "SourceVCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
+                    { "TargetVCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
+                    { "ValidateOnly", ValidateOnly },
+                    { "SkipExisting", true },
+                    { "FolderTypes", new[] { "VM", "Host", "Network", "Datastore" } },
+                    { "BypassModuleCheck", true }
+                };
+
+                var result = await _powerShellService.RunDualVCenterScriptAsync(
+                    "Scripts\\Migrate-Folders.ps1",
+                    _sharedConnectionService.SourceConnection,
+                    sourcePassword,
+                    _sharedConnectionService.TargetConnection,
+                    targetPassword,
+                    parameters);
+
+                if (result.StartsWith("SUCCESS:"))
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Folders migration completed\n";
+                }
+                else if (result.StartsWith("ERROR:"))
+                {
+                    throw new Exception(result.Substring(6));
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Folders migration result: {result}\n";
+                }
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Folders migration failed: {ex.Message}\n";
+                _logger.LogError(ex, "Error during folders migration");
+                throw;
+            }
+        }
+
+        private async Task MigrateTagsAsync()
+        {
+            try
+            {
+                MigrationStatus = "Migrating tags and categories...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting tags migration\n";
+                
+                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
+                {
+                    throw new InvalidOperationException("Source or target connection not available");
+                }
+
+                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+                
+                var parameters = new Dictionary<string, object>
+                {
+                    { "SourceVCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
+                    { "TargetVCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
+                    { "ValidateOnly", ValidateOnly },
+                    { "OverwriteExisting", false },
+                    { "MigrateTagAssignments", false }, // Skip tag assignments for now
+                    { "BypassModuleCheck", true }
+                };
+
+                var result = await _powerShellService.RunDualVCenterScriptAsync(
+                    "Scripts\\Migrate-Tags.ps1",
+                    _sharedConnectionService.SourceConnection,
+                    sourcePassword,
+                    _sharedConnectionService.TargetConnection,
+                    targetPassword,
+                    parameters);
+
+                if (result.StartsWith("SUCCESS:"))
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Tags migration completed\n";
+                }
+                else if (result.StartsWith("ERROR:"))
+                {
+                    throw new Exception(result.Substring(6));
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Tags migration result: {result}\n";
+                }
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Tags migration failed: {ex.Message}\n";
+                _logger.LogError(ex, "Error during tags migration");
+                throw;
+            }
+        }
+
+        private async Task MigrateCustomAttributesAsync()
+        {
+            try
+            {
+                MigrationStatus = "Migrating custom attributes...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting custom attributes migration\n";
+                
+                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
+                {
+                    throw new InvalidOperationException("Source or target connection not available");
+                }
+
+                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+                
+                var parameters = new Dictionary<string, object>
+                {
+                    { "SourceVCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
+                    { "TargetVCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
+                    { "ValidateOnly", ValidateOnly },
+                    { "OverwriteExisting", false },
+                    { "MigrateAttributeValues", false }, // Skip values migration for now
+                    { "BypassModuleCheck", true }
+                };
+
+                var result = await _powerShellService.RunDualVCenterScriptAsync(
+                    "Scripts\\Migrate-CustomAttributes.ps1",
+                    _sharedConnectionService.SourceConnection,
+                    sourcePassword,
+                    _sharedConnectionService.TargetConnection,
+                    targetPassword,
+                    parameters);
+
+                if (result.StartsWith("SUCCESS:"))
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Custom attributes migration completed\n";
+                }
+                else if (result.StartsWith("ERROR:"))
+                {
+                    throw new Exception(result.Substring(6));
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Custom attributes migration result: {result}\n";
+                }
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Custom attributes migration failed: {ex.Message}\n";
+                _logger.LogError(ex, "Error during custom attributes migration");
+                throw;
+            }
+        }
+
+        private async Task MigratePermissionsAsync()
+        {
+            try
+            {
+                MigrationStatus = "Migrating permissions...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting permissions migration\n";
+                
+                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
+                {
+                    throw new InvalidOperationException("Source or target connection not available");
+                }
+
+                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
+                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+                
+                var parameters = new Dictionary<string, object>
+                {
+                    { "SourceVCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
+                    { "TargetVCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
+                    { "ValidateOnly", ValidateOnly },
+                    { "OverwriteExisting", false },
+                    { "SkipMissingEntities", true },
+                    { "BypassModuleCheck", true }
+                };
+
+                var result = await _powerShellService.RunDualVCenterScriptAsync(
+                    "Scripts\\Migrate-Permissions.ps1",
+                    _sharedConnectionService.SourceConnection,
+                    sourcePassword,
+                    _sharedConnectionService.TargetConnection,
+                    targetPassword,
+                    parameters);
+
+                if (result.StartsWith("SUCCESS:"))
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Permissions migration completed\n";
+                }
+                else if (result.StartsWith("ERROR:"))
+                {
+                    throw new Exception(result.Substring(6));
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Permissions migration result: {result}\n";
+                }
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Permissions migration failed: {ex.Message}\n";
+                _logger.LogError(ex, "Error during permissions migration");
+                throw;
             }
         }
     }
