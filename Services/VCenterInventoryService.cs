@@ -897,12 +897,12 @@ public class VCenterInventoryService
                     } catch {}
                     
                     @{
-                        Name = $_.Name
-                        Id = $_.Id
-                        Description = $_.Description
-                        IsSystem = $_.IsSystem
-                        Privileges = @($_.PrivilegeList)
-                        AssignmentCount = $assignmentCount
+                        Name = if ($_.Name) { $_.Name.ToString() } else { """" }
+                        Id = if ($_.Id) { $_.Id.ToString() } else { """" }
+                        Description = if ($_.Description) { $_.Description.ToString() } else { """" }
+                        IsSystem = [bool]$_.IsSystem
+                        Privileges = @($_.PrivilegeList | ForEach-Object { $_.ToString() })
+                        AssignmentCount = [int]$assignmentCount
                     }
                 }
                 $roleData | ConvertTo-Json -Depth 3
@@ -935,14 +935,14 @@ public class VCenterInventoryService
                 $permData = $permissions | ForEach-Object {
                     @{
                         Id = [System.Guid]::NewGuid().ToString()
-                        Principal = $_.Principal
-                        PrincipalType = if ($_.IsGroup) { 'Group' } else { 'User' }
-                        Role = $_.Role
-                        Entity = if ($_.Entity) { $_.Entity.Name } else { 'Root' }
-                        EntityType = if ($_.Entity) { $_.Entity.GetType().Name } else { 'Root' }
-                        EntityId = if ($_.Entity) { $_.Entity.Id } else { 'Root' }
-                        Propagate = $_.Propagate
-                        Type = 'Permission'
+                        Principal = if ($_.Principal) { $_.Principal.ToString() } else { """" }
+                        PrincipalType = if ($_.IsGroup) { ""Group"" } else { ""User"" }
+                        Role = if ($_.Role) { $_.Role.ToString() } else { """" }
+                        Entity = if ($_.Entity) { $_.Entity.Name.ToString() } else { ""Root"" }
+                        EntityType = if ($_.Entity) { $_.Entity.GetType().Name.ToString() } else { ""Root"" }
+                        EntityId = if ($_.Entity) { $_.Entity.Id.ToString() } else { ""Root"" }
+                        Propagate = [bool]$_.Propagate
+                        Type = ""Permission""
                     }
                 }
                 $permData | ConvertTo-Json -Depth 2
@@ -1025,12 +1025,12 @@ try {{
         }}
         
         $roleInfo = @{{
-            Name = $role.Name
-            Id = $role.Id
-            IsSystem = $role.IsSystem
-            Description = $role.Description
-            Privileges = @($role.PrivilegeList)
-            AssignmentCount = $assignmentCount
+            Name = if ($role.Name) {{ $role.Name.ToString() }} else {{ """" }}
+            Id = if ($role.Id) {{ $role.Id.ToString() }} else {{ """" }}
+            IsSystem = [bool]$role.IsSystem
+            Description = if ($role.Description) {{ $role.Description.ToString() }} else {{ """" }}
+            Privileges = @($role.PrivilegeList | ForEach-Object {{ $_.ToString() }})
+            AssignmentCount = [int]$assignmentCount
             Type = ""VIRole""
         }}
         
@@ -1046,13 +1046,13 @@ try {{
     foreach ($perm in $viPermissions) {{
         $permInfo = @{{
             Id = [System.Guid]::NewGuid().ToString()
-            Principal = $perm.Principal
+            Principal = if ($perm.Principal) {{ $perm.Principal.ToString() }} else {{ """" }}
             PrincipalType = if ($perm.IsGroup) {{ ""Group"" }} else {{ ""User"" }}
-            Role = $perm.Role
-            Entity = if ($perm.Entity) {{ $perm.Entity.Name }} else {{ ""Root"" }}
-            EntityType = if ($perm.Entity) {{ $perm.Entity.GetType().Name }} else {{ ""Root"" }}
-            EntityId = if ($perm.Entity) {{ $perm.Entity.Id }} else {{ ""Root"" }}
-            Propagate = $perm.Propagate
+            Role = if ($perm.Role) {{ $perm.Role.ToString() }} else {{ """" }}
+            Entity = if ($perm.Entity) {{ $perm.Entity.Name.ToString() }} else {{ ""Root"" }}
+            EntityType = if ($perm.Entity) {{ $perm.Entity.GetType().Name.ToString() }} else {{ ""Root"" }}
+            EntityId = if ($perm.Entity) {{ $perm.Entity.Id.ToString() }} else {{ ""Root"" }}
+            Propagate = [bool]$perm.Propagate
             Type = ""VIPermission""
         }}
         
@@ -1068,10 +1068,10 @@ try {{
         foreach ($globalPerm in $globalPerms) {{
             $globalPermInfo = @{{
                 Id = [System.Guid]::NewGuid().ToString()
-                Principal = $globalPerm.Principal
+                Principal = if ($globalPerm.Principal) {{ $globalPerm.Principal.ToString() }} else {{ """" }}
                 PrincipalType = if ($globalPerm.IsGroup) {{ ""Group"" }} else {{ ""User"" }}
-                Role = $globalPerm.Role
-                Propagate = $globalPerm.Propagate
+                Role = if ($globalPerm.Role) {{ $globalPerm.Role.ToString() }} else {{ """" }}
+                Propagate = [bool]$globalPerm.Propagate
                 Type = ""GlobalPermission""
             }}
             
