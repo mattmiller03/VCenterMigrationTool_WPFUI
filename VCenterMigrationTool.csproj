@@ -13,6 +13,7 @@
 		<None Remove="Assets\applicationIcon-1024.png" />
 		<None Remove="Assets\applicationIcon-256.ico" />
 		<None Remove="Assets\applicationIcon-256.png" />
+		<None Remove="Assets\Gemini_Generated_Image_b1i2b6b1i2b6b1i2.png" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -45,6 +46,7 @@
 	<ItemGroup>
 		<Resource Include="Assets\applicationIcon-1024.png" />
 		<Resource Include="Assets\applicationIcon-256.png" />
+		<Resource Include="Assets\Gemini_Generated_Image_b1i2b6b1i2b6b1i2.png" />
 	</ItemGroup>
 
 	<ItemGroup>
