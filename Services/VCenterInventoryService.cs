@@ -16,16 +16,19 @@ public class VCenterInventoryService
 {
     private readonly PersistentExternalConnectionService _persistentConnectionService;
     private readonly ILogger<VCenterInventoryService> _logger;
+    private readonly ConfigurationService _configurationService;
     
     private readonly Dictionary<string, VCenterInventory> _inventoryCache = new();
     private readonly object _cacheLock = new();
 
     public VCenterInventoryService(
         PersistentExternalConnectionService persistentConnectionService, 
-        ILogger<VCenterInventoryService> logger)
+        ILogger<VCenterInventoryService> logger,
+        ConfigurationService configurationService)
     {
         _persistentConnectionService = persistentConnectionService;
         _logger = logger;
+        _configurationService = configurationService;
     }
 
     /// <summary>
@@ -1263,71 +1266,18 @@ try {{
 
     private async Task<string> GetLogPathAsync()
     {
-        try
+        // Get the configured log path from the configuration service
+        var config = _configurationService.GetConfiguration();
+        var logPath = config?.LogPath;
+        
+        // If no log path is configured, use the default from AppData
+        if (string.IsNullOrEmpty(logPath))
         {
-            // Try to read the log path from configuration files
-            string? logPath = null;
-            
-            // First try to read from appsettings.json in the application directory
-            var appSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
-            if (File.Exists(appSettingsPath))
-            {
-                try
-                {
-                    var appSettingsJson = await File.ReadAllTextAsync(appSettingsPath);
-                    var appSettingsData = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(appSettingsJson);
-                    if (appSettingsData.TryGetProperty("AppConfig", out var appConfigElement) &&
-                        appConfigElement.TryGetProperty("LogPath", out var logPathElement))
-                    {
-                        logPath = logPathElement.GetString();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to read LogPath from appsettings.json");
-                }
-            }
-            
-            // Then try userconfig.json in AppData
-            if (string.IsNullOrEmpty(logPath))
-            {
-                var userConfigPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "VCenterMigrationTool",
-                    "userconfig.json");
-                    
-                if (File.Exists(userConfigPath))
-                {
-                    try
-                    {
-                        var userConfigJson = await File.ReadAllTextAsync(userConfigPath);
-                        var userConfigData = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(userConfigJson);
-                        if (userConfigData.TryGetProperty("LogPath", out var userLogPathElement))
-                        {
-                            logPath = userLogPathElement.GetString();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to read LogPath from userconfig.json");
-                    }
-                }
-            }
-            
-            // Default to AppData if no configuration found
-            if (string.IsNullOrEmpty(logPath))
-            {
-                logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VCenterMigrationTool", "Logs");
-                _logger.LogInformation("No LogPath configured, using default: {LogPath}", logPath);
-            }
-            
-            return logPath;
+            logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VCenterMigrationTool", "Logs");
+            _logger.LogWarning("No LogPath configured, using default: {LogPath}", logPath);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error determining log path, using default");
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VCenterMigrationTool", "Logs");
-        }
+        
+        return await Task.FromResult(logPath);
     }
 
     private async Task<string> BuildSSOAdminScriptWithLoggingAsync(string vCenterServer, string logPath)
