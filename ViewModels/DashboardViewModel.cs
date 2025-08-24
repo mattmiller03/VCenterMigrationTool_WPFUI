@@ -19,6 +19,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     {
     private readonly HybridPowerShellService _powerShellService;
     private readonly PersistentExternalConnectionService _persistentConnectionService;
+    private readonly VSphereApiService _vSphereApiService;
     private readonly ConnectionProfileService _profileService;
     private readonly CredentialService _credentialService;
     private readonly SharedConnectionService _sharedConnectionService;
@@ -156,6 +157,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     public DashboardViewModel (
         HybridPowerShellService powerShellService,
         PersistentExternalConnectionService persistentConnectionService,
+        VSphereApiService vSphereApiService,
         ConnectionProfileService profileService,
         CredentialService credentialService,
         SharedConnectionService sharedConnectionService,
@@ -166,6 +168,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         {
         _powerShellService = powerShellService;
         _persistentConnectionService = persistentConnectionService;
+        _vSphereApiService = vSphereApiService;
         _profileService = profileService;
         _credentialService = credentialService;
         _sharedConnectionService = sharedConnectionService;
@@ -379,42 +382,49 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             SourceConnectionStatus = $"🔗 Connecting to {SelectedSourceProfile.ServerAddress}...";
             await Task.Delay(100); // Allow UI to update
 
-            _logger.LogInformation("STEP 2: Calling PersistentConnectionService.ConnectAsync with bypass={Bypass}", 
-                HybridPowerShellService.PowerCliConfirmedInstalled);
+            _logger.LogInformation("STEP 2: Using VSphereApiService for simple connection validation");
             
-            var (success, message, sessionId) = await _persistentConnectionService.ConnectAsync(
-                SelectedSourceProfile,
-                finalPassword,
-                isSource: true,
-                bypassModuleCheck: HybridPowerShellService.PowerCliConfirmedInstalled);
+            // Create connection info for VSphere API
+            var connectionInfo = new VCenterConnectionInfo
+            {
+                ServerAddress = SelectedSourceProfile.ServerAddress,
+                Username = SelectedSourceProfile.Username
+            };
+            
+            // Test connection using VSphere API (much simpler and more reliable)
+            var (success, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
+            string message = success ? "Connection successful via VSphere API" : "VSphere API authentication failed";
+            string sessionId = success ? sessionToken : null;
 
-            _logger.LogInformation("STEP 2: ConnectAsync returned - Success: {Success} | Message: {Message} | SessionId: {SessionId}", 
-                success, message, sessionId);
+            _logger.LogInformation("STEP 2: VSphereApiService returned - Success: {Success} | Message: {Message} | HasSessionToken: {HasToken}", 
+                success, message, !string.IsNullOrEmpty(sessionToken));
 
             if (success)
                 {
                 _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service");
-                // Step 3: Set connection without inventory
+                // Step 3: Set connection
                 _sharedConnectionService.SourceConnection = SelectedSourceProfile;
 
-                _logger.LogInformation("STEP 3: Getting connection info from persistent service");
-                var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("source");
-                _logger.LogInformation("STEP 3: Connection info - Connected: {Connected} | SessionId: {SessionId} | Version: {Version}", 
-                    isConnected, sid, version);
+                // Get basic vCenter info using API
+                _logger.LogInformation("STEP 3: Getting vCenter version info via API");
+                var (isConnected, version, build) = await _vSphereApiService.GetConnectionStatusAsync(connectionInfo, finalPassword);
+                if (!isConnected) version = "Unknown";
+                
+                _logger.LogInformation("STEP 3: vCenter info retrieved - Version: {Version}", version);
 
                 IsSourceConnected = true;
                 SourceConnectionStatus = $"✅ Connected - {SelectedSourceProfile.ServerAddress} (v{version})";
-                SourceConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
+                SourceConnectionDetails = $"API Session: Active\nVersion: {version}";
                 
-                ScriptOutput = $"Persistent connection established!\n" +
+                ScriptOutput = $"vCenter API connection established!\n" +
                               $"Server: {SelectedSourceProfile.ServerAddress}\n" +
-                              $"Session ID: {sessionId}\n" +
-                              $"Version: {version}\n\n" +
-                              $"Connection will remain active for all operations.\n" +
-                              $"Use vCenter Objects page to load inventory data.\n" +
+                              $"Version: {version}\n" +
+                              $"Authentication: VSphere API\n\n" +
+                              $"Connection is ready for all operations.\n" +
+                              $"PowerCLI operations will use the HybridPowerShellService as needed.\n" +
                               $"Use 'Disconnect' button to close the connection.";
 
-                _logger.LogInformation("✅ Persistent source connection established successfully (Session: {SessionId})", sessionId);
+                _logger.LogInformation("✅ Source vCenter API connection established successfully (Version: {Version})", version);
 
                 // Update inventory summary
                 _logger.LogInformation("STEP 3: Starting inventory summary update task");
