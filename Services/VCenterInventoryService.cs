@@ -856,18 +856,26 @@ public class VCenterInventoryService
 
                         _logger.LogInformation("Successfully loaded {RoleCount} roles and {PermissionCount} permissions for {VCenterName}", 
                             inventory.Roles.Count, inventory.Permissions.Count, vCenterName);
+                        
+                        // Log summary to activity log
+                        var totalPermissions = inventory.Permissions.Count;
+                        var roleCount = inventory.Roles.Count(r => !r.IsSystem);
+                        _logger.LogInformation("Admin Config Discovery Complete: {CustomRoles} custom roles, {TotalPermissions} permissions (including global permissions)", 
+                            roleCount, totalPermissions);
                     }
                 }
             }
             else if (result.StartsWith("ERROR:"))
             {
                 _logger.LogWarning("SSO Admin script returned error for {VCenterName}: {Error}", vCenterName, result);
+                _logger.LogInformation("Falling back to basic role/permission discovery for {VCenterName}", vCenterName);
                 // Fallback to basic role/permission discovery
                 await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
             }
             else
             {
-                _logger.LogWarning("Unexpected result from SSO Admin script for {VCenterName}: {Result}", vCenterName, result);
+                _logger.LogWarning("Unexpected result from SSO Admin script for {VCenterName}: {Result}", vCenterName, result.Substring(0, Math.Min(100, result.Length)));
+                _logger.LogInformation("Falling back to basic role/permission discovery for {VCenterName}", vCenterName);
                 // Fallback to basic role/permission discovery
                 await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
             }
@@ -875,6 +883,7 @@ public class VCenterInventoryService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load roles and permissions using SSO Admin script for {VCenterName}", vCenterName);
+            _logger.LogInformation("Falling back to basic role/permission discovery for {VCenterName}", vCenterName);
             // Fallback to basic role/permission discovery
             await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
         }
@@ -972,6 +981,12 @@ public class VCenterInventoryService
 
             _logger.LogInformation("Loaded {RoleCount} basic roles and {PermissionCount} basic permissions for {VCenterName}", 
                 inventory.Roles.Count, inventory.Permissions.Count, vCenterName);
+            
+            // Log fallback completion summary
+            var totalPermissions = inventory.Permissions.Count;
+            var roleCount = inventory.Roles.Count(r => !r.IsSystem);
+            _logger.LogInformation("Basic Admin Config Discovery Complete: {CustomRoles} custom roles, {TotalPermissions} permissions", 
+                roleCount, totalPermissions);
         }
         catch (Exception ex)
         {
@@ -993,12 +1008,9 @@ try {{
         if ($ssoModule) {{
             Import-Module VMware.vSphere.SsoAdmin -Force -ErrorAction Stop
             $ssoModuleAvailable = $true
-            Write-Host ""SSO Admin module imported successfully""
-        }} else {{
-            Write-Host ""VMware.vSphere.SsoAdmin module not found - SSO data will be limited""
         }}
     }} catch {{
-        Write-Host ""Could not import SSO Admin module: $($_.Exception.Message)""
+        # Silently continue if SSO Admin module import fails
     }}
 
     # Initialize result data
@@ -1013,7 +1025,6 @@ try {{
     }}
 
     # Get Roles (including SSO roles if available)
-    Write-Host ""Retrieving roles...""
     $viRoles = Get-VIRole -ErrorAction SilentlyContinue
     foreach ($role in $viRoles) {{
         $assignmentCount = 0
@@ -1021,7 +1032,7 @@ try {{
             $assignments = Get-VIPermission | Where-Object {{ $_.Role -eq $role.Name }}
             $assignmentCount = @($assignments).Count
         }} catch {{
-            Write-Host ""Could not count assignments for role '$($role.Name)'""
+            # Silently continue if assignment counting fails
         }}
         
         $roleInfo = @{{
@@ -1038,10 +1049,8 @@ try {{
     }}
     
     $ssoData.TotalRoles = $ssoData.Roles.Count
-    Write-Host ""Found $($ssoData.TotalRoles) roles""
 
     # Get Permissions (including global permissions)
-    Write-Host ""Retrieving permissions...""
     $viPermissions = Get-VIPermission -ErrorAction SilentlyContinue
     foreach ($perm in $viPermissions) {{
         $permInfo = @{{
@@ -1061,7 +1070,6 @@ try {{
 
     # Get Global Permissions using Get-VIPermission with root folder
     try {{
-        Write-Host ""Retrieving global permissions...""
         $rootFolder = Get-Folder -NoRecursion -ErrorAction SilentlyContinue
         $globalPerms = Get-VIPermission -Entity $rootFolder -ErrorAction SilentlyContinue
         
@@ -1078,13 +1086,11 @@ try {{
             $ssoData.GlobalPermissions += $globalPermInfo
         }}
         
-        Write-Host ""Found $($ssoData.GlobalPermissions.Count) global permissions""
     }} catch {{
-        Write-Host ""Could not retrieve global permissions: $($_.Exception.Message)""
+        # Silently continue if global permissions retrieval fails
     }}
 
     $ssoData.TotalPermissions = $ssoData.Permissions.Count + $ssoData.GlobalPermissions.Count
-    Write-Host ""Found $($ssoData.TotalPermissions) total permissions""
 
     # Output result as JSON
     $jsonOutput = $ssoData | ConvertTo-Json -Depth 10
