@@ -144,12 +144,18 @@ public class PersistentExternalConnectionService : IDisposable
                         Write-Output ""VERSION:$($connection.Version)""
                         Write-Output ""BUILD:$($connection.Build)""
                         
-                        # Store in global scope
+                        # Store in connection-specific global variables to avoid conflicts
+                        $global:VIConnection_{connectionKey.Replace("-", "_")} = $connection
+                        
+                        # Set as default for this session but save existing default if any
+                        if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {{
+                            $global:PreviousDefaultVIServer = $global:DefaultVIServer
+                        }}
                         $global:DefaultVIServer = $connection
                         $global:CurrentVCenterConnection = $connection
                         
                         # Quick test
-                        $vmCount = (Get-VM -ErrorAction SilentlyContinue).Count
+                        $vmCount = (Get-VM -Server $connection -ErrorAction SilentlyContinue).Count
                         Write-Output ""VM_COUNT:$vmCount""
                     }} else {{
                         Write-Output ""CONNECTION_FAILED: Not connected""
@@ -275,7 +281,20 @@ public class PersistentExternalConnectionService : IDisposable
 
             // Add a unique marker to know when command is complete
             var endMarker = $"END_COMMAND_{Guid.NewGuid():N}";
+            
+            // Ensure the correct vCenter connection is active for this command
+            var connectionVarName = $"VIConnection_{connectionKey.Replace("-", "_")}";
             var fullCommand = $@"
+# Ensure correct vCenter connection is active for this session
+if ($global:{connectionVarName} -and $global:{connectionVarName}.IsConnected) {{
+    $global:DefaultVIServer = $global:{connectionVarName}
+    $global:CurrentVCenterConnection = $global:{connectionVarName}
+}} else {{
+    Write-Output 'ERROR: No active connection for {connectionKey}'
+    Write-Output '{endMarker}'
+    exit
+}}
+
 {command}
 Write-Output '{endMarker}'
 ";
@@ -341,8 +360,9 @@ Write-Output '{endMarker}'
 
         try
             {
+            var connectionVarName = $"VIConnection_{connectionKey.Replace("-", "_")}";
             var result = await ExecuteCommandWithTimeoutAsync(connectionKey,
-                "$global:DefaultVIServer.IsConnected",
+                $"$global:{connectionVarName}.IsConnected",
                 TimeSpan.FromSeconds(5));
 
             return result.Contains("True");
