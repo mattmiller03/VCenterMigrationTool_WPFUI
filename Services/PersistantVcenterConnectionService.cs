@@ -104,17 +104,45 @@ public class PersistentExternalConnectionService : IDisposable
             // Always import PowerCLI in persistent sessions (each process starts fresh)
             _logger.LogInformation("Importing PowerCLI modules in persistent session... (bypassModuleCheck={BypassFlag} - ignored for persistent sessions)", bypassModuleCheck);
             var importResult = await ExecuteCommandWithTimeoutAsync(connectionKey, @"
-                Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-                Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-                Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
-                Write-Output 'MODULES_LOADED'
-            ", TimeSpan.FromSeconds(30));
+                Write-Output 'DIAGNOSTIC: Starting PowerCLI module import...'
+                
+                # Check if PowerCLI is available
+                $powerCLIModule = Get-Module -Name VMware.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
+                if ($powerCLIModule) {
+                    Write-Output ""DIAGNOSTIC: PowerCLI module found - Version: $($powerCLIModule.Version)""
+                } else {
+                    Write-Output 'DIAGNOSTIC: PowerCLI module not found in available modules'
+                    Write-Output 'DIAGNOSTIC: Available VMware modules:'
+                    Get-Module -Name VMware* -ListAvailable -ErrorAction SilentlyContinue | ForEach-Object { 
+                        Write-Output ""DIAGNOSTIC: - $($_.Name) (Version: $($_.Version))""
+                    }
+                }
+                
+                # Try to import PowerCLI
+                try {
+                    Write-Output 'DIAGNOSTIC: Attempting to import VMware.PowerCLI...'
+                    Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+                    Write-Output 'DIAGNOSTIC: PowerCLI import successful'
+                    
+                    # Configure PowerCLI
+                    Write-Output 'DIAGNOSTIC: Configuring PowerCLI settings...'
+                    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+                    Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+                    Write-Output 'DIAGNOSTIC: PowerCLI configuration complete'
+                    
+                    Write-Output 'MODULES_LOADED'
+                } catch {
+                    Write-Output ""DIAGNOSTIC: PowerCLI import failed - Error: $($_.Exception.Message)""
+                    Write-Output ""DIAGNOSTIC: Error details: $($_.Exception.ToString())""
+                    throw
+                }
+            ", TimeSpan.FromSeconds(60));
 
             if (!importResult.Contains("MODULES_LOADED"))
                 {
-                _logger.LogError("Failed to load PowerCLI modules in persistent session");
+                _logger.LogError("Failed to load PowerCLI modules in persistent session. Full output: {ImportResult}", importResult);
                 await DisconnectAsync(connectionKey);
-                return (false, "Failed to load PowerCLI modules", null);
+                return (false, $"Failed to load PowerCLI modules - {importResult}", null);
                 }
 
             // Create credential and connect
