@@ -188,9 +188,12 @@ public class PersistentExternalConnectionService : IDisposable
                 }
             else
                 {
+                // Log the full result for debugging
+                _logger.LogWarning("Connection result did not contain CONNECTION_SUCCESS. Full result: {Result}", connectResult);
+                
                 var errorMessage = connectResult.Contains("CONNECTION_FAILED:")
                     ? connectResult.Substring(connectResult.IndexOf("CONNECTION_FAILED:") + 18).Trim()
-                    : "Unknown connection error";
+                    : $"Connection failed - Result: {connectResult.Trim()}";
 
                 _logger.LogError("Connection failed: {Error}", errorMessage);
                 await DisconnectAsync(connectionKey);
