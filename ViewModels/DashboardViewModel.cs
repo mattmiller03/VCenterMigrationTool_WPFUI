@@ -479,16 +479,23 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         ScriptOutput = string.Empty;
 
         _logger.LogInformation("=== ESTABLISHING PERSISTENT TARGET CONNECTION ===");
+        _logger.LogInformation("Selected Target Profile: {Server} | User: {Username}", 
+            SelectedTargetProfile.ServerAddress, SelectedTargetProfile.Username);
+        _logger.LogInformation("PowerCLI Bypass Status: {PowerCliStatus}", 
+            HybridPowerShellService.PowerCliConfirmedInstalled);
 
         // Step 1: Get credentials
         TargetConnectionStatus = "🔐 Retrieving credentials...";
         await Task.Delay(100); // Allow UI to update
 
+        _logger.LogInformation("STEP 1: Retrieving stored credentials for profile: {ProfileName}", 
+            SelectedTargetProfile.Name);
         string? password = _credentialService.GetPassword(SelectedTargetProfile);
         string finalPassword;
 
         if (string.IsNullOrEmpty(password))
             {
+            _logger.LogInformation("STEP 1: No stored credentials found - prompting user for password");
             TargetConnectionStatus = "🔑 Password required - please enter credentials";
             var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
                 "Password Required",
@@ -497,52 +504,75 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
                 {
+                _logger.LogWarning("STEP 1: User cancelled password prompt");
                 TargetConnectionStatus = "❌ Connection cancelled by user";
                 IsJobRunning = false;
                 return;
                 }
 
+            _logger.LogInformation("STEP 1: User provided password successfully");
             finalPassword = promptedPassword;
             }
         else
             {
+            _logger.LogInformation("STEP 1: Using stored credentials");
             finalPassword = password;
             }
 
         try
             {
-            // Step 2: Establish PowerShell connection
+            // Step 2: Establish connection using VSphere API
+            _logger.LogInformation("STEP 2: Starting target connection to {Server}", 
+                SelectedTargetProfile.ServerAddress);
             TargetConnectionStatus = $"🔗 Connecting to {SelectedTargetProfile.ServerAddress}...";
             await Task.Delay(100); // Allow UI to update
 
-            var (success, message, sessionId) = await _persistentConnectionService.ConnectAsync(
-                SelectedTargetProfile,
-                finalPassword,
-                isSource: false,
-                bypassModuleCheck: HybridPowerShellService.PowerCliConfirmedInstalled);
+            _logger.LogInformation("STEP 2: Using VSphereApiService for simple connection validation");
+            
+            // Create connection info for VSphere API
+            var connectionInfo = new VCenterConnectionInfo
+            {
+                ServerAddress = SelectedTargetProfile.ServerAddress,
+                Username = SelectedTargetProfile.Username
+            };
+            
+            // Test connection using VSphere API (much simpler and more reliable)
+            var (success, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
+            string message = success ? "Connection successful via VSphere API" : "VSphere API authentication failed";
+            string sessionId = success ? sessionToken : null;
+
+            _logger.LogInformation("STEP 2: VSphereApiService returned - Success: {Success} | Message: {Message} | HasSessionToken: {HasToken}", 
+                success, message, !string.IsNullOrEmpty(sessionToken));
 
             if (success)
                 {
-                // Step 3: Set connection without inventory
+                _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service");
+                // Step 3: Set connection
                 _sharedConnectionService.TargetConnection = SelectedTargetProfile;
 
-                var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("target");
+                // Get basic vCenter info using API
+                _logger.LogInformation("STEP 3: Getting vCenter version info via API");
+                var (isConnected, version, build) = await _vSphereApiService.GetConnectionStatusAsync(connectionInfo, finalPassword);
+                if (!isConnected) version = "Unknown";
+                
+                _logger.LogInformation("STEP 3: vCenter info retrieved - Version: {Version}", version);
 
                 IsTargetConnected = true;
                 TargetConnectionStatus = $"✅ Connected - {SelectedTargetProfile.ServerAddress} (v{version})";
-                TargetConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
-
-                ScriptOutput = $"Persistent connection established!\n" +
+                TargetConnectionDetails = $"API Session: Active\nVersion: {version}";
+                
+                ScriptOutput = $"vCenter API connection established!\n" +
                               $"Server: {SelectedTargetProfile.ServerAddress}\n" +
-                              $"Session ID: {sessionId}\n" +
-                              $"Version: {version}\n\n" +
-                              $"Connection will remain active for all operations.\n" +
-                              $"Use vCenter Objects page to load inventory data.\n" +
+                              $"Version: {version}\n" +
+                              $"Authentication: VSphere API\n\n" +
+                              $"Connection is ready for all operations.\n" +
+                              $"PowerCLI operations will use the HybridPowerShellService as needed.\n" +
                               $"Use 'Disconnect' button to close the connection.";
 
-                _logger.LogInformation("✅ Persistent target connection established (Session: {SessionId})", sessionId);
+                _logger.LogInformation("✅ Target vCenter API connection established successfully (Version: {Version})", version);
 
                 // Update inventory summary
+                _logger.LogInformation("STEP 3: Starting inventory summary update task");
                 _ = Task.Run(UpdateInventorySummaries);
 
                 // Notify property changes
@@ -551,18 +581,26 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 }
             else
                 {
+                _logger.LogError("STEP 2: Connection FAILED - Success={Success} | Message={Message}", success, message);
                 IsTargetConnected = false;
                 TargetConnectionStatus = $"❌ Connection failed: {message}";
                 TargetConnectionDetails = "";
                 ScriptOutput = $"Connection failed: {message}";
                 _sharedConnectionService.TargetConnection = null;
 
-                _logger.LogError("Failed to establish persistent connection: {Message}", message);
+                _logger.LogError("❌ Failed to establish target connection: {Message}", message);
                 }
             }
         catch (Exception ex)
             {
-            _logger.LogError(ex, "Error establishing persistent connection");
+            _logger.LogError(ex, "EXCEPTION: Error establishing target connection - Type: {ExceptionType} | Message: {Message}", 
+                ex.GetType().Name, ex.Message);
+            if (ex.InnerException != null)
+                {
+                _logger.LogError("EXCEPTION: Inner Exception - Type: {InnerType} | Message: {InnerMessage}", 
+                    ex.InnerException.GetType().Name, ex.InnerException.Message);
+                }
+            _logger.LogError("EXCEPTION: Stack Trace: {StackTrace}", ex.StackTrace);
             IsTargetConnected = false;
             TargetConnectionStatus = $"❌ Connection error: {ex.Message}";
             TargetConnectionDetails = "";
