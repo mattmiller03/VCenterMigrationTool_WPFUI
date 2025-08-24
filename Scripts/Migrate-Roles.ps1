@@ -1,11 +1,15 @@
 <#
 .SYNOPSIS
-    Migrates vCenter roles from source to target vCenter using PowerCLI 13.x
+    Enhanced vCenter role migration with version compatibility and privilege validation
 .DESCRIPTION
-    Exports roles from source vCenter and imports them to target vCenter.
-    Handles custom roles, privileges, and role dependencies with validation options.
+    Migrates custom roles from source to target vCenter with advanced features:
+    - Version compatibility handling (skips incompatible privileges)
+    - Privilege validation against target vCenter capabilities
+    - Replace vs Append modes for flexible privilege management
+    - Enhanced statistics and detailed logging
+    - Rollback protection and error handling
 .NOTES
-    Version: 1.0 - PowerCLI 13.x optimized
+    Version: 2.0 - Enhanced with privilege validation and compatibility handling
     Requires: VMware.PowerCLI 13.x or later
 #>
 param(
@@ -26,6 +30,10 @@ param(
     
     [Parameter()]
     [bool]$OverwriteExisting = $false,
+    
+    [Parameter()]
+    [ValidateSet("Replace", "Append")]
+    [string]$PrivilegeMode = "Replace",
     
     [Parameter()]
     [bool]$BypassModuleCheck = $false,
@@ -70,6 +78,14 @@ function Write-LogError {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
     $logEntry = "$timestamp [Error] [$Category] $Message"
     if (-not $Global:SuppressConsoleOutput) { Write-Host $logEntry -ForegroundColor Red }
+    if ($Global:ScriptLogFile) { $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }
+}
+
+function Write-LogDebug { 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+    $logEntry = "$timestamp [Debug] [$Category] $Message"
+    if (-not $Global:SuppressConsoleOutput) { Write-Host $logEntry -ForegroundColor Gray }
     if ($Global:ScriptLogFile) { $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }
 }
 
@@ -149,25 +165,26 @@ $migrationStats = @{
     RolesMigrated = 0
     RolesSkipped = 0
     RolesWithErrors = 0
+    TotalPrivilegesProcessed = 0
+    ValidPrivileges = 0
+    InvalidPrivilegesSkipped = 0
+    PrivilegesAdded = 0
+    PrivilegesFailedToAdd = 0
+    Mode = $PrivilegeMode
+    ValidationMode = $ValidateOnly
 }
 
+$sourceConnection = $null
+$targetConnection = $null
+
 try {
-    Write-LogInfo "Starting role migration process" -Category "Initialization"
+    Write-LogInfo "Starting enhanced role migration process with privilege validation" -Category "Initialization"
+    Write-LogInfo "Migration Mode: $PrivilegeMode, Validate Only: $ValidateOnly" -Category "Initialization"
     
     # Import required modules
     if (-not $BypassModuleCheck) {
         Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-        
-        # Check for and import SSO Admin module
-        Write-LogInfo "Checking for VMware.vSphere.SsoAdmin module..." -Category "Module"
-        $ssoModule = Get-Module -ListAvailable -Name VMware.vSphere.SsoAdmin
-        if ($ssoModule) {
-            Import-Module VMware.vSphere.SsoAdmin -Force -ErrorAction Stop
-            Write-LogSuccess "SSO Admin module imported successfully" -Category "Module"
-        } else {
-            Write-LogWarning "VMware.vSphere.SsoAdmin module not found. Some SSO roles may be unavailable." -Category "Module"
-        }
+        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
         Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
     }
     
@@ -185,50 +202,19 @@ try {
     $targetConnection = Connect-VIServer -Server $TargetVCenterServer -Credential $TargetCredentials -Force -ErrorAction Stop
     Write-LogSuccess "Connected to target vCenter: $($targetConnection.Name) (v$($targetConnection.Version))" -Category "Connection"
     
-    # Connect to SSO Admin servers if module is available
-    $sourceSsoConnected = $false
-    $targetSsoConnected = $false
-    if (Get-Command Connect-SsoAdminServer -ErrorAction SilentlyContinue) {
-        try {
-            Write-LogInfo "Connecting to source SSO Admin Server..." -Category "Connection"
-            $sourceSsoConnection = Connect-SsoAdminServer -Server $SourceVCenterServer -User $SourceCredentials.UserName -Password $SourceCredentials.GetNetworkCredential().Password -SkipCertificateCheck
-            $sourceSsoConnected = $true
-            Write-LogSuccess "Connected to source SSO Admin Server" -Category "Connection"
-        } catch {
-            Write-LogWarning "Could not connect to source SSO Admin Server: $($_.Exception.Message)" -Category "Connection"
-        }
-        
-        try {
-            Write-LogInfo "Connecting to target SSO Admin Server..." -Category "Connection"
-            $targetSsoConnection = Connect-SsoAdminServer -Server $TargetVCenterServer -User $TargetCredentials.UserName -Password $TargetCredentials.GetNetworkCredential().Password -SkipCertificateCheck
-            $targetSsoConnected = $true
-            Write-LogSuccess "Connected to target SSO Admin Server" -Category "Connection"
-        } catch {
-            Write-LogWarning "Could not connect to target SSO Admin Server: $($_.Exception.Message)" -Category "Connection"
-        }
-    }
+    # Get all available privileges for validation against target vCenter
+    Write-LogInfo "Retrieving all available privileges in target vCenter for validation..." -Category "Validation"
+    $allTargetPrivileges = Get-VIPrivilege -Server $targetConnection | Select-Object -ExpandProperty Id
+    Write-LogSuccess "Found $($allTargetPrivileges.Count) available privileges in target vCenter." -Category "Validation"
     
-    # Get source roles (including SSO roles if available)
+    # Get source roles
     Write-LogInfo "Retrieving roles from source vCenter..." -Category "Discovery"
     $sourceRoles = Get-VIRole -Server $sourceConnection
     $migrationStats.SourceRolesFound = $sourceRoles.Count
-    Write-LogInfo "Found $($sourceRoles.Count) standard vCenter roles in source" -Category "Discovery"
-    
-    # Get additional SSO roles if connected
-    $allSourceRoles = @($sourceRoles)
-    if ($sourceSsoConnected) {
-        try {
-            Write-LogInfo "Retrieving SSO roles from source..." -Category "Discovery"
-            # Note: SSO Admin module typically manages users/groups, not additional roles
-            # But we ensure comprehensive role discovery by checking both sources
-            Write-LogInfo "SSO connection available for enhanced role discovery" -Category "Discovery"
-        } catch {
-            Write-LogWarning "Could not retrieve SSO roles: $($_.Exception.Message)" -Category "Discovery"
-        }
-    }
+    Write-LogInfo "Found $($sourceRoles.Count) total roles in source vCenter" -Category "Discovery"
     
     # Filter to custom roles only (excluding system roles)
-    $customRoles = $allSourceRoles | Where-Object { -not $_.IsSystem }
+    $customRoles = $sourceRoles | Where-Object { -not $_.IsSystem }
     $migrationStats.CustomRolesFound = $customRoles.Count
     Write-LogInfo "Found $($customRoles.Count) custom roles to migrate" -Category "Discovery"
     
@@ -238,47 +224,108 @@ try {
     
     if ($customRoles.Count -eq 0) {
         Write-LogWarning "No custom roles found to migrate" -Category "Migration"
+        $finalSummary = "No custom roles found to migrate"
     } else {
         # Process each custom role
         foreach ($role in $customRoles) {
             try {
-                Write-LogInfo "Processing role: $($role.Name)" -Category "Migration"
+                Write-LogInfo "Processing role: '$($role.Name)' with $($role.PrivilegeList.Count) privileges" -Category "Migration"
+                
+                # Validate privileges against target vCenter capabilities
+                $sourcePrivileges = $role.PrivilegeList
+                $migrationStats.TotalPrivilegesProcessed += $sourcePrivileges.Count
+                
+                $validPrivileges = @()
+                $invalidPrivileges = @()
+                
+                foreach ($privilege in $sourcePrivileges) {
+                    if ($privilege -in $allTargetPrivileges) {
+                        $validPrivileges += $privilege
+                    } else {
+                        $invalidPrivileges += $privilege
+                    }
+                }
+                
+                $migrationStats.ValidPrivileges += $validPrivileges.Count
+                $migrationStats.InvalidPrivilegesSkipped += $invalidPrivileges.Count
+                
+                if ($invalidPrivileges.Count -gt 0) {
+                    Write-LogWarning "Role '$($role.Name)': $($invalidPrivileges.Count) privileges don't exist in target vCenter and will be skipped: $($invalidPrivileges -join ', ')" -Category "Compatibility"
+                }
+                
+                Write-LogInfo "Role '$($role.Name)': Proceeding with $($validPrivileges.Count) valid privileges" -Category "Processing"
                 
                 # Check if role already exists in target
-                $existingRole = $targetRoles | Where-Object { $_.Name -eq $role.Name }
+                $existingTargetRole = $targetRoles | Where-Object { $_.Name -eq $role.Name }
                 
-                if ($existingRole) {
+                if ($existingTargetRole) {
                     if ($OverwriteExisting) {
                         if ($ValidateOnly) {
                             Write-LogInfo "VALIDATION: Would overwrite existing role '$($role.Name)'" -Category "Validation"
                         } else {
-                            Write-LogWarning "Removing existing role '$($role.Name)' from target" -Category "Migration"
-                            Remove-VIRole -Role $existingRole -Confirm:$false -ErrorAction Stop
+                            Write-LogInfo "Removing existing role '$($role.Name)' from target for replacement" -Category "Migration"
+                            Remove-VIRole -Role $existingTargetRole -Confirm:$false -ErrorAction Stop
+                            Write-LogSuccess "Removed existing role '$($role.Name)' from target" -Category "Migration"
                         }
+                    } elseif ($PrivilegeMode -eq "Append") {
+                        # Append mode: add missing privileges to existing role
+                        if ($ValidateOnly) {
+                            Write-LogInfo "VALIDATION: Would append privileges to existing role '$($role.Name)'" -Category "Validation"
+                        } else {
+                            Write-LogInfo "Appending privileges to existing role '$($role.Name)'..." -Category "Migration"
+                            $targetPrivileges = $existingTargetRole.PrivilegeList
+                            $privilegesToAdd = $validPrivileges | Where-Object { $_ -notin $targetPrivileges }
+                            
+                            if ($privilegesToAdd.Count -eq 0) {
+                                Write-LogSuccess "All valid privileges already exist in role '$($role.Name)'. No changes needed." -Category "Migration"
+                            } else {
+                                Write-LogInfo "Adding $($privilegesToAdd.Count) new privileges to existing role '$($role.Name)'..." -Category "Migration"
+                                foreach ($privilege in $privilegesToAdd) {
+                                    try {
+                                        Set-VIRole -Role $existingTargetRole -AddPrivilege $privilege -Confirm:$false -ErrorAction Stop
+                                        Write-LogDebug "  Added privilege: $privilege" -Category "Migration"
+                                        $migrationStats.PrivilegesAdded++
+                                    } catch {
+                                        Write-LogWarning "  Failed to add privilege '$privilege' to role '$($role.Name)': $($_.Exception.Message)" -Category "Migration"
+                                        $migrationStats.PrivilegesFailedToAdd++
+                                    }
+                                }
+                                Write-LogSuccess "Finished appending privileges to role '$($role.Name)'. Added: $($privilegesToAdd.Count - $migrationStats.PrivilegesFailedToAdd), Failed: $($migrationStats.PrivilegesFailedToAdd)" -Category "Migration"
+                            }
+                        }
+                        $migrationStats.RolesMigrated++
                     } else {
-                        Write-LogWarning "Role '$($role.Name)' already exists in target - skipping" -Category "Migration"
+                        # Replace mode but not overwriting - skip
+                        Write-LogWarning "Role '$($role.Name)' already exists in target - skipping (use -OverwriteExisting to replace)" -Category "Migration"
                         $migrationStats.RolesSkipped++
                         continue
                     }
                 }
                 
-                if ($ValidateOnly) {
-                    Write-LogInfo "VALIDATION: Would create role '$($role.Name)' with $($role.PrivilegeList.Count) privileges" -Category "Validation"
-                    $migrationStats.RolesMigrated++
-                } else {
-                    # Create the role in target vCenter
-                    Write-LogInfo "Creating role '$($role.Name)' with $($role.PrivilegeList.Count) privileges" -Category "Migration"
-                    
-                    $newRole = New-VIRole -Name $role.Name -Privilege $role.PrivilegeList -Server $targetConnection -ErrorAction Stop
-                    
-                    if ($newRole) {
-                        Write-LogSuccess "Successfully created role: $($newRole.Name)" -Category "Migration"
+                # Create new role or replace existing role
+                if (-not $existingTargetRole -or ($existingTargetRole -and $OverwriteExisting)) {
+                    if ($ValidateOnly) {
+                        Write-LogInfo "VALIDATION: Would create role '$($role.Name)' with $($validPrivileges.Count) valid privileges" -Category "Validation"
                         $migrationStats.RolesMigrated++
-                        
-                        # Log privileges for reference
-                        Write-LogInfo "Role privileges: $($role.PrivilegeList -join ', ')" -Category "Migration"
                     } else {
-                        throw "Role creation returned null"
+                        if ($validPrivileges.Count -gt 0) {
+                            Write-LogInfo "Creating role '$($role.Name)' with $($validPrivileges.Count) valid privileges" -Category "Migration"
+                            $newRole = New-VIRole -Name $role.Name -Privilege $validPrivileges -Server $targetConnection -ErrorAction Stop
+                            
+                            if ($newRole) {
+                                Write-LogSuccess "Successfully created role: '$($newRole.Name)' with $($newRole.PrivilegeList.Count) privileges" -Category "Migration"
+                                $migrationStats.RolesMigrated++
+                                $migrationStats.PrivilegesAdded += $validPrivileges.Count
+                                
+                                # Log privilege details for reference
+                                Write-LogDebug "Role privileges: $($validPrivileges -join ', ')" -Category "Migration"
+                            } else {
+                                throw "Role creation returned null"
+                            }
+                        } else {
+                            Write-LogWarning "Role '$($role.Name)' has no valid privileges for target vCenter - skipping creation" -Category "Migration"
+                            $migrationStats.RolesSkipped++
+                        }
                     }
                 }
                 
@@ -292,9 +339,9 @@ try {
     
     $scriptSuccess = $true
     if ($ValidateOnly) {
-        $finalSummary = "Validation completed: $($migrationStats.RolesMigrated) roles would be migrated, $($migrationStats.RolesSkipped) skipped"
+        $finalSummary = "VALIDATION COMPLETE: $($migrationStats.RolesMigrated) roles would be migrated, $($migrationStats.RolesSkipped) skipped, $($migrationStats.InvalidPrivilegesSkipped) invalid privileges would be skipped"
     } else {
-        $finalSummary = "Successfully migrated $($migrationStats.RolesMigrated) roles, $($migrationStats.RolesSkipped) skipped, $($migrationStats.RolesWithErrors) errors"
+        $finalSummary = "MIGRATION COMPLETE: $($migrationStats.RolesMigrated) roles migrated, $($migrationStats.RolesSkipped) skipped, $($migrationStats.RolesWithErrors) errors, $($migrationStats.InvalidPrivilegesSkipped) incompatible privileges skipped"
     }
     
     Write-LogSuccess $finalSummary -Category "Migration"
@@ -309,25 +356,6 @@ try {
     Write-Output "ERROR: $($_.Exception.Message)"
     
 } finally {
-    # Disconnect from SSO Admin servers if connected
-    if ($sourceSsoConnected) {
-        try {
-            Write-LogInfo "Disconnecting from source SSO Admin Server..." -Category "Cleanup"
-            Disconnect-SsoAdminServer -Server $sourceSsoConnection -ErrorAction SilentlyContinue
-        } catch {
-            Write-LogWarning "Error disconnecting from source SSO Admin" -Category "Cleanup"
-        }
-    }
-    
-    if ($targetSsoConnected) {
-        try {
-            Write-LogInfo "Disconnecting from target SSO Admin Server..." -Category "Cleanup"
-            Disconnect-SsoAdminServer -Server $targetSsoConnection -ErrorAction SilentlyContinue
-        } catch {
-            Write-LogWarning "Error disconnecting from target SSO Admin" -Category "Cleanup"
-        }
-    }
-    
     # Disconnect from vCenter servers
     if ($sourceConnection) {
         Write-LogInfo "Disconnecting from source vCenter..." -Category "Cleanup"

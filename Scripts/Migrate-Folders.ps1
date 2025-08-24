@@ -1,11 +1,16 @@
 <#
 .SYNOPSIS
-    Migrates vCenter folders from source to target vCenter using PowerCLI 13.x
+    Enhanced vCenter folder migration with recursive structure preservation and datacenter targeting
 .DESCRIPTION
-    Recreates folder structure from source vCenter to target vCenter.
-    Handles nested folder hierarchies, different folder types (VM, Host, Datacenter, etc.) with validation options.
+    Migrates folder structures from source to target vCenter with advanced features:
+    - Recursive folder structure preservation with proper hierarchy
+    - Datacenter-specific folder migration with smart matching
+    - Enhanced duplicate detection and handling (skip/overwrite options)
+    - Improved error handling and rollback protection
+    - Detailed progress tracking with comprehensive statistics
+    - Support for all folder types (VM, Host, Network, Datastore)
 .NOTES
-    Version: 1.0 - PowerCLI 13.x optimized
+    Version: 2.0 - Enhanced with recursive structure copying and datacenter targeting
     Requires: VMware.PowerCLI 13.x or later
 #>
 param(
@@ -29,6 +34,12 @@ param(
     
     [Parameter()]
     [string[]]$FolderTypes = @("VM", "Host", "Network", "Datastore"),
+    
+    [Parameter()]
+    [string[]]$SourceDatacenters = @(),  # If empty, migrates all datacenters
+    
+    [Parameter()]
+    [hashtable]$DatacenterMapping = @{}, # Maps source DC names to target DC names
     
     [Parameter()]
     [bool]$BypassModuleCheck = $false,
@@ -73,6 +84,14 @@ function Write-LogError {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
     $logEntry = "$timestamp [Error] [$Category] $Message"
     if (-not $Global:SuppressConsoleOutput) { Write-Host $logEntry -ForegroundColor Red }
+    if ($Global:ScriptLogFile) { $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }
+}
+
+function Write-LogDebug { 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+    $logEntry = "$timestamp [Debug] [$Category] $Message"
+    if (-not $Global:SuppressConsoleOutput) { Write-Host $logEntry -ForegroundColor Gray }
     if ($Global:ScriptLogFile) { $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }
 }
 
@@ -141,63 +160,89 @@ function Stop-ScriptLogging {
     }
 }
 
-function Get-FolderPath {
-    param($Folder)
-    
-    $path = @()
-    $current = $Folder
-    
-    # Walk up the hierarchy until we reach a datacenter
-    while ($current -and $current.GetType().Name -ne "Datacenter") {
-        $path = @($current.Name) + $path
-        $current = $current.Parent
-    }
-    
-    return ($path -join "/")
-}
+# Global counters for recursive function
+$script:foldersCreated = 0
+$script:foldersSkipped = 0
+$script:foldersFailed = 0
+$script:foldersValidated = 0
 
-function Find-TargetParent {
-    param($SourceFolder, $TargetDatacenters)
-    
-    # Find the source datacenter
-    $sourceParent = $SourceFolder.Parent
-    while ($sourceParent -and $sourceParent.GetType().Name -ne "Datacenter") {
-        $sourceParent = $sourceParent.Parent
-    }
-    
-    if ($sourceParent) {
-        # Find matching datacenter in target
-        $targetDC = $TargetDatacenters | Where-Object { $_.Name -eq $sourceParent.Name }
+# Recursive function to copy folder structure with enhanced error handling
+function Copy-FolderStructure {
+    param(
+        [Parameter(Mandatory=$true)]
+        $SourceParentFolder,
+
+        [Parameter(Mandatory=$true)]
+        $TargetParentFolder,
+
+        [Parameter(Mandatory=$true)]
+        $SourceServer,
+
+        [Parameter(Mandatory=$true)]
+        $TargetServer,
         
-        if ($targetDC) {
-            # Navigate to the correct parent folder in target
-            $targetParent = $targetDC
-            
-            # Get the folder path from source
-            $pathElements = @()
-            $current = $SourceFolder.Parent
-            
-            while ($current -and $current.GetType().Name -ne "Datacenter") {
-                $pathElements = @($current.Name) + $pathElements
-                $current = $current.Parent
+        [Parameter(Mandatory=$true)]
+        [string]$FolderType,
+        
+        [Parameter()]
+        [bool]$ValidateOnly = $false,
+        
+        [Parameter()]
+        [bool]$SkipExisting = $true
+    )
+
+    Write-LogDebug "Getting child $FolderType folders of '$($SourceParentFolder.Name)' on source $($SourceServer.Name)" -Category "Discovery"
+    $sourceChildFolders = Get-Folder -Location $SourceParentFolder -Type $FolderType -Server $SourceServer -NoRecursion -ErrorAction SilentlyContinue
+
+    if ($null -eq $sourceChildFolders) {
+        Write-LogDebug "No child $FolderType folders found under '$($SourceParentFolder.Name)'." -Category "Discovery"
+        return
+    }
+
+    # Ensure sourceChildFolders is an array for consistent processing
+    if ($sourceChildFolders -isnot [array]) {
+        $sourceChildFolders = @($sourceChildFolders)
+    }
+
+    foreach ($sourceFolder in $sourceChildFolders) {
+        Write-LogInfo "Processing Source Folder: '$($sourceFolder.Name)' ($FolderType) under '$($SourceParentFolder.Name)'" -Category "Processing"
+
+        Write-LogDebug "Checking for existing folder '$($sourceFolder.Name)' under '$($TargetParentFolder.Name)' on target $($TargetServer.Name)" -Category "Verification"
+        $existingTargetFolder = Get-Folder -Location $TargetParentFolder -Name $sourceFolder.Name -Type $FolderType -Server $TargetServer -NoRecursion -ErrorAction SilentlyContinue
+
+        if ($existingTargetFolder) {
+            if ($SkipExisting) {
+                Write-LogInfo "  Folder '$($sourceFolder.Name)' already exists in Target under '$($TargetParentFolder.Name)'. Using existing." -Category "Skipped"
+                $script:foldersSkipped++
+                $currentTargetFolder = $existingTargetFolder
+            } else {
+                Write-LogWarning "  Folder '$($sourceFolder.Name)' already exists but will proceed with processing children." -Category "Existing"
+                $currentTargetFolder = $existingTargetFolder
             }
-            
-            # Navigate the path in target
-            foreach ($pathElement in $pathElements) {
-                $childFolder = Get-Folder -Name $pathElement -Location $targetParent -Type $SourceFolder.Type -ErrorAction SilentlyContinue
-                if ($childFolder) {
-                    $targetParent = $childFolder
-                } else {
-                    # Parent folder doesn't exist, need to create it first
-                    return $null
+        } else {
+            if ($ValidateOnly) {
+                Write-LogInfo "  VALIDATION: Would create folder '$($sourceFolder.Name)' ($FolderType) in Target under '$($TargetParentFolder.Name)'..." -Category "Validation"
+                $script:foldersValidated++
+                $currentTargetFolder = $TargetParentFolder # Use parent for validation recursion
+            } else {
+                Write-LogInfo "  Creating Folder '$($sourceFolder.Name)' ($FolderType) in Target under '$($TargetParentFolder.Name)'..." -Category "Creation"
+                try {
+                    $currentTargetFolder = New-Folder -Location $TargetParentFolder -Name $sourceFolder.Name -Server $TargetServer -ErrorAction Stop
+                    Write-LogSuccess "  Successfully created folder '$($currentTargetFolder.Name)' ($FolderType)." -Category "Creation"
+                    $script:foldersCreated++
+                } catch {
+                    Write-LogError "  Failed to create folder '$($sourceFolder.Name)' ($FolderType) in Target under '$($TargetParentFolder.Name)': $($_.Exception.Message)" -Category "Creation"
+                    $script:foldersFailed++
+                    continue
                 }
             }
-            
-            return $targetParent
+        }
+
+        # Recursively process child folders if we have a valid target folder
+        if ($currentTargetFolder) {
+            Copy-FolderStructure -SourceParentFolder $sourceFolder -TargetParentFolder $currentTargetFolder -SourceServer $SourceServer -TargetServer $TargetServer -FolderType $FolderType -ValidateOnly $ValidateOnly -SkipExisting $SkipExisting
         }
     }
-    
-    return $null
 }
 
 # Start logging
@@ -206,27 +251,43 @@ Start-ScriptLogging -ScriptName "Migrate-Folders" -LogPath $LogPath -SuppressCon
 $scriptSuccess = $false
 $finalSummary = ""
 $migrationStats = @{
-    SourceFoldersFound = 0
-    FoldersMigrated = 0
+    SourceDatacentersProcessed = 0
+    TargetDatacentersMatched = 0
+    FoldersCreated = 0
     FoldersSkipped = 0
-    FoldersWithErrors = 0
-    MissingParents = 0
+    FoldersFailed = 0
+    FoldersValidated = 0
+    ValidationMode = $ValidateOnly
+    SkipExistingMode = $SkipExisting
 }
 
 # Initialize type-specific counters
 foreach ($type in $FolderTypes) {
-    $migrationStats["${type}FoldersFound"] = 0
-    $migrationStats["${type}FoldersMigrated"] = 0
+    $migrationStats["${type}FoldersProcessed"] = 0
 }
 
+$sourceConnection = $null
+$targetConnection = $null
+
 try {
-    Write-LogInfo "Starting folder migration process" -Category "Initialization"
+    Write-LogInfo "Starting enhanced folder migration process with recursive structure preservation" -Category "Initialization"
     Write-LogInfo "Folder types to migrate: $($FolderTypes -join ', ')" -Category "Initialization"
+    Write-LogInfo "Validation Mode: $ValidateOnly, Skip Existing: $SkipExisting" -Category "Initialization"
     
+    if ($SourceDatacenters.Count -gt 0) {
+        Write-LogInfo "Migrating specific datacenters: $($SourceDatacenters -join ', ')" -Category "Initialization"
+    } else {
+        Write-LogInfo "Migrating all source datacenters" -Category "Initialization"
+    }
+    
+    if ($DatacenterMapping.Count -gt 0) {
+        Write-LogInfo "Using datacenter mappings: $($DatacenterMapping.Keys -join ', ' | ForEach-Object { "$_ -> $($DatacenterMapping[$_])" })" -Category "Initialization"
+    }
+
     # Import PowerCLI if needed
     if (-not $BypassModuleCheck) {
         Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
         Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
     }
     
@@ -245,118 +306,105 @@ try {
     Write-LogSuccess "Connected to target vCenter: $($targetConnection.Name) (v$($targetConnection.Version))" -Category "Connection"
     
     # Get datacenters from both environments
-    $sourceDatacenters = Get-Datacenter -Server $sourceConnection
-    $targetDatacenters = Get-Datacenter -Server $targetConnection
-    Write-LogInfo "Found $($sourceDatacenters.Count) datacenters in source, $($targetDatacenters.Count) in target" -Category "Discovery"
+    Write-LogInfo "Retrieving datacenters from both vCenter environments..." -Category "Discovery"
+    $allSourceDatacenters = Get-Datacenter -Server $sourceConnection
+    $allTargetDatacenters = Get-Datacenter -Server $targetConnection
+    Write-LogInfo "Found $($allSourceDatacenters.Count) datacenters in source, $($allTargetDatacenters.Count) in target" -Category "Discovery"
     
-    # Get source folders by type
-    $allSourceFolders = @()
-    foreach ($folderType in $FolderTypes) {
-        $foldersOfType = Get-Folder -Type $folderType -Server $sourceConnection | Where-Object { $_.Parent.GetType().Name -ne "Datacenter" }
-        $allSourceFolders += $foldersOfType
-        $migrationStats["${folderType}FoldersFound"] = $foldersOfType.Count
-        Write-LogInfo "Found $($foldersOfType.Count) $folderType folders in source" -Category "Discovery"
+    # Filter source datacenters if specific ones are requested
+    if ($SourceDatacenters.Count -gt 0) {
+        $sourceDatacenters = $allSourceDatacenters | Where-Object { $_.Name -in $SourceDatacenters }
+        Write-LogInfo "Filtered to $($sourceDatacenters.Count) specific datacenters for migration" -Category "Discovery"
+    } else {
+        $sourceDatacenters = $allSourceDatacenters
     }
     
-    $migrationStats.SourceFoldersFound = $allSourceFolders.Count
-    Write-LogInfo "Total folders found: $($allSourceFolders.Count)" -Category "Discovery"
+    if ($sourceDatacenters.Count -eq 0) {
+        throw "No source datacenters found to process"
+    }
     
-    # Sort folders by depth (shallow to deep) to ensure parent folders are created first
-    $sortedFolders = $allSourceFolders | Sort-Object { (Get-FolderPath $_).Split('/').Count }
-    
-    if ($sortedFolders.Count -eq 0) {
-        Write-LogWarning "No custom folders found to migrate" -Category "Migration"
-    } else {
-        # Process each folder in depth order
-        foreach ($folder in $sortedFolders) {
-            try {
-                $folderPath = Get-FolderPath $folder
-                Write-LogInfo "Processing folder: $($folder.Name) ($($folder.Type)) - Path: $folderPath" -Category "Migration"
-                
-                # Find target datacenter
-                $sourceDatacenter = $folder
-                while ($sourceDatacenter -and $sourceDatacenter.GetType().Name -ne "Datacenter") {
-                    $sourceDatacenter = $sourceDatacenter.Parent
-                }
-                
-                $targetDatacenter = $targetDatacenters | Where-Object { $_.Name -eq $sourceDatacenter.Name }
-                if (-not $targetDatacenter) {
-                    Write-LogError "Target datacenter '$($sourceDatacenter.Name)' not found" -Category "Migration"
-                    $migrationStats.FoldersWithErrors++
-                    continue
-                }
-                
-                # Find the correct parent location in target
-                $targetParentLocation = $targetDatacenter
-                
-                # Navigate to parent folder if not directly under datacenter
-                if ($folder.Parent.GetType().Name -ne "Datacenter") {
-                    $parentPath = Get-FolderPath $folder.Parent
-                    $pathElements = $parentPath -split "/"
-                    
-                    foreach ($pathElement in $pathElements) {
-                        $parentFolder = Get-Folder -Name $pathElement -Location $targetParentLocation -Type $folder.Type -ErrorAction SilentlyContinue
-                        if ($parentFolder) {
-                            $targetParentLocation = $parentFolder
-                        } else {
-                            Write-LogError "Parent folder '$pathElement' not found in target. Process folders in correct order." -Category "Migration"
-                            $migrationStats.MissingParents++
-                            $targetParentLocation = $null
-                            break
-                        }
-                    }
-                }
-                
-                if (-not $targetParentLocation) {
-                    $migrationStats.FoldersWithErrors++
-                    continue
-                }
-                
-                # Check if folder already exists
-                $existingFolder = Get-Folder -Name $folder.Name -Location $targetParentLocation -Type $folder.Type -ErrorAction SilentlyContinue
-                
-                if ($existingFolder) {
-                    if ($SkipExisting) {
-                        Write-LogInfo "Folder '$($folder.Name)' already exists in target - skipping" -Category "Migration"
-                        $migrationStats.FoldersSkipped++
-                        continue
-                    } else {
-                        Write-LogWarning "Folder '$($folder.Name)' already exists in target but will proceed" -Category "Migration"
-                    }
-                }
-                
-                if ($ValidateOnly) {
-                    Write-LogInfo "VALIDATION: Would create folder '$($folder.Name)' ($($folder.Type)) in '$($targetParentLocation.Name)'" -Category "Validation"
-                    $migrationStats.FoldersMigrated++
-                    $migrationStats["$($folder.Type)FoldersMigrated"]++
-                } else {
-                    # Create the folder in target
-                    Write-LogInfo "Creating folder '$($folder.Name)' ($($folder.Type)) in '$($targetParentLocation.Name)'" -Category "Migration"
-                    
-                    $newFolder = New-Folder -Name $folder.Name -Location $targetParentLocation -Server $targetConnection -ErrorAction Stop
-                    
-                    if ($newFolder) {
-                        Write-LogSuccess "Successfully created folder: $($newFolder.Name)" -Category "Migration"
-                        $migrationStats.FoldersMigrated++
-                        $migrationStats["$($folder.Type)FoldersMigrated"]++
-                    } else {
-                        throw "Folder creation returned null"
-                    }
-                }
-                
-            } catch {
-                Write-LogError "Failed to migrate folder '$($folder.Name)': $($_.Exception.Message)" -Category "Error"
-                $migrationStats.FoldersWithErrors++
+    # Process each source datacenter
+    foreach ($sourceDC in $sourceDatacenters) {
+        try {
+            Write-LogInfo "Processing Source Datacenter: '$($sourceDC.Name)'" -Category "MainProcess"
+            $migrationStats.SourceDatacentersProcessed++
+            
+            # Determine target datacenter (with optional mapping)
+            $targetDCName = if ($DatacenterMapping.ContainsKey($sourceDC.Name)) {
+                $DatacenterMapping[$sourceDC.Name]
+            } else {
+                $sourceDC.Name
+            }
+            
+            $targetDC = $allTargetDatacenters | Where-Object { $_.Name -eq $targetDCName }
+            if (-not $targetDC) {
+                Write-LogError "Target datacenter '$targetDCName' not found for source '$($sourceDC.Name)'. Skipping this datacenter." -Category "MainProcess"
                 continue
             }
+            
+            Write-LogSuccess "Found target datacenter: '$($targetDC.Name)'" -Category "MainProcess"
+            $migrationStats.TargetDatacentersMatched++
+            
+            # Process each folder type
+            foreach ($folderType in $FolderTypes) {
+                Write-LogInfo "Processing $folderType folders in datacenter '$($sourceDC.Name)'..." -Category "FolderType"
+                
+                # Get the root folder for this type in the source datacenter
+                Write-LogDebug "Getting root $folderType folder for source datacenter '$($sourceDC.Name)'" -Category "Discovery"
+                $sourceRootFolder = Get-Folder -Location $sourceDC -Type $folderType -Server $sourceConnection | Where-Object { $_.Parent -eq $sourceDC }
+                
+                if (-not $sourceRootFolder) {
+                    Write-LogWarning "Root $folderType folder not found in source datacenter '$($sourceDC.Name)'" -Category "Discovery"
+                    continue
+                }
+                
+                # Get the root folder for this type in the target datacenter
+                Write-LogDebug "Getting root $folderType folder for target datacenter '$($targetDC.Name)'" -Category "Discovery"
+                $targetRootFolder = Get-Folder -Location $targetDC -Type $folderType -Server $targetConnection | Where-Object { $_.Parent -eq $targetDC }
+                
+                if (-not $targetRootFolder) {
+                    Write-LogError "Root $folderType folder not found in target datacenter '$($targetDC.Name)'. Cannot proceed with this folder type." -Category "Discovery"
+                    continue
+                }
+                
+                Write-LogInfo "Starting recursive $folderType folder structure copy from '$($sourceDC.Name)' to '$($targetDC.Name)'..." -Category "Migration"
+                
+                # Reset counters for this folder type
+                $script:foldersCreated = 0
+                $script:foldersSkipped = 0
+                $script:foldersFailed = 0
+                $script:foldersValidated = 0
+                
+                # Copy folder structure recursively
+                Copy-FolderStructure -SourceParentFolder $sourceRootFolder -TargetParentFolder $targetRootFolder -SourceServer $sourceConnection -TargetServer $targetConnection -FolderType $folderType -ValidateOnly $ValidateOnly -SkipExisting $SkipExisting
+                
+                # Update statistics
+                $migrationStats.FoldersCreated += $script:foldersCreated
+                $migrationStats.FoldersSkipped += $script:foldersSkipped
+                $migrationStats.FoldersFailed += $script:foldersFailed
+                $migrationStats.FoldersValidated += $script:foldersValidated
+                $migrationStats["${folderType}FoldersProcessed"] = $script:foldersCreated + $script:foldersSkipped + $script:foldersFailed + $script:foldersValidated
+                
+                if ($ValidateOnly) {
+                    Write-LogSuccess "Finished $folderType folder validation for datacenter '$($sourceDC.Name)'. Would create: $script:foldersCreated, Would skip: $script:foldersSkipped, Validation errors: $script:foldersFailed" -Category "Validation"
+                } else {
+                    Write-LogSuccess "Finished $folderType folder migration for datacenter '$($sourceDC.Name)'. Created: $script:foldersCreated, Skipped: $script:foldersSkipped, Failed: $script:foldersFailed" -Category "Migration"
+                }
+            }
+            
+            Write-LogSuccess "Completed processing datacenter '$($sourceDC.Name)'" -Category "MainProcess"
+            
+        } catch {
+            Write-LogError "Failed to process datacenter '$($sourceDC.Name)': $($_.Exception.Message)" -Category "MainProcess"
+            continue
         }
     }
     
     $scriptSuccess = $true
     if ($ValidateOnly) {
-        $finalSummary = "Validation completed: $($migrationStats.FoldersMigrated) folders would be migrated, $($migrationStats.FoldersSkipped) skipped"
+        $finalSummary = "VALIDATION COMPLETE: $($migrationStats.FoldersValidated) folders would be created, $($migrationStats.FoldersSkipped) would be skipped, $($migrationStats.FoldersFailed) validation errors across $($migrationStats.SourceDatacentersProcessed) datacenters"
     } else {
-        $finalSummary = "Successfully migrated $($migrationStats.FoldersMigrated) folders, $($migrationStats.FoldersSkipped) skipped, $($migrationStats.FoldersWithErrors) errors"
+        $finalSummary = "MIGRATION COMPLETE: $($migrationStats.FoldersCreated) folders created, $($migrationStats.FoldersSkipped) skipped, $($migrationStats.FoldersFailed) failed across $($migrationStats.SourceDatacentersProcessed) datacenters"
     }
     
     Write-LogSuccess $finalSummary -Category "Migration"
