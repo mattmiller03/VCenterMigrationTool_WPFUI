@@ -128,6 +128,21 @@ public class PersistentExternalConnectionService : IDisposable
             _logger.LogInformation("Connecting to vCenter {Server}...", connectionInfo.ServerAddress);
 
             var connectScript = $@"
+                # Diagnostic: Check PowerCLI availability
+                Write-Output ""DIAGNOSTIC: Checking PowerCLI module availability""
+                $powerCLIModule = Get-Module -Name VMware.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
+                if ($powerCLIModule) {{
+                    Write-Output ""DIAGNOSTIC: PowerCLI module found - version $($powerCLIModule.Version)""
+                }} else {{
+                    Write-Output ""DIAGNOSTIC: PowerCLI module not found - attempting to import""
+                    try {{
+                        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+                        Write-Output ""DIAGNOSTIC: PowerCLI module imported successfully""
+                    }} catch {{
+                        Write-Output ""DIAGNOSTIC: Failed to import PowerCLI module: $($_.Exception.Message)""
+                    }}
+                }}
+
                 # Create credential
                 $password = '{password.Replace("'", "''")}'
                 $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
@@ -136,6 +151,7 @@ public class PersistentExternalConnectionService : IDisposable
                 
                 # Connect to vCenter
                 try {{
+                    Write-Output ""DIAGNOSTIC: Attempting connection to {connectionInfo.ServerAddress}""
                     $connection = Connect-VIServer -Server '{connectionInfo.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
                     
                     if ($connection -and $connection.IsConnected) {{
