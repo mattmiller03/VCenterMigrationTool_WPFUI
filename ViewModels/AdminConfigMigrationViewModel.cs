@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
@@ -182,8 +183,42 @@ namespace VCenterMigrationTool.ViewModels
 
                 if (sourceInventory != null)
                 {
-                    // TODO: Populate SourceRoles, SourcePermissions, etc. from inventory
-                    SourceDataStatus = "Admin config data available";
+                    // Clear and populate source collections
+                    SourceRoles.Clear();
+                    foreach (var role in sourceInventory.Roles ?? new List<RoleInfo>())
+                    {
+                        SourceRoles.Add(role);
+                    }
+
+                    SourcePermissions.Clear();
+                    foreach (var permission in sourceInventory.Permissions ?? new List<PermissionInfo>())
+                    {
+                        SourcePermissions.Add(permission);
+                    }
+
+                    SourceFolders.Clear();
+                    foreach (var folder in sourceInventory.Folders ?? new List<FolderInfo>())
+                    {
+                        SourceFolders.Add(folder);
+                    }
+
+                    SourceTags.Clear();
+                    foreach (var tag in sourceInventory.Tags ?? new List<TagInfo>())
+                    {
+                        SourceTags.Add(tag);
+                    }
+
+                    SourceCustomAttributes.Clear();
+                    foreach (var attribute in sourceInventory.CustomAttributes ?? new List<CustomAttributeInfo>())
+                    {
+                        SourceCustomAttributes.Add(attribute);
+                    }
+
+                    // Update status with counts
+                    var roleCount = SourceRoles.Count(r => !r.IsSystem);
+                    SourceDataStatus = $"✅ {roleCount} custom roles, {SourcePermissions.Count} permissions, " +
+                                     $"{SourceFolders.Count} folders, {SourceTags.Count} tags, " +
+                                     $"{SourceCustomAttributes.Count} custom attributes";
                 }
                 else
                 {
@@ -192,13 +227,59 @@ namespace VCenterMigrationTool.ViewModels
 
                 if (targetInventory != null)
                 {
-                    // TODO: Populate TargetRoles, TargetPermissions, etc. from inventory
-                    TargetDataStatus = "Admin config data available";
+                    // Clear and populate target collections
+                    TargetRoles.Clear();
+                    foreach (var role in targetInventory.Roles ?? new List<RoleInfo>())
+                    {
+                        TargetRoles.Add(role);
+                    }
+
+                    TargetPermissions.Clear();
+                    foreach (var permission in targetInventory.Permissions ?? new List<PermissionInfo>())
+                    {
+                        TargetPermissions.Add(permission);
+                    }
+
+                    TargetFolders.Clear();
+                    foreach (var folder in targetInventory.Folders ?? new List<FolderInfo>())
+                    {
+                        TargetFolders.Add(folder);
+                    }
+
+                    TargetTags.Clear();
+                    foreach (var tag in targetInventory.Tags ?? new List<TagInfo>())
+                    {
+                        TargetTags.Add(tag);
+                    }
+
+                    TargetCustomAttributes.Clear();
+                    foreach (var attribute in targetInventory.CustomAttributes ?? new List<CustomAttributeInfo>())
+                    {
+                        TargetCustomAttributes.Add(attribute);
+                    }
+
+                    // Update status with counts
+                    var roleCount = TargetRoles.Count(r => !r.IsSystem);
+                    TargetDataStatus = $"✅ {roleCount} custom roles, {TargetPermissions.Count} permissions, " +
+                                      $"{TargetFolders.Count} folders, {TargetTags.Count} tags, " +
+                                      $"{TargetCustomAttributes.Count} custom attributes";
                 }
                 else
                 {
                     TargetDataStatus = "No admin config data loaded";
                 }
+
+                // Notify UI of collection changes
+                OnPropertyChanged(nameof(SourceRoles));
+                OnPropertyChanged(nameof(SourcePermissions));
+                OnPropertyChanged(nameof(SourceFolders));
+                OnPropertyChanged(nameof(SourceTags));
+                OnPropertyChanged(nameof(SourceCustomAttributes));
+                OnPropertyChanged(nameof(TargetRoles));
+                OnPropertyChanged(nameof(TargetPermissions));
+                OnPropertyChanged(nameof(TargetFolders));
+                OnPropertyChanged(nameof(TargetTags));
+                OnPropertyChanged(nameof(TargetCustomAttributes));
             }
             catch (Exception ex)
             {
