@@ -38,11 +38,11 @@
         <ui:TitleBar 
             Grid.Row="0" 
             Title="{Binding ApplicationTitle}"
-            Icon="pack://application:,,,/Assets/applicationIcon-256.png" />
+            Icon="pack://application:,,,/Assets/Gemini_Generated_Image_b1i2b6b1i2b6b1i2.png" />
         <tray:NotifyIcon
             Grid.Row="0"
             FocusOnLeftClick="True"
-            Icon="pack://application:,,,/Assets/applicationIcon-256.png"
+            Icon="pack://application:,,,/Assets/Gemini_Generated_Image_b1i2b6b1i2b6b1i2.png"
             MenuOnRightClick="True"
             TooltipText="{Binding ApplicationTitle}">
             <tray:NotifyIcon.Menu>
