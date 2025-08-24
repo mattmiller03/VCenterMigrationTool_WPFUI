@@ -787,10 +787,242 @@ public class VCenterInventoryService
         }
     }
 
+    private async Task<string> BuildTagsAndCategoriesScriptWithLoggingAsync(string vCenterServer, string logPath)
+    {
+        var scriptContent = $@"
+# Tags and Categories Discovery Script with Embedded Logging
+$Global:ScriptLogFile = $null
+$Global:SuppressConsoleOutput = $false
+
+function Write-LogInfo {{ 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Info] [$Category] $Message""
+    if (-not $Global:SuppressConsoleOutput) {{ Write-Host $logEntry -ForegroundColor White }}
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Write-LogSuccess {{ 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Success] [$Category] $Message""
+    if (-not $Global:SuppressConsoleOutput) {{ Write-Host $logEntry -ForegroundColor Green }}
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Write-LogWarning {{ 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Warning] [$Category] $Message""
+    if (-not $Global:SuppressConsoleOutput) {{ Write-Host $logEntry -ForegroundColor Yellow }}
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Write-LogError {{ 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Error] [$Category] $Message""
+    if (-not $Global:SuppressConsoleOutput) {{ Write-Host $logEntry -ForegroundColor Red }}
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Start-ScriptLogging {{
+    param([string]$ScriptName = '', [string]$LogPath = $null)
+    
+    if ($LogPath) {{
+        if ([System.IO.Path]::HasExtension($LogPath)) {{
+            $logDir = [System.IO.Path]::GetDirectoryName($LogPath)
+        }} else {{
+            $logDir = $LogPath
+        }}
+        
+        $psLogDir = Join-Path $logDir ""PowerShell""
+        if (-not (Test-Path $psLogDir)) {{
+            New-Item -ItemType Directory -Path $psLogDir -Force | Out-Null
+        }}
+        
+        $timestamp = Get-Date -Format ""yyyyMMdd_HHmmss""
+        $sessionId = [System.Guid]::NewGuid().ToString(""N"").Substring(0, 8)
+        $Global:ScriptLogFile = Join-Path $psLogDir ""${{ScriptName}}_${{timestamp}}_${{sessionId}}.log""
+        
+        $separator = ""="" * 80
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Encoding UTF8
+        ""SCRIPT START: $ScriptName"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+    }}
+}}
+
+# Start logging
+Start-ScriptLogging -ScriptName ""TagCategoryDiscovery"" -LogPath ""{logPath.Replace("\\", "\\\\")}""
+
+Write-LogInfo ""Starting tag and category discovery"" -Category ""Discovery""
+
+try {{
+    # Initialize result object
+    $result = @{{
+        CollectionDate = Get-Date -Format ""yyyy-MM-dd HH:mm:ss""
+        VCenterServer = ""{vCenterServer}""
+        Categories = @()
+        Tags = @()
+    }}
+    
+    # Get tag categories
+    Write-LogInfo ""Retrieving tag categories..."" -Category ""Discovery""
+    $allCategories = Get-TagCategory -ErrorAction SilentlyContinue
+    
+    if ($allCategories -and $allCategories.Count -gt 0) {{
+        Write-LogInfo ""Found $($allCategories.Count) tag categories"" -Category ""Discovery""
+        
+        foreach ($category in $allCategories) {{
+            Write-LogInfo ""Processing category: $($category.Name)"" -Category ""Discovery""
+            
+            # Count tags in this category
+            $tagCount = 0
+            try {{
+                $categoryTags = Get-Tag -Category $category -ErrorAction SilentlyContinue
+                $tagCount = if ($categoryTags) {{ @($categoryTags).Count }} else {{ 0 }}
+            }} catch {{
+                Write-LogWarning ""Could not count tags for category '$($category.Name)': $($_.Exception.Message)"" -Category ""Discovery""
+            }}
+            
+            $categoryInfo = @{{
+                Name = if ($category.Name) {{ $category.Name.ToString() }} else {{ """" }}
+                Id = if ($category.Id) {{ $category.Id.ToString() }} else {{ """" }}
+                Description = if ($category.Description) {{ $category.Description.ToString() }} else {{ """" }}
+                TagCount = $tagCount
+                IsMultipleCardinality = if ($category.Cardinality -eq ""Multiple"") {{ $true }} else {{ $false }}
+            }}
+            
+            $result.Categories += $categoryInfo
+        }}
+        
+        Write-LogSuccess ""Successfully processed $($result.Categories.Count) categories"" -Category ""Discovery""
+    }} else {{
+        Write-LogInfo ""No tag categories found"" -Category ""Discovery""
+    }}
+    
+    # Get all tags
+    Write-LogInfo ""Retrieving tags..."" -Category ""Discovery""
+    $allTags = Get-Tag -ErrorAction SilentlyContinue
+    
+    if ($allTags -and $allTags.Count -gt 0) {{
+        Write-LogInfo ""Found $($allTags.Count) tags"" -Category ""Discovery""
+        
+        foreach ($tag in $allTags) {{
+            Write-LogInfo ""Processing tag: $($tag.Name)"" -Category ""Discovery""
+            
+            # Count assigned objects for this tag
+            $assignedCount = 0
+            try {{
+                $assignedObjects = Get-TagAssignment -Tag $tag -ErrorAction SilentlyContinue
+                $assignedCount = if ($assignedObjects) {{ @($assignedObjects).Count }} else {{ 0 }}
+            }} catch {{
+                Write-LogWarning ""Could not count assignments for tag '$($tag.Name)': $($_.Exception.Message)"" -Category ""Discovery""
+            }}
+            
+            $tagInfo = @{{
+                Name = if ($tag.Name) {{ $tag.Name.ToString() }} else {{ """" }}
+                Id = if ($tag.Id) {{ $tag.Id.ToString() }} else {{ """" }}
+                CategoryName = if ($tag.Category -and $tag.Category.Name) {{ $tag.Category.Name.ToString() }} else {{ """" }}
+                Description = if ($tag.Description) {{ $tag.Description.ToString() }} else {{ """" }}
+                AssignedObjectCount = $assignedCount
+            }}
+            
+            $result.Tags += $tagInfo
+        }}
+        
+        Write-LogSuccess ""Successfully processed $($result.Tags.Count) tags"" -Category ""Discovery""
+    }} else {{
+        Write-LogInfo ""No tags found"" -Category ""Discovery""
+    }}
+    
+    # Output as JSON for C# consumption
+    $jsonOutput = @($result) | ConvertTo-Json -Depth 5
+    if ($jsonOutput) {{
+        Write-Output $jsonOutput
+    }} else {{
+        Write-Output ""[]""
+    }}
+    
+}} catch {{
+    $errorMessage = ""Tag and category discovery failed: $($_.Exception.Message)""
+    Write-LogError $errorMessage -Category ""Error""
+    Write-LogError ""Stack trace: $($_.ScriptStackTrace)"" -Category ""Error""
+    Write-Output ""ERROR: $($_.Exception.Message)""
+}} finally {{
+    if ($Global:ScriptLogFile) {{
+        $separator = ""="" * 80
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""SCRIPT COMPLETED: TagCategoryDiscovery"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""End Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+    }}
+}}
+";
+
+        return await Task.FromResult(scriptContent);
+    }
+
     private async Task LoadTagsAndCategoriesAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
-        // Placeholder - tag discovery requires REST API calls, optional for MVP
-        await Task.CompletedTask;
+        try
+        {
+            _logger.LogInformation("Loading tags and categories for {VCenterName}", vCenterName);
+            
+            var logPath = await GetLogPathAsync();
+            var script = await BuildTagsAndCategoriesScriptWithLoggingAsync(vCenterName, logPath);
+            
+            var tagCategoryData = await ExecuteAndDeserializeAsync<TagCategoryData>(script, connectionType, "TagsAndCategories", vCenterName);
+            
+            if (tagCategoryData != null && tagCategoryData.Length > 0)
+            {
+                var data = tagCategoryData[0]; // Should return a single object with Categories and Tags arrays
+                
+                // Load categories
+                if (data.Categories != null)
+                {
+                    foreach (var category in data.Categories)
+                    {
+                        var categoryInfo = new CategoryInfo
+                        {
+                            Name = category.Name ?? string.Empty,
+                            Id = category.Id ?? string.Empty,
+                            Description = category.Description ?? string.Empty,
+                            TagCount = category.TagCount,
+                            IsMultipleCardinality = category.IsMultipleCardinality
+                        };
+                        
+                        inventory.Categories.Add(categoryInfo);
+                    }
+                }
+                
+                // Load tags
+                if (data.Tags != null)
+                {
+                    foreach (var tag in data.Tags)
+                    {
+                        var tagInfo = new TagInfo
+                        {
+                            Name = tag.Name ?? string.Empty,
+                            Id = tag.Id ?? string.Empty,
+                            CategoryName = tag.CategoryName ?? string.Empty,
+                            Description = tag.Description ?? string.Empty,
+                            AssignedObjectCount = tag.AssignedObjectCount
+                        };
+                        
+                        inventory.Tags.Add(tagInfo);
+                    }
+                }
+                
+                _logger.LogInformation("Loaded {CategoryCount} categories and {TagCount} tags for {VCenterName}", 
+                    inventory.Categories.Count, inventory.Tags.Count, vCenterName);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load tags and categories for {VCenterName}", vCenterName);
+        }
     }
 
     private async Task LoadRolesAndPermissionsAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
@@ -799,8 +1031,9 @@ public class VCenterInventoryService
         {
             _logger.LogInformation("Loading roles and permissions for {VCenterName} using SSO Admin script", vCenterName);
 
-            // Execute the SSO Admin config script using direct PowerShell execution
-            var scriptContent = await BuildSSOAdminScriptAsync(vCenterName);
+            // Execute enhanced SSO Admin script with integrated logging
+            var logPath = await GetLogPathAsync(); // Get the configured log path
+            var scriptContent = await BuildSSOAdminScriptWithLoggingAsync(vCenterName, logPath);
             var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, scriptContent);
 
             if (result.StartsWith("SUCCESS:") || result.TrimStart().StartsWith("{"))
@@ -1007,13 +1240,87 @@ public class VCenterInventoryService
         }
     }
 
-    private async Task<string> BuildSSOAdminScriptAsync(string vCenterServer)
+    private async Task<string> GetLogPathAsync()
+    {
+        // Return a default log path that matches the application's logging configuration
+        // In the actual environment, this would be C:\temp\app\logs
+        var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VCenterMigrationTool", "Logs");
+        try
+        {
+            // Try to get the configured log path from the application config
+            // This would need to be injected from the configuration service in a real implementation
+            // For now, we'll use a reasonable default
+        }
+        catch
+        {
+            // Fallback to default if configuration reading fails
+        }
+        return await Task.FromResult(logPath);
+    }
+
+    private async Task<string> BuildSSOAdminScriptWithLoggingAsync(string vCenterServer, string logPath)
     {
         var scriptContent = $@"
-# SSO Admin Config Discovery Script (Embedded)
+# SSO Admin Config Discovery Script with Embedded Logging
 param()
 
+# Embedded logging functions for file logging
+$Global:ScriptLogFile = $null
+
+function Start-ScriptLogging {{
+    param([string]$ScriptName, [string]$LogPath)
+    
+    if ($LogPath) {{
+        $psLogDir = Join-Path $LogPath ""PowerShell""
+        if (-not (Test-Path $psLogDir)) {{
+            New-Item -ItemType Directory -Path $psLogDir -Force | Out-Null
+        }}
+        
+        $timestamp = Get-Date -Format ""yyyyMMdd_HHmmss""
+        $sessionId = [System.Guid]::NewGuid().ToString(""N"").Substring(0, 8)
+        $Global:ScriptLogFile = Join-Path $psLogDir ""${{ScriptName}}_${{timestamp}}_${{sessionId}}.log""
+        
+        $separator = ""="" * 80
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Encoding UTF8
+        ""SCRIPT START: $ScriptName"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+    }}
+}}
+
+function Write-LogInfo {{
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Info] [$Category] $Message""
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Write-LogSuccess {{
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Success] [$Category] $Message""
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Write-LogWarning {{
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Warning] [$Category] $Message""
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Write-LogError {{
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Error] [$Category] $Message""
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+# Start logging
+Start-ScriptLogging -ScriptName ""AdminConfigDiscovery"" -LogPath ""{logPath.Replace("\\", "\\\\")}""
+
 try {{
+    Write-LogInfo ""Starting SSO admin configuration discovery for {vCenterServer}"" -Category ""Initialization""
     # Check for and import SSO Admin module if available
     $ssoModuleAvailable = $false
     try {{
@@ -1021,9 +1328,12 @@ try {{
         if ($ssoModule) {{
             Import-Module VMware.vSphere.SsoAdmin -Force -ErrorAction Stop
             $ssoModuleAvailable = $true
+            Write-LogSuccess ""SSO Admin module imported successfully"" -Category ""Module""
+        }} else {{
+            Write-LogWarning ""VMware.vSphere.SsoAdmin module not found - SSO data will be limited"" -Category ""Module""
         }}
     }} catch {{
-        # Silently continue if SSO Admin module import fails
+        Write-LogWarning ""Could not import SSO Admin module: $($_.Exception.Message)"" -Category ""Module""
     }}
 
     # Initialize result data
@@ -1038,6 +1348,7 @@ try {{
     }}
 
     # Get Roles (including SSO roles if available)
+    Write-LogInfo ""Retrieving roles from vCenter"" -Category ""Discovery""
     $viRoles = Get-VIRole -ErrorAction SilentlyContinue
     foreach ($role in $viRoles) {{
         $assignmentCount = 0
@@ -1062,8 +1373,10 @@ try {{
     }}
     
     $ssoData.TotalRoles = $ssoData.Roles.Count
+    Write-LogSuccess ""Found $($ssoData.TotalRoles) roles"" -Category ""Discovery""
 
     # Get Permissions (including global permissions)
+    Write-LogInfo ""Retrieving permissions from vCenter"" -Category ""Discovery""
     $viPermissions = Get-VIPermission -ErrorAction SilentlyContinue
     foreach ($perm in $viPermissions) {{
         $permInfo = @{{
@@ -1083,6 +1396,7 @@ try {{
 
     # Get Global Permissions using Get-VIPermission with root folder
     try {{
+        Write-LogInfo ""Retrieving global permissions from vCenter"" -Category ""Discovery""
         $rootFolder = Get-Folder -NoRecursion -ErrorAction SilentlyContinue
         $globalPerms = Get-VIPermission -Entity $rootFolder -ErrorAction SilentlyContinue
         
@@ -1100,17 +1414,166 @@ try {{
         }}
         
     }} catch {{
-        # Silently continue if global permissions retrieval fails
+        Write-LogWarning ""Could not retrieve global permissions: $($_.Exception.Message)"" -Category ""Discovery""
     }}
 
     $ssoData.TotalPermissions = $ssoData.Permissions.Count + $ssoData.GlobalPermissions.Count
+    Write-LogSuccess ""Discovery complete: $($ssoData.TotalRoles) roles, $($ssoData.TotalPermissions) permissions"" -Category ""Summary""
 
     # Output result as JSON
     $jsonOutput = $ssoData | ConvertTo-Json -Depth 10
     Write-Output $jsonOutput
 
 }} catch {{
+    Write-LogError ""Discovery failed: $($_.Exception.Message)"" -Category ""Error""
     Write-Output ""ERROR: $($_.Exception.Message)""
+}} finally {{
+    # Complete logging
+    if ($Global:ScriptLogFile) {{
+        $separator = ""="" * 80
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""SCRIPT COMPLETED: AdminConfigDiscovery"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""End Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+    }}
+}}
+";
+
+        return await Task.FromResult(scriptContent);
+    }
+
+    private async Task<string> BuildCustomAttributeScriptWithLoggingAsync(string vCenterServer, string logPath)
+    {
+        var scriptContent = $@"
+# Custom Attribute Discovery Script with Embedded Logging
+$Global:ScriptLogFile = $null
+$Global:SuppressConsoleOutput = $false
+
+function Write-LogInfo {{ 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Info] [$Category] $Message""
+    if (-not $Global:SuppressConsoleOutput) {{ Write-Host $logEntry -ForegroundColor White }}
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Write-LogSuccess {{ 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Success] [$Category] $Message""
+    if (-not $Global:SuppressConsoleOutput) {{ Write-Host $logEntry -ForegroundColor Green }}
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Write-LogWarning {{ 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Warning] [$Category] $Message""
+    if (-not $Global:SuppressConsoleOutput) {{ Write-Host $logEntry -ForegroundColor Yellow }}
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Write-LogError {{ 
+    param([string]$Message, [string]$Category = '')
+    $timestamp = Get-Date -Format ""yyyy-MM-dd HH:mm:ss.fff""
+    $logEntry = ""$timestamp [Error] [$Category] $Message""
+    if (-not $Global:SuppressConsoleOutput) {{ Write-Host $logEntry -ForegroundColor Red }}
+    if ($Global:ScriptLogFile) {{ $logEntry | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8 }}
+}}
+
+function Start-ScriptLogging {{
+    param([string]$ScriptName = '', [string]$LogPath = $null)
+    
+    if ($LogPath) {{
+        if ([System.IO.Path]::HasExtension($LogPath)) {{
+            $logDir = [System.IO.Path]::GetDirectoryName($LogPath)
+        }} else {{
+            $logDir = $LogPath
+        }}
+        
+        $psLogDir = Join-Path $logDir ""PowerShell""
+        if (-not (Test-Path $psLogDir)) {{
+            New-Item -ItemType Directory -Path $psLogDir -Force | Out-Null
+        }}
+        
+        $timestamp = Get-Date -Format ""yyyyMMdd_HHmmss""
+        $sessionId = [System.Guid]::NewGuid().ToString(""N"").Substring(0, 8)
+        $Global:ScriptLogFile = Join-Path $psLogDir ""${{ScriptName}}_${{timestamp}}_${{sessionId}}.log""
+        
+        $separator = ""="" * 80
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Encoding UTF8
+        ""SCRIPT START: $ScriptName"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+    }}
+}}
+
+# Start logging
+Start-ScriptLogging -ScriptName ""CustomAttributeDiscovery"" -LogPath ""{logPath.Replace("\\", "\\\\")}""
+
+Write-LogInfo ""Starting custom attribute discovery"" -Category ""Discovery""
+
+try {{
+    # Get custom attributes
+    $customAttributes = @()
+    
+    Write-LogInfo ""Retrieving custom attributes..."" -Category ""Discovery""
+    $allAttributes = Get-CustomAttribute -ErrorAction SilentlyContinue
+    
+    if ($allAttributes -and $allAttributes.Count -gt 0) {{
+        Write-LogInfo ""Found $($allAttributes.Count) custom attributes"" -Category ""Discovery""
+        
+        foreach ($attr in $allAttributes) {{
+            Write-LogInfo ""Processing custom attribute: $($attr.Name)"" -Category ""Discovery""
+            
+            # Get assignment count for this attribute
+            $assignmentCount = 0
+            try {{
+                # Try to count entities with this attribute set
+                $entities = Get-Inventory | Where-Object {{ $_ | Get-Annotation -CustomAttribute $attr.Name -ErrorAction SilentlyContinue }}
+                $assignmentCount = if ($entities) {{ @($entities).Count }} else {{ 0 }}
+            }} catch {{
+                Write-LogWarning ""Could not count assignments for attribute '$($attr.Name)': $($_.Exception.Message)"" -Category ""Discovery""
+            }}
+            
+            $attributeInfo = @{{
+                Name = if ($attr.Name) {{ $attr.Name.ToString() }} else {{ """" }}
+                Key = if ($attr.Key) {{ $attr.Key.ToString() }} else {{ """" }}
+                Type = if ($attr.Type) {{ $attr.Type.ToString() }} else {{ ""String"" }}
+                IsGlobal = if ($attr.TargetType -eq $null -or $attr.TargetType -eq """") {{ $true }} else {{ $false }}
+                ApplicableTypes = if ($attr.TargetType) {{ @($attr.TargetType.ToString()) }} else {{ @() }}
+                AssignmentCount = $assignmentCount
+            }}
+            
+            $customAttributes += $attributeInfo
+        }}
+        
+        Write-LogSuccess ""Successfully processed $($customAttributes.Count) custom attributes"" -Category ""Discovery""
+    }} else {{
+        Write-LogInfo ""No custom attributes found"" -Category ""Discovery""
+    }}
+    
+    # Output as JSON for C# consumption
+    $jsonOutput = $customAttributes | ConvertTo-Json -Depth 5
+    if ($jsonOutput) {{
+        Write-Output $jsonOutput
+    }} else {{
+        Write-Output ""[]""
+    }}
+    
+}} catch {{
+    $errorMessage = ""Custom attribute discovery failed: $($_.Exception.Message)""
+    Write-LogError $errorMessage -Category ""Error""
+    Write-LogError ""Stack trace: $($_.ScriptStackTrace)"" -Category ""Error""
+    Write-Output ""ERROR: $($_.Exception.Message)""
+}} finally {{
+    if ($Global:ScriptLogFile) {{
+        $separator = ""="" * 80
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""SCRIPT COMPLETED: CustomAttributeDiscovery"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""End Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+        ""$separator"" | Out-File -FilePath $Global:ScriptLogFile -Append -Encoding UTF8
+    }}
 }}
 ";
 
@@ -1119,8 +1582,39 @@ try {{
 
     private async Task LoadCustomAttributesAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
-        // Placeholder - custom attributes discovery is optional for MVP
-        await Task.CompletedTask;
+        try
+        {
+            _logger.LogInformation("Loading custom attributes for {VCenterName}", vCenterName);
+            
+            var logPath = await GetLogPathAsync();
+            var script = await BuildCustomAttributeScriptWithLoggingAsync(vCenterName, logPath);
+            
+            var customAttributeData = await ExecuteAndDeserializeAsync<CustomAttributeData>(script, connectionType, "CustomAttributes", vCenterName);
+            
+            if (customAttributeData != null)
+            {
+                foreach (var attr in customAttributeData)
+                {
+                    var customAttrInfo = new CustomAttributeInfo
+                    {
+                        Name = attr.Name ?? string.Empty,
+                        Id = attr.Key?.ToString() ?? string.Empty,
+                        Type = attr.Type ?? string.Empty,
+                        IsGlobal = attr.IsGlobal,
+                        ApplicableTypes = attr.ApplicableTypes ?? Array.Empty<string>(),
+                        AssignmentCount = attr.AssignmentCount
+                    };
+                    
+                    inventory.CustomAttributes.Add(customAttrInfo);
+                }
+                
+                _logger.LogInformation("Loaded {Count} custom attributes for {VCenterName}", inventory.CustomAttributes.Count, vCenterName);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load custom attributes for {VCenterName}", vCenterName);
+        }
     }
 
     private string GetInventorySummary(VCenterInventory inventory)
@@ -1270,4 +1764,52 @@ public class BasicPermissionData
     public string? EntityId { get; set; }
     public bool Propagate { get; set; }
     public string? Type { get; set; }
+}
+
+/// <summary>
+/// Custom attribute data for deserializing PowerShell script output
+/// </summary>
+public class CustomAttributeData
+{
+    public string? Name { get; set; }
+    public object? Key { get; set; }
+    public string? Type { get; set; }
+    public bool IsGlobal { get; set; }
+    public string[]? ApplicableTypes { get; set; }
+    public int AssignmentCount { get; set; }
+}
+
+/// <summary>
+/// Tag and category data container for deserializing PowerShell script output
+/// </summary>
+public class TagCategoryData
+{
+    public string? CollectionDate { get; set; }
+    public string? VCenterServer { get; set; }
+    public List<TagData>? Tags { get; set; }
+    public List<CategoryData>? Categories { get; set; }
+}
+
+/// <summary>
+/// Tag data for deserializing PowerShell script output
+/// </summary>
+public class TagData
+{
+    public string? Name { get; set; }
+    public string? Id { get; set; }
+    public string? CategoryName { get; set; }
+    public string? Description { get; set; }
+    public int AssignedObjectCount { get; set; }
+}
+
+/// <summary>
+/// Category data for deserializing PowerShell script output
+/// </summary>
+public class CategoryData
+{
+    public string? Name { get; set; }
+    public string? Id { get; set; }
+    public string? Description { get; set; }
+    public int TagCount { get; set; }
+    public bool IsMultipleCardinality { get; set; }
 }
