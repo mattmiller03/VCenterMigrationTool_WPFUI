@@ -310,14 +310,37 @@ namespace VCenterMigrationTool.ViewModels
             {
                 MigrationStatus = "Loading source admin configuration...";
                 SourceDataStatus = "🔄 Loading admin config...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source admin config data\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting source admin config discovery\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔍 Discovering roles and permissions...\n";
+                
+                // Track progress through multiple phases
+                var startTime = DateTime.Now;
                 
                 var success = await _sharedConnectionService.LoadSourceAdminConfigAsync();
                 if (success)
                 {
+                    // Get the loaded data to show detailed results
+                    var inventory = _sharedConnectionService.GetSourceInventory();
+                    if (inventory != null)
+                    {
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Roles discovery complete: Found {inventory.Roles.Count(r => !r.IsSystem)} custom roles, {inventory.Roles.Count(r => r.IsSystem)} system roles\n";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Permissions discovery complete: Found {inventory.Permissions.Count} permission assignments\n";
+                        
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔍 Discovering VM folders structure...\n";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Folders discovery complete: Found {inventory.Folders.Count} folders\n";
+                        
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔍 Discovering tags and categories...\n";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Tags discovery complete: Found {inventory.Categories.Count} categories, {inventory.Tags.Count} tags\n";
+                        
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔍 Discovering custom attributes...\n";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Custom attributes discovery complete: Found {inventory.CustomAttributes.Count} custom attributes\n";
+                        
+                        var duration = DateTime.Now - startTime;
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🎉 Source admin config discovery completed in {duration.TotalSeconds:F1}s\n";
+                    }
+                    
                     SourceDataStatus = "✅ Admin config loaded";
                     MigrationStatus = "Source admin config loaded successfully";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source admin config data loaded successfully\n";
                     
                     // Refresh the data display
                     await LoadAdminConfigDataAsync();
@@ -326,14 +349,14 @@ namespace VCenterMigrationTool.ViewModels
                 {
                     SourceDataStatus = "❌ Failed to load admin config";
                     MigrationStatus = "Failed to load source admin config";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load source admin config\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: Failed to load source admin config\n";
                 }
             }
             catch (Exception ex)
             {
                 SourceDataStatus = "❌ Error loading admin config";
                 MigrationStatus = $"Failed to load source admin config: {ex.Message}";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: {ex.Message}\n";
                 _logger.LogError(ex, "Error loading source admin config");
             }
         }
@@ -351,14 +374,37 @@ namespace VCenterMigrationTool.ViewModels
             {
                 MigrationStatus = "Loading target admin configuration...";
                 TargetDataStatus = "🔄 Loading admin config...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading target admin config data\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting target admin config discovery\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔍 Discovering roles and permissions...\n";
+                
+                // Track progress through multiple phases
+                var startTime = DateTime.Now;
                 
                 var success = await _sharedConnectionService.LoadTargetAdminConfigAsync();
                 if (success)
                 {
+                    // Get the loaded data to show detailed results
+                    var inventory = _sharedConnectionService.GetTargetInventory();
+                    if (inventory != null)
+                    {
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Roles discovery complete: Found {inventory.Roles.Count(r => !r.IsSystem)} custom roles, {inventory.Roles.Count(r => r.IsSystem)} system roles\n";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Permissions discovery complete: Found {inventory.Permissions.Count} permission assignments\n";
+                        
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔍 Discovering VM folders structure...\n";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Folders discovery complete: Found {inventory.Folders.Count} folders\n";
+                        
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔍 Discovering tags and categories...\n";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Tags discovery complete: Found {inventory.Categories.Count} categories, {inventory.Tags.Count} tags\n";
+                        
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔍 Discovering custom attributes...\n";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Custom attributes discovery complete: Found {inventory.CustomAttributes.Count} custom attributes\n";
+                        
+                        var duration = DateTime.Now - startTime;
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🎉 Target admin config discovery completed in {duration.TotalSeconds:F1}s\n";
+                    }
+                    
                     TargetDataStatus = "✅ Admin config loaded";
                     MigrationStatus = "Target admin config loaded successfully";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target admin config data loaded successfully\n";
                     
                     // Refresh the data display
                     await LoadAdminConfigDataAsync();
@@ -367,14 +413,14 @@ namespace VCenterMigrationTool.ViewModels
                 {
                     TargetDataStatus = "❌ Failed to load admin config";
                     MigrationStatus = "Failed to load target admin config";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load target admin config\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: Failed to load target admin config\n";
                 }
             }
             catch (Exception ex)
             {
                 TargetDataStatus = "❌ Error loading admin config";
                 MigrationStatus = $"Failed to load target admin config: {ex.Message}";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: {ex.Message}\n";
                 _logger.LogError(ex, "Error loading target admin config");
             }
         }
@@ -525,7 +571,16 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Migrating roles...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting role migration\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔄 Starting role migration\n";
+                
+                // Get source data for logging
+                var sourceInventory = _sharedConnectionService.GetSourceInventory();
+                var customRoleCount = sourceInventory?.Roles?.Count(r => !r.IsSystem) ?? 0;
+                
+                if (customRoleCount > 0)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📋 Migrating {customRoleCount} custom roles to target vCenter...\n";
+                }
                 
                 if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
                 {
@@ -554,7 +609,8 @@ namespace VCenterMigrationTool.ViewModels
 
                 if (result.StartsWith("SUCCESS:"))
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Roles migration completed\n";
+                    var action = ValidateOnly ? "validation" : "migration";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Roles {action} completed successfully\n";
                 }
                 else if (result.StartsWith("ERROR:"))
                 {
@@ -562,7 +618,7 @@ namespace VCenterMigrationTool.ViewModels
                 }
                 else
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Roles migration result: {result}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Roles migration result: {result}\n";
                 }
             }
             catch (Exception ex)
@@ -578,7 +634,16 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Migrating folders...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting folder migration\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔄 Starting folder migration\n";
+                
+                // Get source data for logging
+                var sourceInventory = _sharedConnectionService.GetSourceInventory();
+                var folderCount = sourceInventory?.Folders?.Count ?? 0;
+                
+                if (folderCount > 0)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📁 Migrating {folderCount} folder structures (VM, Host, Network, Datastore)...\n";
+                }
                 
                 if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
                 {
@@ -608,7 +673,8 @@ namespace VCenterMigrationTool.ViewModels
 
                 if (result.StartsWith("SUCCESS:"))
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Folders migration completed\n";
+                    var action = ValidateOnly ? "validation" : "migration";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Folders {action} completed successfully\n";
                 }
                 else if (result.StartsWith("ERROR:"))
                 {
@@ -616,7 +682,7 @@ namespace VCenterMigrationTool.ViewModels
                 }
                 else
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Folders migration result: {result}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Folders migration result: {result}\n";
                 }
             }
             catch (Exception ex)
@@ -632,7 +698,17 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Migrating tags and categories...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting tags migration\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔄 Starting tags and categories migration\n";
+                
+                // Get source data for logging
+                var sourceInventory = _sharedConnectionService.GetSourceInventory();
+                var categoryCount = sourceInventory?.Categories?.Count ?? 0;
+                var tagCount = sourceInventory?.Tags?.Count ?? 0;
+                
+                if (categoryCount > 0 || tagCount > 0)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🏷️ Migrating {categoryCount} categories and {tagCount} tags...\n";
+                }
                 
                 if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
                 {
@@ -662,7 +738,8 @@ namespace VCenterMigrationTool.ViewModels
 
                 if (result.StartsWith("SUCCESS:"))
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Tags migration completed\n";
+                    var action = ValidateOnly ? "validation" : "migration";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Tags and categories {action} completed successfully\n";
                 }
                 else if (result.StartsWith("ERROR:"))
                 {
@@ -670,7 +747,7 @@ namespace VCenterMigrationTool.ViewModels
                 }
                 else
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Tags migration result: {result}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Tags migration result: {result}\n";
                 }
             }
             catch (Exception ex)
@@ -686,7 +763,16 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Migrating custom attributes...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting custom attributes migration\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔄 Starting custom attributes migration\n";
+                
+                // Get source data for logging
+                var sourceInventory = _sharedConnectionService.GetSourceInventory();
+                var attributeCount = sourceInventory?.CustomAttributes?.Count ?? 0;
+                
+                if (attributeCount > 0)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚙️ Migrating {attributeCount} custom attributes...\n";
+                }
                 
                 if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
                 {
@@ -716,7 +802,8 @@ namespace VCenterMigrationTool.ViewModels
 
                 if (result.StartsWith("SUCCESS:"))
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Custom attributes migration completed\n";
+                    var action = ValidateOnly ? "validation" : "migration";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Custom attributes {action} completed successfully\n";
                 }
                 else if (result.StartsWith("ERROR:"))
                 {
@@ -724,7 +811,7 @@ namespace VCenterMigrationTool.ViewModels
                 }
                 else
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Custom attributes migration result: {result}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Custom attributes migration result: {result}\n";
                 }
             }
             catch (Exception ex)
@@ -740,7 +827,16 @@ namespace VCenterMigrationTool.ViewModels
             try
             {
                 MigrationStatus = "Migrating permissions...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting permissions migration\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔄 Starting permissions migration\n";
+                
+                // Get source data for logging
+                var sourceInventory = _sharedConnectionService.GetSourceInventory();
+                var permissionCount = sourceInventory?.Permissions?.Count ?? 0;
+                
+                if (permissionCount > 0)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔐 Migrating {permissionCount} permission assignments...\n";
+                }
                 
                 if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
                 {
@@ -770,7 +866,8 @@ namespace VCenterMigrationTool.ViewModels
 
                 if (result.StartsWith("SUCCESS:"))
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Permissions migration completed\n";
+                    var action = ValidateOnly ? "validation" : "migration";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Permissions {action} completed successfully\n";
                 }
                 else if (result.StartsWith("ERROR:"))
                 {
@@ -778,7 +875,7 @@ namespace VCenterMigrationTool.ViewModels
                 }
                 else
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Permissions migration result: {result}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Permissions migration result: {result}\n";
                 }
             }
             catch (Exception ex)
