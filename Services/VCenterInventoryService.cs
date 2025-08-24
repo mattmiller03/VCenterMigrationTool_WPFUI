@@ -751,11 +751,24 @@ public class VCenterInventoryService
                 // Check if result looks like JSON before attempting to deserialize
                 if (result.TrimStart().StartsWith("[") || result.TrimStart().StartsWith("{"))
                 {
-                    var folders = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(result);
-                    if (folders != null && folders.Count > 0)
+                    var folderDictionaries = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(result);
+                    if (folderDictionaries != null && folderDictionaries.Count > 0)
                     {
-                        // Add folders to inventory (you may need to add a Folders property to VCenterInventory if not present)
-                        _logger.LogInformation("Loaded {Count} folders for {VCenterName}", folders.Count, vCenterName);
+                        // Convert dictionaries to FolderInfo objects and add to inventory
+                        foreach (var folderDict in folderDictionaries)
+                        {
+                            var folderInfo = new FolderInfo
+                            {
+                                Name = folderDict.GetValueOrDefault("Name", "").ToString(),
+                                Id = folderDict.GetValueOrDefault("Id", "").ToString(),
+                                Type = folderDict.GetValueOrDefault("Type", "VM").ToString(),
+                                Path = folderDict.GetValueOrDefault("Path", "").ToString(),
+                                DatacenterName = folderDict.GetValueOrDefault("DatacenterName", "").ToString(),
+                                ChildCount = Convert.ToInt32(folderDict.GetValueOrDefault("ChildItemCount", 0))
+                            };
+                            inventory.Folders.Add(folderInfo);
+                        }
+                        _logger.LogInformation("Successfully loaded {Count} folders for {VCenterName}", inventory.Folders.Count, vCenterName);
                     }
                 }
                 else
