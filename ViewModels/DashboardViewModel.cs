@@ -331,16 +331,23 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         ScriptOutput = string.Empty;
 
         _logger.LogInformation("=== ESTABLISHING PERSISTENT SOURCE CONNECTION ===");
+        _logger.LogInformation("Selected Source Profile: {Server} | User: {Username}", 
+            SelectedSourceProfile.ServerAddress, SelectedSourceProfile.Username);
+        _logger.LogInformation("PowerCLI Bypass Status: {PowerCliStatus}", 
+            HybridPowerShellService.PowerCliConfirmedInstalled);
 
         // Step 1: Get credentials
         SourceConnectionStatus = "🔐 Retrieving credentials...";
         await Task.Delay(100); // Allow UI to update
 
+        _logger.LogInformation("STEP 1: Retrieving stored credentials for profile: {ProfileName}", 
+            SelectedSourceProfile.Name);
         string? password = _credentialService.GetPassword(SelectedSourceProfile);
         string finalPassword;
 
         if (string.IsNullOrEmpty(password))
             {
+            _logger.LogInformation("STEP 1: No stored credentials found - prompting user for password");
             SourceConnectionStatus = "🔑 Password required - please enter credentials";
             var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
                 "Password Required",
@@ -349,36 +356,51 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
                 {
+                _logger.LogWarning("STEP 1: User cancelled password prompt");
                 SourceConnectionStatus = "❌ Connection cancelled by user";
                 IsJobRunning = false;
                 return;
                 }
 
+            _logger.LogInformation("STEP 1: User provided password successfully");
             finalPassword = promptedPassword;
             }
         else
             {
+            _logger.LogInformation("STEP 1: Using stored credentials");
             finalPassword = password;
             }
 
         try
             {
             // Step 2: Establish PowerShell connection
+            _logger.LogInformation("STEP 2: Starting persistent connection to {Server}", 
+                SelectedSourceProfile.ServerAddress);
             SourceConnectionStatus = $"🔗 Connecting to {SelectedSourceProfile.ServerAddress}...";
             await Task.Delay(100); // Allow UI to update
 
+            _logger.LogInformation("STEP 2: Calling PersistentConnectionService.ConnectAsync with bypass={Bypass}", 
+                HybridPowerShellService.PowerCliConfirmedInstalled);
+            
             var (success, message, sessionId) = await _persistentConnectionService.ConnectAsync(
                 SelectedSourceProfile,
                 finalPassword,
                 isSource: true,
                 bypassModuleCheck: HybridPowerShellService.PowerCliConfirmedInstalled);
 
+            _logger.LogInformation("STEP 2: ConnectAsync returned - Success: {Success} | Message: {Message} | SessionId: {SessionId}", 
+                success, message, sessionId);
+
             if (success)
                 {
+                _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service");
                 // Step 3: Set connection without inventory
                 _sharedConnectionService.SourceConnection = SelectedSourceProfile;
 
+                _logger.LogInformation("STEP 3: Getting connection info from persistent service");
                 var (isConnected, sid, version) = _persistentConnectionService.GetConnectionInfo("source");
+                _logger.LogInformation("STEP 3: Connection info - Connected: {Connected} | SessionId: {SessionId} | Version: {Version}", 
+                    isConnected, sid, version);
 
                 IsSourceConnected = true;
                 SourceConnectionStatus = $"✅ Connected - {SelectedSourceProfile.ServerAddress} (v{version})";
@@ -392,9 +414,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                               $"Use vCenter Objects page to load inventory data.\n" +
                               $"Use 'Disconnect' button to close the connection.";
 
-                _logger.LogInformation("✅ Persistent source connection established (Session: {SessionId})", sessionId);
+                _logger.LogInformation("✅ Persistent source connection established successfully (Session: {SessionId})", sessionId);
 
                 // Update inventory summary
+                _logger.LogInformation("STEP 3: Starting inventory summary update task");
                 _ = Task.Run(UpdateInventorySummaries);
 
                 // Notify property changes
@@ -403,18 +426,26 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 }
             else
                 {
+                _logger.LogError("STEP 2: Connection FAILED - Success={Success} | Message={Message}", success, message);
                 IsSourceConnected = false;
                 SourceConnectionStatus = $"❌ Connection failed: {message}";
                 SourceConnectionDetails = "";
                 ScriptOutput = $"Connection failed: {message}";
                 _sharedConnectionService.SourceConnection = null;
 
-                _logger.LogError("Failed to establish persistent connection: {Message}", message);
+                _logger.LogError("❌ Failed to establish persistent connection: {Message}", message);
                 }
             }
         catch (Exception ex)
             {
-            _logger.LogError(ex, "Error establishing persistent connection");
+            _logger.LogError(ex, "EXCEPTION: Error establishing persistent connection - Type: {ExceptionType} | Message: {Message}", 
+                ex.GetType().Name, ex.Message);
+            if (ex.InnerException != null)
+                {
+                _logger.LogError("EXCEPTION: Inner Exception - Type: {InnerType} | Message: {InnerMessage}", 
+                    ex.InnerException.GetType().Name, ex.InnerException.Message);
+                }
+            _logger.LogError("EXCEPTION: Stack Trace: {StackTrace}", ex.StackTrace);
             IsSourceConnected = false;
             SourceConnectionStatus = $"❌ Connection error: {ex.Message}";
             SourceConnectionDetails = "";
