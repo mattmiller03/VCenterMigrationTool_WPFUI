@@ -101,27 +101,20 @@ public class PersistentExternalConnectionService : IDisposable
             // Store the connection early so we can use ExecuteCommandAsync
             _connections[connectionKey] = connection;
 
-            // Import PowerCLI if needed
-            if (!bypassModuleCheck)
-                {
-                _logger.LogInformation("Importing PowerCLI modules in persistent session...");
-                var importResult = await ExecuteCommandWithTimeoutAsync(connectionKey, @"
-                    Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-                    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-                    Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
-                    Write-Output 'MODULES_LOADED'
-                ", TimeSpan.FromSeconds(30));
+            // Always import PowerCLI in persistent sessions (each process starts fresh)
+            _logger.LogInformation("Importing PowerCLI modules in persistent session... (bypassModuleCheck={BypassFlag} - ignored for persistent sessions)", bypassModuleCheck);
+            var importResult = await ExecuteCommandWithTimeoutAsync(connectionKey, @"
+                Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+                Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+                Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+                Write-Output 'MODULES_LOADED'
+            ", TimeSpan.FromSeconds(30));
 
-                if (!importResult.Contains("MODULES_LOADED"))
-                    {
-                    _logger.LogError("Failed to load PowerCLI modules");
-                    await DisconnectAsync(connectionKey);
-                    return (false, "Failed to load PowerCLI modules", null);
-                    }
-                }
-            else
+            if (!importResult.Contains("MODULES_LOADED"))
                 {
-                _logger.LogInformation("Bypassing module import (assumed already loaded)");
+                _logger.LogError("Failed to load PowerCLI modules in persistent session");
+                await DisconnectAsync(connectionKey);
+                return (false, "Failed to load PowerCLI modules", null);
                 }
 
             // Create credential and connect
