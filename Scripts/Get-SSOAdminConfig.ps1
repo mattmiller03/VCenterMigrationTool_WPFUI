@@ -188,7 +188,7 @@ try {
     if (Get-Command Connect-SsoAdminServer -ErrorAction SilentlyContinue) {
         try {
             Write-LogInfo "Connecting to SSO Admin Server..." -Category "Connection"
-            $ssoConnection = Connect-SsoAdminServer -Server $VCenterServer -User $Credentials.UserName -Password $Credentials.GetNetworkCredential().Password -SkipCertificateCheck
+            $ssoConnection = Connect-SsoAdminServer -Server $VCenterServer -Credential $Credentials -SkipCertificateCheck
             $ssoConnected = $true
             Write-LogSuccess "Connected to SSO Admin Server" -Category "Connection"
         } catch {
