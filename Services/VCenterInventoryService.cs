@@ -16,16 +16,19 @@ public class VCenterInventoryService
 {
     private readonly PersistentExternalConnectionService _persistentConnectionService;
     private readonly ILogger<VCenterInventoryService> _logger;
+    private readonly ConfigurationService _configurationService;
     
     private readonly Dictionary<string, VCenterInventory> _inventoryCache = new();
     private readonly object _cacheLock = new();
 
     public VCenterInventoryService(
         PersistentExternalConnectionService persistentConnectionService, 
-        ILogger<VCenterInventoryService> logger)
+        ILogger<VCenterInventoryService> logger,
+        ConfigurationService configurationService)
     {
         _persistentConnectionService = persistentConnectionService;
         _logger = logger;
+        _configurationService = configurationService;
     }
 
     /// <summary>
@@ -1242,19 +1245,17 @@ try {{
 
     private async Task<string> GetLogPathAsync()
     {
-        // Return a default log path that matches the application's logging configuration
-        // In the actual environment, this would be C:\temp\app\logs
-        var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VCenterMigrationTool", "Logs");
-        try
+        // Get the configured log path from the configuration service
+        var config = _configurationService.GetConfiguration();
+        var logPath = config?.LogPath;
+        
+        // If no log path is configured, use the default from AppData
+        if (string.IsNullOrEmpty(logPath))
         {
-            // Try to get the configured log path from the application config
-            // This would need to be injected from the configuration service in a real implementation
-            // For now, we'll use a reasonable default
+            logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VCenterMigrationTool", "Logs");
+            _logger.LogWarning("No LogPath configured, using default: {LogPath}", logPath);
         }
-        catch
-        {
-            // Fallback to default if configuration reading fails
-        }
+        
         return await Task.FromResult(logPath);
     }
 

@@ -87,6 +87,29 @@ namespace VCenterMigrationTool.Services
         {
             try
             {
+                // First, try to load from appsettings.json
+                AppConfig? appSettingsConfig = null;
+                var appSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+                if (File.Exists(appSettingsPath))
+                {
+                    try
+                    {
+                        var appSettingsJson = File.ReadAllText(appSettingsPath);
+                        var appSettingsData = JsonSerializer.Deserialize<JsonElement>(appSettingsJson);
+                        if (appSettingsData.TryGetProperty("AppConfig", out var appConfigElement))
+                        {
+                            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                            appSettingsConfig = JsonSerializer.Deserialize<AppConfig>(appConfigElement.GetRawText(), options);
+                            _logger.LogInformation("Loaded base configuration from appsettings.json with LogPath: {LogPath}", appSettingsConfig?.LogPath);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to load appsettings.json, will use defaults");
+                    }
+                }
+                
+                // Then load or merge with userconfig.json
                 if (File.Exists(_configFilePath))
                 {
                     var jsonString = File.ReadAllText(_configFilePath);
@@ -95,22 +118,46 @@ namespace VCenterMigrationTool.Services
                         PropertyNameCaseInsensitive = true 
                     };
                     
-                    var config = JsonSerializer.Deserialize<AppConfig>(jsonString, options);
+                    var userConfig = JsonSerializer.Deserialize<AppConfig>(jsonString, options);
                     
-                    // Ensure LogPath is set even if not in the saved config
-                    if (config != null && string.IsNullOrEmpty(config.LogPath))
+                    // If we have appSettings config, merge with user config (user config takes precedence for non-null values)
+                    if (appSettingsConfig != null && userConfig != null)
                     {
-                        config.LogPath = Path.Combine(
+                        // Use LogPath from appsettings if userconfig doesn't have it
+                        if (string.IsNullOrEmpty(userConfig.LogPath) && !string.IsNullOrEmpty(appSettingsConfig.LogPath))
+                        {
+                            userConfig.LogPath = appSettingsConfig.LogPath;
+                            _logger.LogInformation("Using LogPath from appsettings.json: {LogPath}", userConfig.LogPath);
+                        }
+                        
+                        // Use ExportPath from appsettings if userconfig doesn't have it
+                        if (string.IsNullOrEmpty(userConfig.ExportPath) && !string.IsNullOrEmpty(appSettingsConfig.ExportPath))
+                        {
+                            userConfig.ExportPath = appSettingsConfig.ExportPath;
+                        }
+                    }
+                    
+                    // Ensure LogPath is set even if not in either config
+                    if (userConfig != null && string.IsNullOrEmpty(userConfig.LogPath))
+                    {
+                        userConfig.LogPath = Path.Combine(
                             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
                             "VCenterMigrationTool", 
                             "Logs");
-                        _logger.LogInformation("LogPath was empty, set to default: {LogPath}", config.LogPath);
-                        SaveConfiguration(config); // Save the updated config with LogPath
+                        _logger.LogInformation("LogPath was empty in both configs, set to default: {LogPath}", userConfig.LogPath);
+                        SaveConfiguration(userConfig); // Save the updated config with LogPath
                     }
                     
-                    _logger.LogInformation("Configuration loaded from {ConfigPath} with LogPath: {LogPath}", 
-                        _configFilePath, config?.LogPath ?? "null");
-                    return config ?? CreateDefaultConfiguration();
+                    _logger.LogInformation("Configuration loaded with LogPath: {LogPath}", 
+                        userConfig?.LogPath ?? "null");
+                    return userConfig ?? appSettingsConfig ?? CreateDefaultConfiguration();
+                }
+                else if (appSettingsConfig != null)
+                {
+                    // Use appsettings config as base and save to user config
+                    _logger.LogInformation("Creating user configuration from appsettings.json");
+                    SaveConfiguration(appSettingsConfig);
+                    return appSettingsConfig;
                 }
                 else
                 {
