@@ -759,12 +759,12 @@ public class VCenterInventoryService
                         {
                             var folderInfo = new FolderInfo
                             {
-                                Name = folderDict.GetValueOrDefault("Name", "").ToString(),
-                                Id = folderDict.GetValueOrDefault("Id", "").ToString(),
-                                Type = folderDict.GetValueOrDefault("Type", "VM").ToString(),
-                                Path = folderDict.GetValueOrDefault("Path", "").ToString(),
-                                DatacenterName = folderDict.GetValueOrDefault("DatacenterName", "").ToString(),
-                                ChildCount = Convert.ToInt32(folderDict.GetValueOrDefault("ChildItemCount", 0))
+                                Name = GetStringValueFromDict(folderDict, "Name", ""),
+                                Id = GetStringValueFromDict(folderDict, "Id", ""),
+                                Type = GetStringValueFromDict(folderDict, "Type", "VM"),
+                                Path = GetStringValueFromDict(folderDict, "Path", ""),
+                                DatacenterName = GetStringValueFromDict(folderDict, "DatacenterName", ""),
+                                ChildCount = GetIntValueFromDict(folderDict, "ChildItemCount", 0)
                             };
                             inventory.Folders.Add(folderInfo);
                         }
@@ -1659,6 +1659,67 @@ try {{
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Safely extracts a string value from a dictionary that may contain JsonElement objects
+    /// </summary>
+    private static string GetStringValueFromDict(Dictionary<string, object> dict, string key, string defaultValue)
+    {
+        if (!dict.TryGetValue(key, out var value) || value == null)
+            return defaultValue;
+
+        if (value is JsonElement jsonElement)
+        {
+            return jsonElement.ValueKind == JsonValueKind.String ? jsonElement.GetString() ?? defaultValue : jsonElement.ToString();
+        }
+
+        return value.ToString() ?? defaultValue;
+    }
+
+    /// <summary>
+    /// Safely extracts an integer value from a dictionary that may contain JsonElement objects
+    /// </summary>
+    private static int GetIntValueFromDict(Dictionary<string, object> dict, string key, int defaultValue)
+    {
+        if (!dict.TryGetValue(key, out var value) || value == null)
+            return defaultValue;
+
+        if (value is JsonElement jsonElement)
+        {
+            return jsonElement.ValueKind == JsonValueKind.Number ? jsonElement.GetInt32() : defaultValue;
+        }
+
+        if (value is int intValue)
+            return intValue;
+
+        if (int.TryParse(value.ToString(), out var parsedValue))
+            return parsedValue;
+
+        return defaultValue;
+    }
+
+    /// <summary>
+    /// Safely extracts a boolean value from a dictionary that may contain JsonElement objects
+    /// </summary>
+    private static bool GetBoolValueFromDict(Dictionary<string, object> dict, string key, bool defaultValue)
+    {
+        if (!dict.TryGetValue(key, out var value) || value == null)
+            return defaultValue;
+
+        if (value is JsonElement jsonElement)
+        {
+            return jsonElement.ValueKind == JsonValueKind.True || 
+                   (jsonElement.ValueKind == JsonValueKind.String && bool.TryParse(jsonElement.GetString(), out var boolResult) && boolResult);
+        }
+
+        if (value is bool boolValue)
+            return boolValue;
+
+        if (bool.TryParse(value.ToString(), out var parsedValue))
+            return parsedValue;
+
+        return defaultValue;
     }
 }
 
