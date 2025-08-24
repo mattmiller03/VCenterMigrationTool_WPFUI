@@ -15,7 +15,6 @@ namespace VCenterMigrationTool.Services;
 public class VCenterInventoryService
 {
     private readonly PersistentExternalConnectionService _persistentConnectionService;
-    private readonly HybridPowerShellService _hybridPowerShellService;
     private readonly ILogger<VCenterInventoryService> _logger;
     
     private readonly Dictionary<string, VCenterInventory> _inventoryCache = new();
@@ -23,11 +22,9 @@ public class VCenterInventoryService
 
     public VCenterInventoryService(
         PersistentExternalConnectionService persistentConnectionService, 
-        HybridPowerShellService hybridPowerShellService,
         ILogger<VCenterInventoryService> logger)
     {
         _persistentConnectionService = persistentConnectionService;
-        _hybridPowerShellService = hybridPowerShellService;
         _logger = logger;
     }
 
@@ -788,22 +785,10 @@ public class VCenterInventoryService
         try
         {
             _logger.LogInformation("Loading roles and permissions for {VCenterName} using SSO Admin script", vCenterName);
-            
-            // Create parameters for Get-SSOAdminConfig.ps1
-            var parameters = new Dictionary<string, object>
-            {
-                { "VCenterServer", vCenterName },
-                { "IncludeRoles", true },
-                { "IncludePermissions", true },
-                { "IncludeSSOUsers", false }, // Optional for performance
-                { "IncludeSSOGroups", false }, // Optional for performance
-                { "BypassModuleCheck", false }
-            };
 
-            // Execute the SSO Admin config script
-            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-SSOAdminConfig.ps1");
-            var result = await _hybridPowerShellService.RunScriptWithCredentialObjectAsync(
-                scriptPath, username, password, parameters);
+            // Execute the SSO Admin config script using direct PowerShell execution
+            var scriptContent = await BuildSSOAdminScriptAsync(vCenterName);
+            var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, scriptContent);
 
             if (result.StartsWith("SUCCESS:") || result.TrimStart().StartsWith("{"))
             {
@@ -992,6 +977,125 @@ public class VCenterInventoryService
         {
             _logger.LogError(ex, "Failed to load basic roles and permissions for {VCenterName}", vCenterName);
         }
+    }
+
+    private async Task<string> BuildSSOAdminScriptAsync(string vCenterServer)
+    {
+        var scriptContent = $@"
+# SSO Admin Config Discovery Script (Embedded)
+param()
+
+try {{
+    # Check for and import SSO Admin module if available
+    $ssoModuleAvailable = $false
+    try {{
+        $ssoModule = Get-Module -ListAvailable -Name VMware.vSphere.SsoAdmin
+        if ($ssoModule) {{
+            Import-Module VMware.vSphere.SsoAdmin -Force -ErrorAction Stop
+            $ssoModuleAvailable = $true
+            Write-Host ""SSO Admin module imported successfully""
+        }} else {{
+            Write-Host ""VMware.vSphere.SsoAdmin module not found - SSO data will be limited""
+        }}
+    }} catch {{
+        Write-Host ""Could not import SSO Admin module: $($_.Exception.Message)""
+    }}
+
+    # Initialize result data
+    $ssoData = @{{
+        CollectionDate = Get-Date -Format ""yyyy-MM-dd HH:mm:ss""
+        VCenterServer = ""{vCenterServer}""
+        Roles = @()
+        Permissions = @()
+        GlobalPermissions = @()
+        TotalRoles = 0
+        TotalPermissions = 0
+    }}
+
+    # Get Roles (including SSO roles if available)
+    Write-Host ""Retrieving roles...""
+    $viRoles = Get-VIRole -ErrorAction SilentlyContinue
+    foreach ($role in $viRoles) {{
+        $assignmentCount = 0
+        try {{
+            $assignments = Get-VIPermission | Where-Object {{ $_.Role -eq $role.Name }}
+            $assignmentCount = @($assignments).Count
+        }} catch {{
+            Write-Host ""Could not count assignments for role '$($role.Name)'""
+        }}
+        
+        $roleInfo = @{{
+            Name = $role.Name
+            Id = $role.Id
+            IsSystem = $role.IsSystem
+            Description = $role.Description
+            Privileges = @($role.PrivilegeList)
+            AssignmentCount = $assignmentCount
+            Type = ""VIRole""
+        }}
+        
+        $ssoData.Roles += $roleInfo
+    }}
+    
+    $ssoData.TotalRoles = $ssoData.Roles.Count
+    Write-Host ""Found $($ssoData.TotalRoles) roles""
+
+    # Get Permissions (including global permissions)
+    Write-Host ""Retrieving permissions...""
+    $viPermissions = Get-VIPermission -ErrorAction SilentlyContinue
+    foreach ($perm in $viPermissions) {{
+        $permInfo = @{{
+            Id = [System.Guid]::NewGuid().ToString()
+            Principal = $perm.Principal
+            PrincipalType = if ($perm.IsGroup) {{ ""Group"" }} else {{ ""User"" }}
+            Role = $perm.Role
+            Entity = if ($perm.Entity) {{ $perm.Entity.Name }} else {{ ""Root"" }}
+            EntityType = if ($perm.Entity) {{ $perm.Entity.GetType().Name }} else {{ ""Root"" }}
+            EntityId = if ($perm.Entity) {{ $perm.Entity.Id }} else {{ ""Root"" }}
+            Propagate = $perm.Propagate
+            Type = ""VIPermission""
+        }}
+        
+        $ssoData.Permissions += $permInfo
+    }}
+
+    # Get Global Permissions using Get-VIPermission with root folder
+    try {{
+        Write-Host ""Retrieving global permissions...""
+        $rootFolder = Get-Folder -NoRecursion -ErrorAction SilentlyContinue
+        $globalPerms = Get-VIPermission -Entity $rootFolder -ErrorAction SilentlyContinue
+        
+        foreach ($globalPerm in $globalPerms) {{
+            $globalPermInfo = @{{
+                Id = [System.Guid]::NewGuid().ToString()
+                Principal = $globalPerm.Principal
+                PrincipalType = if ($globalPerm.IsGroup) {{ ""Group"" }} else {{ ""User"" }}
+                Role = $globalPerm.Role
+                Propagate = $globalPerm.Propagate
+                Type = ""GlobalPermission""
+            }}
+            
+            $ssoData.GlobalPermissions += $globalPermInfo
+        }}
+        
+        Write-Host ""Found $($ssoData.GlobalPermissions.Count) global permissions""
+    }} catch {{
+        Write-Host ""Could not retrieve global permissions: $($_.Exception.Message)""
+    }}
+
+    $ssoData.TotalPermissions = $ssoData.Permissions.Count + $ssoData.GlobalPermissions.Count
+    Write-Host ""Found $($ssoData.TotalPermissions) total permissions""
+
+    # Output result as JSON
+    $jsonOutput = $ssoData | ConvertTo-Json -Depth 10
+    Write-Output $jsonOutput
+
+}} catch {{
+    Write-Output ""ERROR: $($_.Exception.Message)""
+}}
+";
+
+        return await Task.FromResult(scriptContent);
     }
 
     private async Task LoadCustomAttributesAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
