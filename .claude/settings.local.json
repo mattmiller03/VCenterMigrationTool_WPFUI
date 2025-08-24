@@ -11,7 +11,8 @@
       "Bash(powershell:*)",
       "Bash(git pull:*)",
       "Bash(cmd /c:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []
