@@ -182,38 +182,228 @@
                         <!-- Source Config Stats -->
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="Source Configuration" FontWeight="Medium" Margin="0,0,0,10"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Roles:" FontSize="12"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SourceRoles.Count}" FontSize="12" FontWeight="Medium"/>
-                                
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Permissions:" FontSize="12"/>
-                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SourcePermissions.Count}" FontSize="12" FontWeight="Medium"/>
-                                
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Folders:" FontSize="12"/>
-                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SourceFolders.Count}" FontSize="12" FontWeight="Medium"/>
-                                
-                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Tags:" FontSize="12"/>
-                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SourceTags.Count}" FontSize="12" FontWeight="Medium"/>
-                                
-                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Certificates:" FontSize="12"/>
-                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SourceCertificates.Count}" FontSize="12" FontWeight="Medium"/>
-                                
-                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Custom Attributes:" FontSize="12"/>
-                                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SourceCustomAttributes.Count}" FontSize="12" FontWeight="Medium"/>
-                            </Grid>
+                            
+                            <!-- Roles -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Person24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SourceRoles.Count, StringFormat='Roles ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Roles"
+                                              Command="{Binding ExportRolesCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding SourceRoles.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                    <ui:Button Grid.Column="3" 
+                                              Icon="{ui:SymbolIcon ArrowImport24}" 
+                                              ToolTip="Import Roles"
+                                              Command="{Binding ImportRolesCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Permissions -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Shield24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SourcePermissions.Count, StringFormat='Permissions ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Permissions"
+                                              Command="{Binding ExportPermissionsCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding SourcePermissions.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                    <ui:Button Grid.Column="3" 
+                                              Icon="{ui:SymbolIcon ArrowImport24}" 
+                                              ToolTip="Import Permissions"
+                                              Command="{Binding ImportPermissionsCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Folders -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Folder24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SourceFolders.Count, StringFormat='Folders ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Folders"
+                                              Command="{Binding ExportFoldersCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding SourceFolders.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                    <ui:Button Grid.Column="3" 
+                                              Icon="{ui:SymbolIcon ArrowImport24}" 
+                                              ToolTip="Import Folders"
+                                              Command="{Binding ImportFoldersCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Tags -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Tag24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SourceTags.Count, StringFormat='Tags ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Tags"
+                                              Command="{Binding ExportTagsCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding SourceTags.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                    <ui:Button Grid.Column="3" 
+                                              Icon="{ui:SymbolIcon ArrowImport24}" 
+                                              ToolTip="Import Tags"
+                                              Command="{Binding ImportTagsCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Certificates -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Certificate24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SourceCertificates.Count, StringFormat='Certificates ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Certificates"
+                                              Command="{Binding ExportCertificatesCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding SourceCertificates.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                    <ui:Button Grid.Column="3" 
+                                              Icon="{ui:SymbolIcon ArrowImport24}" 
+                                              ToolTip="Import Certificates"
+                                              Command="{Binding ImportCertificatesCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Custom Attributes -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Settings24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SourceCustomAttributes.Count, StringFormat='Custom Attributes ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Custom Attributes"
+                                              Command="{Binding ExportCustomAttributesCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding SourceCustomAttributes.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                    <ui:Button Grid.Column="3" 
+                                              Icon="{ui:SymbolIcon ArrowImport24}" 
+                                              ToolTip="Import Custom Attributes"
+                                              Command="{Binding ImportCustomAttributesCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"/>
+                                </Grid>
+                            </Border>
                         </StackPanel>
                         
                         <ui:SymbolIcon Grid.Column="1" 
@@ -226,38 +416,174 @@
                         <!-- Target Config Stats -->
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="Target Configuration" FontWeight="Medium" Margin="0,0,0,10"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Roles:" FontSize="12"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TargetRoles.Count}" FontSize="12" FontWeight="Medium"/>
-                                
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Permissions:" FontSize="12"/>
-                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding TargetPermissions.Count}" FontSize="12" FontWeight="Medium"/>
-                                
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Folders:" FontSize="12"/>
-                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TargetFolders.Count}" FontSize="12" FontWeight="Medium"/>
-                                
-                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Tags:" FontSize="12"/>
-                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding TargetTags.Count}" FontSize="12" FontWeight="Medium"/>
-                                
-                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Certificates:" FontSize="12"/>
-                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding TargetCertificates.Count}" FontSize="12" FontWeight="Medium"/>
-                                
-                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Custom Attributes:" FontSize="12"/>
-                                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding TargetCustomAttributes.Count}" FontSize="12" FontWeight="Medium"/>
-                            </Grid>
+                            
+                            <!-- Roles -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Person24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TargetRoles.Count, StringFormat='Roles ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Roles from Target"
+                                              Command="{Binding ExportTargetRolesCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding TargetRoles.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Permissions -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Shield24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TargetPermissions.Count, StringFormat='Permissions ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Permissions from Target"
+                                              Command="{Binding ExportTargetPermissionsCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding TargetPermissions.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Folders -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Folder24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TargetFolders.Count, StringFormat='Folders ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Folders from Target"
+                                              Command="{Binding ExportTargetFoldersCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding TargetFolders.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Tags -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Tag24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TargetTags.Count, StringFormat='Tags ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Tags from Target"
+                                              Command="{Binding ExportTargetTagsCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding TargetTags.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Certificates -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Certificate24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TargetCertificates.Count, StringFormat='Certificates ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Certificates from Target"
+                                              Command="{Binding ExportTargetCertificatesCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding TargetCertificates.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Custom Attributes -->
+                            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" 
+                                   BorderThickness="1" 
+                                   CornerRadius="4" 
+                                   Padding="12,8" 
+                                   Margin="0,0,0,6"
+                                   Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Symbol="Settings24" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TargetCustomAttributes.Count, StringFormat='Custom Attributes ({0})'}" VerticalAlignment="Center" FontSize="12" FontWeight="Medium"/>
+                                    <ui:Button Grid.Column="2" 
+                                              Icon="{ui:SymbolIcon ArrowExport24}" 
+                                              ToolTip="Export Custom Attributes from Target"
+                                              Command="{Binding ExportTargetCustomAttributesCommand}"
+                                              Appearance="Secondary"
+                                              FontSize="10"
+                                              Padding="6,4"
+                                              Margin="4,0,0,0"
+                                              IsEnabled="{Binding TargetCustomAttributes.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                                </Grid>
+                            </Border>
                         </StackPanel>
                     </Grid>
                 </Grid>

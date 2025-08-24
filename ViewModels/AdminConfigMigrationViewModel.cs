@@ -885,5 +885,252 @@ namespace VCenterMigrationTool.ViewModels
                 throw;
             }
         }
+
+        #region Individual Export/Import Commands
+
+        // Source Export Commands
+        [RelayCommand]
+        private async Task ExportRoles()
+        {
+            await ExportCategory("Roles", SourceRoles.ToList());
+        }
+
+        [RelayCommand]
+        private async Task ExportPermissions()
+        {
+            await ExportCategory("Permissions", SourcePermissions.ToList());
+        }
+
+        [RelayCommand]
+        private async Task ExportFolders()
+        {
+            await ExportCategory("Folders", SourceFolders.ToList());
+        }
+
+        [RelayCommand]
+        private async Task ExportTags()
+        {
+            await ExportCategory("Tags", SourceTags.ToList());
+        }
+
+        [RelayCommand]
+        private async Task ExportCertificates()
+        {
+            await ExportCategory("Certificates", SourceCertificates.ToList());
+        }
+
+        [RelayCommand]
+        private async Task ExportCustomAttributes()
+        {
+            await ExportCategory("CustomAttributes", SourceCustomAttributes.ToList());
+        }
+
+        // Source Import Commands
+        [RelayCommand]
+        private async Task ImportRoles()
+        {
+            await ImportCategory("Roles");
+        }
+
+        [RelayCommand]
+        private async Task ImportPermissions()
+        {
+            await ImportCategory("Permissions");
+        }
+
+        [RelayCommand]
+        private async Task ImportFolders()
+        {
+            await ImportCategory("Folders");
+        }
+
+        [RelayCommand]
+        private async Task ImportTags()
+        {
+            await ImportCategory("Tags");
+        }
+
+        [RelayCommand]
+        private async Task ImportCertificates()
+        {
+            await ImportCategory("Certificates");
+        }
+
+        [RelayCommand]
+        private async Task ImportCustomAttributes()
+        {
+            await ImportCategory("CustomAttributes");
+        }
+
+        // Target Export Commands
+        [RelayCommand]
+        private async Task ExportTargetRoles()
+        {
+            await ExportCategory("Roles", TargetRoles.ToList(), isTarget: true);
+        }
+
+        [RelayCommand]
+        private async Task ExportTargetPermissions()
+        {
+            await ExportCategory("Permissions", TargetPermissions.ToList(), isTarget: true);
+        }
+
+        [RelayCommand]
+        private async Task ExportTargetFolders()
+        {
+            await ExportCategory("Folders", TargetFolders.ToList(), isTarget: true);
+        }
+
+        [RelayCommand]
+        private async Task ExportTargetTags()
+        {
+            await ExportCategory("Tags", TargetTags.ToList(), isTarget: true);
+        }
+
+        [RelayCommand]
+        private async Task ExportTargetCertificates()
+        {
+            await ExportCategory("Certificates", TargetCertificates.ToList(), isTarget: true);
+        }
+
+        [RelayCommand]
+        private async Task ExportTargetCustomAttributes()
+        {
+            await ExportCategory("CustomAttributes", TargetCustomAttributes.ToList(), isTarget: true);
+        }
+
+        // Helper methods for export/import functionality
+        private async Task ExportCategory<T>(string categoryName, List<T> data, bool isTarget = false)
+        {
+            try
+            {
+                var sourceType = isTarget ? "Target" : "Source";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📤 Exporting {categoryName} from {sourceType} vCenter...\n";
+
+                if (!data.Any())
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ No {categoryName} data to export\n";
+                    return;
+                }
+
+                // Use file dialog to get save location
+                var dialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = $"Export {sourceType} {categoryName}",
+                    Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                    DefaultExt = "json",
+                    FileName = $"{sourceType}_{categoryName}_{DateTime.Now:yyyyMMdd_HHmmss}.json"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions 
+                    { 
+                        WriteIndented = true 
+                    });
+
+                    await System.IO.File.WriteAllTextAsync(dialog.FileName, json);
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ {categoryName} exported successfully to: {dialog.FileName}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📊 Exported {data.Count} {categoryName} items\n";
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Export cancelled by user\n";
+                }
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Export failed: {ex.Message}\n";
+                _logger.LogError(ex, "Failed to export {CategoryName}", categoryName);
+            }
+        }
+
+        private async Task ImportCategory(string categoryName)
+        {
+            try
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📥 Importing {categoryName}...\n";
+
+                // Use file dialog to get import file
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = $"Import {categoryName}",
+                    Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                    DefaultExt = "json"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var json = await System.IO.File.ReadAllTextAsync(dialog.FileName);
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📄 Loading data from: {dialog.FileName}\n";
+
+                    // Parse and validate the JSON based on category type
+                    switch (categoryName)
+                    {
+                        case "Roles":
+                            var roles = System.Text.Json.JsonSerializer.Deserialize<List<RoleInfo>>(json);
+                            if (roles != null)
+                            {
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Loaded {roles.Count} roles - Import functionality will be implemented in future update\n";
+                            }
+                            break;
+                        case "Permissions":
+                            var permissions = System.Text.Json.JsonSerializer.Deserialize<List<PermissionInfo>>(json);
+                            if (permissions != null)
+                            {
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Loaded {permissions.Count} permissions - Import functionality will be implemented in future update\n";
+                            }
+                            break;
+                        case "Folders":
+                            var folders = System.Text.Json.JsonSerializer.Deserialize<List<FolderInfo>>(json);
+                            if (folders != null)
+                            {
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Loaded {folders.Count} folders - Import functionality will be implemented in future update\n";
+                            }
+                            break;
+                        case "Tags":
+                            var tags = System.Text.Json.JsonSerializer.Deserialize<List<TagInfo>>(json);
+                            if (tags != null)
+                            {
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Loaded {tags.Count} tags - Import functionality will be implemented in future update\n";
+                            }
+                            break;
+                        case "Certificates":
+                            var certificates = System.Text.Json.JsonSerializer.Deserialize<List<string>>(json);
+                            if (certificates != null)
+                            {
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Loaded {certificates.Count} certificates - Import functionality will be implemented in future update\n";
+                            }
+                            break;
+                        case "CustomAttributes":
+                            var customAttributes = System.Text.Json.JsonSerializer.Deserialize<List<CustomAttributeInfo>>(json);
+                            if (customAttributes != null)
+                            {
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Loaded {customAttributes.Count} custom attributes - Import functionality will be implemented in future update\n";
+                            }
+                            break;
+                        default:
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Unknown category: {categoryName}\n";
+                            return;
+                    }
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ {categoryName} data validated successfully\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 💡 Note: Full import functionality will be available in a future update\n";
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Import cancelled by user\n";
+                }
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Import failed: {ex.Message}\n";
+                _logger.LogError(ex, "Failed to import {CategoryName}", categoryName);
+            }
+        }
+
+        #endregion
     }
 }
