@@ -1,98 +1,249 @@
-﻿2025-08-25 12:47:01.252 -04:00 [INF] Loaded base configuration from appsettings.json with LogPath: C:\temp\app\logs
-2025-08-25 12:47:01.276 -04:00 [INF] Configuration loaded with LogPath: C:\Temp\app\logs
-2025-08-25 12:47:02.481 -04:00 [INF] Configured log path: C:\Temp\app\logs
-2025-08-25 12:47:02.483 -04:00 [INF] Base log directory: C:\Temp\app\logs
-2025-08-25 12:47:02.485 -04:00 [INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
-2025-08-25 12:47:02.487 -04:00 [INF] Created PowerShell log directory: C:\Temp\app\logs\PowerShell
-2025-08-25 12:47:02.512 -04:00 [INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
-2025-08-25 12:47:02.527 -04:00 [INF] Trying PowerShell executable: pwsh.exe
-2025-08-25 12:47:02.530 -04:00 [INF] Creating PowerShell process with command: pwsh.exe
-2025-08-25 12:47:02.558 -04:00 [INF] Successfully started PowerShell process: pwsh.exe (PID: 29276)
-2025-08-25 12:47:02.591 -04:00 [INF] Application started. Press Ctrl+C to shut down.
-2025-08-25 12:47:02.594 -04:00 [INF] Hosting environment: Production
-2025-08-25 12:47:02.596 -04:00 [INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
-2025-08-25 12:47:03.168 -04:00 [INF] PowerShell process completed with exit code: 0
-2025-08-25 12:47:03.174 -04:00 [INF] STARTUP: PowerCLI detected and confirmed installed on startup
-2025-08-25 12:47:03.176 -04:00 [INF] PERSISTENCE: PowerCLI status saved as true
-2025-08-25 12:47:07.159 -04:00 [INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
-2025-08-25 12:47:07.163 -04:00 [INF] Selected Source Profile: klisv0pp212.dir.ad.dla.mil | User: administrator@DLA-KLEBER.local
-2025-08-25 12:47:07.165 -04:00 [INF] PowerCLI Bypass Status: true
-2025-08-25 12:47:07.267 -04:00 [INF] STEP 1: Retrieving stored credentials for profile: Prod -Kleber v7
-2025-08-25 12:47:07.283 -04:00 [INF] STEP 1: Using stored credentials
-2025-08-25 12:47:07.285 -04:00 [INF] STEP 2: Starting persistent connection to klisv0pp212.dir.ad.dla.mil
-2025-08-25 12:47:07.386 -04:00 [INF] STEP 2: Using VSphereApiService for simple connection validation
-2025-08-25 12:47:07.404 -04:00 [INF] Start processing HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
-2025-08-25 12:47:07.410 -04:00 [INF] Sending HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
-2025-08-25 12:47:08.585 -04:00 [INF] Received HTTP response headers after 1170.6998ms - 201
-2025-08-25 12:47:08.589 -04:00 [INF] End processing HTTP request after 1190.2906ms - 201
-2025-08-25 12:47:08.594 -04:00 [INF] Successfully authenticated to vCenter API: klisv0pp212.dir.ad.dla.mil
-2025-08-25 12:47:08.597 -04:00 [INF] STEP 2A: VSphereApiService returned - Success: true | Message: Connection successful via VSphere API | HasSessionToken: true
-2025-08-25 12:47:09.600 -04:00 [INF] STEP 2B: Establishing PowerCLI connection for admin operations alongside API
-2025-08-25 12:47:10.102 -04:00 [INF] STEP 2B: Establishing persistent PowerCLI connection for admin operations
-2025-08-25 12:47:10.107 -04:00 [INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
-2025-08-25 12:47:10.127 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 24512)
-2025-08-25 12:47:10.131 -04:00 [INF] Importing PowerCLI modules in persistent session... (bypassModuleCheck=true - ignored for persistent sessions)
-2025-08-25 12:47:16.461 -04:00 [WRN] PS Error: [31;1mImport-Module: [0m
-2025-08-25 12:47:16.465 -04:00 [WRN] PS Error: [31;1m[36;1mLine |[0m
-2025-08-25 12:47:16.467 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m   3 | [0m .                [36;1mImport-Module VMware.PowerCLI -Force -ErrorAction Stop[0m
-2025-08-25 12:47:16.469 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
-2025-08-25 12:47:16.471 -04:00 [WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mCould not load file or assembly 'VMware.VimAutomation.Ceip, Version=13.4.0.710, Culture=neutral, PublicKeyToken=null'. Assembly with same name is already loaded[0m
-2025-08-25 12:47:16.578 -04:00 [ERR] Failed to load PowerCLI modules in persistent session. Full output: DIAGNOSTIC: Starting PowerCLI module import...
-DIAGNOSTIC: PowerCLI module found - Version: 13.3.0.24145081 13.1.0.21624340 13.3.0.24145081
-DIAGNOSTIC: Attempting to import VMware.PowerCLI...
-DIAGNOSTIC: PowerCLI import failed - Error: Could not load file or assembly 'VMware.VimAutomation.Ceip, Version=13.4.0.710, Culture=neutral, PublicKeyToken=null'. Assembly with same name is already loaded
-DIAGNOSTIC: Error details: System.IO.FileLoadException: Could not load file or assembly 'VMware.VimAutomation.Ceip, Version=13.4.0.710, Culture=neutral, PublicKeyToken=null'. Assembly with same name is already loaded
-   at System.Management.Automation.Runspaces.InitialSessionState.Bind_LoadAssemblies(ExecutionContext context)
-   at System.Management.Automation.Runspaces.InitialSessionState.Bind(ExecutionContext context, Boolean updateOnly, PSModuleInfo module, Boolean noClobber, Boolean local, Boolean setLocation)
-   at Microsoft.PowerShell.Commands.ModuleCmdletBase.LoadModuleManifest(String moduleManifestPath, ExternalScriptInfo manifestScriptInfo, Hashtable data, Hashtable localizedData, ManifestProcessingFlags manifestProcessingFlags, Version minimumVersion, Version maximumVersion, Version requiredVersion, Nullable`1 requiredModuleGuid, ImportModuleOptions& options, Boolean& containedErrors)
-2025-08-25 12:47:16.581 -04:00 [INF] Disconnecting from klisv0pp212.dir.ad.dla.mil (source)
-2025-08-25 12:47:16.623 -04:00 [WRN] PS Error: [31;1mDisconnect-VIServer: [31;1m8/25/2025 12:47:16 PM	Disconnect-VIServer		Could not find VIServer with name 'klisv0pp212.dir.ad.dla.mil'.	[0m
-2025-08-25 12:47:16.629 -04:00 [WRN] PS Error: [31;1mDisconnect-VIServer: [31;1m8/25/2025 12:47:16 PM	Disconnect-VIServer		Could not find any of the servers specified by name.	[0m
-2025-08-25 12:47:16.715 -04:00 [INF] ✅ Disconnected from klisv0pp212.dir.ad.dla.mil
-2025-08-25 12:47:16.717 -04:00 [ERR] STEP 2B: Persistent PowerCLI connection failed: Failed to load PowerCLI modules - DIAGNOSTIC: Starting PowerCLI module import...
-DIAGNOSTIC: PowerCLI module found - Version: 13.3.0.24145081 13.1.0.21624340 13.3.0.24145081
-DIAGNOSTIC: Attempting to import VMware.PowerCLI...
-DIAGNOSTIC: PowerCLI import failed - Error: Could not load file or assembly 'VMware.VimAutomation.Ceip, Version=13.4.0.710, Culture=neutral, PublicKeyToken=null'. Assembly with same name is already loaded
-DIAGNOSTIC: Error details: System.IO.FileLoadException: Could not load file or assembly 'VMware.VimAutomation.Ceip, Version=13.4.0.710, Culture=neutral, PublicKeyToken=null'. Assembly with same name is already loaded
-   at System.Management.Automation.Runspaces.InitialSessionState.Bind_LoadAssemblies(ExecutionContext context)
-   at System.Management.Automation.Runspaces.InitialSessionState.Bind(ExecutionContext context, Boolean updateOnly, PSModuleInfo module, Boolean noClobber, Boolean local, Boolean setLocation)
-   at Microsoft.PowerShell.Commands.ModuleCmdletBase.LoadModuleManifest(String moduleManifestPath, ExternalScriptInfo manifestScriptInfo, Hashtable data, Hashtable localizedData, ManifestProcessingFlags manifestProcessingFlags, Version minimumVersion, Version maximumVersion, Version requiredVersion, Nullable`1 requiredModuleGuid, ImportModuleOptions& options, Boolean& containedErrors)
-2025-08-25 12:47:17.219 -04:00 [INF] STEP 3: Connection successful - setting up shared connection service (API: true, PowerCLI: false)
-2025-08-25 12:47:17.221 -04:00 [INF] STEP 3: Getting vCenter version info via API
-2025-08-25 12:47:17.225 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-2025-08-25 12:47:17.226 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-2025-08-25 12:47:17.415 -04:00 [INF] Received HTTP response headers after 186.9392ms - 200
-2025-08-25 12:47:17.418 -04:00 [INF] End processing HTTP request after 193.6955ms - 200
-2025-08-25 12:47:17.422 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
-2025-08-25 12:47:17.423 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
-2025-08-25 12:47:17.618 -04:00 [INF] Received HTTP response headers after 193.302ms - 200
-2025-08-25 12:47:17.621 -04:00 [INF] End processing HTTP request after 199.004ms - 200
-2025-08-25 12:47:17.623 -04:00 [INF] STEP 3: vCenter info retrieved - Version: 7.0.3.02100
-2025-08-25 12:47:17.625 -04:00 [INF] ✅ Source vCenter dual connection established successfully - API: true, PowerCLI: false, Version: 7.0.3.02100
-2025-08-25 12:47:17.627 -04:00 [INF] STEP 3: Starting inventory summary update task
-2025-08-25 12:47:17.631 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-2025-08-25 12:47:17.632 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-2025-08-25 12:47:17.804 -04:00 [INF] Received HTTP response headers after 169.8455ms - 200
-2025-08-25 12:47:17.806 -04:00 [INF] End processing HTTP request after 175.1047ms - 200
-2025-08-25 12:47:17.809 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
-2025-08-25 12:47:17.811 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
-2025-08-25 12:47:18.020 -04:00 [INF] Received HTTP response headers after 207.6382ms - 200
-2025-08-25 12:47:18.022 -04:00 [INF] End processing HTTP request after 212.7664ms - 200
-2025-08-25 12:47:18.026 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
-2025-08-25 12:47:18.028 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
-2025-08-25 12:47:18.417 -04:00 [INF] Received HTTP response headers after 388.2103ms - 200
-2025-08-25 12:47:18.419 -04:00 [INF] End processing HTTP request after 392.9218ms - 200
-2025-08-25 12:47:18.421 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
-2025-08-25 12:47:18.423 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
-2025-08-25 12:47:18.592 -04:00 [INF] Received HTTP response headers after 167.7141ms - 200
-2025-08-25 12:47:18.593 -04:00 [INF] End processing HTTP request after 171.9915ms - 200
-2025-08-25 12:47:18.595 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
-2025-08-25 12:47:18.597 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
-2025-08-25 12:47:18.771 -04:00 [INF] Received HTTP response headers after 172.7489ms - 200
-2025-08-25 12:47:18.773 -04:00 [INF] End processing HTTP request after 177.5795ms - 200
-2025-08-25 12:47:18.774 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
-2025-08-25 12:47:18.776 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
-2025-08-25 12:47:18.952 -04:00 [INF] Received HTTP response headers after 175.3739ms - 200
-2025-08-25 12:47:18.954 -04:00 [INF] End processing HTTP request after 179.8563ms - 200
-2025-08-25 12:47:18.956 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=104, Hosts=22, Clusters=4
-2025-08-25 12:47:18.958 -04:00 [INF] Retrieved inventory counts for source: VMs=104, Hosts=22
+﻿'VCenterMigrationTool.exe' (CoreCLR: DefaultDomain): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Private.CoreLib.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\VCenterMigrationTool.dll'. Symbols loaded.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationFramework.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\WindowsBase.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\System.Xaml.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'c:\program files\microsoft visual studio\2022\enterprise\common7\ide\commonextensions\microsoft\hotreload\Microsoft.Extensions.DotNetDeltaApplier.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.IO.Pipes.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Linq.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Console.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Threading.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.InteropServices.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Threading.Overlapped.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Security.AccessControl.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Security.Principal.Windows.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Security.Claims.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Loader.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\PrivateAssemblies\Runtime\Microsoft.VisualStudio.Debugger.Runtime.NetCoreApp.dll'. 
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\netstandard.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Threading.ThreadPool.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.TraceSource.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.IO.Packaging.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Text.RegularExpressions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.Concurrent.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Private.Uri.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationCore.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Memory.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\DirectWriteForwarder.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Extensions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.Debug.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.CompilerServices.VisualC.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\Microsoft.Win32.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\Microsoft.Win32.Registry.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.Specialized.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.NonGeneric.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.ComponentModel.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Threading.Thread.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\System.Configuration.ConfigurationManager.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Xml.ReaderWriter.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Private.Xml.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.WebClient.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Text.Encoding.Extensions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.ComponentModel.TypeConverter.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\System.Windows.Extensions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.ComponentModel.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.ObjectModel.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Wpf.Ui.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.Requests.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.WebHeaderCollection.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.Process.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationFramework.Aero2.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\System.Windows.Controls.Ribbon.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\CommunityToolkit.Mvvm.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.Security.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.ServicePoint.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Hosting.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Hosting.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Serilog.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Serilog.Extensions.Hosting.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.DependencyInjection.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.DependencyInjection.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.Diagnostics.DiagnosticSource.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.Tracing.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\CommonExtensions\Microsoft\IntelliTrace\Microsoft.IntelliTrace.TelemetryObserver.Common.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\CommonExtensions\Microsoft\IntelliTrace\Microsoft.IntelliTrace.TelemetryObserver.CoreClr.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Extensions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.EnvironmentVariables.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.CommandLine.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.FileProviders.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.FileProviders.Physical.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.FileExtensions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.Json.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.UserSecrets.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Configuration.Binder.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.IO.FileSystem.Watcher.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.FileSystemGlobbing.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.Text.Json.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.IO.Pipelines.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Options.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Diagnostics.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Diagnostics.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.Configuration.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.Debug.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.EventSource.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.EventLog.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.Console.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Options.ConfigurationExtensions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Serilog.Extensions.Logging.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Wpf.Ui.Abstractions.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Wpf.Ui.DependencyInjection.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.Http.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Microsoft.Extensions.Http.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Serilog.Sinks.Debug.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Serilog.Sinks.File.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.Text.Encodings.Web.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Intrinsics.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Numerics.Vectors.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Emit.ILGeneration.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Emit.Lightweight.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\UIAutomationTypes.dll'. Symbol loading disabled by Include/Exclude setting.
+[13:35:29 INF] Loaded base configuration from appsettings.json with LogPath: C:\temp\app\logs
+[13:35:29 INF] Configuration loaded with LogPath: C:\Temp\app\logs
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Wpf.Ui.Tray.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationFramework-SystemXml.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\UIAutomationProvider.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.Drawing.Common.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\System.Private.Windows.Core.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Drawing.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'c:\program files\microsoft visual studio\2022\enterprise\common7\ide\commonextensions\microsoft\xamldiagnostics\Core\x64\Microsoft.VisualStudio.DesignTools.WpfTap.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Threading.Tasks.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Json.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Private.DataContractSerialization.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Xml.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Primitives.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Resources.ResourceManager.dll'. Symbol loading disabled by Include/Exclude setting.
+[13:35:30 INF] Configured log path: C:\Temp\app\logs
+[13:35:30 INF] Base log directory: C:\Temp\app\logs
+[13:35:30 INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
+[13:35:31 INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
+[13:35:31 INF] Trying PowerShell executable: pwsh.exe
+[13:35:31 INF] Creating PowerShell process with command: pwsh.exe
+[13:35:31 INF] Successfully started PowerShell process: pwsh.exe (PID: 26420)
+[13:35:31 INF] Application started. Press Ctrl+C to shut down.
+[13:35:31 INF] Hosting environment: Production
+[13:35:31 INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationUI.dll'. Symbol loading disabled by Include/Exclude setting.
+[13:35:32 INF] PowerShell process completed with exit code: 0
+[13:35:32 INF] STARTUP: PowerCLI detected and confirmed installed on startup
+[13:35:32 INF] PERSISTENCE: PowerCLI status saved as true
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Formatters.dll'. Symbol loading disabled by Include/Exclude setting.
+The thread '.NET TP Worker' (38104) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (31308) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (15444) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (26380) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (24596) has exited with code 0 (0x0).
+The thread '.NET TP Wait' (38212) has exited with code 0 (0x0).
+The thread '.NET TP Worker' (15888) has exited with code 0 (0x0).
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\Accessibility.dll'. Module was built without symbols.
+[13:35:56 INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
+[13:35:56 INF] Selected Source Profile: klisv0pp212.dir.ad.dla.mil | User: administrator@DLA-KLEBER.local
+[13:35:56 INF] PowerCLI Bypass Status: true
+[13:35:57 INF] STEP 1: Retrieving stored credentials for profile: Prod -Kleber v7
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Meziantou.Framework.Win32.CredentialManager.dll'. 
+[13:35:57 INF] STEP 1: Using stored credentials
+[13:35:57 INF] STEP 2: Starting persistent connection to klisv0pp212.dir.ad.dla.mil
+[13:35:57 INF] STEP 2: Using VSphereApiService for simple connection validation
+[13:35:57 INF] Start processing HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+[13:35:57 INF] Sending HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Security.Cryptography.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.Sockets.dll'. Symbol loading disabled by Include/Exclude setting.
+'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.NameResolution.dll'. Symbol loading disabled by Include/Exclude setting.
+[13:35:58 INF] Received HTTP response headers after 932.8877ms - 201
+[13:35:58 INF] End processing HTTP request after 949.3849ms - 201
+[13:35:58 INF] Successfully authenticated to vCenter API: klisv0pp212.dir.ad.dla.mil
+[13:35:58 INF] STEP 2A: VSphereApiService returned - Success: true | Message: Connection successful via VSphere API | HasSessionToken: true
+[13:35:59 INF] STEP 2B: Establishing PowerCLI connection for admin operations alongside API
+[13:35:59 INF] STEP 2B: Establishing persistent PowerCLI connection for admin operations
+[13:35:59 INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+[13:35:59 INF] Started persistent PowerShell process: pwsh.exe (PID: 29240)
+[13:35:59 INF] Importing PowerCLI modules in persistent session...
+The thread 15284 has exited with code 0 (0x0).
+[13:36:38 WRN] PS Error: [31;1mException: [0m
+[13:36:38 WRN] PS Error: [31;1m[36;1mLine |[0m
+[13:36:38 WRN] PS Error: [31;1m[36;1m[36;1m  16 | [0m .             [36;1mthrow "Failed to import PowerCLI modules after trying mul[0m .[0m
+[13:36:38 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[13:36:38 WRN] PS Error: [31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mFailed to import PowerCLI modules after trying multiple strategies: Could not load file or assembly 'VMware.VimAutomation.Ceip, Version=13.4.0.710, Culture=neutral, PublicKeyToken=null'. Assembly with same name is already loaded[0m
+[13:36:38 ERR] Failed to load PowerCLI modules in persistent session. Full output: DIAGNOSTIC: Starting PowerCLI module import...
+DIAGNOSTIC: Legacy PowerCLI (VMware.PowerCLI) found: 13.3.0.24145081, 13.1.0.21624340, 13.3.0.24145081
+DIAGNOSTIC: VCF PowerCLI (VCF.PowerCLI) found: None
+DIAGNOSTIC: Strategy 2 - Attempting legacy VMware.PowerCLI import...
+DIAGNOSTIC: Strategy 2 failed - Error: Could not load file or assembly 'VMware.VimAutomation.Ceip, Version=13.4.0.710, Culture=neutral, PublicKeyToken=null'. Assembly with same name is already loaded
+DIAGNOSTIC: Strategy 3 - Attempting legacy core module imports individually...
+DIAGNOSTIC: Strategy 3 failed - Error: Could not load file or assembly 'vmware.vapi.client.bindings.extended, Version=9.0.0.710, Culture=neutral, PublicKeyToken=null'. Assembly with same name is already loaded
+DIAGNOSTIC: Strategy 4 - Attempting newest legacy version import...
+DIAGNOSTIC: Strategy 4 failed - Error: The specified module 'C:\Users\DMM0090\OneDrive - Defense Logistics Agency\Documents\PowerShell\Modules\VMware.PowerCLI\13.3.0.24145081' was not loaded because no valid module file was found in any module directory.
+DIAGNOSTIC: All import strategies failed. Last error: Could not load file or assembly 'VMware.VimAutomation.Ceip, Version=13.4.0.710, Culture=neutral, PublicKeyToken=null'. Assembly with same name is already loaded
+DIAGNOSTIC: Consider upgrading to VCF.PowerCLI for vSphere 9+ compatibility
+[13:36:38 INF] Disconnecting from klisv0pp212.dir.ad.dla.mil (source)
+[13:36:38 WRN] PS Error: [31;1mDisconnect-VIServer: [31;1m8/25/2025 1:36:38 PM	Disconnect-VIServer		Could not find VIServer with name 'klisv0pp212.dir.ad.dla.mil'.	[0m
+[13:36:38 WRN] PS Error: [31;1mDisconnect-VIServer: [31;1m8/25/2025 1:36:38 PM	Disconnect-VIServer		Could not find any of the servers specified by name.	[0m
+[13:36:38 INF] ✅ Disconnected from klisv0pp212.dir.ad.dla.mil
+[13:36:38 WRN] PowerCLI import failed, attempting bypass mode for basic PowerShell functionality
+[13:36:38 INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+[13:36:38 INF] Started persistent PowerShell process: pwsh.exe (PID: 14220)
+[13:36:38 INF] Skipping PowerCLI module import due to bypassModuleCheck=true
+[13:36:38 WRN] PowerCLI functionality will be limited - only basic PowerShell commands available
+[13:36:38 INF] STEP 2B: Persistent PowerCLI connection established - SessionId: bypass-72d08960ab1840379b5fa14ee38f997a
+[13:36:41 WRN] STEP 2B: Connection test returned unexpected result: ERROR: No active connection for source
+[13:36:41 INF] STEP 3: Connection successful - setting up shared connection service (API: true, PowerCLI: true)
+[13:36:41 ERR] PowerShell process has exited for connection source
+[13:36:41 INF] STEP 3: PowerCLI connection active - Version: ERROR: PowerShell process has exited
+[13:36:41 INF] ✅ Source vCenter dual connection established successfully - API: true, PowerCLI: true, Version: ERROR: PowerShell process has exited
+[13:36:41 INF] STEP 3: Starting inventory summary update task
+[13:36:41 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+[13:36:41 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+[13:36:41 INF] Received HTTP response headers after 202.3836ms - 200
+[13:36:41 INF] End processing HTTP request after 208.2074ms - 200
+[13:36:41 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+[13:36:41 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+[13:36:41 INF] Received HTTP response headers after 190.598ms - 200
+[13:36:41 INF] End processing HTTP request after 195.9488ms - 200
+[13:36:41 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+[13:36:41 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+[13:36:42 INF] Received HTTP response headers after 370.7394ms - 200
+[13:36:42 INF] End processing HTTP request after 375.6517ms - 200
+[13:36:42 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+[13:36:42 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+[13:36:42 INF] Received HTTP response headers after 169.1906ms - 200
+[13:36:42 INF] End processing HTTP request after 174.5448ms - 200
+[13:36:42 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+[13:36:42 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+[13:36:42 INF] Received HTTP response headers after 168.9097ms - 200
+[13:36:42 INF] End processing HTTP request after 173.4878ms - 200
+[13:36:42 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+[13:36:42 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+[13:36:42 INF] Received HTTP response headers after 178.8208ms - 200
+[13:36:42 INF] End processing HTTP request after 183.2923ms - 200
+[13:36:42 INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=104, Hosts=22, Clusters=4
+[13:36:42 INF] Retrieved inventory counts for source: VMs=104, Hosts=22
+The thread '.NET TP Worker' (14420) has exited with code 0 (0x0).
+[13:37:01 INF] Application shutting down - cleaning up services
+[13:37:01 INF] Cleaning up 0 active PowerShell processes before shutdown
+[13:37:01 INF] Starting cleanup of all active PowerShell processes
+[13:37:01 INF] Completed cleanup of 0 PowerShell processes
+[13:37:01 INF] PowerShell process cleanup completed
+[13:37:01 INF] Cleaning up persistent vCenter connection processes
+[13:37:01 INF] Disposing PersistentExternalConnectionService - closing all connections
+[13:37:01 INF] Disconnecting from klisv0pp212.dir.ad.dla.mil (source)
+[13:37:01 INF] ✅ Disconnected from klisv0pp212.dir.ad.dla.mil
+[13:37:01 INF] Persistent connection service cleanup completed
+[13:37:01 INF] Stopping PowerShell monitoring timer
+[13:37:01 INF] Found 3 PowerShell processes during final cleanup scan
+[13:37:01 INF] No orphaned PowerShell processes found during final cleanup
+[13:37:01 INF] Application is shutting down...
+[13:37:01 INF] Disposing HybridPowerShellService and cleaning up processes
+[13:37:01 INF] Starting cleanup of all active PowerShell processes
+[13:37:01 INF] Completed cleanup of 0 PowerShell processes
+The thread 34532 has exited with code 0 (0x0).
+The program '[9452] VCenterMigrationTool.exe: Program Trace' has exited with code 0 (0x0).
+The program '[9452] VCenterMigrationTool.exe' has exited with code 0 (0x0).
