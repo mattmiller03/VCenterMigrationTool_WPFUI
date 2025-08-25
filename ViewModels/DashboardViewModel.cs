@@ -410,6 +410,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             
             _logger.LogInformation("STEP 2A: VSphereApiService returned - Success: {Success} | Message: {Message} | HasSessionToken: {HasToken}", 
                 apiSuccess, apiMessage, !string.IsNullOrEmpty(sessionToken));
+            
+            // Show API connection result before proceeding to PowerCLI
+            SourceConnectionStatus = $"API Connection: {(apiSuccess ? "✅ Success" : "❌ Failed")} - Now attempting PowerCLI...";
+            await Task.Delay(1000); // Give user time to see API result
 
             // Always establish PowerCLI connection alongside API for admin operations
             // This ensures admin configuration functionality works regardless of API SSL issues
@@ -417,8 +421,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             string powerCLISessionId = null;
             
             _logger.LogInformation("STEP 2B: Establishing PowerCLI connection for admin operations alongside API");
-            SourceConnectionStatus = $"🔗 Establishing PowerCLI connection for admin operations...";
-            await Task.Delay(100); // Allow UI to update
+            SourceConnectionStatus = $"🔗 Attempting PowerCLI connection to {SelectedSourceProfile.ServerAddress}...";
+            await Task.Delay(500); // Allow UI to update and be visible
 
             try
             {
@@ -452,6 +456,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             {
                 _logger.LogError(pcliEx, "STEP 2B: Exception during PowerCLI connection");
             }
+
+            // Update status to show PowerCLI result for source
+            SourceConnectionStatus = $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success" : "❌ Failed")} - Finalizing setup...";
+            await Task.Delay(500); // Allow user to see PowerCLI result
 
             // Evaluate overall connection success - need at least one working connection
             bool overallSuccess = apiSuccess || powerCLISuccess;
@@ -653,6 +661,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             
             _logger.LogInformation("STEP 2A: VSphereApiService returned - Success: {Success} | Message: {Message} | HasSessionToken: {HasToken}", 
                 apiSuccess, apiMessage, !string.IsNullOrEmpty(sessionToken));
+            
+            // Show API connection result before proceeding to PowerCLI
+            TargetConnectionStatus = $"API Connection: {(apiSuccess ? "✅ Success" : "❌ Failed")} - Now attempting PowerCLI...";
+            await Task.Delay(1000); // Give user time to see API result
 
             // Always establish PowerCLI connection alongside API for admin operations
             // This ensures admin configuration functionality works regardless of API SSL issues
@@ -660,8 +672,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             string powerCLISessionId = null;
             
             _logger.LogInformation("STEP 2B: Establishing PowerCLI connection for admin operations alongside API");
-            TargetConnectionStatus = $"🔗 Establishing PowerCLI connection for admin operations...";
-            await Task.Delay(100); // Allow UI to update
+            TargetConnectionStatus = $"🔗 Attempting PowerCLI connection to {SelectedTargetProfile.ServerAddress}...";
+            await Task.Delay(500); // Allow UI to update and be visible
 
             try
             {
@@ -695,6 +707,10 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             {
                 _logger.LogError(pcliEx, "STEP 2B: Exception during PowerCLI connection");
             }
+
+            // Update status to show PowerCLI result for target
+            TargetConnectionStatus = $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success" : "❌ Failed")} - Finalizing setup...";
+            await Task.Delay(500); // Allow user to see PowerCLI result
 
             // Evaluate overall connection success - need at least one working connection
             bool overallSuccess = apiSuccess || powerCLISuccess;
