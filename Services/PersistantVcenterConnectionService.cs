@@ -101,78 +101,141 @@ public class PersistentExternalConnectionService : IDisposable
             // Store the connection early so we can use ExecuteCommandAsync
             _connections[connectionKey] = connection;
 
-            // Always import PowerCLI in persistent sessions (each process starts fresh)
-            _logger.LogInformation("Importing PowerCLI modules in persistent session... (bypassModuleCheck={BypassFlag} - ignored for persistent sessions)", bypassModuleCheck);
+            // Import PowerCLI modules unless explicitly bypassed
+            if (bypassModuleCheck)
+            {
+                _logger.LogInformation("Skipping PowerCLI module import due to bypassModuleCheck=true");
+                _logger.LogWarning("PowerCLI functionality will be limited - only basic PowerShell commands available");
+                
+                // Still store connection info for basic PowerShell operations
+                connection.IsConnected = true;
+                connection.SessionId = $"bypass-{Guid.NewGuid():N}";
+                connection.VCenterVersion = "Unknown (bypass mode)";
+                _connections[connectionKey] = connection;
+                
+                return (true, "Connected in bypass mode - PowerCLI modules skipped", connection.SessionId);
+            }
+
+            _logger.LogInformation("Importing PowerCLI modules in persistent session...");
             var importResult = await ExecuteCommandWithTimeoutAsync(connectionKey, @"
                 Write-Output 'DIAGNOSTIC: Starting PowerCLI module import...'
                 
-                # Check if PowerCLI is available
-                $powerCLIModule = Get-Module -Name VMware.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
-                if ($powerCLIModule) {
-                    Write-Output ""DIAGNOSTIC: PowerCLI module found - Version: $($powerCLIModule.Version)""
-                } else {
-                    Write-Output 'DIAGNOSTIC: PowerCLI module not found in available modules'
+                # Check for both current and future PowerCLI modules
+                $legacyPowerCLI = Get-Module -Name VMware.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
+                $vcfPowerCLI = Get-Module -Name VCF.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
+                $anyVMwareModules = Get-Module -Name VMware* -ListAvailable -ErrorAction SilentlyContinue
+                $anyVCFModules = Get-Module -Name VCF* -ListAvailable -ErrorAction SilentlyContinue
+                
+                Write-Output ""DIAGNOSTIC: Legacy PowerCLI (VMware.PowerCLI) found: $(if ($legacyPowerCLI) { $legacyPowerCLI.Version -join ', ' } else { 'None' })""
+                Write-Output ""DIAGNOSTIC: VCF PowerCLI (VCF.PowerCLI) found: $(if ($vcfPowerCLI) { $vcfPowerCLI.Version -join ', ' } else { 'None' })""
+                
+                if (-not $legacyPowerCLI -and -not $vcfPowerCLI) {
+                    Write-Output 'DIAGNOSTIC: No PowerCLI modules found in available modules'
                     Write-Output 'DIAGNOSTIC: Available VMware modules:'
-                    Get-Module -Name VMware* -ListAvailable -ErrorAction SilentlyContinue | ForEach-Object { 
+                    $anyVMwareModules | ForEach-Object { 
+                        Write-Output ""DIAGNOSTIC: - $($_.Name) (Version: $($_.Version))""
+                    }
+                    Write-Output 'DIAGNOSTIC: Available VCF modules:'
+                    $anyVCFModules | ForEach-Object { 
                         Write-Output ""DIAGNOSTIC: - $($_.Name) (Version: $($_.Version))""
                     }
                 }
                 
-                # Multiple strategies to handle assembly conflicts
+                # Multiple strategies to handle both legacy and VCF modules
                 $importSuccess = $false
                 $importError = $null
+                $moduleType = 'Unknown'
                 
-                # Strategy 1: Try standard import
-                try {
-                    Write-Output 'DIAGNOSTIC: Strategy 1 - Attempting standard VMware.PowerCLI import...'
-                    Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-                    Write-Output 'DIAGNOSTIC: Strategy 1 - PowerCLI import successful'
-                    $importSuccess = $true
-                } catch {
-                    $importError = $_.Exception.Message
-                    Write-Output ""DIAGNOSTIC: Strategy 1 failed - Error: $importError""
-                    
-                    # Strategy 2: Try importing core modules individually
+                # Strategy 1: Try VCF.PowerCLI (future-proof for vSphere 9+)
+                if ($vcfPowerCLI) {
                     try {
-                        Write-Output 'DIAGNOSTIC: Strategy 2 - Attempting core module imports individually...'
-                        Import-Module VMware.VimAutomation.Core -Force -ErrorAction Stop
-                        Import-Module VMware.VimAutomation.Common -Force -ErrorAction SilentlyContinue
-                        Write-Output 'DIAGNOSTIC: Strategy 2 - Core modules imported successfully'
+                        Write-Output 'DIAGNOSTIC: Strategy 1 - Attempting VCF.PowerCLI import (vSphere 9+)...'
+                        Import-Module VCF.PowerCLI -Force -ErrorAction Stop
+                        Write-Output 'DIAGNOSTIC: Strategy 1 - VCF.PowerCLI import successful'
                         $importSuccess = $true
+                        $moduleType = 'VCF.PowerCLI'
                     } catch {
-                        Write-Output ""DIAGNOSTIC: Strategy 2 failed - Error: $($_.Exception.Message)""
+                        $importError = $_.Exception.Message
+                        Write-Output ""DIAGNOSTIC: Strategy 1 failed - Error: $importError""
+                    }
+                }
+                
+                # Strategy 2: Try legacy VMware.PowerCLI if VCF failed or not available
+                if (-not $importSuccess -and $legacyPowerCLI) {
+                    try {
+                        Write-Output 'DIAGNOSTIC: Strategy 2 - Attempting legacy VMware.PowerCLI import...'
+                        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+                        Write-Output 'DIAGNOSTIC: Strategy 2 - Legacy PowerCLI import successful'
+                        $importSuccess = $true
+                        $moduleType = 'VMware.PowerCLI'
+                    } catch {
+                        $importError = $_.Exception.Message
+                        Write-Output ""DIAGNOSTIC: Strategy 2 failed - Error: $importError""
                         
-                        # Strategy 3: Try with specific version selection
+                        # Strategy 3: Try importing legacy core modules individually
                         try {
-                            Write-Output 'DIAGNOSTIC: Strategy 3 - Attempting newest version import...'
-                            $newestModule = Get-Module -Name VMware.PowerCLI -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
-                            if ($newestModule) {
-                                Import-Module $newestModule.ModuleBase -Force -ErrorAction Stop
-                                Write-Output ""DIAGNOSTIC: Strategy 3 - Successfully imported PowerCLI version: $($newestModule.Version)""
-                                $importSuccess = $true
-                            } else {
-                                Write-Output 'DIAGNOSTIC: Strategy 3 - No suitable PowerCLI module found'
-                            }
+                            Write-Output 'DIAGNOSTIC: Strategy 3 - Attempting legacy core module imports individually...'
+                            Import-Module VMware.VimAutomation.Core -Force -ErrorAction Stop
+                            Import-Module VMware.VimAutomation.Common -Force -ErrorAction SilentlyContinue
+                            Write-Output 'DIAGNOSTIC: Strategy 3 - Legacy core modules imported successfully'
+                            $importSuccess = $true
+                            $moduleType = 'VMware.VimAutomation.Core'
                         } catch {
                             Write-Output ""DIAGNOSTIC: Strategy 3 failed - Error: $($_.Exception.Message)""
+                            
+                            # Strategy 4: Try with specific legacy version selection
+                            try {
+                                Write-Output 'DIAGNOSTIC: Strategy 4 - Attempting newest legacy version import...'
+                                $newestModule = Get-Module -Name VMware.PowerCLI -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
+                                if ($newestModule) {
+                                    Import-Module $newestModule.ModuleBase -Force -ErrorAction Stop
+                                    Write-Output ""DIAGNOSTIC: Strategy 4 - Successfully imported PowerCLI version: $($newestModule.Version)""
+                                    $importSuccess = $true
+                                    $moduleType = ""VMware.PowerCLI v$($newestModule.Version)""
+                                } else {
+                                    Write-Output 'DIAGNOSTIC: Strategy 4 - No suitable PowerCLI module found'
+                                }
+                            } catch {
+                                Write-Output ""DIAGNOSTIC: Strategy 4 failed - Error: $($_.Exception.Message)""
+                            }
                         }
                     }
                 }
                 
-                if ($importSuccess) {
-                    # Configure PowerCLI
+                # Strategy 5: Try VCF core modules if available (future VCF module structure)
+                if (-not $importSuccess -and $anyVCFModules) {
                     try {
-                        Write-Output 'DIAGNOSTIC: Configuring PowerCLI settings...'
+                        Write-Output 'DIAGNOSTIC: Strategy 5 - Attempting VCF core modules import...'
+                        $vcfCoreModules = $anyVCFModules | Where-Object { $_.Name -like '*Core*' -or $_.Name -like '*Common*' }
+                        foreach ($module in $vcfCoreModules) {
+                            Import-Module $module.Name -Force -ErrorAction SilentlyContinue
+                            Write-Output ""DIAGNOSTIC: - Imported $($module.Name)""
+                        }
+                        if ($vcfCoreModules) {
+                            Write-Output 'DIAGNOSTIC: Strategy 5 - VCF core modules imported successfully'
+                            $importSuccess = $true
+                            $moduleType = 'VCF Core Modules'
+                        }
+                    } catch {
+                        Write-Output ""DIAGNOSTIC: Strategy 5 failed - Error: $($_.Exception.Message)""
+                    }
+                }
+                
+                if ($importSuccess) {
+                    # Configure PowerCLI (works for both legacy and VCF modules)
+                    try {
+                        Write-Output ""DIAGNOSTIC: Configuring PowerCLI settings for $moduleType...""
                         Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
                         Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
-                        Write-Output 'DIAGNOSTIC: PowerCLI configuration complete'
-                        Write-Output 'MODULES_LOADED'
+                        Write-Output ""DIAGNOSTIC: PowerCLI configuration complete for $moduleType""
+                        Write-Output ""MODULES_LOADED:$moduleType""
                     } catch {
                         Write-Output ""DIAGNOSTIC: PowerCLI configuration failed but modules loaded - Error: $($_.Exception.Message)""
-                        Write-Output 'MODULES_LOADED'
+                        Write-Output ""MODULES_LOADED:$moduleType""
                     }
                 } else {
                     Write-Output ""DIAGNOSTIC: All import strategies failed. Last error: $importError""
+                    Write-Output 'DIAGNOSTIC: Consider upgrading to VCF.PowerCLI for vSphere 9+ compatibility'
                     throw ""Failed to import PowerCLI modules after trying multiple strategies: $importError""
                 }
             ", TimeSpan.FromSeconds(90), skipConnectionCheck: true);
@@ -183,6 +246,11 @@ public class PersistentExternalConnectionService : IDisposable
                 await DisconnectAsync(connectionKey);
                 return (false, $"Failed to load PowerCLI modules - {importResult}", null);
                 }
+            
+            // Extract and log which module type was successfully loaded
+            var moduleTypeMatch = System.Text.RegularExpressions.Regex.Match(importResult, @"MODULES_LOADED:(.+?)(?:\r?\n|$)");
+            var loadedModuleType = moduleTypeMatch.Success ? moduleTypeMatch.Groups[1].Value.Trim() : "Unknown";
+            _logger.LogInformation("Successfully loaded PowerCLI modules using: {ModuleType}", loadedModuleType);
 
             // Create credential and connect
             _logger.LogInformation("Connecting to vCenter {Server}...", connectionInfo.ServerAddress);

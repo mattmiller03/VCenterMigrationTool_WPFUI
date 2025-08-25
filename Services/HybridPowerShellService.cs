@@ -149,8 +149,10 @@ public class HybridPowerShellService : IDisposable
                 try
                     {
                     var quickCheck =
-                        await RunCommandAsync(
-                            "if (Get-Module -ListAvailable -Name 'VMware.PowerCLI') { 'true' } else { 'false' }");
+                        await RunCommandAsync(@"
+                            $vcfModule = Get-Module -ListAvailable -Name 'VCF.PowerCLI' -ErrorAction SilentlyContinue
+                            $legacyModule = Get-Module -ListAvailable -Name 'VMware.PowerCLI' -ErrorAction SilentlyContinue
+                            if ($vcfModule -or $legacyModule) { 'true' } else { 'false' }");
                     if (quickCheck?.Trim().ToLower() == "true")
                         {
                         PowerCliConfirmedInstalled = true;
@@ -1704,9 +1706,22 @@ public class HybridPowerShellService : IDisposable
                     $securePassword = ConvertTo-SecureString '{password.Replace("'", "''")}' -AsPlainText -Force
                     $credential = New-Object System.Management.Automation.PSCredential('{connection.Username.Replace("'", "''")}', $securePassword)
                     
-                    # Import PowerCLI if not already loaded
+                    # Import PowerCLI if not already loaded (supports both legacy and VCF modules)
                     if (-not (Get-Command 'Connect-VIServer' -ErrorAction SilentlyContinue)) {{
-                        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+                        # Try VCF.PowerCLI first (future-proof for vSphere 9+)
+                        $vcfModule = Get-Module -Name VCF.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
+                        $legacyModule = Get-Module -Name VMware.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
+                        
+                        if ($vcfModule) {{
+                            Import-Module VCF.PowerCLI -Force -ErrorAction Stop
+                            Write-Host 'INFO: Using VCF.PowerCLI module (vSphere 9+ compatible)'
+                        }} elseif ($legacyModule) {{
+                            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+                            Write-Host 'INFO: Using legacy VMware.PowerCLI module'
+                        }} else {{
+                            throw 'Neither VCF.PowerCLI nor VMware.PowerCLI modules are available'
+                        }}
+                        
                         Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
                     }}
                     

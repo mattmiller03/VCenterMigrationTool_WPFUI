@@ -429,8 +429,21 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 // Establish persistent PowerCLI connection using PersistentExternalConnectionService
                 _logger.LogInformation("STEP 2B: Establishing persistent PowerCLI connection for admin operations");
                 
+                // First try with PowerCLI modules (bypassModuleCheck: false)
                 var (pcliSuccess, pcliMessage, pcliSessionId) = await _persistentConnectionService.ConnectAsync(
-                    SelectedSourceProfile, finalPassword, isSource: true, bypassModuleCheck: true);
+                    SelectedSourceProfile, finalPassword, isSource: true, bypassModuleCheck: false);
+                
+                // If PowerCLI import fails, try bypass mode for basic PowerShell functionality
+                if (!pcliSuccess && pcliMessage.Contains("Failed to load PowerCLI modules"))
+                {
+                    _logger.LogWarning("PowerCLI import failed, attempting bypass mode for basic PowerShell functionality");
+                    var (bypassSuccess, bypassMessage, bypassSessionId) = await _persistentConnectionService.ConnectAsync(
+                        SelectedSourceProfile, finalPassword, isSource: true, bypassModuleCheck: true);
+                    
+                    pcliSuccess = bypassSuccess;
+                    pcliMessage = bypassSuccess ? "Connected in PowerShell bypass mode (limited functionality)" : bypassMessage;
+                    pcliSessionId = bypassSessionId;
+                }
                 
                 powerCLISuccess = pcliSuccess;
                 powerCLISessionId = pcliSessionId;
@@ -680,8 +693,21 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 // Establish persistent PowerCLI connection using PersistentExternalConnectionService
                 _logger.LogInformation("STEP 2B: Establishing persistent PowerCLI connection for admin operations");
                 
+                // First try with PowerCLI modules (bypassModuleCheck: false)
                 var (pcliSuccess, pcliMessage, pcliSessionId) = await _persistentConnectionService.ConnectAsync(
-                    SelectedTargetProfile, finalPassword, isSource: false, bypassModuleCheck: true);
+                    SelectedTargetProfile, finalPassword, isSource: false, bypassModuleCheck: false);
+                
+                // If PowerCLI import fails, try bypass mode for basic PowerShell functionality
+                if (!pcliSuccess && pcliMessage.Contains("Failed to load PowerCLI modules"))
+                {
+                    _logger.LogWarning("PowerCLI import failed for target, attempting bypass mode for basic PowerShell functionality");
+                    var (bypassSuccess, bypassMessage, bypassSessionId) = await _persistentConnectionService.ConnectAsync(
+                        SelectedTargetProfile, finalPassword, isSource: false, bypassModuleCheck: true);
+                    
+                    pcliSuccess = bypassSuccess;
+                    pcliMessage = bypassSuccess ? "Connected in PowerShell bypass mode (limited functionality)" : bypassMessage;
+                    pcliSessionId = bypassSessionId;
+                }
                 
                 powerCLISuccess = pcliSuccess;
                 powerCLISessionId = pcliSessionId;
