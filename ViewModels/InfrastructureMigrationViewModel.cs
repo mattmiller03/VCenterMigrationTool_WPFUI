@@ -165,7 +165,7 @@ namespace VCenterMigrationTool.ViewModels
             }
         }
 
-        private async Task LoadInfrastructureDataAsync()
+        private Task LoadInfrastructureDataAsync()
         {
             try
             {
@@ -268,6 +268,8 @@ namespace VCenterMigrationTool.ViewModels
                 TargetDataStatus = "Error loading data";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR loading infrastructure data: {ex.Message}\n";
             }
+
+            return Task.CompletedTask;
         }
 
         [RelayCommand]

@@ -205,7 +205,7 @@ public partial class FolderStructureMigrationViewModel : ObservableObject
             }
         }
 
-    private async Task<string> GetConnectionPassword (VCenterConnection connection)
+    private Task<string> GetConnectionPassword (VCenterConnection connection)
         {
         var password = _credentialService.GetPassword(connection);
 
@@ -222,7 +222,7 @@ public partial class FolderStructureMigrationViewModel : ObservableObject
             password = promptedPassword;
             }
 
-        return password;
+        return Task.FromResult(password);
         }
 
     private System.Security.SecureString ConvertToSecureString (string password)

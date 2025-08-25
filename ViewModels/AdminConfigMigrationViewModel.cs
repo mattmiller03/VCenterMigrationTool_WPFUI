@@ -180,7 +180,7 @@ namespace VCenterMigrationTool.ViewModels
             }
         }
 
-        private async Task LoadAdminConfigDataAsync()
+        private Task LoadAdminConfigDataAsync()
         {
             try
             {
@@ -294,6 +294,8 @@ namespace VCenterMigrationTool.ViewModels
                 SourceDataStatus = "Error loading data";
                 TargetDataStatus = "Error loading data";
             }
+
+            return Task.CompletedTask;
         }
 
         [RelayCommand]

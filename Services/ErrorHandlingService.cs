@@ -355,7 +355,7 @@ public class ErrorHandlingService : IErrorHandlingService
 
 
 
-    public async Task LogStructuredErrorAsync(string operation, Exception exception, Dictionary<string, object> context)
+    public Task LogStructuredErrorAsync(string operation, Exception exception, Dictionary<string, object> context)
     {
         var structuredError = new StructuredError
         {
@@ -390,6 +390,8 @@ public class ErrorHandlingService : IErrorHandlingService
             structuredError.Id,
             operation,
             $"{exception.GetType().Name}: {exception.Message}");
+
+        return Task.CompletedTask;
     }
 
     public async Task<ValidationResult> ValidateOperationAsync(string operation, Dictionary<string, object> parameters)
@@ -494,7 +496,7 @@ public class ErrorHandlingService : IErrorHandlingService
         }
     }
 
-    private async Task ValidateOperationSpecificRequirements(string operation, Dictionary<string, object> parameters, ValidationResult result)
+    private Task ValidateOperationSpecificRequirements(string operation, Dictionary<string, object> parameters, ValidationResult result)
     {
         switch (operation.ToLower())
         {
@@ -516,6 +518,8 @@ public class ErrorHandlingService : IErrorHandlingService
                 ValidateResourcePoolOperationRequirements(parameters, result);
                 break;
         }
+
+        return Task.CompletedTask;
     }
 
     private void ValidateVMOperationRequirements(Dictionary<string, object> parameters, ValidationResult result)

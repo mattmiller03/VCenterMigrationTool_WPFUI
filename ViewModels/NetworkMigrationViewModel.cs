@@ -1067,7 +1067,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
         }
     }
     
-    private async Task LoadExportedVDSDataFromJson(string jsonContent)
+    private Task LoadExportedVDSDataFromJson(string jsonContent)
     {
         try
         {
@@ -1155,6 +1155,8 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
             MigrationStatus = $"Error loading VDS data: {ex.Message}";
             _logger.LogError(ex, "Could not load VDS data");
         }
+
+        return Task.CompletedTask;
     }
     
     private async Task LoadNativeVDSBackupData(string referenceJson)
@@ -1258,7 +1260,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
         }
     }
     
-    private async Task LoadDiscoveredVDSData(string discoveryJson)
+    private Task LoadDiscoveredVDSData(string discoveryJson)
     {
         try
         {
@@ -1381,6 +1383,8 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Discovery data error: {ex.Message}\n";
             _logger.LogError(ex, "Could not load VDS discovery data");
         }
+
+        return Task.CompletedTask;
     }
 
     // Property for datacenter selection
