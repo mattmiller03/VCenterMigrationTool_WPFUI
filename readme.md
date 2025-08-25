@@ -1,12 +1,32 @@
-﻿# vCenter Migration Tool v1.3
+﻿# vCenter Migration Tool v1.4
 
 ## 1. Introduction
 
-This document outlines the structure and development guide for the vCenter Migration Tool, a WPF application designed to assist with migrating a VMware vCenter environment. The application provides a modern, intuitive graphical user interface (GUI) for executing complex PowerShell and PowerCLI operations. The project is now at version 1.3, featuring comprehensive ESXi host management, VM configuration backup capabilities, network migration functionality, and enhanced PowerShell logging with dashboard integration.
+This document outlines the structure and development guide for the vCenter Migration Tool, a WPF application designed to assist with migrating a VMware vCenter environment. The application provides a modern, intuitive graphical user interface (GUI) for executing complex PowerShell and PowerCLI operations. The project is now at version 1.4, featuring comprehensive ESXi host management, VM configuration backup capabilities, network migration functionality, enhanced PowerShell logging with dashboard integration, and robust dual connection architecture for maximum vCenter compatibility.
 
 ## 2. Current Status & Recent Updates (January 2025)
 
-### 2.1 Latest Updates in v1.3 ✅
+### 2.1 Latest Updates in v1.4 ✅
+
+**Dual Connection Architecture Implementation:**
+- **Simultaneous API + PowerCLI Connections**: Dashboard now establishes both API and PowerCLI connections simultaneously for maximum compatibility
+- **Enhanced Connection Status**: Connection details now show status of both API and PowerCLI connections with clear capability indicators
+- **Admin Configuration Fix**: Resolved admin configuration loading issues by ensuring PowerCLI availability regardless of API SSL problems
+- **Improved Error Handling**: Better connection failure messages with dual connection status reporting
+- **SharedConnectionService Enhancement**: Updated to track both API (`SourceApiConnected`, `TargetApiConnected`) and PowerCLI connection states independently
+
+**SSO Admin Module Issue Resolution:**
+- **VMware.vSphere.SsoAdmin Module Handling**: Gracefully handles missing SSO Admin module (deprecated in PowerCLI 13.x)
+- **Fallback SSO Discovery**: Automatic fallback to standard vCenter role/permission discovery using `Get-VIRole` and `Get-VIPermission`
+- **User-Friendly Error Messages**: Clear status messages explaining SSO module limitations with informative guidance
+- **Enhanced Admin Config Loading**: Improved error handling in `AdminConfigMigrationViewModel` with context-aware error detection
+
+**Settings Page DataTrigger Binding Fix:**
+- **Accent Color Selection**: Fixed DataTrigger binding error in `AppearanceSettingsView.xaml`
+- **Custom Converter Implementation**: Created `AccentColorSelectionConverter` with `MultiBinding` support for proper accent color highlighting
+- **XAML Binding Compliance**: Resolved invalid binding expressions in DataTrigger values using proper WPF patterns
+
+### 2.2 Major Updates from v1.3 ✅
 
 **Enhanced PowerShell Logging System:**
 - **Comprehensive Script Logging**: All PowerShell scripts now use the unified Write-ScriptLog.ps1 logging system
@@ -28,7 +48,7 @@ This document outlines the structure and development guide for the vCenter Migra
 - **Error Handling**: Better error handling for multi-host backup operations
 - **Dashboard Job Tracking**: Backup jobs now show properly in the dashboard with progress updates
 
-### 2.2 Major Features from v1.2 ✅
+### 2.3 Major Features from v1.2 ✅
 
 **VM Configuration Backup System:**
 - **Comprehensive VM Backup**: Complete VM configuration backup functionality integrated into VM Migration page
@@ -60,7 +80,7 @@ This document outlines the structure and development guide for the vCenter Migra
 - **Enhanced Navigation**: Improved page navigation with proper scroll handling
 - **Professional UI**: Consistent modern design across all pages with progress indicators and status feedback
 
-### 2.3 Previously Working Features ✅
+### 2.4 Previously Working Features ✅
 
 **ESXi Host Management (v1.1):**
 - **VMHostConfigV2.ps1 Integration**: Complete host backup, restore, and migration functionality
@@ -108,7 +128,49 @@ The project follows a standard MVVM structure:
 
 ## 5. Key Development Patterns
 
-### 5.1 VM Backup Integration Pattern
+### 5.1 Dual Connection Architecture Pattern
+
+**Simultaneous API + PowerCLI Connection Setup:**
+```csharp
+// DashboardViewModel.cs - Always attempt both connections
+var (apiSuccess, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
+bool powerCLISuccess = false;
+string powerCLIResult = await _powerShellService.RunCommandAsync(powerCLIScript);
+
+if (powerCLIResult.Contains("POWERCLI_SUCCESS")) {
+    powerCLISuccess = true;
+}
+
+// Overall success if either connection works
+bool overallSuccess = apiSuccess || powerCLISuccess;
+
+// Track both connection states independently
+_sharedConnectionService.SourceApiConnected = apiSuccess;
+_sharedConnectionService.SourceUsingPowerCLI = powerCLISuccess;
+```
+
+**Connection Status Detection:**
+```csharp
+// SharedConnectionService.cs - Check both connection types
+if (hasPowerCLI && !string.IsNullOrEmpty(sessionId)) {
+    return (true, serverAddress, "PowerCLI Session");
+}
+if (hasAPI) {
+    return (true, serverAddress, "API Session");
+}
+```
+
+**Admin Configuration Fallback Pattern:**
+```csharp
+// VCenterInventoryService.cs - Handle missing SSO module gracefully
+if (result.StartsWith("ERROR:")) {
+    _logger.LogInformation("Note: VMware.vSphere.SsoAdmin module may be missing - this is normal for PowerCLI 13.x");
+    _logger.LogInformation("Falling back to basic role/permission discovery");
+    await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
+}
+```
+
+### 5.2 VM Backup Integration Pattern
 
 **External PowerShell Scripts Approach:**
 The application uses external PowerShell scripts for maintainability:
@@ -133,7 +195,42 @@ var result = await _powerShellService.RunScriptAsync(scriptPath, parameters);
 - ViewModel provides SelectAll/UnselectAll commands
 - Backup scope determined by user selection (selected VMs, cluster, or all VMs)
 
-### 5.2 Network Migration Integration Pattern
+### 5.2 XAML DataTrigger Binding Pattern
+
+**MultiBinding with Custom Converter:**
+```xml
+<!-- AppearanceSettingsView.xaml - Fixed DataTrigger binding -->
+<DataTrigger Value="True">
+    <DataTrigger.Binding>
+        <MultiBinding Converter="{StaticResource AccentColorSelectionConverter}">
+            <Binding Path="Name"/>
+            <Binding Path="DataContext.CurrentAccentColor" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+        </MultiBinding>
+    </DataTrigger.Binding>
+    <Setter Property="BorderBrush" Value="{Binding HexValue}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+</DataTrigger>
+```
+
+**Custom IMultiValueConverter:**
+```csharp
+// AccentColorSelectionConverter.cs
+public class AccentColorSelectionConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length >= 2 && 
+            values[0] is string colorName && 
+            values[1] is string currentAccentColor)
+        {
+            return string.Equals(colorName, currentAccentColor, StringComparison.OrdinalIgnoreCase);
+        }
+        return false;
+    }
+}
+```
+
+### 5.3 Network Migration Integration Pattern
 
 **Network Topology Discovery:**
 ```csharp
@@ -149,7 +246,7 @@ var networkTopology = await _powerShellService.RunScriptAndGetObjectsOptimizedAs
 - Auto-mapping based on matching network names
 - NetworkMappingItem model for source/target network pairs
 
-### 5.3 UI Scroll Behavior Fix
+### 5.4 UI Scroll Behavior Fix
 
 **Global Scroll Solution:**
 ```csharp
@@ -159,7 +256,7 @@ var networkTopology = await _powerShellService.RunScriptAndGetObjectsOptimizedAs
 
 This resolves mouse wheel scrolling issues across all pages by handling scroll events at the navigation container level.
 
-### 5.4 PowerShell Script Organization
+### 5.5 PowerShell Script Organization
 
 **Script Categories:**
 - **VM Operations**: BackupVMConfigurations.ps1, RestoreVMConfigurations.ps1, ValidateVMBackups.ps1
@@ -361,16 +458,44 @@ All PowerShell scripts now use the centralized logging function:
 
 The application now provides a comprehensive migration suite with professional-grade VM backup, network migration, host management capabilities, and robust PowerShell logging with dashboard integration. The next phase should focus on completing the remaining migration types (Resource Pools, Folder Structure) and enhancing the overall user experience with advanced features and validation.
 
-## 14. Known Issues & Solutions (v1.3)
+## 14. Recent Code Changes Summary (v1.4)
 
-### 14.1 ESXi Host Backup JSON Parsing
+**Latest Changes in v1.4:**
+- `DashboardViewModel.cs`: Complete dual connection rewrite with simultaneous API + PowerCLI connection establishment
+- `SharedConnectionService.cs`: Enhanced with `SourceApiConnected`/`TargetApiConnected` properties and improved `GetConnectionStatusAsync()` logic
+- `VCenterInventoryService.cs`: Enhanced SSO Admin module error handling with informative fallback messages
+- `AdminConfigMigrationViewModel.cs`: Improved user experience with context-aware error messages for SSO module issues
+- `AppearanceSettingsView.xaml`: Fixed DataTrigger binding error using MultiBinding approach
+- `AccentColorSelectionConverter.cs`: New custom converter for proper accent color selection in settings
+
+**Key Technical Improvements:**
+- **Dual Connection Architecture**: Always attempts both API and PowerCLI connections for maximum compatibility
+- **Enhanced Error Communication**: Clear, user-friendly messages explaining SSO module limitations
+- **Proper XAML Binding**: Resolved DataTrigger binding issues using WPF-compliant patterns
+- **Connection State Tracking**: Independent tracking of API and PowerCLI connection success/failure
+
+## 15. Known Issues & Solutions
+
+### 15.1 ESXi Host Backup JSON Parsing (v1.3)
 **Issue**: "T is invalid after a single JSON value" error during multi-host backups
 **Solution**: Enhanced JSON extraction with multiple parsing methods and better error handling in EsxiHostsViewModel.cs
 
-### 14.2 PowerShell Process Cleanup
+### 15.2 PowerShell Process Cleanup (v1.3)
 **Issue**: Potential hanging PowerShell processes on application exit
 **Solution**: Comprehensive cleanup in App.OnExit with process count logging and ViewModel disposal
 
-### 14.3 Dashboard Activity Tracking
+### 15.3 Dashboard Activity Tracking (v1.3)
 **Issue**: Backup jobs not appearing in dashboard activity logs
 **Solution**: Integrated PowerShellLoggingService with EsxiHostsViewModel for real-time job tracking
+
+### 15.4 SSO Admin Module Missing (v1.4) ✅ RESOLVED
+**Issue**: Admin configuration loading failed due to missing `VMware.vSphere.SsoAdmin` module (deprecated in PowerCLI 13.x)
+**Solution**: Implemented graceful fallback to standard `Get-VIRole` and `Get-VIPermission` with user-friendly error messages
+
+### 15.5 Settings Page DataTrigger Binding (v1.4) ✅ RESOLVED
+**Issue**: DataTrigger binding error in accent color selection due to invalid binding expressions in `Value` attribute
+**Solution**: Implemented `AccentColorSelectionConverter` with `MultiBinding` for proper WPF-compliant DataTrigger functionality
+
+### 15.6 Admin Configuration Connection Issues (v1.4) ✅ RESOLVED
+**Issue**: Admin configuration failed to load when API connections worked but PowerCLI was unavailable
+**Solution**: Implemented dual connection architecture ensuring PowerCLI availability for admin operations regardless of API SSL issues
