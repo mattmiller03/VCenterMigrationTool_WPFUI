@@ -1126,7 +1126,17 @@ try {{
             {
             _logger.LogInformation("Loading roles and permissions for {VCenter} using best available method", vCenterName);
 
-            // First check what modules are available
+            // First check if we have a persistent connection established
+            var isConnected = await _persistentConnectionService.IsConnectedAsync(connectionType);
+            if (!isConnected)
+            {
+                _logger.LogWarning("No persistent {ConnectionType} connection found. Admin config loading requires an active PowerCLI connection.", connectionType);
+                _logger.LogInformation("Falling back to basic role/permission discovery for {VCenter}", vCenterName);
+                await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
+                return;
+            }
+
+            // Check what modules are available on the connected session
             var sdkAvailable = await CheckSDKAvailabilityAsync(connectionType);
 
             // Use the updated SSO Admin script that handles both SDK and fallback
@@ -1135,15 +1145,6 @@ try {{
             if (File.Exists(scriptPath))
                 {
                 _logger.LogInformation("Using Get-SSOAdminConfig.ps1 with VMware SDK/PowerCLI support for {VCenter}", vCenterName);
-
-                var parameters = new Dictionary<string, object>
-            {
-                { "VCenterServer", vCenterName },
-                { "IncludeRoles", true },
-                { "IncludePermissions", true },
-                { "IncludeSSOUsers", false },
-                { "IncludeSSOGroups", false }
-            };
 
                 var script = await File.ReadAllTextAsync(scriptPath);
                 var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
@@ -1205,6 +1206,14 @@ try {{
         try
         {
             _logger.LogInformation("Loading basic roles and permissions for {VCenterName} using standard PowerCLI (fallback mode)", vCenterName);
+            
+            // Verify we have a persistent connection for this operation as well
+            var isConnected = await _persistentConnectionService.IsConnectedAsync(connectionType);
+            if (!isConnected)
+            {
+                _logger.LogError("No persistent {ConnectionType} connection available for basic role/permission discovery", connectionType);
+                throw new InvalidOperationException($"No persistent {connectionType} connection available. Please establish a connection first.");
+            }
             
             // Basic roles discovery script
             var rolesScript = @"

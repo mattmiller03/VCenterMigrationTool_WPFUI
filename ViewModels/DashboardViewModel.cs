@@ -415,7 +415,6 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             // This ensures admin configuration functionality works regardless of API SSL issues
             bool powerCLISuccess = false;
             string powerCLISessionId = null;
-            string powerCLIResult = "";
             
             _logger.LogInformation("STEP 2B: Establishing PowerCLI connection for admin operations alongside API");
             SourceConnectionStatus = $"🔗 Establishing PowerCLI connection for admin operations...";
@@ -423,61 +422,30 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             try
             {
-                // Use HybridPowerShellService for PowerCLI connection (supports admin operations)
-                _logger.LogInformation("STEP 2B: Connecting via PowerCLI for admin configuration support");
+                // Establish persistent PowerCLI connection using PersistentExternalConnectionService
+                _logger.LogInformation("STEP 2B: Establishing persistent PowerCLI connection for admin operations");
                 
-                var testScript = $@"
-                    # PowerCLI connection test with SSL bypass
-                    try {{
-                        Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-                        Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
-                        
-                        $credential = New-Object System.Management.Automation.PSCredential('{SelectedSourceProfile.Username}', (ConvertTo-SecureString '{finalPassword.Replace("'", "''")}' -AsPlainText -Force))
-                        $connection = Connect-VIServer -Server '{SelectedSourceProfile.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
-                        
-                        if ($connection -and $connection.IsConnected) {{
-                            Write-Output 'POWERCLI_SUCCESS'
-                            Write-Output ""SESSION_ID:$($connection.SessionId)""
-                            Write-Output ""VERSION:$($connection.Version)""
-                            Write-Output ""BUILD:$($connection.Build)""
-                            
-                            # Quick inventory test
-                            $vmCount = (Get-VM -Server $connection -ErrorAction SilentlyContinue).Count
-                            Write-Output ""VM_COUNT:$vmCount""
-                            
-                            # Keep connection for future use
-                            $global:SourceVIConnection = $connection
-                            Write-Output 'CONNECTION_ESTABLISHED'
-                        }} else {{
-                            Write-Output 'POWERCLI_FAILED: Connection object invalid'
-                        }}
-                    }} catch {{
-                        Write-Output ""POWERCLI_FAILED: $($_.Exception.Message)""
-                    }}
-                ";
-
-                powerCLIResult = await _powerShellService.RunCommandAsync(testScript);
+                var (pcliSuccess, pcliMessage, pcliSessionId) = await _persistentConnectionService.ConnectAsync(
+                    SelectedSourceProfile, finalPassword, isSource: true, bypassModuleCheck: true);
                 
-                if (powerCLIResult.Contains("POWERCLI_SUCCESS") && powerCLIResult.Contains("CONNECTION_ESTABLISHED"))
+                powerCLISuccess = pcliSuccess;
+                powerCLISessionId = pcliSessionId;
+                
+                if (pcliSuccess)
                 {
-                    // Parse PowerCLI connection details
-                    var lines = powerCLIResult.Split('\n');
-                    string version = "Unknown", build = "", vmCount = "0";
-                    foreach (var line in lines)
-                    {
-                        if (line.StartsWith("SESSION_ID:")) powerCLISessionId = line.Substring(11).Trim();
-                        if (line.StartsWith("VERSION:")) version = line.Substring(8).Trim();
-                        if (line.StartsWith("BUILD:")) build = line.Substring(6).Trim();
-                        if (line.StartsWith("VM_COUNT:")) vmCount = line.Substring(9).Trim();
-                    }
+                    _logger.LogInformation("STEP 2B: Persistent PowerCLI connection established - SessionId: {SessionId}", pcliSessionId);
+                    // Test the connection by getting basic info
+                    var testResult = await _persistentConnectionService.ExecuteCommandAsync("source", 
+                        "$global:DefaultVIServers | Select-Object -First 1 | Select-Object Name, Version, Build, IsConnected | ConvertTo-Json");
                     
-                    powerCLISuccess = true;
-                    _logger.LogInformation("STEP 2B: PowerCLI connection successful - Version: {Version}, VM Count: {VmCount}, SessionId: {SessionId}", 
-                        version, vmCount, powerCLISessionId);
+                    if (!string.IsNullOrEmpty(testResult) && testResult.Contains("IsConnected"))
+                    {
+                        _logger.LogInformation("STEP 2B: Connection test successful: {Result}", testResult.Trim());
+                    }
                 }
                 else
                 {
-                    _logger.LogError("STEP 2B: PowerCLI connection failed. Result: {Result}", powerCLIResult.Trim());
+                    _logger.LogError("STEP 2B: Persistent PowerCLI connection failed: {Message}", pcliMessage);
                 }
             }
             catch (Exception pcliEx)
@@ -503,11 +471,19 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 
                 if (powerCLISuccess)
                 {
-                    // Version already parsed from PowerCLI output
-                    var lines = powerCLIResult.Split('\n');
-                    foreach (var line in lines)
+                    // Get version from persistent connection
+                    try 
                     {
-                        if (line.StartsWith("VERSION:")) version = line.Substring(8).Trim();
+                        var versionResult = await _persistentConnectionService.ExecuteCommandAsync("source", 
+                            "$global:DefaultVIServers | Select-Object -First 1 | Select-Object -ExpandProperty Version");
+                        if (!string.IsNullOrEmpty(versionResult))
+                        {
+                            version = versionResult.Trim();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Could not get vCenter version from PowerCLI connection");
                     }
                     
                     _logger.LogInformation("STEP 3: PowerCLI connection active - Version: {Version}", version);
@@ -682,7 +658,6 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             // This ensures admin configuration functionality works regardless of API SSL issues
             bool powerCLISuccess = false;
             string powerCLISessionId = null;
-            string powerCLIResult = "";
             
             _logger.LogInformation("STEP 2B: Establishing PowerCLI connection for admin operations alongside API");
             TargetConnectionStatus = $"🔗 Establishing PowerCLI connection for admin operations...";
@@ -690,61 +665,30 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             try
             {
-                // Use HybridPowerShellService for PowerCLI connection (supports admin operations)
-                _logger.LogInformation("STEP 2B: Connecting via PowerCLI for admin configuration support");
+                // Establish persistent PowerCLI connection using PersistentExternalConnectionService
+                _logger.LogInformation("STEP 2B: Establishing persistent PowerCLI connection for admin operations");
                 
-                var testScript = $@"
-                    # PowerCLI connection test with SSL bypass
-                    try {{
-                        Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-                        Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
-                        
-                        $credential = New-Object System.Management.Automation.PSCredential('{SelectedTargetProfile.Username}', (ConvertTo-SecureString '{finalPassword.Replace("'", "''")}' -AsPlainText -Force))
-                        $connection = Connect-VIServer -Server '{SelectedTargetProfile.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
-                        
-                        if ($connection -and $connection.IsConnected) {{
-                            Write-Output 'POWERCLI_SUCCESS'
-                            Write-Output ""SESSION_ID:$($connection.SessionId)""
-                            Write-Output ""VERSION:$($connection.Version)""
-                            Write-Output ""BUILD:$($connection.Build)""
-                            
-                            # Quick inventory test
-                            $vmCount = (Get-VM -Server $connection -ErrorAction SilentlyContinue).Count
-                            Write-Output ""VM_COUNT:$vmCount""
-                            
-                            # Keep connection for future use
-                            $global:TargetVIConnection = $connection
-                            Write-Output 'CONNECTION_ESTABLISHED'
-                        }} else {{
-                            Write-Output 'POWERCLI_FAILED: Connection object invalid'
-                        }}
-                    }} catch {{
-                        Write-Output ""POWERCLI_FAILED: $($_.Exception.Message)""
-                    }}
-                ";
-
-                powerCLIResult = await _powerShellService.RunCommandAsync(testScript);
+                var (pcliSuccess, pcliMessage, pcliSessionId) = await _persistentConnectionService.ConnectAsync(
+                    SelectedTargetProfile, finalPassword, isSource: false, bypassModuleCheck: true);
                 
-                if (powerCLIResult.Contains("POWERCLI_SUCCESS") && powerCLIResult.Contains("CONNECTION_ESTABLISHED"))
+                powerCLISuccess = pcliSuccess;
+                powerCLISessionId = pcliSessionId;
+                
+                if (pcliSuccess)
                 {
-                    // Parse PowerCLI connection details
-                    var lines = powerCLIResult.Split('\n');
-                    string version = "Unknown", build = "", vmCount = "0";
-                    foreach (var line in lines)
-                    {
-                        if (line.StartsWith("SESSION_ID:")) powerCLISessionId = line.Substring(11).Trim();
-                        if (line.StartsWith("VERSION:")) version = line.Substring(8).Trim();
-                        if (line.StartsWith("BUILD:")) build = line.Substring(6).Trim();
-                        if (line.StartsWith("VM_COUNT:")) vmCount = line.Substring(9).Trim();
-                    }
+                    _logger.LogInformation("STEP 2B: Persistent PowerCLI connection established - SessionId: {SessionId}", pcliSessionId);
+                    // Test the connection by getting basic info
+                    var testResult = await _persistentConnectionService.ExecuteCommandAsync("target", 
+                        "$global:DefaultVIServers | Select-Object -First 1 | Select-Object Name, Version, Build, IsConnected | ConvertTo-Json");
                     
-                    powerCLISuccess = true;
-                    _logger.LogInformation("STEP 2B: PowerCLI connection successful - Version: {Version}, VM Count: {VmCount}, SessionId: {SessionId}", 
-                        version, vmCount, powerCLISessionId);
+                    if (!string.IsNullOrEmpty(testResult) && testResult.Contains("IsConnected"))
+                    {
+                        _logger.LogInformation("STEP 2B: Connection test successful: {Result}", testResult.Trim());
+                    }
                 }
                 else
                 {
-                    _logger.LogError("STEP 2B: PowerCLI connection failed. Result: {Result}", powerCLIResult.Trim());
+                    _logger.LogError("STEP 2B: Persistent PowerCLI connection failed: {Message}", pcliMessage);
                 }
             }
             catch (Exception pcliEx)
@@ -770,11 +714,19 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 
                 if (powerCLISuccess)
                 {
-                    // Version already parsed from PowerCLI output
-                    var lines = powerCLIResult.Split('\n');
-                    foreach (var line in lines)
+                    // Get version from persistent connection
+                    try 
                     {
-                        if (line.StartsWith("VERSION:")) version = line.Substring(8).Trim();
+                        var versionResult = await _persistentConnectionService.ExecuteCommandAsync("target", 
+                            "$global:DefaultVIServers | Select-Object -First 1 | Select-Object -ExpandProperty Version");
+                        if (!string.IsNullOrEmpty(versionResult))
+                        {
+                            version = versionResult.Trim();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Could not get vCenter version from PowerCLI connection");
                     }
                     
                     _logger.LogInformation("STEP 3: PowerCLI connection active - Version: {Version}", version);
