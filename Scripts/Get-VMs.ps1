@@ -126,7 +126,7 @@ try {
     # Disconnect from vCenter
     try {
         Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
-        Disconnect-VIServer -Server $VCenterServer -Force -Confirm:$false -ErrorAction Stop
+        # DISCONNECT REMOVED - Using persistent connections managed by application
         Write-LogSuccess "Disconnected from vCenter" -Category "Connection"
     }
     catch {
@@ -144,7 +144,7 @@ catch {
     # Try to disconnect if connected
     if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {
         try {
-            Disconnect-VIServer -Server $VCenterServer -Force -Confirm:$false -ErrorAction SilentlyContinue
+            # DISCONNECT REMOVED - Using persistent connections managed by application
         }
         catch {
             # Ignore disconnect errors

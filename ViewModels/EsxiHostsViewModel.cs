@@ -658,9 +658,9 @@ public partial class EsxiHostsViewModel : ActivityLogViewModelBase
                 Write-Output 'Entering maintenance mode...'
                 Set-VMHost -VMHost $sourceHost -State Maintenance -Evacuate:$true -Confirm:$false
                 
-                # Disconnect from source vCenter
-                Write-Output 'Disconnecting from source vCenter...'
-                Disconnect-VIServer -Server $sourceHost -Confirm:$false
+                # DO NOT DISCONNECT - Using persistent connections managed by application
+                Write-Output 'Preserving vCenter connection for other operations...'
+                # Connection will be maintained for subsequent operations
                 
                 Write-Output 'Host ready for migration to target vCenter'
                 'SUCCESS'

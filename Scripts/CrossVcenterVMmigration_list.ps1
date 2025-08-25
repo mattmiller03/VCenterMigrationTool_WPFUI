@@ -513,7 +513,7 @@ function Disconnect-FromVIServer {
     try {
         if ($Server -and $Server.IsConnected) {
             Write-LogMessage "Disconnecting from $($Description) server: $($Server.Name)" -Level "Normal"
-            Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop
+            # DISCONNECT REMOVED - Using persistent connections managed by application
             Write-LogMessage "Successfully disconnected from $($Server.Name)" -Level "Success"
         }
     }
@@ -996,8 +996,8 @@ function New-MigrationJob {
         }
         finally {
             # Disconnect from vCenters
-            if ($sourceVI) { Disconnect-VIServer -Server $sourceVI -Confirm:$false -ErrorAction SilentlyContinue }
-            if ($destVI) { Disconnect-VIServer -Server $destVI -Confirm:$false -ErrorAction SilentlyContinue }
+            if ($sourceVI) { # DISCONNECT REMOVED - Using persistent connections managed by application }
+            if ($destVI) { # DISCONNECT REMOVED - Using persistent connections managed by application }
         }
     }
     
@@ -1915,8 +1915,8 @@ function New-MigrationJob-Enhanced {
         }
         finally {
             # Disconnect from vCenters
-            if ($sourceVI) { Disconnect-VIServer -Server $sourceVI -Confirm:$false -ErrorAction SilentlyContinue }
-            if ($destVI) { Disconnect-VIServer -Server $destVI -Confirm:$false -ErrorAction SilentlyContinue }
+            if ($sourceVI) { # DISCONNECT REMOVED - Using persistent connections managed by application }
+            if ($destVI) { # DISCONNECT REMOVED - Using persistent connections managed by application }
         }
     }
     

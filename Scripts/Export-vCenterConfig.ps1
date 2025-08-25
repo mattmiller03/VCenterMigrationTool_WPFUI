@@ -355,7 +355,7 @@ finally {
     if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {
         try {
             Write-LogInfo "Disconnecting from vCenter..." -Category "Cleanup"
-            Disconnect-VIServer -Server $VCenterServer -Confirm:$false -Force
+            # DISCONNECT REMOVED - Using persistent connections managed by application
             Write-LogSuccess "Disconnected from vCenter successfully" -Category "Cleanup"
         }
         catch {

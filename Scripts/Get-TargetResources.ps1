@@ -82,7 +82,7 @@ try {
     throw $_
 } finally {
     Write-LogInfo "Disconnecting from vCenter..." -Category "Cleanup"
-    Disconnect-VIServer -Server $VCenterServer -Confirm:$false -Force -ErrorAction SilentlyContinue
+    # DISCONNECT REMOVED - Using persistent connections managed by application
     
     Stop-ScriptLogging -Success $scriptSuccess -Summary $finalSummary -Statistics $stats
 }

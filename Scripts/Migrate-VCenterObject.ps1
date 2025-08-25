@@ -274,12 +274,12 @@ finally {
     # Disconnect from vCenters
     if ($sourceConnection) {
         Write-LogInfo "Disconnecting from source vCenter..." -Category "Cleanup"
-        Disconnect-VIServer -Server $sourceConnection -Confirm:$false -Force -ErrorAction SilentlyContinue
+        # DISCONNECT REMOVED - Using persistent connections managed by application
     }
     
     if ($targetConnection) {
         Write-LogInfo "Disconnecting from target vCenter..." -Category "Cleanup"
-        Disconnect-VIServer -Server $targetConnection -Confirm:$false -Force -ErrorAction SilentlyContinue
+        # DISCONNECT REMOVED - Using persistent connections managed by application
     }
     
     $finalStats = @{

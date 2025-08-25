@@ -88,8 +88,8 @@ catch {
 }
 finally {
     if ($viConnection) {
-        Write-LogInfo "Disconnecting from vCenter..." -Category "Cleanup"
-        Disconnect-VIServer -Server $viConnection -Confirm:$false -Force
+        Write-LogInfo "Preserving vCenter connection for persistent session" -Category "Cleanup"
+        # DO NOT DISCONNECT - Using persistent connections managed by the application
     }
     
     $finalStats = @{

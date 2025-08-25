@@ -251,7 +251,7 @@ catch {
 }
 finally {
     if ($vc -and $vc.IsConnected) {
-        Disconnect-VIServer -Server $vc -Confirm:$false -ErrorAction SilentlyContinue
+        # DISCONNECT REMOVED - Using persistent connections managed by application
         Write-Log "Disconnected from vCenter" 'INFO'
     }
 }

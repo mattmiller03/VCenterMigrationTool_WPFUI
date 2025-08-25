@@ -378,12 +378,12 @@ try {
     # Disconnect from vCenter servers
     if ($sourceConnection) {
         Write-LogInfo "Disconnecting from source vCenter..." -Category "Cleanup"
-        Disconnect-VIServer -Server $sourceConnection -Confirm:$false -ErrorAction SilentlyContinue
+        # DISCONNECT REMOVED - Using persistent connections managed by application
     }
     
     if ($targetConnection) {
         Write-LogInfo "Disconnecting from target vCenter..." -Category "Cleanup"
-        Disconnect-VIServer -Server $targetConnection -Confirm:$false -ErrorAction SilentlyContinue
+        # DISCONNECT REMOVED - Using persistent connections managed by application
     }
     
     Stop-ScriptLogging -Success $scriptSuccess -Summary $finalSummary -Statistics $migrationStats

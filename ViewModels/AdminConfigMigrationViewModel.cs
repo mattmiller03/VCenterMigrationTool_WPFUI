@@ -1324,8 +1324,8 @@ namespace VCenterMigrationTool.ViewModels
                 
                 // Use HybridPowerShellService to attempt connection
                 var connectionScript = $@"
-                    # Disconnect any existing connections
-                    try {{ Disconnect-VIServer -Server * -Force -Confirm:$false -ErrorAction SilentlyContinue }} catch {{ }}
+                    # DO NOT DISCONNECT - Using persistent connections managed by application
+                    # Existing connections should be preserved for other operations
                     
                     # Attempt new connection
                     try {{

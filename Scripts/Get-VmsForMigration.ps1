@@ -94,7 +94,7 @@ finally {
     # Disconnect from vCenter
     if ($viConnection) {
         Write-LogInfo "Disconnecting from vCenter..." -Category "Cleanup"
-        Disconnect-VIServer -Server $viConnection -Confirm:$false -Force
+        # DISCONNECT REMOVED - Using persistent connections managed by application
     }
     
     $finalStats = @{

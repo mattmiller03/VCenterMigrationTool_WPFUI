@@ -285,10 +285,11 @@ Collection Summary:
     Write-LogError "Script execution failed: $($_.Exception.Message)" -Category "Error"
     $ssoData.Error = $_.Exception.Message
 } finally {
-    # Disconnect from vCenter
+    # DO NOT DISCONNECT - Using persistent connections managed by the application
+    # The vCenter connection is maintained for other operations and will be disconnected
+    # only when the application closes or user explicitly disconnects
     if ($viConnection) {
-        Disconnect-VIServer -Server $viConnection -Confirm:$false -ErrorAction SilentlyContinue
-        Write-LogInfo "Disconnected from vCenter" -Category "Connection"
+        Write-LogInfo "Preserving vCenter connection for persistent session" -Category "Connection"
     }
     
     # Output the data as JSON

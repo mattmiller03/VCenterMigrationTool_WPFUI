@@ -228,7 +228,7 @@ finally {
     if ($viConnection -and $viConnection.IsConnected) {
         try {
             Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
-            Disconnect-VIServer -Server $viConnection -Confirm:$false -Force -ErrorAction Stop
+            # DISCONNECT REMOVED - Using persistent connections managed by application
             Write-LogSuccess "Disconnected from vCenter" -Category "Connection"
         }
         catch {

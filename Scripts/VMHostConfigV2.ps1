@@ -190,7 +190,7 @@ function Disconnect-AllVIServers {
                     Write-Log "Disconnecting from $($server.Name)..." -Level INFO
                     try {
                         if ($PSCmdlet.ShouldProcess($server.Name, "Disconnecting from vCenter")) {
-                            Disconnect-VIServer -Server $server -Confirm:$false -ErrorAction Stop
+                            # DISCONNECT REMOVED - Using persistent connections managed by application
                             Write-Log "Successfully disconnected from $($server.Name)." -Level INFO
                         }
                     }
@@ -303,7 +303,7 @@ function Test-ESXiHostLockdownMode {
         }
         finally {
             # Always disconnect from the direct host connection
-            Disconnect-VIServer -Server $directHostConnection -Confirm:$false -Force -ErrorAction SilentlyContinue
+            # DISCONNECT REMOVED - Using persistent connections managed by application
             Write-Log "Disconnected from direct ESXi host connection" -Level DEBUG
         }
     }
@@ -368,7 +368,7 @@ function Disable-ESXiHostLockdownMode {
         }
         finally {
             # Always disconnect from the direct host connection
-            Disconnect-VIServer -Server $directHostConnection -Confirm:$false -Force -ErrorAction SilentlyContinue
+            # DISCONNECT REMOVED - Using persistent connections managed by application
             Write-Log "Disconnected from direct ESXi host connection" -Level DEBUG
         }
     }
@@ -425,7 +425,7 @@ function Enable-ESXiHostLockdownMode {
         }
         finally {
             # Always disconnect from the direct host connection
-            Disconnect-VIServer -Server $directHostConnection -Confirm:$false -Force -ErrorAction SilentlyContinue
+            # DISCONNECT REMOVED - Using persistent connections managed by application
             Write-Log "Disconnected from direct ESXi host connection" -Level DEBUG
         }
     }
@@ -2277,7 +2277,7 @@ function Remove-OrphanedVDSwitches {
     finally {
         # Disconnect from the host
         if ($directHostConnection) {
-            Disconnect-VIServer -Server $directHostConnection -Confirm:$false -Force -ErrorAction SilentlyContinue
+            # DISCONNECT REMOVED - Using persistent connections managed by application
             Write-Log "Disconnected from ESXi host after cleanup" -Level INFO
         }
     }
@@ -2394,7 +2394,7 @@ function Migrate-VMHostBetweenVCenters {
                 $directConnection = Connect-VIServer -Server $VMHostName -Credential $ESXiHostCredential -ErrorAction Stop
                 $tempHost = Get-VMHost -Server $directConnection -ErrorAction Stop
                 $originalLockdownMode = $tempHost.ExtensionData.Config.LockdownMode
-                Disconnect-VIServer -Server $directConnection -Confirm:$false -Force -ErrorAction SilentlyContinue
+                # DISCONNECT REMOVED - Using persistent connections managed by application
                 Write-Log "Original lockdown mode: $originalLockdownMode" -Level INFO
             }
             catch {
@@ -2455,7 +2455,7 @@ function Migrate-VMHostBetweenVCenters {
         }
 
         # Disconnect from source vCenter
-        Disconnect-VIServer -Server $srcVC -Confirm:$false
+        # DISCONNECT REMOVED - Using persistent connections managed by application
         Write-Log "Disconnected from source vCenter $($SourceVCenter)" -Level INFO
 
         # After disconnecting from source vCenter and before connecting to target vCenter
@@ -2534,7 +2534,7 @@ function Migrate-VMHostBetweenVCenters {
                 Write-Log "Testing direct connection to ESXi host $VMHostName before adding to vCenter" -Level INFO
                 $directConnection = Connect-VIServer -Server $VMHostName -Credential $ESXiHostCredential -ErrorAction Stop
                 Write-Log "Successfully connected directly to host $VMHostName" -Level SUCCESS
-                Disconnect-VIServer -Server $directConnection -Confirm:$false -ErrorAction SilentlyContinue
+                # DISCONNECT REMOVED - Using persistent connections managed by application
             } catch {
                 Write-Log "Cannot connect directly to host $($VMHostName): $($_)" -Level ERROR
                 Write-Log "Please check credentials and network connectivity to the host" -Level ERROR
@@ -2621,7 +2621,7 @@ function Migrate-VMHostBetweenVCenters {
         # Disconnect from target vCenter
         if ($tgtVC -and $tgtVC.IsConnected) {
             try {
-                Disconnect-VIServer -Server $tgtVC -Confirm:$false
+                # DISCONNECT REMOVED - Using persistent connections managed by application
                 Write-Log "Disconnected from target vCenter $($TargetVCenter)" -Level INFO
             }
             catch {
@@ -2632,7 +2632,7 @@ function Migrate-VMHostBetweenVCenters {
         # Disconnect from source vCenter
         if ($srcVC -and $srcVC.IsConnected) {
             try {
-                Disconnect-VIServer -Server $srcVC -Confirm:$false
+                # DISCONNECT REMOVED - Using persistent connections managed by application
                 Write-Log "Disconnected from source vCenter $($SourceVCenter)" -Level INFO
             }
             catch {
@@ -2743,7 +2743,7 @@ finally {
     # Disconnect from any connected vCenter servers
     if ($vc -and $vc.IsConnected) {
         Write-Log "Disconnecting from vCenter $vCenter" -Level INFO
-        Disconnect-VIServer -Server $vCenter -Confirm:$false
+        # DISCONNECT REMOVED - Using persistent connections managed by application
     }
     Write-Log "Script execution completed" -Level INFO
 }
