@@ -81,6 +81,16 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private bool _hasTargetInventory;
 
+    // Activity log properties
+    [ObservableProperty]
+    private string _activityLog = "vCenter Migration Tool - Activity Log\n" +
+                                 "=====================================\n" +
+                                 "[INFO] Application started\n" +
+                                 "[INFO] Ready for connections...\n";
+
+    [ObservableProperty]
+    private bool _isAutoScrollEnabled = true;
+
     // Computed properties for UI binding
     public bool IsSourceDisconnected => !IsSourceConnected;
     public bool IsTargetDisconnected => !IsTargetConnected;
@@ -332,6 +342,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         IsJobRunning = true;
         SourceConnectionStatus = "🔄 Initializing connection...";
         ScriptOutput = string.Empty;
+        LogMessage($"Initiating source connection to {SelectedSourceProfile.ServerAddress}", "INFO");
 
         _logger.LogInformation("=== ESTABLISHING PERSISTENT SOURCE CONNECTION ===");
         _logger.LogInformation("Selected Source Profile: {Server} | User: {Username}", 
@@ -361,6 +372,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 {
                 _logger.LogWarning("STEP 1: User cancelled password prompt");
                 SourceConnectionStatus = "❌ Connection cancelled by user";
+                LogMessage("Source connection cancelled by user", "WARN");
                 IsJobRunning = false;
                 return;
                 }
@@ -536,6 +548,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                     $"Use 'Disconnect' button to close the connection.";
 
                 _logger.LogInformation("✅ Source vCenter API connection established successfully (Version: {Version})", version);
+                LogMessage($"✅ Source connection successful: {SelectedSourceProfile.ServerAddress} ({(usedPowerCLI ? "PowerCLI" : "API")})", "INFO");
 
                 // Update inventory summary
                 _logger.LogInformation("STEP 3: Starting inventory summary update task");
@@ -548,6 +561,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             else
                 {
                 _logger.LogError("STEP 2: Connection FAILED - Success={Success} | Message={Message}", success, message);
+                LogMessage($"❌ Source connection failed: {message}", "ERROR");
                 IsSourceConnected = false;
                 SourceConnectionStatus = $"❌ Connection failed: {message}";
                 SourceConnectionDetails = "";
@@ -571,6 +585,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             SourceConnectionStatus = $"❌ Connection error: {ex.Message}";
             SourceConnectionDetails = "";
             ScriptOutput = $"Error: {ex.Message}";
+            LogMessage($"❌ Source connection error: {ex.Message}", "ERROR");
             }
         finally
             {
@@ -588,6 +603,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         IsJobRunning = true;
         TargetConnectionStatus = "🔄 Initializing connection...";
         ScriptOutput = string.Empty;
+        LogMessage($"Initiating target connection to {SelectedTargetProfile.ServerAddress}", "INFO");
 
         _logger.LogInformation("=== ESTABLISHING PERSISTENT TARGET CONNECTION ===");
         _logger.LogInformation("Selected Target Profile: {Server} | User: {Username}", 
@@ -792,6 +808,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                     $"Use 'Disconnect' button to close the connection.";
 
                 _logger.LogInformation("✅ Target vCenter API connection established successfully (Version: {Version})", version);
+                LogMessage($"✅ Target connection successful: {SelectedTargetProfile.ServerAddress} ({(usedPowerCLI ? "PowerCLI" : "API")})", "INFO");
 
                 // Update inventory summary
                 _logger.LogInformation("STEP 3: Starting inventory summary update task");
@@ -804,6 +821,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             else
                 {
                 _logger.LogError("STEP 2: Connection FAILED - Success={Success} | Message={Message}", success, message);
+                LogMessage($"❌ Target connection failed: {message}", "ERROR");
                 IsTargetConnected = false;
                 TargetConnectionStatus = $"❌ Connection failed: {message}";
                 TargetConnectionDetails = "";
@@ -827,6 +845,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             TargetConnectionStatus = $"❌ Connection error: {ex.Message}";
             TargetConnectionDetails = "";
             ScriptOutput = $"Error: {ex.Message}";
+            LogMessage($"❌ Target connection error: {ex.Message}", "ERROR");
             }
         finally
             {
@@ -846,6 +865,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         try
             {
             _logger.LogInformation("Disconnecting source vCenter connection...");
+            LogMessage("Disconnecting from source vCenter", "INFO");
 
             SourceConnectionStatus = "🔌 Closing PowerShell session...";
             await Task.Delay(100); // Allow UI to update
@@ -863,6 +883,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             ScriptOutput = "Source vCenter connection has been closed.";
 
             _logger.LogInformation("✅ Source vCenter connection disconnected successfully");
+            LogMessage("✅ Source vCenter disconnected successfully", "INFO");
 
             // Notify property changes
             OnPropertyChanged(nameof(IsSourceDisconnected));
@@ -993,6 +1014,40 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     {
         // This will be handled by the navigation service in the View's code-behind
         // We'll trigger this via the View
+    }
+
+    [RelayCommand]
+    private void ClearLog()
+    {
+        ActivityLog = "vCenter Migration Tool - Activity Log\n" +
+                     "=====================================\n" +
+                     "[INFO] Log cleared\n";
+        LogMessage("Log cleared by user", "INFO");
+    }
+
+    [RelayCommand]
+    private void ToggleAutoScroll()
+    {
+        IsAutoScrollEnabled = !IsAutoScrollEnabled;
+        LogMessage($"Auto scroll {(IsAutoScrollEnabled ? "enabled" : "disabled")}", "INFO");
+    }
+
+    /// <summary>
+    /// Add a message to the activity log with timestamp
+    /// </summary>
+    public void LogMessage(string message, string level = "INFO")
+    {
+        var timestamp = DateTime.Now.ToString("HH:mm:ss");
+        var logEntry = $"[{timestamp}] [{level}] {message}\n";
+        ActivityLog += logEntry;
+        
+        // If we have many lines, trim to keep performance good
+        var lines = ActivityLog.Split('\n');
+        if (lines.Length > 1000)
+        {
+            var keepLines = lines.Skip(lines.Length - 800).ToArray();
+            ActivityLog = string.Join("\n", keepLines);
+        }
     }
 
     // Property change handlers for selection changes

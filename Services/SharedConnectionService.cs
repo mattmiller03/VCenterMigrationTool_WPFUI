@@ -53,6 +53,15 @@ public class SharedConnectionService
     public string? SourcePowerCLISessionId { get; set; }
     public string? TargetPowerCLISessionId { get; set; }
 
+    /// <summary>
+    /// Quick check if a connection is active (supports both API and PowerCLI)
+    /// </summary>
+    public async Task<bool> IsConnectedAsync(string connectionType)
+    {
+        var status = await GetConnectionStatusAsync(connectionType);
+        return status.IsConnected;
+    }
+
     public async Task<(bool IsConnected, string ServerName, string Version)> GetConnectionStatusAsync(string connectionType)
     {
         var connection = connectionType.ToLower() switch

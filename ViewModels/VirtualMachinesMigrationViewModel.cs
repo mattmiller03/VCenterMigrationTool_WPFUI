@@ -133,13 +133,13 @@ namespace VCenterMigrationTool.ViewModels
         {
             try
             {
-                // Check persistent connection status (same as Dashboard)
-                var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
+                // Check connection status via SharedConnectionService (supports both API and PowerCLI)
+                var sourceConnected = await _sharedConnectionService.IsConnectedAsync("source");
                 IsSourceConnected = sourceConnected;
                 SourceConnectionStatus = sourceConnected ? "Connected" : "Disconnected";
 
                 // Check target connection
-                var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
+                var targetConnected = await _sharedConnectionService.IsConnectedAsync("target");
                 IsTargetConnected = targetConnected;
                 TargetConnectionStatus = targetConnected ? "Connected" : "Disconnected";
 

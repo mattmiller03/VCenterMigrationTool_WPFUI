@@ -178,9 +178,9 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
             IsLoadingData = true;
             LoadingMessage = "Checking vCenter connections...";
 
-            // Check persistent connection status (same as Dashboard)
-            var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
-            var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
+            // Check connection status via SharedConnectionService (supports both API and PowerCLI)
+            var sourceConnected = await _sharedConnectionService.IsConnectedAsync("source");
+            var targetConnected = await _sharedConnectionService.IsConnectedAsync("target");
 
             // Update source connection state
             IsSourceConnected = sourceConnected;

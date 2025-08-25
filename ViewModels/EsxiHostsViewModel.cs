@@ -114,8 +114,8 @@ public partial class EsxiHostsViewModel : ObservableObject
 
         try
             {
-            // Check source connection
-            var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
+            // Check source connection - try SharedConnectionService first (supports both API and PowerCLI)
+            var sourceConnected = await _sharedConnectionService.IsConnectedAsync("source");
             if (sourceConnected && _sharedConnectionService.SourceConnection != null)
                 {
                 var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("source");
@@ -134,7 +134,7 @@ public partial class EsxiHostsViewModel : ObservableObject
                 }
 
             // Check target connection (optional for migration mode)
-            var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
+            var targetConnected = await _sharedConnectionService.IsConnectedAsync("target");
             if (targetConnected && _sharedConnectionService.TargetConnection != null)
                 {
                 var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("target");

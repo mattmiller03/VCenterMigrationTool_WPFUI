@@ -131,9 +131,9 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
         {
         try
         {
-            // Check persistent connection status (same as Dashboard)
-            var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
-            var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
+            // Check connection status via SharedConnectionService (supports both API and PowerCLI)
+            var sourceConnected = await _sharedConnectionService.IsConnectedAsync("source");
+            var targetConnected = await _sharedConnectionService.IsConnectedAsync("target");
 
             if (sourceConnected && targetConnected)
             {
