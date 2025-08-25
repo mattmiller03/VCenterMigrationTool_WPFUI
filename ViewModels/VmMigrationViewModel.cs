@@ -52,6 +52,25 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private bool _isMigrating;
 
+    // Connection Status Properties
+    [ObservableProperty]
+    private bool _isSourceConnected;
+
+    [ObservableProperty]
+    private bool _isTargetConnected;
+
+    [ObservableProperty]
+    private string _sourceConnectionStatus = "Not connected";
+
+    [ObservableProperty]
+    private string _targetConnectionStatus = "Not connected";
+
+    [ObservableProperty]
+    private string _sourceDataStatus = "No data loaded";
+
+    [ObservableProperty]
+    private string _targetDataStatus = "No data loaded";
+
     [ObservableProperty]
     private double _migrationProgress;
 
@@ -165,10 +184,29 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
         {
         try
         {
+            await LoadConnectionStatusAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during VM migration page navigation");
+            MigrationStatus = "Error loading page data. Please try refreshing.";
+        }
+        }
+
+    private async Task LoadConnectionStatusAsync()
+    {
+        try
+        {
             // Check connection status via SharedConnectionService (supports both API and PowerCLI)
             var sourceConnected = await _sharedConnectionService.IsConnectedAsync("source");
-            var targetConnected = await _sharedConnectionService.IsConnectedAsync("target");
+            IsSourceConnected = sourceConnected;
+            SourceConnectionStatus = sourceConnected ? "Connected" : "Disconnected";
 
+            var targetConnected = await _sharedConnectionService.IsConnectedAsync("target");
+            IsTargetConnected = targetConnected;
+            TargetConnectionStatus = targetConnected ? "Connected" : "Disconnected";
+
+            // Update migration status
             if (sourceConnected && targetConnected)
             {
                 var sourceServer = _sharedConnectionService.SourceConnection?.ServerAddress ?? "Unknown";
@@ -190,17 +228,50 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             {
                 MigrationStatus = "Please establish source and target connections on the Dashboard first";
             }
+
+            // Load existing inventory data if available
+            var sourceInventory = _sharedConnectionService.GetSourceInventory();
+            var targetInventory = _sharedConnectionService.GetTargetInventory();
+
+            if (sourceInventory?.VirtualMachines?.Any() == true)
+            {
+                SourceDataStatus = $"✅ {sourceInventory.VirtualMachines.Count} VMs loaded";
+            }
+            else
+            {
+                SourceDataStatus = "No VM data loaded";
+            }
+
+            if (targetInventory?.VirtualMachines?.Any() == true)
+            {
+                TargetDataStatus = $"✅ {targetInventory.VirtualMachines.Count} VMs loaded";
+            }
+            else
+            {
+                TargetDataStatus = "No VM data loaded";
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking connection status on VM migration page");
+            _logger.LogError(ex, "Error loading connection status");
+            IsSourceConnected = false;
+            IsTargetConnected = false;
+            SourceConnectionStatus = "Connection Error";
+            TargetConnectionStatus = "Connection Error";
             MigrationStatus = "Error checking connection status";
         }
         }
 
     public async Task OnNavigatedFromAsync () => await Task.CompletedTask;
 
-    // VM Loading Commands
+    // Data Refresh and VM Loading Commands
+    [RelayCommand]
+    private async Task RefreshData()
+    {
+        await LoadConnectionStatusAsync();
+        LogOutput += $"[{DateTime.Now:HH:mm:ss}] Data refreshed - connection status updated\n";
+    }
+
     [RelayCommand]
     private async Task LoadSourceVMs ()
         {

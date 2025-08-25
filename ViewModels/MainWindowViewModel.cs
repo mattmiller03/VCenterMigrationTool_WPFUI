@@ -29,7 +29,6 @@ namespace VCenterMigrationTool.ViewModels
             var vCenterObjectsChildItems = new List<object>
             {
                 new NavigationViewItem("Infrastructure Migration", SymbolRegular.Server24, typeof(Views.Pages.InfrastructureMigrationPage)),
-                new NavigationViewItem("Virtual Machines Migration", SymbolRegular.Desktop24, typeof(Views.Pages.VirtualMachinesMigrationPage)),
                 new NavigationViewItem("Admin Config Migration", SymbolRegular.Settings24, typeof(Views.Pages.AdminConfigMigrationPage)),
                 new NavigationViewItem("Resource Pools", SymbolRegular.DatabaseStack16, typeof(Views.Pages.ResourcePoolMigrationPage)),
                 new NavigationViewItem("Network", SymbolRegular.NetworkCheck24, typeof(Views.Pages.NetworkMigrationPage))

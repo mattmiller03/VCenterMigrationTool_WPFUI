@@ -192,8 +192,7 @@ public partial class App
             // New Migration Pages and ViewModels
             services.AddSingleton<InfrastructureMigrationPage>();
             services.AddSingleton<InfrastructureMigrationViewModel>();
-            services.AddSingleton<VirtualMachinesMigrationPage>();
-            services.AddSingleton<VirtualMachinesMigrationViewModel>();
+            // VirtualMachinesMigrationPage removed - functionality merged into VmMigrationPage
             services.AddSingleton<AdminConfigMigrationPage>();
             services.AddSingleton<AdminConfigMigrationViewModel>();
 
