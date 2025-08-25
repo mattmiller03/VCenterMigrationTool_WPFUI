@@ -1,94 +1,32 @@
-﻿[07:39:25 INF] Loaded base configuration from appsettings.json with LogPath: C:\temp\app\logs
-[07:39:25 INF] Configuration loaded with LogPath: C:\Temp\app\logs
-[07:39:25 INF] Configured log path: C:\Temp\app\logs
-[07:39:25 INF] Base log directory: C:\Temp\app\logs
-[07:39:25 INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
-[07:39:25 INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
-[07:39:25 INF] Trying PowerShell executable: pwsh.exe
-[07:39:25 INF] Creating PowerShell process with command: pwsh.exe
-[07:39:26 INF] Successfully started PowerShell process: pwsh.exe (PID: 23948)
-[07:39:26 INF] Application started. Press Ctrl+C to shut down.
-[07:39:26 INF] Hosting environment: Production
-[07:39:26 INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationUI.dll'. Symbol loading disabled by Include/Exclude setting.
-[07:39:26 INF] PowerShell process completed with exit code: 0
-[07:39:26 INF] STARTUP: PowerCLI detected and confirmed installed on startup
-[07:39:26 INF] PERSISTENCE: PowerCLI status saved as true
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Formatters.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\Accessibility.dll'. Module was built without symbols.
-[07:39:30 INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
-[07:39:30 INF] Selected Source Profile: klisv0pp212.dir.ad.dla.mil | User: administrator@DLA-KLEBER.local
-[07:39:30 INF] PowerCLI Bypass Status: true
-[07:39:30 INF] STEP 1: Retrieving stored credentials for profile: Prod -Kleber v7
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Meziantou.Framework.Win32.CredentialManager.dll'. 
-[07:39:30 INF] STEP 1: Using stored credentials
-[07:39:30 INF] STEP 2: Starting persistent connection to klisv0pp212.dir.ad.dla.mil
-[07:39:31 INF] STEP 2: Using VSphereApiService for simple connection validation
-[07:39:31 INF] Start processing HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:39:31 INF] Sending HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Security.Cryptography.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.Sockets.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.NameResolution.dll'. Symbol loading disabled by Include/Exclude setting.
-[07:39:32 INF] Received HTTP response headers after 919.6128ms - 201
-[07:39:32 INF] End processing HTTP request after 937.7627ms - 201
-[07:39:32 INF] Successfully authenticated to vCenter API: klisv0pp212.dir.ad.dla.mil
-[07:39:32 INF] STEP 2: VSphereApiService returned - Success: true | Message: Connection successful via VSphere API | HasSessionToken: true
-[07:39:32 INF] STEP 3: Connection successful - setting up shared connection service
-[07:39:32 INF] STEP 3: Getting vCenter version info via API
-[07:39:32 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:39:32 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:39:32 INF] Received HTTP response headers after 174.6549ms - 200
-[07:39:32 INF] End processing HTTP request after 180.3189ms - 200
-[07:39:32 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
-[07:39:32 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
-[07:39:32 INF] Received HTTP response headers after 196.2737ms - 200
-[07:39:32 INF] End processing HTTP request after 204.4689ms - 200
-[07:39:32 INF] STEP 3: vCenter info retrieved - Version: 7.0.3.02100
-[07:39:32 INF] ✅ Source vCenter API connection established successfully (Version: 7.0.3.02100)
-[07:39:32 INF] STEP 3: Starting inventory summary update task
-[07:39:32 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:39:32 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:39:32 INF] Received HTTP response headers after 191.8319ms - 200
-[07:39:32 INF] End processing HTTP request after 198.4579ms - 200
-[07:39:32 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
-[07:39:32 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
-[07:39:32 INF] Received HTTP response headers after 195.4533ms - 200
-[07:39:32 INF] End processing HTTP request after 202.3315ms - 200
-[07:39:32 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
-[07:39:32 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
-[07:39:33 INF] Received HTTP response headers after 378.0638ms - 200
-[07:39:33 INF] End processing HTTP request after 384.5759ms - 200
-[07:39:33 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
-[07:39:33 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
-[07:39:33 INF] Received HTTP response headers after 218.7848ms - 200
-[07:39:33 INF] End processing HTTP request after 226.0337ms - 200
-[07:39:33 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
-[07:39:33 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
-[07:39:33 INF] Received HTTP response headers after 179.6884ms - 200
-[07:39:33 INF] End processing HTTP request after 185.2062ms - 200
-[07:39:33 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
-[07:39:33 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
-[07:39:33 INF] Received HTTP response headers after 179.8902ms - 200
-[07:39:33 INF] End processing HTTP request after 186.2125ms - 200
-[07:39:33 INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=105, Hosts=22, Clusters=4
-[07:39:33 INF] Retrieved inventory counts for source: VMs=105, Hosts=22
-[07:39:38 INF] === ESTABLISHING PERSISTENT TARGET CONNECTION ===
-[07:39:38 INF] Selected Target Profile: klisv0pp251.dir.ad.dla.mil | User: administrator@DLA-KLEBER.local
-[07:39:38 INF] PowerCLI Bypass Status: true
-[07:39:38 INF] STEP 1: Retrieving stored credentials for profile: Prod-Kleber v8
-[07:39:38 INF] STEP 1: Using stored credentials
-[07:39:38 INF] STEP 2: Starting target connection to klisv0pp251.dir.ad.dla.mil
-[07:39:39 INF] STEP 2: Using VSphereApiService for simple connection validation
-[07:39:39 INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
-[07:39:39 INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Diagnostics.StackTrace.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Reflection.Metadata.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Collections.Immutable.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.IO.MemoryMappedFiles.dll'. Symbol loading disabled by Include/Exclude setting.
-[07:39:40 ERR] HTTP request failed for vCenter API: klisv0pp251.dir.ad.dla.mil. This could be due to SSL certificate issues, network connectivity, or invalid URL. Message: The SSL connection could not be established, see inner exception.
+﻿2025-08-25 11:56:26.600 -04:00 [INF] Loaded base configuration from appsettings.json with LogPath: C:\temp\app\logs
+2025-08-25 11:56:26.624 -04:00 [INF] Configuration loaded with LogPath: C:\Temp\app\logs
+2025-08-25 11:56:27.930 -04:00 [INF] Configured log path: C:\Temp\app\logs
+2025-08-25 11:56:27.932 -04:00 [INF] Base log directory: C:\Temp\app\logs
+2025-08-25 11:56:27.934 -04:00 [INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
+2025-08-25 11:56:27.937 -04:00 [INF] Created PowerShell log directory: C:\Temp\app\logs\PowerShell
+2025-08-25 11:56:27.963 -04:00 [INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
+2025-08-25 11:56:27.982 -04:00 [INF] Trying PowerShell executable: pwsh.exe
+2025-08-25 11:56:27.985 -04:00 [INF] Creating PowerShell process with command: pwsh.exe
+2025-08-25 11:56:28.015 -04:00 [INF] Successfully started PowerShell process: pwsh.exe (PID: 17896)
+2025-08-25 11:56:28.065 -04:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-25 11:56:28.067 -04:00 [INF] Hosting environment: Production
+2025-08-25 11:56:28.069 -04:00 [INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
+2025-08-25 11:56:28.988 -04:00 [INF] PowerShell process completed with exit code: 0
+2025-08-25 11:56:28.992 -04:00 [INF] STARTUP: PowerCLI detected and confirmed installed on startup
+2025-08-25 11:56:28.994 -04:00 [INF] PERSISTENCE: PowerCLI status saved as true
+2025-08-25 11:56:38.571 -04:00 [INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
+2025-08-25 11:56:38.573 -04:00 [INF] Selected Source Profile: klisv0pp212.dir.ad.dla.mil | User: administrator@DLA-KLEBER.local
+2025-08-25 11:56:38.575 -04:00 [INF] PowerCLI Bypass Status: true
+2025-08-25 11:56:38.677 -04:00 [INF] STEP 1: Retrieving stored credentials for profile: Prod -Kleber v7
+2025-08-25 11:56:38.745 -04:00 [INF] STEP 1: Using stored credentials
+2025-08-25 11:56:38.746 -04:00 [INF] STEP 2: Starting persistent connection to klisv0pp212.dir.ad.dla.mil
+2025-08-25 11:56:38.848 -04:00 [INF] STEP 2: Using VSphereApiService for simple connection validation
+2025-08-25 11:56:38.863 -04:00 [INF] Start processing HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-25 11:56:38.868 -04:00 [INF] Sending HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-25 11:56:55.881 -04:00 [ERR] HTTP request failed for vCenter API: klisv0pp212.dir.ad.dla.mil. This could be due to SSL certificate issues, network connectivity, or invalid URL. Message: The SSL connection could not be established, see inner exception.
 System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
- ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
-   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+ ---> System.IO.IOException: Received an unexpected EOF or 0 bytes from the transport stream.
+   at System.Net.Security.SslStream.ReceiveHandshakeFrameAsync[TIOAdapter](CancellationToken cancellationToken)
    at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
    at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
    at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
@@ -106,192 +44,184 @@ System.Net.Http.HttpRequestException: The SSL connection could not be establishe
    at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
    at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
    at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 58
-[07:39:40 INF] STEP 2: VSphereApiService returned - Success: false | Message: Connection failed: The SSL connection could not be established, see inner exception.. Check server address, network connectivity, and SSL certificates. | HasSessionToken: true
-[07:39:40 WRN] STEP 2: VSphere API failed with SSL/certificate issue, attempting PowerCLI fallback
-[07:39:40 INF] STEP 2: Attempting PowerCLI connection via HybridPowerShellService
-[07:39:40 INF] Trying PowerShell executable: pwsh.exe
-[07:39:40 INF] Creating PowerShell process with command: pwsh.exe
-[07:39:40 INF] Successfully started PowerShell process: pwsh.exe (PID: 13828)
-[07:39:59 INF] PowerShell process completed with exit code: 0
-[07:39:59 INF] STEP 2: PowerCLI fallback successful - Version: 8.0.3, VM Count: 0
-[07:39:59 INF] STEP 3: Connection successful - setting up shared connection service
-[07:39:59 INF] STEP 3: PowerCLI connection active - Version: 8.0.3
-[07:39:59 INF] ✅ Target vCenter API connection established successfully (Version: 8.0.3)
-[07:39:59 INF] STEP 3: Starting inventory summary update task
-[07:39:59 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:39:59 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:40:00 INF] Received HTTP response headers after 163.1833ms - 200
-[07:40:00 INF] End processing HTTP request after 168.4283ms - 200
-[07:40:00 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
-[07:40:00 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
-[07:40:00 INF] Received HTTP response headers after 176.9057ms - 200
-[07:40:00 INF] End processing HTTP request after 183.2827ms - 200
-[07:40:00 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
-[07:40:00 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
-[07:40:00 INF] Received HTTP response headers after 172.4021ms - 200
-[07:40:00 INF] End processing HTTP request after 177.7214ms - 200
-[07:40:00 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
-[07:40:00 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
-[07:40:00 INF] Received HTTP response headers after 332.9759ms - 200
-[07:40:00 INF] End processing HTTP request after 337.9788ms - 200
-[07:40:00 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
-[07:40:00 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
-[07:40:01 INF] Received HTTP response headers after 340.1712ms - 200
-[07:40:01 INF] End processing HTTP request after 345.5957ms - 200
-[07:40:01 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
-[07:40:01 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
-[07:40:01 INF] Received HTTP response headers after 166.1912ms - 200
-[07:40:01 INF] End processing HTTP request after 170.7349ms - 200
-[07:40:01 INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=105, Hosts=22, Clusters=4
-[07:40:01 INF] Retrieved inventory counts for source: VMs=105, Hosts=22
-[07:40:01 INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
-[07:40:01 INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Net.Quic.dll'. Symbol loading disabled by Include/Exclude setting.
-[07:40:02 ERR] HTTP request failed for vCenter API: klisv0pp251.dir.ad.dla.mil. This could be due to SSL certificate issues, network connectivity, or invalid URL. Message: The SSL connection could not be established, see inner exception.
-System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
- ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
-   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
-   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
-   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
-   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
-   --- End of inner exception stack trace ---
-   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
-   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
-   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
-   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
-   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
-   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
-   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
-   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
-   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
-   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
-   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
-   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
-   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 58
-[07:40:02 INF] Retrieved inventory counts for target: VMs=0, Hosts=0
-The thread 37624 has exited with code 0 (0x0).
-The thread '.NET TP Wait' (27740) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (10736) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (34912) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (21436) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (34164) has exited with code 0 (0x0).
-[07:42:13 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:42:13 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:42:13 INF] Received HTTP response headers after 511.0087ms - 200
-[07:42:13 INF] End processing HTTP request after 518.1653ms - 200
-[07:42:13 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
-[07:42:13 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
-[07:42:14 INF] Received HTTP response headers after 177.3809ms - 200
-[07:42:14 INF] End processing HTTP request after 181.3426ms - 200
-[07:42:14 INF] source connection status: true to klisv0pp212.dir.ad.dla.mil
-[07:42:14 INF] PowerCLI connection active for target: klisv0pp251.dir.ad.dla.mil (Session: PowerCLI-20250825-073959)
-[07:42:14 INF] Connection status - Source: Connected, Target: Connected
-[07:42:14 WRN] No source inventory available - connection may not be established or inventory not loaded
-[07:42:14 WRN] No target inventory available despite target connection
-[07:42:14 INF] Final count - Source: 0 clusters, Target: 0 clusters
-[07:42:14 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:42:14 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:42:15 INF] Received HTTP response headers after 178.7386ms - 200
-[07:42:15 INF] End processing HTTP request after 185.1593ms - 200
-[07:42:15 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
-[07:42:15 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
-[07:42:15 INF] Received HTTP response headers after 174.154ms - 200
-[07:42:15 INF] End processing HTTP request after 179.5245ms - 200
-[07:42:15 INF] source connection status: true to klisv0pp212.dir.ad.dla.mil
-[07:42:15 INF] PowerCLI connection active for target: klisv0pp251.dir.ad.dla.mil (Session: PowerCLI-20250825-073959)
-[07:42:16 INF] Loading VM inventory for vCenter: klisv0pp212.dir.ad.dla.mil (connection: source)
-[07:42:16 ERR] Failed to load virtual machines for klisv0pp212.dir.ad.dla.mil
-System.Text.Json.JsonException: 'E' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
- ---> System.Text.Json.JsonReaderException: 'E' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 0.
-   at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
-   at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
-   at System.Text.Json.Utf8JsonReader.ReadFirstToken(Byte first)
-   at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
-   at System.Text.Json.Utf8JsonReader.Read()
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   --- End of inner exception stack trace ---
-   at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
-   at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
-   at VCenterMigrationTool.Services.VCenterInventoryService.LoadVirtualMachinesAsync(String vCenterName, String username, String password, VCenterInventory inventory, String connectionType) in C:\Git\Apps\LatestVcenterApp\Services\VCenterInventoryService.cs:line 608
-[07:42:16 ERR] Failed to load resource pools for klisv0pp212.dir.ad.dla.mil
-System.Text.Json.JsonException: 'E' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
- ---> System.Text.Json.JsonReaderException: 'E' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 0.
-   at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
-   at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
-   at System.Text.Json.Utf8JsonReader.ReadFirstToken(Byte first)
-   at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
-   at System.Text.Json.Utf8JsonReader.Read()
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   --- End of inner exception stack trace ---
-   at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
-   at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
-   at VCenterMigrationTool.Services.VCenterInventoryService.LoadResourcePoolsAsync(String vCenterName, String username, String password, VCenterInventory inventory, String connectionType) in C:\Git\Apps\LatestVcenterApp\Services\VCenterInventoryService.cs:line 680
-[07:42:16 INF] Successfully loaded VM inventory for klisv0pp212.dir.ad.dla.mil: 0 VMs
-[07:42:31 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:42:31 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
-[07:42:32 INF] Received HTTP response headers after 196.6688ms - 200
-[07:42:32 INF] End processing HTTP request after 201.4513ms - 200
-[07:42:32 INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
-[07:42:32 INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
-[07:42:32 INF] Received HTTP response headers after 199.5703ms - 200
-[07:42:32 INF] End processing HTTP request after 204.093ms - 200
-[07:42:32 INF] source connection status: true to klisv0pp212.dir.ad.dla.mil
-[07:42:32 INF] PowerCLI connection active for target: klisv0pp251.dir.ad.dla.mil (Session: PowerCLI-20250825-073959)
-[07:42:34 INF] Loading admin config inventory for vCenter: klisv0pp212.dir.ad.dla.mil (connection: source)
-[07:42:34 WRN] Invalid JSON response for folders from klisv0pp212.dir.ad.dla.mil: ERROR: No active connection
-[07:42:34 INF] Loading tags and categories for klisv0pp212.dir.ad.dla.mil (extended timeout for large datasets)
-[07:42:34 INF] Executing TagsAndCategories script with extended timeout (15 minutes) for klisv0pp212.dir.ad.dla.mil
-[07:42:34 WRN] Extended timeout not supported by connection service, using default timeout for TagsAndCategories
-[07:42:34 WRN] Invalid JSON response for TagsAndCategories from klisv0pp212.dir.ad.dla.mil: ERROR: No active connection
-[07:42:34 INF] Loading roles and permissions for klisv0pp212.dir.ad.dla.mil using SSO Admin script
-[07:42:34 WRN] SSO Admin script returned error for klisv0pp212.dir.ad.dla.mil: ERROR: No active connection
-[07:42:34 INF] Falling back to basic role/permission discovery for klisv0pp212.dir.ad.dla.mil
-[07:42:34 INF] Loading basic roles and permissions for klisv0pp212.dir.ad.dla.mil as fallback
-[07:42:34 ERR] Failed to load basic roles and permissions for klisv0pp212.dir.ad.dla.mil
-System.Text.Json.JsonException: 'E' is an invalid start of a value. Path: $ | LineNumber: 0 | BytePositionInLine: 0.
- ---> System.Text.Json.JsonReaderException: 'E' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 0.
-   at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
-   at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
-   at System.Text.Json.Utf8JsonReader.ReadFirstToken(Byte first)
-   at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
-   at System.Text.Json.Utf8JsonReader.Read()
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   --- End of inner exception stack trace ---
-   at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
-   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
-   at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
-   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
-   at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
-   at VCenterMigrationTool.Services.VCenterInventoryService.LoadBasicRolesAndPermissionsAsync(String vCenterName, VCenterInventory inventory, String connectionType) in C:\Git\Apps\LatestVcenterApp\Services\VCenterInventoryService.cs:line 1207
-[07:42:34 INF] Loading custom attributes for klisv0pp212.dir.ad.dla.mil
-[07:42:34 WRN] Invalid JSON response for CustomAttributes from klisv0pp212.dir.ad.dla.mil: ERROR: No active connection
-[07:42:34 INF] Successfully loaded admin config inventory for klisv0pp212.dir.ad.dla.mil
-[07:42:51 INF] Application shutting down - cleaning up services
-[07:42:51 INF] Cleaning up 0 active PowerShell processes before shutdown
-[07:42:51 INF] Starting cleanup of all active PowerShell processes
-[07:42:51 INF] Completed cleanup of 0 PowerShell processes
-[07:42:51 INF] PowerShell process cleanup completed
-[07:42:51 INF] Cleaning up persistent vCenter connection processes
-[07:42:51 INF] Disposing PersistentExternalConnectionService - closing all connections
-[07:42:51 INF] Persistent connection service cleanup completed
-[07:42:51 INF] Stopping PowerShell monitoring timer
-[07:42:51 INF] No PowerShell processes found during final cleanup
-[07:42:51 INF] Application is shutting down...
-[07:42:51 INF] Disposing HybridPowerShellService and cleaning up processes
-[07:42:51 INF] Starting cleanup of all active PowerShell processes
-[07:42:51 INF] Completed cleanup of 0 PowerShell processes
-The thread 35808 has exited with code 0 (0x0).
-[07:42:51 ERR] Failed to load recent logs
-System.Threading.Tasks.TaskCanceledException: A task was canceled.
-   at VCenterMigrationTool.ViewModels.ActivityLogsViewModel.LoadRecentLogsAsync() in C:\Git\Apps\LatestVcenterApp\ViewModels\ActivityLogsViewModel.cs:line 116
-The program '[34920] VCenterMigrationTool.exe: Program Trace' has exited with code 0 (0x0).
-The program '[34920] VCenterMigrationTool.exe' has exited with code 0 (0x0).
+2025-08-25 11:56:55.910 -04:00 [INF] STEP 2A: VSphereApiService returned - Success: false | Message: Connection failed: The SSL connection could not be established, see inner exception.. Check server address, network connectivity, and SSL certificates. | HasSessionToken: true
+2025-08-25 11:56:55.912 -04:00 [INF] STEP 2B: Establishing PowerCLI connection for admin operations alongside API
+2025-08-25 11:56:56.014 -04:00 [INF] STEP 2B: Establishing persistent PowerCLI connection for admin operations
+2025-08-25 11:56:56.018 -04:00 [INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+2025-08-25 11:56:56.038 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 1924)
+2025-08-25 11:56:56.044 -04:00 [INF] Importing PowerCLI modules in persistent session... (bypassModuleCheck=true - ignored for persistent sessions)
+2025-08-25 11:56:58.070 -04:00 [ERR] Failed to load PowerCLI modules in persistent session. Full output: ERROR: No active connection for source
+2025-08-25 11:56:58.072 -04:00 [INF] Disconnecting from klisv0pp212.dir.ad.dla.mil (source)
+2025-08-25 11:56:58.104 -04:00 [INF] ✅ Disconnected from klisv0pp212.dir.ad.dla.mil
+2025-08-25 11:56:58.107 -04:00 [ERR] STEP 2B: Persistent PowerCLI connection failed: Failed to load PowerCLI modules - ERROR: No active connection for source
+2025-08-25 11:56:58.108 -04:00 [ERR] STEP 2: Both connections FAILED - API: false, PowerCLI: false
+2025-08-25 11:56:58.110 -04:00 [ERR] ❌ Failed to establish any persistent connection
+2025-08-25 11:57:20.483 -04:00 [INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
+2025-08-25 11:57:20.485 -04:00 [INF] Selected Source Profile: klisv0pp212.dir.ad.dla.mil | User: administrator@DLA-KLEBER.local
+2025-08-25 11:57:20.486 -04:00 [INF] PowerCLI Bypass Status: true
+2025-08-25 11:57:20.588 -04:00 [INF] STEP 1: Retrieving stored credentials for profile: Prod -Kleber v7
+2025-08-25 11:57:20.591 -04:00 [INF] STEP 1: Using stored credentials
+2025-08-25 11:57:20.592 -04:00 [INF] STEP 2: Starting persistent connection to klisv0pp212.dir.ad.dla.mil
+2025-08-25 11:57:20.694 -04:00 [INF] STEP 2: Using VSphereApiService for simple connection validation
+2025-08-25 11:57:20.698 -04:00 [INF] Start processing HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-25 11:57:20.700 -04:00 [INF] Sending HTTP request POST https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-25 11:57:21.579 -04:00 [INF] Received HTTP response headers after 875.441ms - 201
+2025-08-25 11:57:21.582 -04:00 [INF] End processing HTTP request after 883.5066ms - 201
+2025-08-25 11:57:21.586 -04:00 [INF] Successfully authenticated to vCenter API: klisv0pp212.dir.ad.dla.mil
+2025-08-25 11:57:21.588 -04:00 [INF] STEP 2A: VSphereApiService returned - Success: true | Message: Connection successful via VSphere API | HasSessionToken: true
+2025-08-25 11:57:21.590 -04:00 [INF] STEP 2B: Establishing PowerCLI connection for admin operations alongside API
+2025-08-25 11:57:21.692 -04:00 [INF] STEP 2B: Establishing persistent PowerCLI connection for admin operations
+2025-08-25 11:57:21.693 -04:00 [INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
+2025-08-25 11:57:21.700 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 7748)
+2025-08-25 11:57:21.702 -04:00 [INF] Importing PowerCLI modules in persistent session... (bypassModuleCheck=true - ignored for persistent sessions)
+2025-08-25 11:57:22.307 -04:00 [ERR] Failed to load PowerCLI modules in persistent session. Full output: ERROR: No active connection for source
+2025-08-25 11:57:22.309 -04:00 [INF] Disconnecting from klisv0pp212.dir.ad.dla.mil (source)
+2025-08-25 11:57:22.312 -04:00 [INF] ✅ Disconnected from klisv0pp212.dir.ad.dla.mil
+2025-08-25 11:57:22.313 -04:00 [ERR] STEP 2B: Persistent PowerCLI connection failed: Failed to load PowerCLI modules - ERROR: No active connection for source
+2025-08-25 11:57:22.315 -04:00 [INF] STEP 3: Connection successful - setting up shared connection service (API: true, PowerCLI: false)
+2025-08-25 11:57:22.317 -04:00 [INF] STEP 3: Getting vCenter version info via API
+2025-08-25 11:57:22.320 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-25 11:57:22.322 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-25 11:57:22.501 -04:00 [INF] Received HTTP response headers after 177.4375ms - 200
+2025-08-25 11:57:22.502 -04:00 [INF] End processing HTTP request after 182.0723ms - 200
+2025-08-25 11:57:22.505 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-25 11:57:22.506 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/appliance/system/version
+2025-08-25 11:57:22.700 -04:00 [INF] Received HTTP response headers after 192.5957ms - 200
+2025-08-25 11:57:22.702 -04:00 [INF] End processing HTTP request after 197.2185ms - 200
+2025-08-25 11:57:22.704 -04:00 [INF] STEP 3: vCenter info retrieved - Version: 7.0.3.02100
+2025-08-25 11:57:22.706 -04:00 [INF] ✅ Source vCenter dual connection established successfully - API: true, PowerCLI: false, Version: 7.0.3.02100
+2025-08-25 11:57:22.708 -04:00 [INF] STEP 3: Starting inventory summary update task
+2025-08-25 11:57:22.712 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-25 11:57:22.714 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-25 11:57:22.888 -04:00 [INF] Received HTTP response headers after 171.2481ms - 200
+2025-08-25 11:57:22.890 -04:00 [INF] End processing HTTP request after 177.9664ms - 200
+2025-08-25 11:57:22.893 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-25 11:57:22.894 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-25 11:57:23.092 -04:00 [INF] Received HTTP response headers after 196.3859ms - 200
+2025-08-25 11:57:23.094 -04:00 [INF] End processing HTTP request after 201.4135ms - 200
+2025-08-25 11:57:23.098 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-25 11:57:23.099 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-25 11:57:23.475 -04:00 [INF] Received HTTP response headers after 374.8276ms - 200
+2025-08-25 11:57:23.477 -04:00 [INF] End processing HTTP request after 378.9799ms - 200
+2025-08-25 11:57:23.478 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-25 11:57:23.480 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-25 11:57:23.657 -04:00 [INF] Received HTTP response headers after 175.624ms - 200
+2025-08-25 11:57:23.659 -04:00 [INF] End processing HTTP request after 180.4048ms - 200
+2025-08-25 11:57:23.661 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-25 11:57:23.662 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-25 11:57:23.842 -04:00 [INF] Received HTTP response headers after 178.9215ms - 200
+2025-08-25 11:57:23.844 -04:00 [INF] End processing HTTP request after 182.9225ms - 200
+2025-08-25 11:57:23.846 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-25 11:57:23.848 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-25 11:57:24.023 -04:00 [INF] Received HTTP response headers after 173.7795ms - 200
+2025-08-25 11:57:24.025 -04:00 [INF] End processing HTTP request after 178.3489ms - 200
+2025-08-25 11:57:24.026 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=104, Hosts=22, Clusters=4
+2025-08-25 11:57:24.028 -04:00 [INF] Retrieved inventory counts for source: VMs=104, Hosts=22
+2025-08-25 11:57:30.383 -04:00 [INF] === ESTABLISHING PERSISTENT TARGET CONNECTION ===
+2025-08-25 11:57:30.385 -04:00 [INF] Selected Target Profile: klisv0pp251.dir.ad.dla.mil | User: administrator@DLA-KLEBER.local
+2025-08-25 11:57:30.387 -04:00 [INF] PowerCLI Bypass Status: true
+2025-08-25 11:57:30.489 -04:00 [INF] STEP 1: Retrieving stored credentials for profile: Prod-Kleber v8
+2025-08-25 11:57:30.491 -04:00 [INF] STEP 1: Using stored credentials
+2025-08-25 11:57:30.493 -04:00 [INF] STEP 2: Starting target connection to klisv0pp251.dir.ad.dla.mil
+2025-08-25 11:57:30.596 -04:00 [INF] STEP 2: Using VSphereApiService for simple connection validation
+2025-08-25 11:57:30.599 -04:00 [INF] Start processing HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-25 11:57:30.602 -04:00 [INF] Sending HTTP request POST https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-25 11:57:31.319 -04:00 [INF] Received HTTP response headers after 715.9863ms - 201
+2025-08-25 11:57:31.321 -04:00 [INF] End processing HTTP request after 722.1186ms - 201
+2025-08-25 11:57:31.324 -04:00 [INF] Successfully authenticated to vCenter API: klisv0pp251.dir.ad.dla.mil
+2025-08-25 11:57:31.325 -04:00 [INF] STEP 2A: VSphereApiService returned - Success: true | Message: Connection successful via VSphere API | HasSessionToken: true
+2025-08-25 11:57:31.327 -04:00 [INF] STEP 2B: Establishing PowerCLI connection for admin operations alongside API
+2025-08-25 11:57:31.427 -04:00 [INF] STEP 2B: Establishing persistent PowerCLI connection for admin operations
+2025-08-25 11:57:31.431 -04:00 [INF] Establishing persistent external connection to klisv0pp251.dir.ad.dla.mil (target)
+2025-08-25 11:57:31.438 -04:00 [INF] Started persistent PowerShell process: pwsh.exe (PID: 22604)
+2025-08-25 11:57:31.441 -04:00 [INF] Importing PowerCLI modules in persistent session... (bypassModuleCheck=true - ignored for persistent sessions)
+2025-08-25 11:57:31.947 -04:00 [ERR] Failed to load PowerCLI modules in persistent session. Full output: ERROR: No active connection for target
+2025-08-25 11:57:31.950 -04:00 [INF] Disconnecting from klisv0pp251.dir.ad.dla.mil (target)
+2025-08-25 11:57:31.975 -04:00 [INF] ✅ Disconnected from klisv0pp251.dir.ad.dla.mil
+2025-08-25 11:57:31.977 -04:00 [ERR] STEP 2B: Persistent PowerCLI connection failed: Failed to load PowerCLI modules - ERROR: No active connection for target
+2025-08-25 11:57:31.978 -04:00 [INF] STEP 3: Connection successful - setting up shared connection service (API: true, PowerCLI: false)
+2025-08-25 11:57:31.980 -04:00 [INF] STEP 3: Getting vCenter version info via API
+2025-08-25 11:57:31.982 -04:00 [INF] Start processing HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-25 11:57:31.984 -04:00 [INF] Sending HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-25 11:57:32.167 -04:00 [INF] Received HTTP response headers after 180.9124ms - 200
+2025-08-25 11:57:32.169 -04:00 [INF] End processing HTTP request after 186.7117ms - 200
+2025-08-25 11:57:32.172 -04:00 [INF] Start processing HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/appliance/system/version
+2025-08-25 11:57:32.174 -04:00 [INF] Sending HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/appliance/system/version
+2025-08-25 11:57:32.458 -04:00 [INF] Received HTTP response headers after 282.2612ms - 200
+2025-08-25 11:57:32.460 -04:00 [INF] End processing HTTP request after 287.5873ms - 200
+2025-08-25 11:57:32.462 -04:00 [INF] STEP 3: vCenter info retrieved - Version: 8.0.3.00000
+2025-08-25 11:57:32.464 -04:00 [INF] ✅ Target vCenter dual connection established successfully - API: true, PowerCLI: false, Version: 8.0.3.00000
+2025-08-25 11:57:32.466 -04:00 [INF] STEP 3: Starting inventory summary update task
+2025-08-25 11:57:32.468 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-25 11:57:32.470 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/session
+2025-08-25 11:57:32.640 -04:00 [INF] Received HTTP response headers after 168.6221ms - 200
+2025-08-25 11:57:32.642 -04:00 [INF] End processing HTTP request after 174.2794ms - 200
+2025-08-25 11:57:32.645 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-25 11:57:32.647 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/vm
+2025-08-25 11:57:32.846 -04:00 [INF] Received HTTP response headers after 197.9907ms - 200
+2025-08-25 11:57:32.848 -04:00 [INF] End processing HTTP request after 203.1256ms - 200
+2025-08-25 11:57:32.850 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-25 11:57:32.853 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/host
+2025-08-25 11:57:33.026 -04:00 [INF] Received HTTP response headers after 171.6434ms - 200
+2025-08-25 11:57:33.028 -04:00 [INF] End processing HTTP request after 177.7976ms - 200
+2025-08-25 11:57:33.030 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-25 11:57:33.031 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-25 11:57:33.207 -04:00 [INF] Received HTTP response headers after 174.6383ms - 200
+2025-08-25 11:57:33.209 -04:00 [INF] End processing HTTP request after 178.9718ms - 200
+2025-08-25 11:57:33.211 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-25 11:57:33.213 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-25 11:57:33.387 -04:00 [INF] Received HTTP response headers after 172.5261ms - 200
+2025-08-25 11:57:33.389 -04:00 [INF] End processing HTTP request after 177.9215ms - 200
+2025-08-25 11:57:33.390 -04:00 [INF] Start processing HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-25 11:57:33.391 -04:00 [INF] Sending HTTP request GET https://klisv0pp212.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-25 11:57:33.575 -04:00 [INF] Received HTTP response headers after 182.7678ms - 200
+2025-08-25 11:57:33.577 -04:00 [INF] End processing HTTP request after 186.6591ms - 200
+2025-08-25 11:57:33.578 -04:00 [INF] Retrieved inventory counts for klisv0pp212.dir.ad.dla.mil: VMs=104, Hosts=22, Clusters=4
+2025-08-25 11:57:33.580 -04:00 [INF] Retrieved inventory counts for source: VMs=104, Hosts=22
+2025-08-25 11:57:33.582 -04:00 [INF] Start processing HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-25 11:57:33.584 -04:00 [INF] Sending HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/session
+2025-08-25 11:57:33.758 -04:00 [INF] Received HTTP response headers after 173.0712ms - 200
+2025-08-25 11:57:33.759 -04:00 [INF] End processing HTTP request after 177.5103ms - 200
+2025-08-25 11:57:33.761 -04:00 [INF] Start processing HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/vcenter/vm
+2025-08-25 11:57:33.762 -04:00 [INF] Sending HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/vcenter/vm
+2025-08-25 11:57:33.940 -04:00 [INF] Received HTTP response headers after 175.8672ms - 200
+2025-08-25 11:57:33.942 -04:00 [INF] End processing HTTP request after 180.7498ms - 200
+2025-08-25 11:57:33.944 -04:00 [INF] Start processing HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/vcenter/host
+2025-08-25 11:57:33.945 -04:00 [INF] Sending HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/vcenter/host
+2025-08-25 11:57:34.119 -04:00 [INF] Received HTTP response headers after 172.3496ms - 200
+2025-08-25 11:57:34.120 -04:00 [INF] End processing HTTP request after 176.4862ms - 200
+2025-08-25 11:57:34.122 -04:00 [INF] Start processing HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-25 11:57:34.124 -04:00 [INF] Sending HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/vcenter/cluster
+2025-08-25 11:57:34.298 -04:00 [INF] Received HTTP response headers after 171.8031ms - 200
+2025-08-25 11:57:34.299 -04:00 [INF] End processing HTTP request after 176.7784ms - 200
+2025-08-25 11:57:34.301 -04:00 [INF] Start processing HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-25 11:57:34.302 -04:00 [INF] Sending HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/vcenter/datacenter
+2025-08-25 11:57:34.482 -04:00 [INF] Received HTTP response headers after 178.678ms - 200
+2025-08-25 11:57:34.484 -04:00 [INF] End processing HTTP request after 182.771ms - 200
+2025-08-25 11:57:34.485 -04:00 [INF] Start processing HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-25 11:57:34.487 -04:00 [INF] Sending HTTP request GET https://klisv0pp251.dir.ad.dla.mil/api/vcenter/datastore
+2025-08-25 11:57:34.662 -04:00 [INF] Received HTTP response headers after 173.857ms - 200
+2025-08-25 11:57:34.663 -04:00 [INF] End processing HTTP request after 178.1258ms - 200
+2025-08-25 11:57:34.665 -04:00 [INF] Retrieved inventory counts for klisv0pp251.dir.ad.dla.mil: VMs=0, Hosts=0, Clusters=0
+2025-08-25 11:57:34.667 -04:00 [INF] Retrieved inventory counts for target: VMs=0, Hosts=0
+2025-08-25 11:57:39.493 -04:00 [INF] API connection active for source: klisv0pp212.dir.ad.dla.mil
+2025-08-25 11:57:39.496 -04:00 [INF] API connection active for target: klisv0pp251.dir.ad.dla.mil
+2025-08-25 11:57:39.499 -04:00 [INF] Connection status - Source: Connected, Target: Connected
+2025-08-25 11:57:39.503 -04:00 [WRN] No source inventory available - connection may not be established or inventory not loaded
+2025-08-25 11:57:39.505 -04:00 [WRN] No target inventory available despite target connection
+2025-08-25 11:57:39.506 -04:00 [INF] Final count - Source: 0 clusters, Target: 0 clusters
+2025-08-25 11:57:49.799 -04:00 [INF] API connection active for source: klisv0pp212.dir.ad.dla.mil
+2025-08-25 11:57:49.801 -04:00 [INF] API connection active for target: klisv0pp251.dir.ad.dla.mil
+2025-08-25 11:57:54.521 -04:00 [INF] API connection active for source: klisv0pp212.dir.ad.dla.mil
+2025-08-25 11:57:54.525 -04:00 [INF] Loading admin config inventory for vCenter: klisv0pp212.dir.ad.dla.mil (connection: source)
+2025-08-25 11:57:54.530 -04:00 [WRN] Invalid JSON response for folders from klisv0pp212.dir.ad.dla.mil: ERROR: No active connection
+2025-08-25 11:57:54.533 -04:00 [INF] Loading tags and categories for klisv0pp212.dir.ad.dla.mil (extended timeout for large datasets)
+2025-08-25 11:57:54.536 -04:00 [INF] Executing TagsAndCategories script with extended timeout (15 minutes) for klisv0pp212.dir.ad.dla.mil
+2025-08-25 11:57:54.537 -04:00 [WRN] Extended timeout not supported by connection service, using default timeout for TagsAndCategories
+2025-08-25 11:57:54.538 -04:00 [WRN] Invalid JSON response for TagsAndCategories from klisv0pp212.dir.ad.dla.mil: ERROR: No active connection
+2025-08-25 11:57:54.541 -04:00 [INF] Loading roles and permissions for klisv0pp212.dir.ad.dla.mil using best available method
+2025-08-25 11:57:54.542 -04:00 [WRN] No persistent connection available for klisv0pp212.dir.ad.dla.mil. Admin config discovery requires an active connection from the Dashboard.
+2025-08-25 11:57:54.543 -04:00 [INF] Please establish a connection on the Dashboard before loading admin configuration.
+2025-08-25 11:57:54.545 -04:00 [INF] Loading custom attributes for klisv0pp212.dir.ad.dla.mil
+2025-08-25 11:57:54.548 -04:00 [WRN] Invalid JSON response for CustomAttributes from klisv0pp212.dir.ad.dla.mil: ERROR: No active connection
+2025-08-25 11:57:54.549 -04:00 [INF] Successfully loaded admin config inventory for klisv0pp212.dir.ad.dla.mil
