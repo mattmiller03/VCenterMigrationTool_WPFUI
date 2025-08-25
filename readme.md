@@ -499,3 +499,7 @@ The application now provides a comprehensive migration suite with professional-g
 ### 15.6 Admin Configuration Connection Issues (v1.4) ✅ RESOLVED
 **Issue**: Admin configuration failed to load when API connections worked but PowerCLI was unavailable
 **Solution**: Implemented dual connection architecture ensuring PowerCLI availability for admin operations regardless of API SSL issues
+
+### 15.7 Inappropriate Disconnect Commands (v1.4) ✅ RESOLVED
+**Issue**: Disconnect-VIServer errors appearing in logs during PowerCLI cleanup when modules weren't loaded
+**Solution**: Added conditional checks to only attempt VIServer disconnection when PowerCLI is loaded and has active connections
