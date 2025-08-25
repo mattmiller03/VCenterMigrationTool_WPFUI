@@ -1126,62 +1126,66 @@ try {{
             {
             _logger.LogInformation("Loading roles and permissions for {VCenter} using best available method", vCenterName);
 
-            // First check if we have a persistent connection established
+            // First try to use persistent connection for enhanced admin config discovery
             var isConnected = await _persistentConnectionService.IsConnectedAsync(connectionType);
-            if (!isConnected)
+            if (isConnected)
             {
-                _logger.LogWarning("No persistent {ConnectionType} connection found. Admin config loading requires an active PowerCLI connection.", connectionType);
-                _logger.LogInformation("Falling back to basic role/permission discovery for {VCenter}", vCenterName);
-                await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
-                return;
-            }
+                _logger.LogInformation("Using persistent connection for enhanced admin config discovery for {VCenter}", vCenterName);
 
-            // Check what modules are available on the connected session
-            var sdkAvailable = await CheckSDKAvailabilityAsync(connectionType);
+                // Check what modules are available on the connected session
+                var sdkAvailable = await CheckSDKAvailabilityAsync(connectionType);
 
-            // Use the updated SSO Admin script that handles both SDK and fallback
-            var scriptPath = Path.Combine(_scriptsDirectory, "Get-SSOAdminConfig.ps1");
+                // Use the updated SSO Admin script that handles both SDK and fallback
+                var scriptPath = Path.Combine(_scriptsDirectory, "Get-SSOAdminConfig.ps1");
 
-            if (File.Exists(scriptPath))
+                if (File.Exists(scriptPath))
                 {
-                _logger.LogInformation("Using Get-SSOAdminConfig.ps1 with VMware SDK/PowerCLI support for {VCenter}", vCenterName);
+                    _logger.LogInformation("Using Get-SSOAdminConfig.ps1 with VMware SDK/PowerCLI support for {VCenter}", vCenterName);
 
-                var script = await File.ReadAllTextAsync(scriptPath);
-                var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
+                    var script = await File.ReadAllTextAsync(scriptPath);
+                    var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
 
-                if (!string.IsNullOrEmpty(result) && !result.StartsWith("ERROR:"))
+                    if (!string.IsNullOrEmpty(result) && !result.StartsWith("ERROR:"))
                     {
-                    var jsonResult = ExtractJsonFromOutput(result);
-                    if (!string.IsNullOrEmpty(jsonResult))
+                        var jsonResult = ExtractJsonFromOutput(result);
+                        if (!string.IsNullOrEmpty(jsonResult))
                         {
-                        var ssoData = JsonSerializer.Deserialize<SSOAdminConfigData>(jsonResult,
-                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                            var ssoData = JsonSerializer.Deserialize<SSOAdminConfigData>(jsonResult,
+                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                        if (ssoData != null)
+                            if (ssoData != null)
                             {
-                            // Check if SDK was used or fallback
-                            if (!string.IsNullOrEmpty(ssoData.SDKVersion))
+                                // Check if SDK was used or fallback
+                                if (!string.IsNullOrEmpty(ssoData.SDKVersion))
                                 {
-                                _logger.LogInformation("Successfully loaded admin config using VMware SDK v{Version}", ssoData.SDKVersion);
+                                    _logger.LogInformation("Successfully loaded admin config using VMware SDK v{Version}", ssoData.SDKVersion);
                                 }
-                            else if (ssoData.UsedFallback)
+                                else if (ssoData.UsedFallback)
                                 {
-                                _logger.LogInformation("Successfully loaded admin config using PowerCLI fallback methods");
+                                    _logger.LogInformation("Successfully loaded admin config using PowerCLI fallback methods");
                                 }
 
-                            // Process roles and permissions data...
-                            ProcessRolesAndPermissions(ssoData, inventory);
+                                // Process roles and permissions data...
+                                ProcessRolesAndPermissions(ssoData, inventory);
 
-                            return;
+                                return;
                             }
                         }
                     }
 
-                _logger.LogWarning("Get-SSOAdminConfig.ps1 returned no valid data, using basic discovery");
+                    _logger.LogWarning("Get-SSOAdminConfig.ps1 returned no valid data, trying basic persistent connection discovery");
+                    
+                    // Try basic persistent connection discovery
+                    await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
+                    return;
                 }
+            }
 
-            // Final fallback to basic discovery
-            await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
+            _logger.LogWarning("No persistent connection available for {VCenter}. Admin config discovery requires an active connection from the Dashboard.", vCenterName);
+            _logger.LogInformation("Please establish a connection on the Dashboard before loading admin configuration.");
+            
+            // We can't do admin config discovery without a persistent connection
+            // The other methods (LoadFoldersAsync, LoadTagsAndCategoriesAsync, etc.) also have this same limitation
             }
         catch (Exception ex)
             {
