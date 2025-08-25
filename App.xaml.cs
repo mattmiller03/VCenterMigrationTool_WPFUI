@@ -94,22 +94,44 @@ public partial class App
                 client.Timeout = TimeSpan.FromSeconds(30);
             }).ConfigurePrimaryHttpMessageHandler(() =>
             {
-                var handler = new HttpClientHandler();
-                
-                // Force bypass ALL SSL certificate validation
-                handler.ServerCertificateCustomValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                try
                 {
-                    // Log the certificate bypass attempt
-                    System.Diagnostics.Debug.WriteLine($"SSL Certificate bypass for: {certificate?.Subject}");
-                    // Always return true to accept any certificate
-                    return true;
-                };
-                
-                // Additional SSL/TLS settings for maximum compatibility
-                handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
-                handler.CheckCertificateRevocationList = false;
-                
-                return handler;
+                    // Try SocketsHttpHandler first for better SSL control in .NET Core/5+
+                    var socketsHandler = new SocketsHttpHandler();
+                    
+                    // Force bypass ALL SSL certificate validation with most permissive callback
+                    socketsHandler.SslOptions = new System.Net.Security.SslClientAuthenticationOptions
+                    {
+                        // Disable all certificate validation
+                        RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                        {
+                            // Log the certificate bypass attempt
+                            System.Diagnostics.Debug.WriteLine($"SocketsHttpHandler SSL Certificate bypass for: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+                            // Always return true - accept ANY certificate regardless of errors
+                            return true;
+                        },
+                        // Set allowed protocols
+                        EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13
+                    };
+                    
+                    return socketsHandler;
+                }
+                catch
+                {
+                    // Fallback to HttpClientHandler if SocketsHttpHandler fails
+                    var handler = new HttpClientHandler();
+                    
+                    handler.ServerCertificateCustomValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        System.Diagnostics.Debug.WriteLine($"HttpClientHandler SSL Certificate bypass for: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+                        return true;
+                    };
+                    
+                    handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
+                    handler.CheckCertificateRevocationList = false;
+                    
+                    return handler;
+                }
             });
             services.AddSingleton<VSphereApiService>();
             services.AddSingleton<SharedConnectionService>();
