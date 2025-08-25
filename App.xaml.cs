@@ -94,16 +94,22 @@ public partial class App
                 client.Timeout = TimeSpan.FromSeconds(30);
             }).ConfigurePrimaryHttpMessageHandler(() =>
             {
-                return new HttpClientHandler()
+                var handler = new HttpClientHandler();
+                
+                // Force bypass ALL SSL certificate validation
+                handler.ServerCertificateCustomValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
                 {
-                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => {
-                        // Accept all SSL certificates for vCenter API connections
-                        return true;
-                    },
-                    // Additional SSL/TLS settings for maximum compatibility
-                    SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13,
-                    CheckCertificateRevocationList = false
+                    // Log the certificate bypass attempt
+                    System.Diagnostics.Debug.WriteLine($"SSL Certificate bypass for: {certificate?.Subject}");
+                    // Always return true to accept any certificate
+                    return true;
                 };
+                
+                // Additional SSL/TLS settings for maximum compatibility
+                handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
+                handler.CheckCertificateRevocationList = false;
+                
+                return handler;
             });
             services.AddSingleton<VSphereApiService>();
             services.AddSingleton<SharedConnectionService>();
@@ -168,6 +174,18 @@ public partial class App
 
     private async void OnStartup (object sender, StartupEventArgs e)
         {
+        // Global SSL certificate bypass for vCenter API connections
+        System.Net.ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+        {
+            // Log certificate issues for debugging
+            if (sslPolicyErrors != System.Net.Security.SslPolicyErrors.None)
+            {
+                System.Diagnostics.Debug.WriteLine($"SSL Certificate bypass applied for: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+            }
+            // Always accept certificates (bypass all SSL validation)
+            return true;
+        };
+        
         await Host.StartAsync();
         }
 
