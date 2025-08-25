@@ -8,11 +8,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
+using VCenterMigrationTool.ViewModels.Base;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace VCenterMigrationTool.ViewModels
 {
-    public partial class InfrastructureMigrationViewModel : ObservableObject, INavigationAware
+    public partial class InfrastructureMigrationViewModel : ActivityLogViewModelBase, INavigationAware
     {
         private readonly SharedConnectionService _sharedConnectionService;
         private readonly HybridPowerShellService _powerShellService;
@@ -118,6 +119,9 @@ namespace VCenterMigrationTool.ViewModels
             _credentialService = credentialService;
             _configurationService = configurationService;
             _logger = logger;
+
+            // Initialize activity log
+            InitializeActivityLog("Infrastructure Migration");
         }
 
         public async Task OnNavigatedToAsync()

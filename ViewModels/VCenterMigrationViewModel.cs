@@ -12,11 +12,12 @@ using System.Threading.Tasks;
 using System.Windows;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
+using VCenterMigrationTool.ViewModels.Base;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace VCenterMigrationTool.ViewModels;
 
-public partial class VCenterMigrationViewModel : ObservableObject, INavigationAware
+public partial class VCenterMigrationViewModel : ActivityLogViewModelBase, INavigationAware
 {
     private readonly ILogger<VCenterMigrationViewModel> _logger;
     private readonly HybridPowerShellService _powerShellService;
@@ -90,6 +91,9 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
         _sharedConnectionService = sharedConnectionService;
         _errorHandlingService = errorHandlingService;
         _persistentConnectionService = persistentConnectionService;
+        
+        // Initialize activity log
+        InitializeActivityLog("vCenter Migration");
     }
 
     public async Task OnNavigatedToAsync()
@@ -103,6 +107,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
         {
             _logger.LogError(ex, "Error during page navigation");
             OverallStatus = "Error loading page data. Please try refreshing.";
+            LogMessage($"❌ Error loading page data: {ex.Message}", "ERROR");
         }
     }
 
@@ -134,6 +139,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
             {
                 _logger.LogWarning("No source inventory available - connection may not be established or inventory not loaded");
                 OverallStatus = "Source vCenter inventory not available. Please check connection.";
+                LogMessage("⚠️ Source vCenter inventory not available. Please check connection.", "WARNING");
             }
 
             // Load target clusters from cached inventory if target is connected
@@ -158,11 +164,13 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
             OverallStatus = $"Loaded {SourceClusters.Count} source clusters and {TargetClusters.Count} target clusters from inventory cache";
             _logger.LogInformation("Final count - Source: {SourceCount} clusters, Target: {TargetCount} clusters", 
                 SourceClusters.Count, TargetClusters.Count);
+            LogMessage($"✅ Loaded {SourceClusters.Count} source clusters and {TargetClusters.Count} target clusters from inventory cache", "SUCCESS");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load clusters");
             OverallStatus = $"Failed to load clusters: {ex.Message}";
+            LogMessage($"❌ Failed to load clusters: {ex.Message}", "ERROR");
             await _errorHandlingService.ShowErrorDialogAsync(
                 _errorHandlingService.TranslateError(ex.Message, "Load Clusters"));
         }
@@ -216,6 +224,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
 
                 TotalItemsToMigrate = ClusterItems.Count(i => i.IsSelected);
                 CurrentTaskDetails = $"Found {ClusterItems.Count} items in cluster {SelectedSourceCluster.Name}";
+                LogMessage($"📦 Found {ClusterItems.Count} items in cluster {SelectedSourceCluster.Name}", "INFO");
             });
             
             _logger.LogInformation("Loaded {Count} cluster items from {Cluster}", 
@@ -429,6 +438,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
             
             OverallStatus = "Starting vCenter objects migration...";
             CurrentTaskDetails = $"Migrating {selectedItems.Count} items from {SelectedSourceCluster.Name} to {SelectedTargetCluster.Name}";
+            LogMessage($"🚀 Starting migration of {selectedItems.Count} items from {SelectedSourceCluster.Name} to {SelectedTargetCluster.Name}", "INFO");
 
             var migrationParams = new Dictionary<string, object>
             {
@@ -527,6 +537,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
             currentStep++;
             OverallProgress = (double)currentStep / totalSteps * 100;
             CurrentTaskDetails = $"Migrating {item.Type}: {item.Name} ({currentStep}/{totalSteps})";
+            LogMessage($"🔄 Migrating {item.Type}: {item.Name} ({currentStep}/{totalSteps})", "INFO");
 
             var taskStartTime = DateTime.Now;
             var migrationTask = new MigrationTask
@@ -592,12 +603,14 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
                     migrationTask.Status = "Completed";
                     SuccessfulMigrations++;
                     item.Status = "Migrated";
+                    LogMessage($"✅ Successfully migrated {item.Type}: {item.Name}", "SUCCESS");
                 }
                 else
                 {
                     migrationTask.Status = $"Failed{(string.IsNullOrEmpty(errorMessage) ? "" : ": " + errorMessage)}";
                     FailedMigrations++;
                     item.Status = "Failed";
+                    LogMessage($"❌ Failed to migrate {item.Type}: {item.Name}{(string.IsNullOrEmpty(errorMessage) ? "" : " - " + errorMessage)}", "ERROR");
                 }
 
                 _logger.LogInformation("Migration completed for {Type}: {Name} - {Status}", 
@@ -611,6 +624,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
                 migrationTask.ElapsedTime = (migrationTask.EndTime.Value - migrationTask.StartTime).ToString(@"mm\:ss");
                 FailedMigrations++;
                 item.Status = "Failed";
+                LogMessage($"❌ Migration failed for {item.Type}: {item.Name} - {ex.Message}", "ERROR");
             }
 
             // Brief delay between items
@@ -622,6 +636,7 @@ public partial class VCenterMigrationViewModel : ObservableObject, INavigationAw
 
         OverallStatus = $"Migration completed - {SuccessfulMigrations} successful, {FailedMigrations} failed (Total time: {totalTime})";
         CurrentTaskDetails = "Migration process finished. Check the task list for details.";
+        LogMessage($"🏁 Migration completed - {SuccessfulMigrations} successful, {FailedMigrations} failed (Total time: {totalTime})", "INFO");
     }
 
     partial void OnSelectedSourceClusterChanged(ClusterInfo? value)

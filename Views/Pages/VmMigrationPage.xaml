@@ -19,6 +19,7 @@
         <helpers:BoolToParameterConverter x:Key="BoolToParameterConverter" />
         <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
         <helpers:BoolToColorConverter x:Key="BoolToColorConverter" />
+        <helpers:BoolToAppearanceConverter x:Key="BoolToAppearanceConverter" />
     </Page.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" 
@@ -543,26 +544,60 @@
                 </StackPanel>
             </ui:CardControl>
 
-            <!-- Log Output Section -->
+            <!-- Activity Log Terminal Panel - Dashboard Style -->
             <ui:CardControl Grid.Row="7">
-                <StackPanel>
-                    <TextBlock Text="Activity Log" FontWeight="Medium" FontSize="16" />
-                    <TextBlock Margin="0,5,0,15" 
-                              Text="Real-time activity and operation logs" 
-                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="200"/>
+                    </Grid.RowDefinitions>
 
-                    <ScrollViewer Height="200" 
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Auto">
-                        <TextBox Text="{Binding LogOutput}"
-                                IsReadOnly="True"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                TextWrapping="Wrap"
-                                FontFamily="Consolas"
-                                FontSize="12" />
-                    </ScrollViewer>
-                </StackPanel>
+                    <!-- Header -->
+                    <Border Grid.Row="0" 
+                           Background="{DynamicResource CardStrokeColorDefaultBrush}"
+                           Padding="20,12">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="WindowConsole20" Margin="0,0,10,0"/>
+                                <TextBlock Text="Activity Log" 
+                                          FontWeight="SemiBold"
+                                          VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <ui:Button Content="Clear" 
+                                          Command="{Binding ClearLogCommand}"
+                                          Appearance="Secondary"
+                                          Padding="8,4"
+                                          FontSize="12"
+                                          Margin="0,0,8,0"/>
+                                <ui:Button Content="Auto Scroll" 
+                                          Command="{Binding ToggleAutoScrollCommand}"
+                                          Appearance="{Binding IsAutoScrollEnabled, Converter={StaticResource BoolToAppearanceConverter}}"
+                                          Padding="8,4"
+                                          FontSize="12"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Terminal Content -->
+                    <Border Grid.Row="1" 
+                           Background="#1E1E1E"
+                           BorderBrush="#404040"
+                           BorderThickness="1,0,1,1">
+                        <ScrollViewer x:Name="LogScrollViewer"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     Padding="12">
+                            <TextBlock x:Name="LogTextBlock"
+                                      Text="{Binding ActivityLog}"
+                                      FontFamily="Consolas, Courier New"
+                                      FontSize="12"
+                                      Foreground="#00FF00"
+                                      Background="Transparent"
+                                      TextWrapping="NoWrap"/>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
             </ui:CardControl>
         </Grid>
     </ScrollViewer>

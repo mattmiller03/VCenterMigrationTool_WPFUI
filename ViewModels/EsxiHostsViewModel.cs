@@ -11,10 +11,11 @@ using System.Text.Json;
 using System.Collections.Generic;
 using System.IO;
 using VCenterMigrationTool.Views.Pages;
+using VCenterMigrationTool.ViewModels.Base;
 
 namespace VCenterMigrationTool.ViewModels;
 
-public partial class EsxiHostsViewModel : ObservableObject
+public partial class EsxiHostsViewModel : ActivityLogViewModelBase
     {
         private readonly PersistentExternalConnectionService _persistentConnectionService;
         private readonly SharedConnectionService _sharedConnectionService;
@@ -94,6 +95,9 @@ public partial class EsxiHostsViewModel : ObservableObject
             _configurationService = configurationService;
             _powerShellLoggingService = powerShellLoggingService;
             _logger = logger;
+
+            // Initialize activity log
+            InitializeActivityLog("ESXi Hosts Migration");
         }
 
     /// <summary>
@@ -131,6 +135,7 @@ public partial class EsxiHostsViewModel : ObservableObject
                 IsSourceConnected = false;
                 SourceConnectionStatus = "❌ Not connected";
                 _logger.LogWarning("Source vCenter not connected");
+                LogMessage("⚠️ Source vCenter not connected", "WARNING");
                 }
 
             // Check target connection (optional for migration mode)
@@ -150,6 +155,7 @@ public partial class EsxiHostsViewModel : ObservableObject
                 IsTargetConnected = false;
                 TargetConnectionStatus = "❌ Not connected";
                 _logger.LogWarning("Target vCenter not connected");
+                LogMessage("⚠️ Target vCenter not connected", "WARNING");
                 }
 
             // Update status based on what's connected
@@ -159,6 +165,7 @@ public partial class EsxiHostsViewModel : ObservableObject
             {
             _logger.LogError(ex, "Error checking connections");
             MigrationStatus = $"❌ Error: {ex.Message}";
+            LogMessage($"❌ Connection error: {ex.Message}", "ERROR");
             }
         finally
             {
@@ -471,6 +478,7 @@ public partial class EsxiHostsViewModel : ObservableObject
                 // Log individual host backup activity
                 _powerShellLoggingService.LogScriptOutput(sessionId, "ESXi Host Backup", 
                     $"Starting backup for host: {host.Name} ({completed}/{SelectedSourceHosts.Count})");
+                LogMessage($"🔄 Backing up host: {host.Name} ({completed}/{SelectedSourceHosts.Count})", "INFO");
 
                 // Build the command to execute the external script with console output suppressed
                 // Clear any previous script-level and global variables to ensure clean state for each host
@@ -540,6 +548,7 @@ public partial class EsxiHostsViewModel : ObservableObject
                             // Log successful host backup to PowerShell logging service
                             _powerShellLoggingService.LogScriptOutput(sessionId, "ESXi Host Backup", 
                                 $"✅ Successfully backed up {host.Name} to {Path.GetFileName(filePath)}");
+                            LogMessage($"✅ Successfully backed up host: {host.Name}", "SUCCESS");
                         }
                         else
                         {
@@ -566,6 +575,7 @@ public partial class EsxiHostsViewModel : ObservableObject
 
             MigrationStatus = $"✅ Successfully backed up {SelectedSourceHosts.Count} hosts to {backupPath}";
             BackupProgress = "Backup completed successfully!";
+            LogMessage($"✅ Backup operation completed - {SelectedSourceHosts.Count} hosts backed up to {Path.GetFileName(backupPath)}", "SUCCESS");
             
             // End the backup job session successfully
             _powerShellLoggingService.EndScriptLogging(sessionId, "ESXi Host Backup", true, 
@@ -579,6 +589,7 @@ public partial class EsxiHostsViewModel : ObservableObject
             _logger.LogError(ex, "Error during host backup");
             MigrationStatus = $"❌ Backup failed: {ex.Message}";
             BackupProgress = $"Backup failed: {ex.Message}";
+            LogMessage($"❌ Backup operation failed: {ex.Message}", "ERROR");
             
             // End the backup job session with failure
             _powerShellLoggingService.EndScriptLogging(sessionId, "ESXi Host Backup", false, 
@@ -637,6 +648,7 @@ public partial class EsxiHostsViewModel : ObservableObject
                 {
                 completed++;
                 MigrationProgress = $"Migrating {host.Name} ({completed}/{SelectedSourceHosts.Count})...";
+                LogMessage($"🔄 Migrating host: {host.Name} ({completed}/{SelectedSourceHosts.Count})", "INFO");
 
                 // Build migration script
                 var migrateScript = $@"
@@ -659,6 +671,7 @@ public partial class EsxiHostsViewModel : ObservableObject
                 if (result.Contains("SUCCESS"))
                     {
                     _logger.LogInformation("Host {Host} prepared for migration", host.Name);
+                    LogMessage($"✅ Host {host.Name} prepared for migration", "SUCCESS");
 
                     // Now add to target cluster
                     var addScript = $@"
@@ -679,12 +692,14 @@ public partial class EsxiHostsViewModel : ObservableObject
                         {
                         _logger.LogInformation("Host {Host} successfully migrated to {Cluster}",
                             host.Name, SelectedTargetCluster.Name);
+                        LogMessage($"✅ Host {host.Name} successfully migrated to cluster: {SelectedTargetCluster.Name}", "SUCCESS");
                         }
                     }
                 }
 
             MigrationStatus = $"✅ Successfully migrated {SelectedSourceHosts.Count} hosts";
             MigrationProgress = "Migration completed successfully!";
+            LogMessage($"✅ Migration operation completed - {SelectedSourceHosts.Count} hosts migrated successfully", "SUCCESS");
 
             // Refresh the data
             await RefreshData();
@@ -697,6 +712,7 @@ public partial class EsxiHostsViewModel : ObservableObject
             _logger.LogError(ex, "Error during host migration");
             MigrationStatus = $"❌ Migration failed: {ex.Message}";
             MigrationProgress = $"Migration failed: {ex.Message}";
+            LogMessage($"❌ Migration operation failed: {ex.Message}", "ERROR");
 
             // Keep the error message visible for a moment
             await Task.Delay(3000);

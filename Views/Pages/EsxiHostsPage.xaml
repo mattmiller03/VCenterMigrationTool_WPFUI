@@ -341,8 +341,55 @@
             </Grid>
         </Grid>
 
+        <!-- Activity Log Terminal Panel - Dashboard Style -->
+        <ui:CardControl Grid.Row="4" Margin="0,10,0,0">
+            <ui:CardControl.Header>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="WindowConsole20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Activity Log" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    
+                    <ui:Button Grid.Column="1" 
+                              Content="Auto Scroll"
+                              Margin="0,0,8,0"
+                              Appearance="{Binding ViewModel.IsAutoScrollEnabled, Converter={StaticResource BoolToAppearanceConverter}}"
+                              Command="{Binding ViewModel.ToggleAutoScrollCommand}"/>
+                    
+                    <ui:Button Grid.Column="2" 
+                              Content="Clear"
+                              Appearance="Secondary"
+                              Command="{Binding ViewModel.ClearLogCommand}"/>
+                </Grid>
+            </ui:CardControl.Header>
+            
+            <Border Background="#1E1E1E" 
+                    BorderBrush="#404040" 
+                    BorderThickness="1" 
+                    CornerRadius="4">
+                <ScrollViewer Name="ActivityLogScrollViewer" 
+                              VerticalScrollBarVisibility="Auto" 
+                              HorizontalScrollBarVisibility="Auto"
+                              Padding="12">
+                    <TextBlock Name="ActivityLogTextBlock"
+                              Text="{Binding ViewModel.ActivityLog}"
+                              FontFamily="Consolas"
+                              FontSize="12"
+                              Foreground="#00FF00"
+                              Background="Transparent"
+                              TextWrapping="NoWrap"/>
+                </ScrollViewer>
+            </Border>
+        </ui:CardControl>
+        
         <!-- Status Bar -->
-        <ui:Card Grid.Row="4" Margin="0,10,0,0">
+        <ui:Card Grid.Row="5" Margin="0,10,0,0">
             <Grid Margin="15,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>

@@ -186,8 +186,7 @@ public partial class App
             services.AddSingleton<NetworkMigrationViewModel>();
             services.AddSingleton<ResourcePoolMigrationPage>();
             services.AddSingleton<ResourcePoolMigrationViewModel>();
-            services.AddSingleton<ActivityLogsViewModel>();
-            services.AddSingleton<ActivityLogsPage>();
+            // ActivityLogsPage removed - each page now has its own dashboard-style activity log
 
             // New Migration Pages and ViewModels
             services.AddSingleton<InfrastructureMigrationPage>();
@@ -286,8 +285,7 @@ public partial class App
                 }
 
             // Clean up other ViewModels if needed
-            var activityLogsVM = Host.Services.GetService<ActivityLogsViewModel>();
-            activityLogsVM?.Dispose();
+            // ActivityLogsViewModel removed - each page now manages its own activity log
 
             // Final cleanup: Kill any remaining PowerShell processes created by this app
             await PerformFinalProcessCleanup(logger);

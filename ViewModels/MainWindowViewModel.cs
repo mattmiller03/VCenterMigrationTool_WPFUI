@@ -40,8 +40,7 @@ namespace VCenterMigrationTool.ViewModels
                 new NavigationViewItem("Dashboard", SymbolRegular.Home24, typeof(Views.Pages.DashboardPage)),
                 vCenterObjectsItem,
                 new NavigationViewItem("ESXi Hosts", SymbolRegular.Server24, typeof(Views.Pages.EsxiHostsPage)),
-                new NavigationViewItem("Virtual Machines", SymbolRegular.Desktop24, typeof(Views.Pages.VmMigrationPage)),
-                new NavigationViewItem("Activity Logs", SymbolRegular.List24, typeof(Views.Pages.ActivityLogsPage))
+                new NavigationViewItem("Virtual Machines", SymbolRegular.Desktop24, typeof(Views.Pages.VmMigrationPage))
             };
 
             NavigationFooter = new ObservableCollection<object>

@@ -13,7 +13,10 @@
       "Bash(cmd /c:*)",
       "Bash(findstr:*)",
       "Bash(dir:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(dotnet test:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

@@ -12,11 +12,12 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
+using VCenterMigrationTool.ViewModels.Base;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace VCenterMigrationTool.ViewModels;
 
-public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigationAware
+public partial class ResourcePoolMigrationViewModel : ActivityLogViewModelBase, INavigationAware
     {
     private readonly HybridPowerShellService _powerShellService;
     private readonly SharedConnectionService _sharedConnectionService;
@@ -153,6 +154,9 @@ public partial class ResourcePoolMigrationViewModel : ObservableObject, INavigat
         _credentialService = credentialService;
         _persistentConnectionService = persistentConnectionService;
         _logger = logger;
+
+        // Initialize activity log
+        InitializeActivityLog("Resource Pool Migration");
 
         // Initialize backup location
         BackupLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),

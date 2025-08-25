@@ -13,11 +13,12 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
+using VCenterMigrationTool.ViewModels.Base;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace VCenterMigrationTool.ViewModels;
 
-public partial class NetworkMigrationViewModel : ObservableObject, INavigationAware
+public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavigationAware
     {
     private readonly HybridPowerShellService _powerShellService;
     private readonly SharedConnectionService _sharedConnectionService;
@@ -118,6 +119,9 @@ public partial class NetworkMigrationViewModel : ObservableObject, INavigationAw
         _credentialService = credentialService;
         _persistentConnectionService = persistentConnectionService;
         _logger = logger;
+
+        // Initialize activity log
+        InitializeActivityLog("Network Migration");
 
         // Initialize with default network mapping
         NetworkMappings.Add(new NetworkMappingItem

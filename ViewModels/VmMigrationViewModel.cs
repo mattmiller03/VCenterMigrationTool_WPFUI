@@ -11,11 +11,12 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
+using VCenterMigrationTool.ViewModels.Base;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace VCenterMigrationTool.ViewModels;
 
-public partial class VmMigrationViewModel : ObservableObject, INavigationAware
+public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigationAware
     {
     private readonly HybridPowerShellService _powerShellService;
     private readonly SharedConnectionService _sharedConnectionService;
@@ -77,8 +78,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
     [ObservableProperty]
     private string _migrationStatus = "Ready to migrate VMs";
 
-    [ObservableProperty]
-    private string _logOutput = "VM migration log will appear here...";
+    // Activity log inherited from ActivityLogViewModelBase
 
     // Migration Options
     [ObservableProperty]
@@ -171,6 +171,9 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
         _credentialService = credentialService;
         _persistentConnectionService = persistentConnectionService;
         _logger = logger;
+
+        // Initialize dashboard-style activity log
+        InitializeActivityLog("VM Migration");
 
         // Initialize with some default network mappings
         NetworkMappings.Add(new NetworkMappingItem { SourceNetwork = "VM Network", TargetNetwork = "VM Network" });
@@ -269,7 +272,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
     private async Task RefreshData()
     {
         await LoadConnectionStatusAsync();
-        LogOutput += $"[{DateTime.Now:HH:mm:ss}] Data refreshed - connection status updated\n";
+        LogMessage("Data refreshed - connection status updated");
     }
 
     [RelayCommand]
@@ -277,7 +280,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
         {
         if (_sharedConnectionService.SourceConnection == null)
             {
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No source vCenter connection. Please connect on the Dashboard first.\n";
+            LogMessage("Error: No source vCenter connection. Please connect on the Dashboard first.", "ERROR");
             return;
             }
 
@@ -293,7 +296,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             if (string.IsNullOrEmpty(password))
                 {
                 MigrationStatus = "Error: No password found. Please configure credentials in Settings.";
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error: No stored password found for source connection\n";
+                LogMessage("Error: No stored password found for source connection", "ERROR");
                 return;
                 }
 
@@ -322,28 +325,28 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
                         }
 
                     MigrationStatus = $"Loaded {SourceVms.Count} VMs from source vCenter";
-                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded {SourceVms.Count} VMs from {_sharedConnectionService.SourceConnection.ServerAddress}\n";
+                    LogMessage($"Loaded {SourceVms.Count} VMs from {_sharedConnectionService.SourceConnection.ServerAddress}");
 
                     _logger.LogInformation("Successfully loaded {Count} VMs from source vCenter", SourceVms.Count);
                     }
                 catch (JsonException ex)
                     {
                     MigrationStatus = "Error parsing VM data from vCenter";
-                    LogOutput += $"[{DateTime.Now:HH:mm:ss}] Error parsing VM data: {ex.Message}\n";
+                    LogMessage($"Error parsing VM data: {ex.Message}", "ERROR");
                     _logger.LogError(ex, "Error parsing VM JSON data");
                     }
                 }
             else
                 {
                 MigrationStatus = "Failed to load VMs from source vCenter";
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Failed to load VMs: {result}\n";
+                LogMessage($"Failed to load VMs: {result}", "ERROR");
                 _logger.LogError("Failed to load VMs: {Result}", result);
                 }
             }
         catch (Exception ex)
             {
             MigrationStatus = $"Failed to load source VMs: {ex.Message}";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
+            LogMessage($"ERROR: {ex.Message}", "ERROR");
             _logger.LogError(ex, "Error loading source VMs");
             }
         finally
@@ -357,7 +360,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
         {
         if (_sharedConnectionService.TargetConnection == null)
             {
-            LogOutput = "Error: No target vCenter connection. Please connect on the Dashboard first.";
+            LogMessage("Error: No target vCenter connection. Please connect on the Dashboard first.", "ERROR");
             return;
             }
 
@@ -386,14 +389,14 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             // Load target hosts and datastores would go here with additional script calls
 
             MigrationStatus = $"Loaded {TargetClusters.Count} target clusters";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Loaded target resources from {_sharedConnectionService.TargetConnection.ServerAddress}\n";
+            LogMessage($"Loaded target resources from {_sharedConnectionService.TargetConnection.ServerAddress}");
 
             _logger.LogInformation("Successfully loaded target resources");
             }
         catch (Exception ex)
             {
             MigrationStatus = $"Failed to load target resources: {ex.Message}";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
+            LogMessage($"ERROR: {ex.Message}", "ERROR");
             _logger.LogError(ex, "Error loading target resources");
             }
         finally
@@ -414,7 +417,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
                 }
 
             var selectedCount = SourceVms.Count;
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Selected all {selectedCount} VMs\n";
+            LogMessage($"Selected all {selectedCount} VMs");
             _logger.LogInformation("Selected all {Count} VMs", selectedCount);
             }
         }
@@ -430,7 +433,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
                 }
 
             var totalCount = SourceVms.Count;
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Unselected all {totalCount} VMs\n";
+            LogMessage($"Unselected all {totalCount} VMs");
             _logger.LogInformation("Unselected all {Count} VMs", totalCount);
             }
         }
@@ -445,7 +448,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             TargetNetwork = "Target Network"
             });
 
-        LogOutput += $"[{DateTime.Now:HH:mm:ss}] Added new network mapping\n";
+        LogMessage("Added new network mapping");
         _logger.LogInformation("Added new network mapping");
         }
 
@@ -455,7 +458,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
         if (mapping != null && NetworkMappings.Contains(mapping))
             {
             NetworkMappings.Remove(mapping);
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Removed network mapping: {mapping.SourceNetwork} -> {mapping.TargetNetwork}\n";
+            LogMessage($"Removed network mapping: {mapping.SourceNetwork} -> {mapping.TargetNetwork}");
             _logger.LogInformation("Removed network mapping: {Source} -> {Target}", mapping.SourceNetwork, mapping.TargetNetwork);
             }
         }
@@ -473,7 +476,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
         if (!SourceVms.Any(vm => vm.IsSelected))
             {
             MigrationStatus = "No VMs selected for cleanup";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] No VMs selected for post-migration cleanup\n";
+            LogMessage("No VMs selected for post-migration cleanup", "WARN");
             return;
             }
 
@@ -483,7 +486,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             MigrationStatus = "Running post-migration cleanup...";
 
             var selectedVMs = SourceVms.Where(vm => vm.IsSelected).ToList();
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Starting post-migration cleanup for {selectedVMs.Count} VMs\n";
+            LogMessage($"Starting post-migration cleanup for {selectedVMs.Count} VMs");
 
             // Prepare cleanup parameters
             var parameters = new Dictionary<string, object>
@@ -500,12 +503,12 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             if (result.Contains("SUCCESS") || result.Contains("completed"))
                 {
                 MigrationStatus = "Post-migration cleanup completed successfully";
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Post-migration cleanup completed successfully\n";
+                LogMessage("Post-migration cleanup completed successfully");
                 }
             else
                 {
                 MigrationStatus = "Post-migration cleanup failed - check logs";
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Post-migration cleanup failed: {result}\n";
+                LogMessage($"Post-migration cleanup failed: {result}", "ERROR");
                 }
 
             _logger.LogInformation("Post-migration cleanup completed for {Count} VMs", selectedVMs.Count);
@@ -513,7 +516,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
         catch (Exception ex)
             {
             MigrationStatus = $"Cleanup error: {ex.Message}";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
+            LogMessage($"ERROR: {ex.Message}", "ERROR");
             _logger.LogError(ex, "Error during post-migration cleanup");
             }
         finally
@@ -537,7 +540,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             MigrationStatus = "Starting VM migration...";
 
             var selectedVMs = SourceVms.Where(vm => vm.IsSelected).ToList();
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Starting migration of {selectedVMs.Count} VMs\n";
+            LogMessage($"Starting migration of {selectedVMs.Count} VMs");
 
             // Prepare migration parameters
             var parameters = new Dictionary<string, object>
@@ -563,12 +566,12 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
                 {
                 MigrationProgress = 100;
                 MigrationStatus = "Migration completed successfully";
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Migration completed successfully\n";
+                LogMessage("Migration completed successfully");
                 }
             else
                 {
                 MigrationStatus = "Migration failed - check logs";
-                LogOutput += $"[{DateTime.Now:HH:mm:ss}] Migration failed: {result}\n";
+                LogMessage($"Migration failed: {result}", "ERROR");
                 }
 
             _logger.LogInformation("VM migration completed for {Count} VMs", selectedVMs.Count);
@@ -576,7 +579,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
         catch (Exception ex)
             {
             MigrationStatus = $"Migration error: {ex.Message}";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
+            LogMessage($"ERROR: {ex.Message}", "ERROR");
             _logger.LogError(ex, "Error during VM migration");
             }
         finally
@@ -597,7 +600,7 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             await Task.Delay(1000);
 
             MigrationStatus = "Validation completed";
-            LogOutput += $"[{DateTime.Now:HH:mm:ss}] Migration validation completed\n";
+            LogMessage("Migration validation completed");
             }
         catch (Exception ex)
             {
@@ -996,4 +999,6 @@ public partial class VmMigrationViewModel : ObservableObject, INavigationAware
             BackupAllVMsInCluster = false;
             }
         }
+
+    // Activity log commands inherited from ActivityLogViewModelBase
     }

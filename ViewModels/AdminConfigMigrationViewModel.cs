@@ -8,11 +8,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
+using VCenterMigrationTool.ViewModels.Base;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace VCenterMigrationTool.ViewModels
 {
-    public partial class AdminConfigMigrationViewModel : ObservableObject, INavigationAware
+    public partial class AdminConfigMigrationViewModel : ActivityLogViewModelBase, INavigationAware
     {
         private readonly SharedConnectionService _sharedConnectionService;
         private readonly HybridPowerShellService _powerShellService;
@@ -133,6 +134,9 @@ namespace VCenterMigrationTool.ViewModels
             _persistentConnectionService = persistentConnectionService;
             _credentialService = credentialService;
             _logger = logger;
+
+            // Initialize activity log
+            InitializeActivityLog("Admin Configuration Migration");
         }
 
         public async Task OnNavigatedToAsync()
@@ -1142,24 +1146,11 @@ namespace VCenterMigrationTool.ViewModels
             }
         }
 
-        [RelayCommand]
-        private void ClearLog()
-        {
-            ActivityLog = "Admin configuration migration activity log will appear here...\n" +
-                         $"[{DateTime.Now:HH:mm:ss}] Log cleared by user\n";
-        }
-
-        [RelayCommand]
-        private void ToggleAutoScroll()
-        {
-            IsAutoScrollEnabled = !IsAutoScrollEnabled;
-            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Auto scroll {(IsAutoScrollEnabled ? "enabled" : "disabled")}\n";
-        }
 
         /// <summary>
         /// Add a message to the activity log with timestamp
         /// </summary>
-        public void LogMessage(string message, string level = "INFO")
+        public new void LogMessage(string message, string level = "INFO")
         {
             var timestamp = DateTime.Now.ToString("HH:mm:ss");
             var logEntry = $"[{timestamp}] [{level}] {message}\n";

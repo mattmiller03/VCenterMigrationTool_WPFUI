@@ -41,8 +41,6 @@ public partial class DashboardPage : INavigableView<DashboardViewModel>, INaviga
         _navigationService.Navigate(typeof(VCenterMigrationPage));
     }
 
-    private void NavigateToLogs_Click(object sender, System.Windows.RoutedEventArgs e)
-    {
-        _navigationService.Navigate(typeof(ActivityLogsPage));
-    }
+    // NavigateToLogs_Click method removed - Activity Logs page no longer exists
+    // Each page now has its own dashboard-style activity log
 }

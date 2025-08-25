@@ -14,6 +14,7 @@
         <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         <helpers:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
         <helpers:BoolToColorConverter x:Key="BoolToColorConverter"/>
+        <helpers:BoolToAppearanceConverter x:Key="BoolToAppearanceConverter"/>
         
         <!-- Transparent Button Style for Navigation Cards -->
         <Style x:Key="TransparentButtonStyle" TargetType="Button">
@@ -53,6 +54,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*" MinHeight="400"/>
+                <RowDefinition Height="200"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -764,8 +766,55 @@
                 </Grid>
             </ui:Card>
 
+            <!-- Activity Log Terminal Panel - Dashboard Style -->
+            <ui:CardControl Grid.Row="7" Margin="0,20,0,20">
+                <ui:CardControl.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="WindowConsole20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Activity Log" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        
+                        <ui:Button Grid.Column="1" 
+                                  Content="Auto Scroll"
+                                  Margin="0,0,8,0"
+                                  Appearance="{Binding IsAutoScrollEnabled, Converter={StaticResource BoolToAppearanceConverter}}"
+                                  Command="{Binding ToggleAutoScrollCommand}"/>
+                        
+                        <ui:Button Grid.Column="2" 
+                                  Content="Clear"
+                                  Appearance="Secondary"
+                                  Command="{Binding ClearLogCommand}"/>
+                    </Grid>
+                </ui:CardControl.Header>
+                
+                <Border Background="#1E1E1E" 
+                        BorderBrush="#404040" 
+                        BorderThickness="1" 
+                        CornerRadius="4">
+                    <ScrollViewer Name="ActivityLogScrollViewer" 
+                                  VerticalScrollBarVisibility="Auto" 
+                                  HorizontalScrollBarVisibility="Auto"
+                                  Padding="12">
+                        <TextBlock Name="ActivityLogTextBlock"
+                                  Text="{Binding ActivityLog}"
+                                  FontFamily="Consolas"
+                                  FontSize="12"
+                                  Foreground="#00FF00"
+                                  Background="Transparent"
+                                  TextWrapping="NoWrap"/>
+                    </ScrollViewer>
+                </Border>
+            </ui:CardControl>
+
             <!-- Quick Access to Sub-Pages -->
-            <ui:Card Grid.Row="7" Margin="0,0,0,20"
+            <ui:Card Grid.Row="8" Margin="0,0,0,20"
                      Visibility="{Binding IsSourceConnected, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid Margin="20,15">
                     <Grid.RowDefinitions>
@@ -843,7 +892,7 @@
             </ui:Card>
 
             <!-- Status Bar -->
-            <ui:Card Grid.Row="8">
+            <ui:Card Grid.Row="9">
                 <Grid Margin="15,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
