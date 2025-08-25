@@ -94,44 +94,27 @@ public partial class App
                 client.Timeout = TimeSpan.FromSeconds(30);
             }).ConfigurePrimaryHttpMessageHandler(() =>
             {
-                try
+                // Most aggressive HttpClientHandler configuration possible
+                var handler = new HttpClientHandler()
                 {
-                    // Try SocketsHttpHandler first for better SSL control in .NET Core/5+
-                    var socketsHandler = new SocketsHttpHandler();
-                    
-                    // Force bypass ALL SSL certificate validation with most permissive callback
-                    socketsHandler.SslOptions = new System.Net.Security.SslClientAuthenticationOptions
+                    // Bypass ALL SSL certificate validation
+                    ServerCertificateCustomValidationCallback = (httpRequestMessage, certificate, chain, sslPolicyErrors) =>
                     {
-                        // Disable all certificate validation
-                        RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
-                        {
-                            // Log the certificate bypass attempt
-                            System.Diagnostics.Debug.WriteLine($"SocketsHttpHandler SSL Certificate bypass for: {certificate?.Subject}, Errors: {sslPolicyErrors}");
-                            // Always return true - accept ANY certificate regardless of errors
-                            return true;
-                        },
-                        // Set allowed protocols
-                        EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13
-                    };
-                    
-                    return socketsHandler;
-                }
-                catch
-                {
-                    // Fallback to HttpClientHandler if SocketsHttpHandler fails
-                    var handler = new HttpClientHandler();
-                    
-                    handler.ServerCertificateCustomValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
-                    {
-                        System.Diagnostics.Debug.WriteLine($"HttpClientHandler SSL Certificate bypass for: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+                        // Log every SSL bypass attempt
+                        System.Diagnostics.Debug.WriteLine($"AGGRESSIVE SSL BYPASS: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+                        Console.WriteLine($"AGGRESSIVE SSL BYPASS: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+                        
+                        // ALWAYS return true - accept any certificate, any error
                         return true;
-                    };
+                    },
                     
-                    handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
-                    handler.CheckCertificateRevocationList = false;
-                    
-                    return handler;
-                }
+                    // Most permissive SSL settings
+                    SslProtocols = System.Security.Authentication.SslProtocols.Tls | System.Security.Authentication.SslProtocols.Tls11 | System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13,
+                    CheckCertificateRevocationList = false,
+                    UseCookies = false
+                };
+
+                return handler;
             });
             services.AddSingleton<VSphereApiService>();
             services.AddSingleton<SharedConnectionService>();
@@ -196,17 +179,27 @@ public partial class App
 
     private async void OnStartup (object sender, StartupEventArgs e)
         {
-        // Global SSL certificate bypass for vCenter API connections
+        // MOST AGGRESSIVE SSL certificate bypass for vCenter API connections
         System.Net.ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
         {
             // Log certificate issues for debugging
             if (sslPolicyErrors != System.Net.Security.SslPolicyErrors.None)
             {
-                System.Diagnostics.Debug.WriteLine($"SSL Certificate bypass applied for: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+                System.Diagnostics.Debug.WriteLine($"ServicePointManager SSL Certificate bypass applied for: {certificate?.Subject}, Errors: {sslPolicyErrors}");
             }
             // Always accept certificates (bypass all SSL validation)
             return true;
         };
+        
+        // Additional SSL/TLS security settings
+        System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls13;
+        System.Net.ServicePointManager.CheckCertificateRevocationList = false;
+        System.Net.ServicePointManager.Expect100Continue = false;
+        System.Net.ServicePointManager.MaxServicePoints = 0;
+        System.Net.ServicePointManager.DefaultConnectionLimit = 1000;
+        
+        // Runtime certificate bypass at AppDomain level
+        AppDomain.CurrentDomain.SetData("DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER", "0");
         
         await Host.StartAsync();
         }
