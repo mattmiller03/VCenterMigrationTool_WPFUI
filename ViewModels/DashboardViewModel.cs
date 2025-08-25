@@ -393,7 +393,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             
             // Test connection using VSphere API first
             var (success, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
-            string message = success ? "Connection successful via VSphere API" : "VSphere API authentication failed";
+            string message = success ? "Connection successful via VSphere API" : sessionToken; // Use actual error message from service
             string sessionId = success ? sessionToken : null;
             bool usedPowerCLI = false;
             string result = "";
@@ -647,7 +647,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             
             // Test connection using VSphere API first
             var (success, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
-            string message = success ? "Connection successful via VSphere API" : "VSphere API authentication failed";
+            string message = success ? "Connection successful via VSphere API" : sessionToken; // Use actual error message from service
             string sessionId = success ? sessionToken : null;
             bool usedPowerCLI = false;
             string result = "";
