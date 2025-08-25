@@ -1204,21 +1204,36 @@ try {{
             var roleResult = await _persistentConnectionService.ExecuteCommandAsync(connectionType, rolesScript);
             if (!string.IsNullOrEmpty(roleResult))
             {
-                var roles = JsonSerializer.Deserialize<BasicRoleData[]>(roleResult);
-                if (roles != null)
+                // Check for connection errors before attempting JSON parsing
+                if (roleResult.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase))
                 {
-                    foreach (var role in roles)
+                    _logger.LogWarning("PowerCLI connection error during role discovery for {VCenterName}: {Error}", vCenterName, roleResult);
+                    return; // Skip role loading if connection failed
+                }
+                
+                // Check if result looks like JSON before attempting to deserialize
+                if (roleResult.TrimStart().StartsWith("[") || roleResult.TrimStart().StartsWith("{"))
+                {
+                    var roles = JsonSerializer.Deserialize<BasicRoleData[]>(roleResult);
+                    if (roles != null)
                     {
-                        var roleInfo = new RoleInfo
+                        foreach (var role in roles)
                         {
-                            Name = role.Name ?? "",
-                            Id = role.Id ?? "",
-                            IsSystem = role.IsSystem,
-                            Privileges = role.Privileges ?? Array.Empty<string>(),
-                            AssignmentCount = role.AssignmentCount
-                        };
-                        inventory.Roles.Add(roleInfo);
+                            var roleInfo = new RoleInfo
+                            {
+                                Name = role.Name ?? "",
+                                Id = role.Id ?? "",
+                                IsSystem = role.IsSystem,
+                                Privileges = role.Privileges ?? Array.Empty<string>(),
+                                AssignmentCount = role.AssignmentCount
+                            };
+                            inventory.Roles.Add(roleInfo);
+                        }
                     }
+                }
+                else
+                {
+                    _logger.LogWarning("Invalid JSON response for roles from {VCenterName}: {Response}", vCenterName, roleResult.Substring(0, Math.Min(200, roleResult.Length)));
                 }
             }
 
@@ -1244,22 +1259,37 @@ try {{
             var permResult = await _persistentConnectionService.ExecuteCommandAsync(connectionType, permissionsScript);
             if (!string.IsNullOrEmpty(permResult))
             {
-                var permissions = JsonSerializer.Deserialize<BasicPermissionData[]>(permResult);
-                if (permissions != null)
+                // Check for connection errors before attempting JSON parsing
+                if (permResult.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase))
                 {
-                    foreach (var perm in permissions)
+                    _logger.LogWarning("PowerCLI connection error during permission discovery for {VCenterName}: {Error}", vCenterName, permResult);
+                    return; // Skip permission loading if connection failed
+                }
+                
+                // Check if result looks like JSON before attempting to deserialize
+                if (permResult.TrimStart().StartsWith("[") || permResult.TrimStart().StartsWith("{"))
+                {
+                    var permissions = JsonSerializer.Deserialize<BasicPermissionData[]>(permResult);
+                    if (permissions != null)
                     {
-                        var permissionInfo = new PermissionInfo
+                        foreach (var perm in permissions)
                         {
-                            Id = perm.Id ?? Guid.NewGuid().ToString(),
-                            Principal = perm.Principal ?? "",
-                            RoleName = perm.Role ?? "",
-                            EntityName = perm.Entity ?? "",
-                            EntityType = perm.EntityType ?? "",
-                            Propagate = perm.Propagate
-                        };
-                        inventory.Permissions.Add(permissionInfo);
+                            var permissionInfo = new PermissionInfo
+                            {
+                                Id = perm.Id ?? Guid.NewGuid().ToString(),
+                                Principal = perm.Principal ?? "",
+                                RoleName = perm.Role ?? "",
+                                EntityName = perm.Entity ?? "",
+                                EntityType = perm.EntityType ?? "",
+                                Propagate = perm.Propagate
+                            };
+                            inventory.Permissions.Add(permissionInfo);
+                        }
                     }
+                }
+                else
+                {
+                    _logger.LogWarning("Invalid JSON response for permissions from {VCenterName}: {Response}", vCenterName, permResult.Substring(0, Math.Min(200, permResult.Length)));
                 }
             }
 

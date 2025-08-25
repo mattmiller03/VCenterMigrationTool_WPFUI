@@ -303,9 +303,13 @@ namespace VCenterMigrationTool.ViewModels
         [RelayCommand]
         private async Task LoadSourceAdminConfig()
         {
-            if (!IsSourceConnected)
+            // Check connection status and attempt reconnection if needed
+            var connectionCheck = await EnsureSourceConnectionAsync();
+            if (!connectionCheck)
             {
-                MigrationStatus = "Source connection not available";
+                MigrationStatus = "❌ Source connection failed - unable to load admin config";
+                SourceDataStatus = "❌ Connection failed";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: Source connection failed, admin config loading aborted\n";
                 return;
             }
 
@@ -367,9 +371,13 @@ namespace VCenterMigrationTool.ViewModels
         [RelayCommand]
         private async Task LoadTargetAdminConfig()
         {
-            if (!IsTargetConnected)
+            // Check connection status and attempt reconnection if needed
+            var connectionCheck = await EnsureTargetConnectionAsync();
+            if (!connectionCheck)
             {
-                MigrationStatus = "Target connection not available";
+                MigrationStatus = "❌ Target connection failed - unable to load admin config";
+                TargetDataStatus = "❌ Connection failed";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: Target connection failed, admin config loading aborted\n";
                 return;
             }
 
@@ -1163,6 +1171,188 @@ namespace VCenterMigrationTool.ViewModels
             {
                 var keepLines = lines.Skip(lines.Length - 800).ToArray();
                 ActivityLog = string.Join("\n", keepLines);
+            }
+        }
+
+        /// <summary>
+        /// Ensure source connection is active, attempt PowerCLI reconnection if needed
+        /// </summary>
+        private async Task<bool> EnsureSourceConnectionAsync()
+        {
+            try
+            {
+                // First check if connection is already active
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Checking source vCenter connection status...\n";
+                
+                var isConnected = await _sharedConnectionService.IsConnectedAsync("source");
+                if (isConnected)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Source connection is active\n";
+                    IsSourceConnected = true;
+                    SourceConnectionStatus = "Connected";
+                    return true;
+                }
+                
+                // Connection failed, attempt PowerCLI reconnection
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️  Source connection not active, attempting PowerCLI reconnection...\n";
+                
+                var sourceProfile = _sharedConnectionService.SourceConnection;
+                if (sourceProfile == null)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: No source connection profile configured\n";
+                    return false;
+                }
+                
+                var password = _credentialService.GetPassword(sourceProfile);
+                if (string.IsNullOrEmpty(password))
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: No credentials available for source connection\n";
+                    return false;
+                }
+                
+                // Attempt PowerCLI reconnection
+                var reconnectSuccess = await AttemptPowerCLIReconnection(sourceProfile, password, "source");
+                
+                if (reconnectSuccess)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Source PowerCLI reconnection successful\n";
+                    IsSourceConnected = true;
+                    SourceConnectionStatus = "Connected (PowerCLI)";
+                    return true;
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: Source PowerCLI reconnection failed\n";
+                    IsSourceConnected = false;
+                    SourceConnectionStatus = "Disconnected";
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: Exception during source connection check: {ex.Message}\n";
+                _logger.LogError(ex, "Error ensuring source connection");
+                IsSourceConnected = false;
+                SourceConnectionStatus = "Connection Error";
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Ensure target connection is active, attempt PowerCLI reconnection if needed
+        /// </summary>
+        private async Task<bool> EnsureTargetConnectionAsync()
+        {
+            try
+            {
+                // First check if connection is already active
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Checking target vCenter connection status...\n";
+                
+                var isConnected = await _sharedConnectionService.IsConnectedAsync("target");
+                if (isConnected)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Target connection is active\n";
+                    IsTargetConnected = true;
+                    TargetConnectionStatus = "Connected";
+                    return true;
+                }
+                
+                // Connection failed, attempt PowerCLI reconnection
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️  Target connection not active, attempting PowerCLI reconnection...\n";
+                
+                var targetProfile = _sharedConnectionService.TargetConnection;
+                if (targetProfile == null)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: No target connection profile configured\n";
+                    return false;
+                }
+                
+                var password = _credentialService.GetPassword(targetProfile);
+                if (string.IsNullOrEmpty(password))
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: No credentials available for target connection\n";
+                    return false;
+                }
+                
+                // Attempt PowerCLI reconnection
+                var reconnectSuccess = await AttemptPowerCLIReconnection(targetProfile, password, "target");
+                
+                if (reconnectSuccess)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Target PowerCLI reconnection successful\n";
+                    IsTargetConnected = true;
+                    TargetConnectionStatus = "Connected (PowerCLI)";
+                    return true;
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: Target PowerCLI reconnection failed\n";
+                    IsTargetConnected = false;
+                    TargetConnectionStatus = "Disconnected";
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: Exception during target connection check: {ex.Message}\n";
+                _logger.LogError(ex, "Error ensuring target connection");
+                IsTargetConnected = false;
+                TargetConnectionStatus = "Connection Error";
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Attempt to reconnect using PowerCLI directly 
+        /// </summary>
+        private async Task<bool> AttemptPowerCLIReconnection(VCenterConnection connectionProfile, string password, string connectionType)
+        {
+            try
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔄 Attempting PowerCLI reconnection to {connectionProfile.ServerAddress}...\n";
+                
+                // Use HybridPowerShellService to attempt connection
+                var connectionScript = $@"
+                    # Disconnect any existing connections
+                    try {{ Disconnect-VIServer -Server * -Force -Confirm:$false -ErrorAction SilentlyContinue }} catch {{ }}
+                    
+                    # Attempt new connection
+                    try {{
+                        $credential = New-Object System.Management.Automation.PSCredential('{connectionProfile.Username}', (ConvertTo-SecureString '{password}' -AsPlainText -Force))
+                        Connect-VIServer -Server '{connectionProfile.ServerAddress}' -Credential $credential -Force
+                        
+                        # Test connection with a simple command
+                        $server = Get-VIServer -Server '{connectionProfile.ServerAddress}' -ErrorAction Stop
+                        if ($server.IsConnected) {{
+                            Write-Output 'SUCCESS: PowerCLI connection established'
+                            Write-Output ""Version: $($server.Version)""
+                        }} else {{
+                            Write-Output 'ERROR: Connection not active'
+                        }}
+                    }} catch {{
+                        Write-Output ""ERROR: $($_.Exception.Message)""
+                    }}
+                ";
+
+                var result = await _powerShellService.RunScriptAsync(connectionScript, new Dictionary<string, object>());
+                
+                if (!string.IsNullOrEmpty(result) && result.Contains("SUCCESS: PowerCLI connection established"))
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ PowerCLI reconnection successful to {connectionProfile.ServerAddress}\n";
+                    return true;
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ PowerCLI reconnection failed to {connectionProfile.ServerAddress}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI Response: {result?.Substring(0, Math.Min(200, result?.Length ?? 0))}...\n";
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR during PowerCLI reconnection: {ex.Message}\n";
+                _logger.LogError(ex, "Error during PowerCLI reconnection for {ConnectionType}", connectionType);
+                return false;
             }
         }
 
