@@ -862,6 +862,20 @@ Start-ScriptLogging -ScriptName ""TagCategoryDiscovery"" -LogPath ""{logPath.Rep
 Write-LogInfo ""Starting optimized tag and category discovery"" -Category ""Discovery""
 
 try {{
+    # Check for existing PowerCLI connection
+    Write-LogInfo ""Checking for existing PowerCLI connection..."" -Category ""Connection""
+    $existingConnection = $null
+    try {{
+        $existingConnection = Get-VIServer -ErrorAction SilentlyContinue | Where-Object {{ $_.Name -like ""*{vCenterServer}*"" -or $_.Name -eq ""{vCenterServer}"" }}
+    }} catch {{ }}
+    
+    if ($existingConnection -and $existingConnection.IsConnected) {{
+        Write-LogInfo ""Using existing PowerCLI connection to {vCenterServer}"" -Category ""Connection""
+    }} else {{
+        Write-LogWarning ""No active PowerCLI connection found to {vCenterServer}"" -Category ""Connection""
+        Write-LogWarning ""PowerCLI commands may fail. Ensure connection is established first."" -Category ""Connection""
+    }}
+
     # Initialize result object
     $result = @{{
         CollectionDate = Get-Date -Format ""yyyy-MM-dd HH:mm:ss""

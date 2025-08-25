@@ -112,6 +112,9 @@ namespace VCenterMigrationTool.ViewModels
         [ObservableProperty]
         private string _activityLog = "Admin configuration migration activity log will appear here...\n";
 
+        [ObservableProperty]
+        private bool _isAutoScrollEnabled = true;
+
         // Computed Properties
         public bool CanValidateMigration => IsSourceConnected && IsTargetConnected && !IsMigrationInProgress;
         public bool CanStartMigration => CanValidateMigration && !ValidateOnly;
@@ -1128,6 +1131,38 @@ namespace VCenterMigrationTool.ViewModels
             {
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Import failed: {ex.Message}\n";
                 _logger.LogError(ex, "Failed to import {CategoryName}", categoryName);
+            }
+        }
+
+        [RelayCommand]
+        private void ClearLog()
+        {
+            ActivityLog = "Admin configuration migration activity log will appear here...\n" +
+                         $"[{DateTime.Now:HH:mm:ss}] Log cleared by user\n";
+        }
+
+        [RelayCommand]
+        private void ToggleAutoScroll()
+        {
+            IsAutoScrollEnabled = !IsAutoScrollEnabled;
+            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Auto scroll {(IsAutoScrollEnabled ? "enabled" : "disabled")}\n";
+        }
+
+        /// <summary>
+        /// Add a message to the activity log with timestamp
+        /// </summary>
+        public void LogMessage(string message, string level = "INFO")
+        {
+            var timestamp = DateTime.Now.ToString("HH:mm:ss");
+            var logEntry = $"[{timestamp}] [{level}] {message}\n";
+            ActivityLog += logEntry;
+            
+            // If we have many lines, trim to keep performance good
+            var lines = ActivityLog.Split('\n');
+            if (lines.Length > 1000)
+            {
+                var keepLines = lines.Skip(lines.Length - 800).ToArray();
+                ActivityLog = string.Join("\n", keepLines);
             }
         }
 
