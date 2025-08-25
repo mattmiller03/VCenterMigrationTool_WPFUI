@@ -1665,7 +1665,7 @@ public class HybridPowerShellService : IDisposable
                 // Stop the cleanup timer
                 _cleanupTimer?.Dispose();
 
-                // Cleanup all active processes
+                // Cleanup all active processes (this will also disconnect any vCenter sessions)
                 CleanupAllProcesses();
 
                 // Dispose PowerShell logging service
@@ -1768,13 +1768,11 @@ public class HybridPowerShellService : IDisposable
                         Write-Output '[]'
                     }}
                     
-                    # Disconnect
-                    Disconnect-VIServer -Server $connection -Confirm:$false -Force -ErrorAction SilentlyContinue
+                    # NOTE: Connection deliberately maintained for persistent session architecture
                 }}
                 catch {{
                     Write-Error ""Failed to get clusters: $($_.Exception.Message)""
-                    # Try to disconnect on error
-                    try {{ Disconnect-VIServer -Server '*' -Confirm:$false -Force -ErrorAction SilentlyContinue }} catch {{}}
+                    # NOTE: Connection deliberately maintained - managed by application lifecycle
                     throw
                 }}
             ";
