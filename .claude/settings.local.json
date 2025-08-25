@@ -17,7 +17,10 @@
       "Bash(grep:*)",
       "Bash(dotnet test:*)",
       "Bash(git rm:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []
