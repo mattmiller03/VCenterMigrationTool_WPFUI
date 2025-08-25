@@ -17,6 +17,7 @@ public class VCenterInventoryService
     private readonly PersistentExternalConnectionService _persistentConnectionService;
     private readonly ILogger<VCenterInventoryService> _logger;
     private readonly ConfigurationService _configurationService;
+    private readonly string _scriptsDirectory;
     
     private readonly Dictionary<string, VCenterInventory> _inventoryCache = new();
     private readonly object _cacheLock = new();
@@ -29,6 +30,7 @@ public class VCenterInventoryService
         _persistentConnectionService = persistentConnectionService;
         _logger = logger;
         _configurationService = configurationService;
+        _scriptsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts");
     }
 
     /// <summary>
@@ -46,6 +48,61 @@ public class VCenterInventoryService
             return _inventoryCache.TryGetValue(vCenterName, out var inventory) ? inventory : null;
         }
     }
+    public async Task<bool> CheckSDKAvailabilityAsync (string connectionType)
+        {
+        try
+            {
+            _logger.LogInformation("Checking VMware SDK availability for {ConnectionType}", connectionType);
+
+            var script = @"
+            # Check for VMware SDK modules (new PowerCLI 13.x+)
+            $sdkModules = @()
+            $sdkModules += Get-Module -ListAvailable -Name 'VMware.Sdk.vSphere*' -ErrorAction SilentlyContinue
+            $sdkModules += Get-Module -ListAvailable -Name 'VMware.Sdk.Runtime*' -ErrorAction SilentlyContinue
+            
+            # Check for legacy SSO Admin module (deprecated in PowerCLI 13.x)
+            $ssoModule = Get-Module -ListAvailable -Name 'VMware.vSphere.SsoAdmin' -ErrorAction SilentlyContinue
+            
+            # Check for standard PowerCLI
+            $powerCLI = Get-Module -ListAvailable -Name 'VMware.PowerCLI' -ErrorAction SilentlyContinue
+            
+            $result = @{
+                HasSDK = ($sdkModules.Count -gt 0)
+                SDKVersion = if ($sdkModules.Count -gt 0) { $sdkModules[0].Version.ToString() } else { $null }
+                HasSSOAdmin = ($null -ne $ssoModule)
+                SSOAdminVersion = if ($ssoModule) { $ssoModule.Version.ToString() } else { $null }
+                HasPowerCLI = ($null -ne $powerCLI)
+                PowerCLIVersion = if ($powerCLI) { $powerCLI.Version.ToString() } else { $null }
+            }
+            
+            $result | ConvertTo-Json
+        ";
+
+            var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
+
+            if (!string.IsNullOrEmpty(result) && !result.StartsWith("ERROR:"))
+                {
+                var availability = JsonSerializer.Deserialize<Dictionary<string, object>>(result);
+
+                _logger.LogInformation("VMware module availability for {ConnectionType}: SDK={HasSDK}, SSO={HasSSO}, PowerCLI={HasCLI}",
+                    connectionType,
+                    availability?.GetValueOrDefault("HasSDK"),
+                    availability?.GetValueOrDefault("HasSSOAdmin"),
+                    availability?.GetValueOrDefault("HasPowerCLI"));
+
+                // Return true if we have either the new SDK or PowerCLI (both can handle admin config)
+                return availability?.GetValueOrDefault("HasSDK")?.ToString() == "True" ||
+                       availability?.GetValueOrDefault("HasPowerCLI")?.ToString() == "True";
+                }
+
+            return false;
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Error checking SDK availability for {ConnectionType}", connectionType);
+            return false;
+            }
+        }
 
     /// <summary>
     /// Load complete inventory for a vCenter and cache it
@@ -1063,123 +1120,91 @@ try {{
         }
     }
 
-    private async Task LoadRolesAndPermissionsAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
-    {
-        try
+    public async Task LoadRolesAndPermissionsAsync (string vCenterName, string username, string password, VCenterInventory inventory, string connectionType = "source")
         {
-            _logger.LogInformation("Loading roles and permissions for {VCenterName} using SSO Admin script", vCenterName);
-
-            // Execute enhanced SSO Admin script with integrated logging
-            var logPath = await GetLogPathAsync(); // Get the configured log path
-            var scriptContent = await BuildSSOAdminScriptWithLoggingAsync(vCenterName, logPath);
-            var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, scriptContent);
-
-            if (result.StartsWith("SUCCESS:") || result.TrimStart().StartsWith("{"))
+        try
             {
-                // Parse the JSON output from the script
-                var jsonStart = result.IndexOf('{');
-                if (jsonStart >= 0)
+            _logger.LogInformation("Loading roles and permissions for {VCenter} using best available method", vCenterName);
+
+            // First check what modules are available
+            var sdkAvailable = await CheckSDKAvailabilityAsync(connectionType);
+
+            // Use the updated SSO Admin script that handles both SDK and fallback
+            var scriptPath = Path.Combine(_scriptsDirectory, "Get-SSOAdminConfig.ps1");
+
+            if (File.Exists(scriptPath))
                 {
-                    var jsonContent = result.Substring(jsonStart);
-                    var ssoData = JsonSerializer.Deserialize<SSOAdminConfigData>(jsonContent);
-                    
-                    if (ssoData != null)
+                _logger.LogInformation("Using Get-SSOAdminConfig.ps1 with VMware SDK/PowerCLI support for {VCenter}", vCenterName);
+
+                var parameters = new Dictionary<string, object>
+            {
+                { "VCenterServer", vCenterName },
+                { "IncludeRoles", true },
+                { "IncludePermissions", true },
+                { "IncludeSSOUsers", false },
+                { "IncludeSSOGroups", false }
+            };
+
+                var script = await File.ReadAllTextAsync(scriptPath);
+                var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
+
+                if (!string.IsNullOrEmpty(result) && !result.StartsWith("ERROR:"))
                     {
-                        // Process roles
-                        if (ssoData.Roles != null)
+                    var jsonResult = ExtractJsonFromOutput(result);
+                    if (!string.IsNullOrEmpty(jsonResult))
                         {
-                            foreach (var role in ssoData.Roles)
+                        var ssoData = JsonSerializer.Deserialize<SSOAdminConfigData>(jsonResult,
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                        if (ssoData != null)
                             {
-                                var roleInfo = new RoleInfo
+                            // Check if SDK was used or fallback
+                            if (!string.IsNullOrEmpty(ssoData.SDKVersion))
                                 {
-                                    Name = role.Name ?? "",
-                                    Id = role.Id ?? "",
-                                    IsSystem = role.IsSystem,
-                                    Privileges = role.Privileges ?? Array.Empty<string>(),
-                                    AssignmentCount = role.AssignmentCount
-                                };
-                                inventory.Roles.Add(roleInfo);
+                                _logger.LogInformation("Successfully loaded admin config using VMware SDK v{Version}", ssoData.SDKVersion);
+                                }
+                            else if (ssoData.UsedFallback)
+                                {
+                                _logger.LogInformation("Successfully loaded admin config using PowerCLI fallback methods");
+                                }
+
+                            // Process roles and permissions data...
+                            ProcessRolesAndPermissions(ssoData, inventory);
+
+                            return;
                             }
                         }
-
-                        // Process permissions
-                        if (ssoData.Permissions != null)
-                        {
-                            foreach (var perm in ssoData.Permissions)
-                            {
-                                var permissionInfo = new PermissionInfo
-                                {
-                                    Id = perm.Id ?? Guid.NewGuid().ToString(),
-                                    Principal = perm.Principal ?? "",
-                                    RoleName = perm.Role ?? "",
-                                    EntityName = perm.Entity ?? "",
-                                    EntityType = perm.EntityType ?? "",
-                                    Propagate = perm.Propagate
-                                };
-                                inventory.Permissions.Add(permissionInfo);
-                            }
-                        }
-
-                        // Process global permissions
-                        if (ssoData.GlobalPermissions != null)
-                        {
-                            foreach (var globalPerm in ssoData.GlobalPermissions)
-                            {
-                                var permissionInfo = new PermissionInfo
-                                {
-                                    Id = globalPerm.Id ?? Guid.NewGuid().ToString(),
-                                    Principal = globalPerm.Principal ?? "",
-                                    RoleName = globalPerm.Role ?? "",
-                                    EntityName = "Root",
-                                    EntityType = "Root",
-                                    Propagate = globalPerm.Propagate
-                                };
-                                inventory.Permissions.Add(permissionInfo);
-                            }
-                        }
-
-                        _logger.LogInformation("Successfully loaded {RoleCount} roles and {PermissionCount} permissions for {VCenterName}", 
-                            inventory.Roles.Count, inventory.Permissions.Count, vCenterName);
-                        
-                        // Log summary to activity log
-                        var totalPermissions = inventory.Permissions.Count;
-                        var roleCount = inventory.Roles.Count(r => !r.IsSystem);
-                        _logger.LogInformation("Admin Config Discovery Complete: {CustomRoles} custom roles, {TotalPermissions} permissions (including global permissions)", 
-                            roleCount, totalPermissions);
                     }
+
+                _logger.LogWarning("Get-SSOAdminConfig.ps1 returned no valid data, using basic discovery");
+                }
+
+            // Final fallback to basic discovery
+            await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
+            }
+        catch (Exception ex)
+            {
+            _logger.LogError(ex, "Failed to load roles and permissions using VMware SDK for {VCenter}", vCenterName);
+            _logger.LogInformation("Note: For best admin configuration discovery, install VMware.SDK.vSphere (PowerCLI 13.x+)");
+
+            // Try basic discovery as last resort
+            try
+                {
+                await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
+                }
+            catch (Exception fallbackEx)
+                {
+                _logger.LogError(fallbackEx, "Basic discovery also failed for {VCenter}", vCenterName);
+                throw;
                 }
             }
-            else if (result.StartsWith("ERROR:"))
-            {
-                _logger.LogWarning("SSO Admin script returned error for {VCenterName}: {Error}", vCenterName, result);
-                _logger.LogInformation("Note: VMware.vSphere.SsoAdmin module may be missing - this is normal for PowerCLI 13.x");
-                _logger.LogInformation("Falling back to basic role/permission discovery for {VCenterName}", vCenterName);
-                // Fallback to basic role/permission discovery
-                await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
-            }
-            else
-            {
-                _logger.LogWarning("Unexpected result from SSO Admin script for {VCenterName}: {Result}", vCenterName, result.Substring(0, Math.Min(100, result.Length)));
-                _logger.LogInformation("Falling back to basic role/permission discovery for {VCenterName}", vCenterName);
-                // Fallback to basic role/permission discovery
-                await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
-            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to load roles and permissions using SSO Admin script for {VCenterName}", vCenterName);
-            _logger.LogInformation("Note: This may be due to missing VMware.vSphere.SsoAdmin module (deprecated in PowerCLI 13.x)");
-            _logger.LogInformation("Falling back to basic role/permission discovery for {VCenterName}", vCenterName);
-            // Fallback to basic role/permission discovery
-            await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
-        }
-    }
 
     private async Task LoadBasicRolesAndPermissionsAsync(string vCenterName, VCenterInventory inventory, string connectionType)
     {
         try
         {
-            _logger.LogInformation("Loading basic roles and permissions for {VCenterName} as fallback", vCenterName);
+            _logger.LogInformation("Loading basic roles and permissions for {VCenterName} using standard PowerCLI (fallback mode)", vCenterName);
             
             // Basic roles discovery script
             var rolesScript = @"
@@ -1849,6 +1874,104 @@ try {{
 
         return defaultValue;
     }
+
+    /// <summary>
+    /// Extract JSON from PowerShell script output
+    /// </summary>
+    private string ExtractJsonFromOutput(string output)
+    {
+        if (string.IsNullOrWhiteSpace(output))
+            return string.Empty;
+
+        // First try to find JSON array or object markers
+        var startIndex = output.IndexOf('{');
+        var arrayStartIndex = output.IndexOf('[');
+        
+        // Use whichever comes first
+        if (startIndex == -1 || (arrayStartIndex != -1 && arrayStartIndex < startIndex))
+            startIndex = arrayStartIndex;
+
+        if (startIndex == -1)
+            return string.Empty;
+
+        // Find the last closing bracket
+        var endIndex = output.LastIndexOf('}');
+        var arrayEndIndex = output.LastIndexOf(']');
+        
+        // Use whichever comes last
+        if (endIndex == -1 || (arrayEndIndex != -1 && arrayEndIndex > endIndex))
+            endIndex = arrayEndIndex;
+
+        if (endIndex == -1 || endIndex <= startIndex)
+            return string.Empty;
+
+        return output.Substring(startIndex, endIndex - startIndex + 1);
+    }
+
+    /// <summary>
+    /// Process roles and permissions from SSO Admin config data
+    /// </summary>
+    private void ProcessRolesAndPermissions(SSOAdminConfigData ssoData, VCenterInventory inventory)
+    {
+        // Process Roles
+        if (ssoData.Roles != null)
+        {
+            foreach (var role in ssoData.Roles)
+            {
+                var roleInfo = new RoleInfo
+                {
+                    Name = role.Name ?? "",
+                    Id = role.Id ?? "",
+                    IsSystem = role.IsSystem,
+                    Privileges = role.Privileges ?? Array.Empty<string>(),
+                    AssignmentCount = role.AssignmentCount
+                };
+                inventory.Roles.Add(roleInfo);
+            }
+            _logger.LogInformation("Loaded {Count} roles", inventory.Roles.Count);
+        }
+
+        // Process Permissions
+        if (ssoData.Permissions != null)
+        {
+            foreach (var perm in ssoData.Permissions)
+            {
+                var permInfo = new PermissionInfo
+                {
+                    Id = perm.Id ?? Guid.NewGuid().ToString(),
+                    Principal = perm.Principal ?? "",
+                    RoleName = perm.Role ?? "",
+                    EntityName = perm.Entity ?? "",
+                    EntityType = perm.EntityType ?? "",
+                    Propagate = perm.Propagate
+                };
+                inventory.Permissions.Add(permInfo);
+            }
+            _logger.LogInformation("Loaded {Count} permissions", inventory.Permissions.Count);
+        }
+
+        // Process Global Permissions
+        if (ssoData.GlobalPermissions != null)
+        {
+            foreach (var globalPerm in ssoData.GlobalPermissions)
+            {
+                var permInfo = new PermissionInfo
+                {
+                    Id = globalPerm.Id ?? Guid.NewGuid().ToString(),
+                    Principal = globalPerm.Principal ?? "",
+                    RoleName = globalPerm.Role ?? "",
+                    EntityName = "Global",
+                    EntityType = "Global",
+                    Propagate = globalPerm.Propagate
+                };
+                inventory.Permissions.Add(permInfo);
+            }
+            _logger.LogInformation("Loaded {Count} global permissions", ssoData.GlobalPermissions.Count);
+        }
+
+        _logger.LogInformation("Admin Config Discovery Complete: {CustomRoles} custom roles, {TotalPermissions} permissions", 
+            inventory.Roles.Count(r => !r.IsSystem), inventory.Permissions.Count);
+    }
 }
 
 /// <summary>
@@ -1880,6 +2003,8 @@ public class SSOAdminConfigData
     public List<SSOGroupData>? SSOGroups { get; set; }
     public int TotalRoles { get; set; }
     public int TotalPermissions { get; set; }
+    public string? SDKVersion { get; set; }
+    public bool UsedFallback { get; set; }
 }
 
 public class SSORoleData

@@ -359,9 +359,9 @@ namespace VCenterMigrationTool.ViewModels
                 else
                 {
                     SourceDataStatus = "⚠️ Limited admin config loaded";
-                    MigrationStatus = "Admin config loaded with limitations (SSO module unavailable)";
+                    MigrationStatus = "Admin config loaded with limitations (VMware SDK unavailable)";
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ WARNING: Admin config loaded with limitations\n";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: VMware.vSphere.SsoAdmin module not available - using basic discovery\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: VMware.SDK.vSphere module not available - using PowerCLI basic discovery\n";
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: Standard vCenter roles and permissions will be available\n";
                 }
             }
@@ -371,10 +371,10 @@ namespace VCenterMigrationTool.ViewModels
                 MigrationStatus = $"Failed to load source admin config: {ex.Message}";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: {ex.Message}\n";
                 
-                // Check if the error might be related to SSO module
-                if (ex.Message.Contains("SSO") || ex.Message.Contains("SsoAdmin"))
+                // Check if the error might be related to missing SDK module
+                if (ex.Message.Contains("SSO") || ex.Message.Contains("SsoAdmin") || ex.Message.Contains("SDK"))
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: This error may be due to missing VMware.vSphere.SsoAdmin module\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: This error may be due to missing VMware.SDK.vSphere module (PowerCLI 13.x+)\n";
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: This module is deprecated in PowerCLI 13.x - basic discovery should still work\n";
                 }
                 
@@ -437,9 +437,9 @@ namespace VCenterMigrationTool.ViewModels
                 else
                 {
                     TargetDataStatus = "⚠️ Limited admin config loaded";
-                    MigrationStatus = "Target admin config loaded with limitations (SSO module unavailable)";
+                    MigrationStatus = "Target admin config loaded with limitations (VMware SDK unavailable)";
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ WARNING: Target admin config loaded with limitations\n";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: VMware.vSphere.SsoAdmin module not available - using basic discovery\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: VMware.SDK.vSphere module not available - using PowerCLI basic discovery\n";
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: Standard vCenter roles and permissions will be available\n";
                 }
             }
@@ -449,10 +449,10 @@ namespace VCenterMigrationTool.ViewModels
                 MigrationStatus = $"Failed to load target admin config: {ex.Message}";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: {ex.Message}\n";
                 
-                // Check if the error might be related to SSO module
-                if (ex.Message.Contains("SSO") || ex.Message.Contains("SsoAdmin"))
+                // Check if the error might be related to missing SDK module
+                if (ex.Message.Contains("SSO") || ex.Message.Contains("SsoAdmin") || ex.Message.Contains("SDK"))
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: This error may be due to missing VMware.vSphere.SsoAdmin module\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: This error may be due to missing VMware.SDK.vSphere module (PowerCLI 13.x+)\n";
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: This module is deprecated in PowerCLI 13.x - basic discovery should still work\n";
                 }
                 
