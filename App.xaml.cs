@@ -94,7 +94,7 @@ public partial class App
                 client.Timeout = TimeSpan.FromSeconds(30);
             }).ConfigurePrimaryHttpMessageHandler(() =>
             {
-                // Most aggressive HttpClientHandler configuration possible
+                // Most aggressive HttpClientHandler with client certificate support
                 var handler = new HttpClientHandler()
                 {
                     // Bypass ALL SSL certificate validation
@@ -108,11 +108,52 @@ public partial class App
                         return true;
                     },
                     
+                    // Client certificate handling
+                    ClientCertificateOptions = ClientCertificateOption.Automatic,
+                    
                     // Most permissive SSL settings
                     SslProtocols = System.Security.Authentication.SslProtocols.Tls | System.Security.Authentication.SslProtocols.Tls11 | System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13,
                     CheckCertificateRevocationList = false,
                     UseCookies = false
                 };
+
+                // Try to get and add client certificates from the certificate store
+                try
+                {
+                    using (var store = new System.Security.Cryptography.X509Certificates.X509Store(
+                        System.Security.Cryptography.X509Certificates.StoreName.My, 
+                        System.Security.Cryptography.X509Certificates.StoreLocation.CurrentUser))
+                    {
+                        store.Open(System.Security.Cryptography.X509Certificates.OpenFlags.ReadOnly);
+                        
+                        // Look for certificates that might be suitable for client authentication
+                        var certificates = store.Certificates.Find(
+                            System.Security.Cryptography.X509Certificates.X509FindType.FindByKeyUsage,
+                            System.Security.Cryptography.X509Certificates.X509KeyUsageFlags.DigitalSignature,
+                            false);
+                        
+                        if (certificates.Count > 0)
+                        {
+                            Console.WriteLine($"Found {certificates.Count} potential client certificates");
+                            
+                            // Add all available certificates - let the system choose the best one
+                            foreach (var cert in certificates)
+                            {
+                                handler.ClientCertificates.Add(cert);
+                                Console.WriteLine($"Added client certificate: {cert.Subject}");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("No client certificates found in certificate store");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading client certificates: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Client certificate error: {ex.Message}");
+                }
 
                 return handler;
             });
