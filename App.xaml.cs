@@ -97,24 +97,29 @@ public partial class App
                 // Most aggressive HttpClientHandler with client certificate support
                 var handler = new HttpClientHandler()
                 {
-                    // Bypass ALL SSL certificate validation
+                    // Bypass ALL SSL certificate validation - MOST AGGRESSIVE SETTING
                     ServerCertificateCustomValidationCallback = (httpRequestMessage, certificate, chain, sslPolicyErrors) =>
                     {
-                        // Log every SSL bypass attempt
-                        System.Diagnostics.Debug.WriteLine($"AGGRESSIVE SSL BYPASS: {certificate?.Subject}, Errors: {sslPolicyErrors}");
-                        Console.WriteLine($"AGGRESSIVE SSL BYPASS: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+                        // Log every SSL bypass attempt for debugging
+                        System.Diagnostics.Debug.WriteLine($"ULTRA-AGGRESSIVE SSL BYPASS: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+                        Console.WriteLine($"ULTRA-AGGRESSIVE SSL BYPASS: {certificate?.Subject}, Errors: {sslPolicyErrors}");
                         
-                        // ALWAYS return true - accept any certificate, any error
+                        // ALWAYS return true regardless of any SSL errors including PartialChain
                         return true;
                     },
                     
-                    // Client certificate handling
+                    // Additional aggressive SSL bypass settings for .NET 8
                     ClientCertificateOptions = ClientCertificateOption.Automatic,
                     
-                    // Most permissive SSL settings
-                    SslProtocols = System.Security.Authentication.SslProtocols.Tls | System.Security.Authentication.SslProtocols.Tls11 | System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13,
+                    // Most permissive SSL protocols - prefer newer protocols but allow all
+                    SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13,
+                    
+                    // Disable all certificate validation checks
                     CheckCertificateRevocationList = false,
-                    UseCookies = false
+                    UseCookies = false,
+                    
+                    // Additional .NET 8 specific settings for certificate bypass
+                    MaxConnectionsPerServer = 10
                 };
 
                 // Try to get and add client certificates from the certificate store
@@ -220,19 +225,20 @@ public partial class App
 
     private async void OnStartup (object sender, StartupEventArgs e)
         {
-        // MOST AGGRESSIVE SSL certificate bypass for vCenter API connections
+        // ULTRA-AGGRESSIVE SSL certificate bypass for vCenter API connections (.NET 8 compatible)
         System.Net.ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
         {
-            // Log certificate issues for debugging
+            // Log certificate issues for debugging including PartialChain
             if (sslPolicyErrors != System.Net.Security.SslPolicyErrors.None)
             {
-                System.Diagnostics.Debug.WriteLine($"ServicePointManager SSL Certificate bypass applied for: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+                System.Diagnostics.Debug.WriteLine($"ULTRA-AGGRESSIVE ServicePointManager SSL bypass for: {certificate?.Subject}, Errors: {sslPolicyErrors}");
+                Console.WriteLine($"ULTRA-AGGRESSIVE ServicePointManager SSL bypass for: {certificate?.Subject}, Errors: {sslPolicyErrors}");
             }
-            // Always accept certificates (bypass all SSL validation)
+            // ALWAYS accept ALL certificates regardless of any SSL errors including PartialChain
             return true;
         };
         
-        // Additional SSL/TLS security settings
+        // .NET 8 compatible SSL/TLS settings - most aggressive configuration
         System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls13;
         System.Net.ServicePointManager.CheckCertificateRevocationList = false;
         System.Net.ServicePointManager.Expect100Continue = false;

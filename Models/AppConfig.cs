@@ -19,6 +19,10 @@ namespace VCenterMigrationTool.Models
         public string? AppSupportUrl { get; set; }
         public string? LogPath { get; set; } // <-- ADD THIS
         public string? ExportPath { get; set; } // <-- ADD THIS
+        
+        // Theme preferences
+        public string? ApplicationTheme { get; set; } = "Dark"; // Light, Dark
+        public string? AccentColor { get; set; } = "Blue"; // Blue, Green, Red, Purple, Orange, etc.
 
     }
 }

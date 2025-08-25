@@ -16,16 +16,47 @@ namespace VCenterMigrationTool.Views.Windows
     {
         public MainWindowViewModel ViewModel { get; }
 
-        public MainWindow (MainWindowViewModel viewModel, INavigationService navigationService, IPageService pageService)
+        public MainWindow (MainWindowViewModel viewModel, INavigationService navigationService, IPageService pageService, ConfigurationService configurationService, IThemeService themeService)
         {
             ViewModel = viewModel;
             // FIX: DataContext is the ViewModel
             DataContext = viewModel;
 
+            // Initialize theme settings before anything else
+            InitializeThemeSettings(configurationService, themeService);
+
             SystemThemeWatcher.Watch(this);
             InitializeComponent();
 
             navigationService.SetNavigationControl(RootNavigation);
+        }
+
+        private void InitializeThemeSettings(ConfigurationService configurationService, IThemeService themeService)
+        {
+            try
+            {
+                var config = configurationService.GetConfiguration();
+                
+                // Apply saved theme
+                var savedTheme = config.ApplicationTheme switch
+                {
+                    "Light" => ApplicationTheme.Light,
+                    "Dark" => ApplicationTheme.Dark,
+                    _ => ApplicationTheme.Dark
+                };
+                
+                themeService.SetTheme(savedTheme);
+                
+                // TODO: Apply saved accent color when WPF-UI API is available
+                // Note: Accent color application will be implemented when the correct API is found
+            }
+            catch (Exception ex)
+            {
+                // Fallback to default theme if loading fails
+                System.Diagnostics.Debug.WriteLine($"Failed to load theme settings: {ex.Message}");
+                themeService.SetTheme(ApplicationTheme.Dark);
+                // TODO: Apply default accent color when WPF-UI API is available
+            }
         }
 
         #region INavigationWindow methods

@@ -14,6 +14,8 @@
 
     <StackPanel>
         <TextBlock FontSize="20" FontWeight="Medium" Text="Personalization" />
+        
+        <!-- Theme Selection -->
         <TextBlock Margin="0,12,0,0" Text="Theme" />
         <RadioButton
             Command="{Binding ChangeThemeCommand}"
@@ -27,5 +29,49 @@
             Content="Dark"
             IsChecked="{Binding CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark}"
             Margin="0,8,0,0" />
+        
+        <!-- Accent Color Selection -->
+        <TextBlock Margin="0,24,0,0" Text="Accent Color" />
+        <TextBlock Margin="0,4,0,0" Text="Choose your preferred accent color" Opacity="0.7" FontSize="12"/>
+        
+        <ItemsControl ItemsSource="{Binding AvailableAccentColors}" Margin="0,12,0,0">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Button Command="{Binding DataContext.ChangeAccentColorCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding Name}"
+                            Margin="0,0,8,8"
+                            Width="60"
+                            Height="40">
+                        <Button.Content>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Ellipse Width="20" Height="20" Fill="{Binding HexValue}" Stroke="Gray" StrokeThickness="1"/>
+                                <TextBlock Text="{Binding Name}" FontSize="10" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button.Content>
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Name}" Value="{Binding DataContext.CurrentAccentColor, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                        <Setter Property="BorderBrush" Value="{Binding HexValue}"/>
+                                        <Setter Property="BorderThickness" Value="2"/>
+                                    </DataTrigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
     </StackPanel>
 </UserControl>
