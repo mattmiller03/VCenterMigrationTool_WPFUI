@@ -1,48 +1,25 @@
-﻿[19:38:14 INF] Configured log path: C:\Temp\app\logs
-[19:38:14 INF] Base log directory: C:\Temp\app\logs
-[19:38:14 INF] PowerShell logs will be written to: C:\Temp\app\logs\PowerShell
-[19:38:14 INF] PowerShell 7+ found in PATH: C:\Program Files\PowerShell\7\pwsh.exe
-[19:38:14 INF] Trying PowerShell executable: pwsh.exe
-[19:38:14 INF] Creating PowerShell process with command: pwsh.exe
-[19:38:14 INF] Successfully started PowerShell process: pwsh.exe (PID: 26500)
-[19:38:15 INF] Application started. Press Ctrl+C to shut down.
-[19:38:15 INF] Hosting environment: Production
-[19:38:15 INF] Content root path: C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\PresentationUI.dll'. Symbol loading disabled by Include/Exclude setting.
-[19:38:15 INF] PowerShell process completed with exit code: 0
-[19:38:15 INF] STARTUP: PowerCLI detected and confirmed installed on startup
-[19:38:15 INF] PERSISTENCE: PowerCLI status saved as true
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.19\System.Runtime.Serialization.Formatters.dll'. Symbol loading disabled by Include/Exclude setting.
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\8.0.19\Accessibility.dll'. Module was built without symbols.
-[19:38:24 INF] === ESTABLISHING PERSISTENT SOURCE CONNECTION ===
-[19:38:24 INF] Selected Source Profile: klisv0pp212.dir.ad.dla.mil | User: administrator@DLA-KLEBER.local
-[19:38:24 INF] PowerCLI Bypass Status: true
-[19:38:24 INF] STEP 1: Retrieving stored credentials for profile: Prod -Kleber v7
-'VCenterMigrationTool.exe' (CoreCLR: clrhost): Loaded 'C:\Git\Apps\LatestVcenterApp\bin\Debug\net8.0-windows\Meziantou.Framework.Win32.CredentialManager.dll'. 
-[19:38:24 INF] STEP 1: Using stored credentials
-[19:38:24 INF] STEP 2: Starting persistent connection to klisv0pp212.dir.ad.dla.mil
-[19:38:25 INF] STEP 2: Calling PersistentConnectionService.ConnectAsync with bypass=true
-[19:38:25 INF] Establishing persistent external connection to klisv0pp212.dir.ad.dla.mil (source)
-[19:38:25 INF] Started persistent PowerShell process: pwsh.exe (PID: 14456)
-[19:38:25 INF] Bypassing module import (assumed already loaded)
-[19:38:25 INF] Connecting to vCenter klisv0pp212.dir.ad.dla.mil...
-[19:38:27 WRN] Connection result did not contain CONNECTION_SUCCESS. Full result: ERROR: No active connection for source
-[19:38:27 ERR] Connection failed: Connection failed - Result: ERROR: No active connection for source
-[19:38:27 INF] Disconnecting from klisv0pp212.dir.ad.dla.mil (source)
-[19:38:27 INF] ✅ Disconnected from klisv0pp212.dir.ad.dla.mil
-[19:38:27 INF] STEP 2: ConnectAsync returned - Success: false | Message: Connection failed - Result: ERROR: No active connection for source | SessionId: null
-[19:38:27 ERR] STEP 2: Connection FAILED - Success=false | Message=Connection failed - Result: ERROR: No active connection for source
-[19:38:27 ERR] ❌ Failed to establish persistent connection: Connection failed - Result: ERROR: No active connection for source
-The thread '.NET TP Wait' (21492) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (20172) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (32592) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (12608) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (30640) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (24752) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (26040) has exited with code 0 (0x0).
-[19:38:56 INF] Activity logs cleared by user
-The thread 33216 has exited with code 0 (0x0).
-The thread '.NET TP Worker' (33100) has exited with code 0 (0x0).
-The thread '.NET TP Worker' (8272) has exited with code 0 (0x0).
-The program '[27692] VCenterMigrationTool.exe: Program Trace' has exited with code 0 (0x0).
-The program '[27692] VCenterMigrationTool.exe' has exited with code 4294967295 (0xffffffff).
+﻿[20:05:57 ERR] HTTP request failed for vCenter API: klisv0pp251.dir.ad.dla.mil. This could be due to SSL certificate issues, network connectivity, or invalid URL. Message: The SSL connection could not be established, see inner exception.
+System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
+ ---> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
+   at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+   at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
+   at System.Net.Security.SslStream.ProcessAuthenticationWithTelemetryAsync(Boolean isAsync, CancellationToken cancellationToken)
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.HttpConnectionWaiter`1.WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, Boolean async, CancellationToken requestCancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at VCenterMigrationTool.Services.VSphereApiService.AuthenticateAsync(VCenterConnectionInfo connection, String password) in C:\Git\Apps\LatestVcenterApp\Services\VSphereApiService.cs:line 58
+[20:05:57 INF] STEP 2: VSphereApiService returned - Success: false | Message: VSphere API authentication failed | HasSessionToken: true
+[20:05:57 ERR] STEP 2: Connection FAILED - Success=false | Message=VSphere API authentication failed
+[20:05:57 ERR] ❌ Failed to establish target connection: VSphere API authentication failed
+The thread '.NET TP Wait' (23524) has exited with code 0 (0x0).
