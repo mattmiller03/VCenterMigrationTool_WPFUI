@@ -54,7 +54,11 @@ namespace VCenterMigrationTool.Services
                 using var request = new HttpRequestMessage(HttpMethod.Post, authUrl);
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
 
+                _logger.LogDebug("Sending authentication request to: {AuthUrl} (SSL validation bypassed)", authUrl);
                 var response = await _httpClient.SendAsync(request);
+                
+                _logger.LogDebug("Authentication response: StatusCode={StatusCode}, ReasonPhrase={ReasonPhrase}", 
+                    response.StatusCode, response.ReasonPhrase);
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -98,15 +102,28 @@ namespace VCenterMigrationTool.Services
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to authenticate to vCenter API: {Server} - {StatusCode}", 
-                        connection.ServerAddress, response.StatusCode);
-                    return (false, string.Empty);
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Failed to authenticate to vCenter API: {Server} - {StatusCode} {ReasonPhrase}. Response: {Response}", 
+                        connection.ServerAddress, response.StatusCode, response.ReasonPhrase, responseContent);
+                    return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}");
                 }
+            }
+            catch (HttpRequestException httpEx)
+            {
+                _logger.LogError(httpEx, "HTTP request failed for vCenter API: {Server}. This could be due to SSL certificate issues, network connectivity, or invalid URL. Message: {Message}", 
+                    connection.ServerAddress, httpEx.Message);
+                return (false, $"Connection failed: {httpEx.Message}. Check server address, network connectivity, and SSL certificates.");
+            }
+            catch (TaskCanceledException tcEx) when (tcEx.InnerException is TimeoutException)
+            {
+                _logger.LogError(tcEx, "Timeout connecting to vCenter API: {Server}", connection.ServerAddress);
+                return (false, "Connection timed out. Check server address and network connectivity.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error authenticating to vCenter API: {Server}", connection.ServerAddress);
-                return (false, string.Empty);
+                _logger.LogError(ex, "Unexpected error authenticating to vCenter API: {Server}. Exception type: {ExceptionType}", 
+                    connection.ServerAddress, ex.GetType().Name);
+                return (false, $"Authentication error: {ex.Message}");
             }
         }
 
