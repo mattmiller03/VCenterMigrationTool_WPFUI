@@ -136,7 +136,7 @@ public class PersistentExternalConnectionService : IDisposable
                     Write-Output ""DIAGNOSTIC: Error details: $($_.Exception.ToString())""
                     throw
                 }
-            ", TimeSpan.FromSeconds(60));
+            ", TimeSpan.FromSeconds(60), skipConnectionCheck: true);
 
             if (!importResult.Contains("MODULES_LOADED"))
                 {
@@ -202,7 +202,7 @@ public class PersistentExternalConnectionService : IDisposable
                 }}
             ";
 
-            var connectResult = await ExecuteCommandWithTimeoutAsync(connectionKey, connectScript, TimeSpan.FromSeconds(60));
+            var connectResult = await ExecuteCommandWithTimeoutAsync(connectionKey, connectScript, TimeSpan.FromSeconds(60), skipConnectionCheck: false);
 
             if (connectResult.Contains("CONNECTION_SUCCESS"))
                 {
@@ -304,7 +304,7 @@ public class PersistentExternalConnectionService : IDisposable
     /// <summary>
     /// Executes a command in the persistent PowerShell session with timeout
     /// </summary>
-    private async Task<string> ExecuteCommandWithTimeoutAsync (string connectionKey, string command, TimeSpan timeout)
+    private async Task<string> ExecuteCommandWithTimeoutAsync (string connectionKey, string command, TimeSpan timeout, bool skipConnectionCheck = false)
         {
         if (!_connections.TryGetValue(connectionKey, out var connection))
             {
@@ -322,9 +322,22 @@ public class PersistentExternalConnectionService : IDisposable
             // Add a unique marker to know when command is complete
             var endMarker = $"END_COMMAND_{Guid.NewGuid():N}";
             
-            // Ensure the correct vCenter connection is active for this command
-            var connectionVarName = $"VIConnection_{connectionKey.Replace("-", "_")}";
-            var fullCommand = $@"
+            string fullCommand;
+            
+            // For initial setup commands (like importing PowerCLI), skip the vCenter connection check
+            if (skipConnectionCheck)
+            {
+                fullCommand = $@"
+# Initial setup command - no vCenter connection check required
+{command}
+Write-Output '{endMarker}'
+";
+            }
+            else 
+            {
+                // Ensure the correct vCenter connection is active for this command
+                var connectionVarName = $"VIConnection_{connectionKey.Replace("-", "_")}";
+                fullCommand = $@"
 # Ensure correct vCenter connection is active for this session
 if ($global:{connectionVarName} -and $global:{connectionVarName}.IsConnected) {{
     $global:DefaultVIServer = $global:{connectionVarName}
@@ -338,6 +351,7 @@ if ($global:{connectionVarName} -and $global:{connectionVarName}.IsConnected) {{
 {command}
 Write-Output '{endMarker}'
 ";
+            }
 
             // Send the command
             await connection.StandardInput.WriteLineAsync(fullCommand);
@@ -378,7 +392,7 @@ Write-Output '{endMarker}'
     /// </summary>
     public async Task<string> ExecuteCommandAsync (string connectionKey, string command)
         {
-        return await ExecuteCommandWithTimeoutAsync(connectionKey, command, TimeSpan.FromMinutes(5));
+        return await ExecuteCommandWithTimeoutAsync(connectionKey, command, TimeSpan.FromMinutes(5), skipConnectionCheck: false);
         }
 
     /// <summary>
@@ -403,7 +417,7 @@ Write-Output '{endMarker}'
             var connectionVarName = $"VIConnection_{connectionKey.Replace("-", "_")}";
             var result = await ExecuteCommandWithTimeoutAsync(connectionKey,
                 $"$global:{connectionVarName}.IsConnected",
-                TimeSpan.FromSeconds(5));
+                TimeSpan.FromSeconds(5), skipConnectionCheck: false);
 
             return result.Contains("True");
             }
