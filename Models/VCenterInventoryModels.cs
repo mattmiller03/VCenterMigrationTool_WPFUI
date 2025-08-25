@@ -121,6 +121,41 @@ public class CategoryInfo
 }
 
 /// <summary>
+/// Container for tag and category data returned from PowerShell scripts
+/// </summary>
+public class TagCategoryData
+{
+    public CategoryData[] Categories { get; set; } = Array.Empty<CategoryData>();
+    public TagData[] Tags { get; set; } = Array.Empty<TagData>();
+}
+
+/// <summary>
+/// Raw category data from PowerShell script output
+/// </summary>
+public class CategoryData
+{
+    public string? Id { get; set; }
+    public string? Name { get; set; }
+    public string? Description { get; set; }
+    public int TagCount { get; set; }
+    public bool IsMultipleCardinality { get; set; }
+    public string[]? AssociableTypes { get; set; }
+}
+
+/// <summary>
+/// Raw tag data from PowerShell script output
+/// </summary>
+public class TagData
+{
+    public string? Id { get; set; }
+    public string? Name { get; set; }
+    public string? Description { get; set; }
+    public string? CategoryName { get; set; }
+    public string? CategoryId { get; set; }
+    public int AssignedObjectCount { get; set; }
+}
+
+/// <summary>
 /// Role information for inventory
 /// </summary>
 public class RoleInfo
