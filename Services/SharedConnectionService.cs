@@ -52,6 +52,16 @@ public class SharedConnectionService
     /// </summary>
     public string? SourcePowerCLISessionId { get; set; }
     public string? TargetPowerCLISessionId { get; set; }
+    
+    /// <summary>
+    /// Tracks whether source API connection is active (separate from PowerCLI)
+    /// </summary>
+    public bool SourceApiConnected { get; set; }
+    
+    /// <summary>
+    /// Tracks whether target API connection is active (separate from PowerCLI)
+    /// </summary>
+    public bool TargetApiConnected { get; set; }
 
     /// <summary>
     /// Quick check if a connection is active (supports both API and PowerCLI)
@@ -76,17 +86,24 @@ public class SharedConnectionService
             return (false, "Not configured", "");
         }
 
-        // Check if using PowerCLI fallback
-        bool usingPowerCLI = connectionType.ToLower() switch
+        // Check both PowerCLI and API connections with dual connection support
+        bool hasPowerCLI = connectionType.ToLower() switch
         {
             "source" => SourceUsingPowerCLI,
             "target" => TargetUsingPowerCLI,
             _ => false
         };
-
-        if (usingPowerCLI)
+        
+        bool hasAPI = connectionType.ToLower() switch
         {
-            // For PowerCLI connections, check if session is still valid
+            "source" => SourceApiConnected,
+            "target" => TargetApiConnected,
+            _ => false
+        };
+
+        // Check PowerCLI connection first (preferred for admin operations)
+        if (hasPowerCLI)
+        {
             var sessionId = connectionType.ToLower() switch
             {
                 "source" => SourcePowerCLISessionId,
@@ -100,8 +117,20 @@ public class SharedConnectionService
                     connectionType, connection.ServerAddress, sessionId);
                 return (true, connection.ServerAddress ?? "Unknown", "PowerCLI Session");
             }
-            
-            return (false, connection.ServerAddress ?? "Unknown", "PowerCLI session lost");
+        }
+        
+        // If PowerCLI is not available or failed, check API connection
+        if (hasAPI)
+        {
+            _logger.LogInformation("API connection active for {ConnectionType}: {Server}", 
+                connectionType, connection.ServerAddress);
+            return (true, connection.ServerAddress ?? "Unknown", "API Session");
+        }
+        
+        // If neither connection type is flagged as active, fall back to testing API connectivity
+        if (!hasPowerCLI && !hasAPI)
+        {
+            _logger.LogInformation("No active connections flagged for {ConnectionType}, testing API connectivity", connectionType);
         }
 
         // Convert VCenterConnection to VCenterConnectionInfo for API service

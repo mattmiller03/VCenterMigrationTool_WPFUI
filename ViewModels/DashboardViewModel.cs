@@ -404,111 +404,107 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             };
             
             // Test connection using VSphere API first
-            var (success, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
-            string message = success ? "Connection successful via VSphere API" : sessionToken; // Use actual error message from service
-            string sessionId = success ? sessionToken : null;
-            bool usedPowerCLI = false;
-            string result = "";
+            var (apiSuccess, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
+            string apiMessage = apiSuccess ? "Connection successful via VSphere API" : sessionToken; // Use actual error message from service
+            string apiSessionId = apiSuccess ? sessionToken : null;
+            
+            _logger.LogInformation("STEP 2A: VSphereApiService returned - Success: {Success} | Message: {Message} | HasSessionToken: {HasToken}", 
+                apiSuccess, apiMessage, !string.IsNullOrEmpty(sessionToken));
 
-            _logger.LogInformation("STEP 2: VSphereApiService returned - Success: {Success} | Message: {Message} | HasSessionToken: {HasToken}", 
-                success, message, !string.IsNullOrEmpty(sessionToken));
+            // Always establish PowerCLI connection alongside API for admin operations
+            // This ensures admin configuration functionality works regardless of API SSL issues
+            bool powerCLISuccess = false;
+            string powerCLISessionId = null;
+            string powerCLIResult = "";
+            
+            _logger.LogInformation("STEP 2B: Establishing PowerCLI connection for admin operations alongside API");
+            SourceConnectionStatus = $"🔗 Establishing PowerCLI connection for admin operations...";
+            await Task.Delay(100); // Allow UI to update
 
-            // If VSphere API fails with SSL issues, fall back to PowerCLI
-            if (!success && (message.Contains("SSL", StringComparison.OrdinalIgnoreCase) || 
-                message.Contains("certificate", StringComparison.OrdinalIgnoreCase) || 
-                message.Contains("PartialChain", StringComparison.OrdinalIgnoreCase) || 
-                message.Contains("AuthenticationException", StringComparison.OrdinalIgnoreCase) ||
-                message.Contains("SSL certificates", StringComparison.OrdinalIgnoreCase) ||
-                message.Contains("could not be established", StringComparison.OrdinalIgnoreCase) ||
-                message.Contains("certificate chain", StringComparison.OrdinalIgnoreCase)))
+            try
             {
-                _logger.LogWarning("STEP 2: VSphere API failed with SSL/certificate issue, attempting PowerCLI fallback");
-                SourceConnectionStatus = $"🔄 SSL issue detected, trying PowerCLI fallback...";
-                await Task.Delay(100); // Allow UI to update
-
-                try
-                {
-                    // Use HybridPowerShellService for PowerCLI connection (bypasses SSL issues)
-                    _logger.LogInformation("STEP 2: Attempting PowerCLI connection via HybridPowerShellService");
-                    
-                    var testScript = $@"
-                        # PowerCLI connection test with SSL bypass
-                        try {{
-                            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-                            Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+                // Use HybridPowerShellService for PowerCLI connection (supports admin operations)
+                _logger.LogInformation("STEP 2B: Connecting via PowerCLI for admin configuration support");
+                
+                var testScript = $@"
+                    # PowerCLI connection test with SSL bypass
+                    try {{
+                        Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+                        Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+                        
+                        $credential = New-Object System.Management.Automation.PSCredential('{SelectedSourceProfile.Username}', (ConvertTo-SecureString '{finalPassword.Replace("'", "''")}' -AsPlainText -Force))
+                        $connection = Connect-VIServer -Server '{SelectedSourceProfile.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
+                        
+                        if ($connection -and $connection.IsConnected) {{
+                            Write-Output 'POWERCLI_SUCCESS'
+                            Write-Output ""SESSION_ID:$($connection.SessionId)""
+                            Write-Output ""VERSION:$($connection.Version)""
+                            Write-Output ""BUILD:$($connection.Build)""
                             
-                            $credential = New-Object System.Management.Automation.PSCredential('{SelectedSourceProfile.Username}', (ConvertTo-SecureString '{finalPassword.Replace("'", "''")}' -AsPlainText -Force))
-                            $connection = Connect-VIServer -Server '{SelectedSourceProfile.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
+                            # Quick inventory test
+                            $vmCount = (Get-VM -Server $connection -ErrorAction SilentlyContinue).Count
+                            Write-Output ""VM_COUNT:$vmCount""
                             
-                            if ($connection -and $connection.IsConnected) {{
-                                Write-Output 'POWERCLI_SUCCESS'
-                                Write-Output ""SESSION_ID:$($connection.SessionId)""
-                                Write-Output ""VERSION:$($connection.Version)""
-                                Write-Output ""BUILD:$($connection.Build)""
-                                
-                                # Quick inventory test
-                                $vmCount = (Get-VM -Server $connection -ErrorAction SilentlyContinue).Count
-                                Write-Output ""VM_COUNT:$vmCount""
-                                
-                                # Keep connection for future use
-                                $global:SourceVIConnection = $connection
-                                Write-Output 'CONNECTION_ESTABLISHED'
-                            }} else {{
-                                Write-Output 'POWERCLI_FAILED: Connection object invalid'
-                            }}
-                        }} catch {{
-                            Write-Output ""POWERCLI_FAILED: $($_.Exception.Message)""
+                            # Keep connection for future use
+                            $global:SourceVIConnection = $connection
+                            Write-Output 'CONNECTION_ESTABLISHED'
+                        }} else {{
+                            Write-Output 'POWERCLI_FAILED: Connection object invalid'
                         }}
-                    ";
+                    }} catch {{
+                        Write-Output ""POWERCLI_FAILED: $($_.Exception.Message)""
+                    }}
+                ";
 
-                    result = await _powerShellService.RunCommandAsync(testScript);
-                    
-                    if (result.Contains("POWERCLI_SUCCESS") && result.Contains("CONNECTION_ESTABLISHED"))
-                    {
-                        // Parse PowerCLI connection details
-                        var lines = result.Split('\n');
-                        string version = "Unknown", build = "", vmCount = "0";
-                        foreach (var line in lines)
-                        {
-                            if (line.StartsWith("VERSION:")) version = line.Substring(8).Trim();
-                            if (line.StartsWith("BUILD:")) build = line.Substring(6).Trim();
-                            if (line.StartsWith("VM_COUNT:")) vmCount = line.Substring(9).Trim();
-                        }
-                        
-                        success = true;
-                        message = "Connection successful via PowerCLI";
-                        sessionId = $"PowerCLI-{DateTime.Now:yyyyMMdd-HHmmss}";
-                        usedPowerCLI = true;
-                        
-                        _logger.LogInformation("STEP 2: PowerCLI fallback successful - Version: {Version}, VM Count: {VmCount}", version, vmCount);
-                    }
-                    else
-                    {
-                        _logger.LogError("STEP 2: PowerCLI fallback also failed. Result: {Result}", result.Trim());
-                        message = $"Both VSphere API and PowerCLI failed. PowerCLI error: {result}";
-                    }
-                }
-                catch (Exception pcliEx)
+                powerCLIResult = await _powerShellService.RunCommandAsync(testScript);
+                
+                if (powerCLIResult.Contains("POWERCLI_SUCCESS") && powerCLIResult.Contains("CONNECTION_ESTABLISHED"))
                 {
-                    _logger.LogError(pcliEx, "STEP 2: Exception during PowerCLI fallback");
-                    message = $"VSphere API SSL error, PowerCLI fallback failed: {pcliEx.Message}";
+                    // Parse PowerCLI connection details
+                    var lines = powerCLIResult.Split('\n');
+                    string version = "Unknown", build = "", vmCount = "0";
+                    foreach (var line in lines)
+                    {
+                        if (line.StartsWith("SESSION_ID:")) powerCLISessionId = line.Substring(11).Trim();
+                        if (line.StartsWith("VERSION:")) version = line.Substring(8).Trim();
+                        if (line.StartsWith("BUILD:")) build = line.Substring(6).Trim();
+                        if (line.StartsWith("VM_COUNT:")) vmCount = line.Substring(9).Trim();
+                    }
+                    
+                    powerCLISuccess = true;
+                    _logger.LogInformation("STEP 2B: PowerCLI connection successful - Version: {Version}, VM Count: {VmCount}, SessionId: {SessionId}", 
+                        version, vmCount, powerCLISessionId);
+                }
+                else
+                {
+                    _logger.LogError("STEP 2B: PowerCLI connection failed. Result: {Result}", powerCLIResult.Trim());
                 }
             }
+            catch (Exception pcliEx)
+            {
+                _logger.LogError(pcliEx, "STEP 2B: Exception during PowerCLI connection");
+            }
 
-            if (success)
+            // Evaluate overall connection success - need at least one working connection
+            bool overallSuccess = apiSuccess || powerCLISuccess;
+            
+            if (overallSuccess)
                 {
-                _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service");
-                // Step 3: Set connection
+                _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service (API: {ApiStatus}, PowerCLI: {PowerCLIStatus})", 
+                    apiSuccess, powerCLISuccess);
+                
+                // Step 3: Set connection status for both API and PowerCLI
                 _sharedConnectionService.SourceConnection = SelectedSourceProfile;
-                _sharedConnectionService.SourceUsingPowerCLI = usedPowerCLI;
-                _sharedConnectionService.SourcePowerCLISessionId = usedPowerCLI ? sessionId : null;
+                _sharedConnectionService.SourceApiConnected = apiSuccess;
+                _sharedConnectionService.SourceUsingPowerCLI = powerCLISuccess;
+                _sharedConnectionService.SourcePowerCLISessionId = powerCLISuccess ? powerCLISessionId : null;
 
                 string version = "Unknown";
                 
-                if (usedPowerCLI)
+                if (powerCLISuccess)
                 {
                     // Version already parsed from PowerCLI output
-                    var lines = result.Split('\n');
+                    var lines = powerCLIResult.Split('\n');
                     foreach (var line in lines)
                     {
                         if (line.StartsWith("VERSION:")) version = line.Substring(8).Trim();
@@ -516,7 +512,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                     
                     _logger.LogInformation("STEP 3: PowerCLI connection active - Version: {Version}", version);
                 }
-                else
+                else if (apiSuccess)
                 {
                     // Get basic vCenter info using API
                     _logger.LogInformation("STEP 3: Getting vCenter version info via API");
@@ -526,29 +522,31 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 }
 
                 IsSourceConnected = true;
-                SourceConnectionStatus = $"✅ Connected - {SelectedSourceProfile.ServerAddress} (v{version})";
-                SourceConnectionDetails = usedPowerCLI ? 
-                    $"PowerCLI Session: Active\nVersion: {version}\nSSL: Bypassed" :
-                    $"API Session: Active\nVersion: {version}";
                 
-                ScriptOutput = usedPowerCLI ?
-                    $"PowerCLI connection established! (SSL certificates bypassed)\n" +
-                    $"Server: {SelectedSourceProfile.ServerAddress}\n" +
-                    $"Version: {version}\n" +
-                    $"Authentication: PowerCLI (used due to SSL certificate issues)\n\n" +
-                    $"Connection is ready for all operations.\n" +
-                    $"All operations will use PowerCLI commands.\n" +
-                    $"Use 'Disconnect' button to close the connection." :
-                    $"vCenter API connection established!\n" +
-                    $"Server: {SelectedSourceProfile.ServerAddress}\n" +
-                    $"Version: {version}\n" +
-                    $"Authentication: VSphere API\n\n" +
-                    $"Connection is ready for all operations.\n" +
-                    $"PowerCLI operations will use the HybridPowerShellService as needed.\n" +
-                    $"Use 'Disconnect' button to close the connection.";
+                // Create connection status that reflects both connections
+                string connectionTypes = "";
+                if (apiSuccess && powerCLISuccess) connectionTypes = "API+PowerCLI";
+                else if (powerCLISuccess) connectionTypes = "PowerCLI";
+                else if (apiSuccess) connectionTypes = "API";
+                
+                SourceConnectionStatus = $"✅ Connected - {SelectedSourceProfile.ServerAddress} (v{version})";
+                SourceConnectionDetails = $"API Connection: {(apiSuccess ? "Active" : "Failed")}\n" +
+                                        $"PowerCLI Connection: {(powerCLISuccess ? "Active" : "Failed")}\n" +
+                                        $"Version: {version}";
+                
+                ScriptOutput = $"Dual connection established to {SelectedSourceProfile.ServerAddress}!\n\n" +
+                              $"API Connection: {(apiSuccess ? "✅ Success" : "❌ Failed")}\n" +
+                              $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success (SSL bypassed)" : "❌ Failed")}\n" +
+                              $"Server: {SelectedSourceProfile.ServerAddress}\n" +
+                              $"Version: {version}\n\n" +
+                              $"Connection capabilities:\n" +
+                              $"• Standard operations: {(apiSuccess ? "API + PowerCLI fallback" : "PowerCLI only")}\n" +
+                              $"• Admin configuration: {(powerCLISuccess ? "Available" : "Not available")}\n\n" +
+                              $"Use 'Disconnect' button to close the connection.";
 
-                _logger.LogInformation("✅ Source vCenter API connection established successfully (Version: {Version})", version);
-                LogMessage($"✅ Source connection successful: {SelectedSourceProfile.ServerAddress} ({(usedPowerCLI ? "PowerCLI" : "API")})", "INFO");
+                _logger.LogInformation("✅ Source vCenter dual connection established successfully - API: {ApiStatus}, PowerCLI: {PowerCLIStatus}, Version: {Version}", 
+                    apiSuccess, powerCLISuccess, version);
+                LogMessage($"✅ Source connection successful: {SelectedSourceProfile.ServerAddress} ({connectionTypes})", "INFO");
 
                 // Update inventory summary
                 _logger.LogInformation("STEP 3: Starting inventory summary update task");
@@ -560,15 +558,24 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 }
             else
                 {
-                _logger.LogError("STEP 2: Connection FAILED - Success={Success} | Message={Message}", success, message);
-                LogMessage($"❌ Source connection failed: {message}", "ERROR");
+                _logger.LogError("STEP 2: Both connections FAILED - API: {ApiSuccess}, PowerCLI: {PowerCLISuccess}", 
+                    apiSuccess, powerCLISuccess);
+                
+                string failureMessage = $"API: {(apiSuccess ? "Success" : apiMessage)} | PowerCLI: {(powerCLISuccess ? "Success" : "Failed")}";
+                
+                LogMessage($"❌ Source connection failed: {failureMessage}", "ERROR");
                 IsSourceConnected = false;
-                SourceConnectionStatus = $"❌ Connection failed: {message}";
-                SourceConnectionDetails = "";
-                ScriptOutput = $"Connection failed: {message}";
+                SourceConnectionStatus = $"❌ Connection failed - both API and PowerCLI failed";
+                SourceConnectionDetails = $"API Connection: {(apiSuccess ? "Success" : "Failed")}\n" +
+                                        $"PowerCLI Connection: {(powerCLISuccess ? "Success" : "Failed")}\n" +
+                                        $"Details: {failureMessage}";
+                ScriptOutput = $"Connection failed to {SelectedSourceProfile.ServerAddress}:\n\n" +
+                              $"API Connection: {(apiSuccess ? "✅ Success" : $"❌ Failed - {apiMessage}")}\n" +
+                              $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success" : "❌ Failed")}\n\n" +
+                              $"At least one connection method must succeed to proceed.";
                 _sharedConnectionService.SourceConnection = null;
 
-                _logger.LogError("❌ Failed to establish persistent connection: {Message}", message);
+                _logger.LogError("❌ Failed to establish any persistent connection");
                 }
             }
         catch (Exception ex)
@@ -664,111 +671,107 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             };
             
             // Test connection using VSphere API first
-            var (success, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
-            string message = success ? "Connection successful via VSphere API" : sessionToken; // Use actual error message from service
-            string sessionId = success ? sessionToken : null;
-            bool usedPowerCLI = false;
-            string result = "";
+            var (apiSuccess, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
+            string apiMessage = apiSuccess ? "Connection successful via VSphere API" : sessionToken; // Use actual error message from service
+            string apiSessionId = apiSuccess ? sessionToken : null;
+            
+            _logger.LogInformation("STEP 2A: VSphereApiService returned - Success: {Success} | Message: {Message} | HasSessionToken: {HasToken}", 
+                apiSuccess, apiMessage, !string.IsNullOrEmpty(sessionToken));
 
-            _logger.LogInformation("STEP 2: VSphereApiService returned - Success: {Success} | Message: {Message} | HasSessionToken: {HasToken}", 
-                success, message, !string.IsNullOrEmpty(sessionToken));
+            // Always establish PowerCLI connection alongside API for admin operations
+            // This ensures admin configuration functionality works regardless of API SSL issues
+            bool powerCLISuccess = false;
+            string powerCLISessionId = null;
+            string powerCLIResult = "";
+            
+            _logger.LogInformation("STEP 2B: Establishing PowerCLI connection for admin operations alongside API");
+            TargetConnectionStatus = $"🔗 Establishing PowerCLI connection for admin operations...";
+            await Task.Delay(100); // Allow UI to update
 
-            // If VSphere API fails with SSL issues, fall back to PowerCLI
-            if (!success && (message.Contains("SSL", StringComparison.OrdinalIgnoreCase) || 
-                message.Contains("certificate", StringComparison.OrdinalIgnoreCase) || 
-                message.Contains("PartialChain", StringComparison.OrdinalIgnoreCase) || 
-                message.Contains("AuthenticationException", StringComparison.OrdinalIgnoreCase) ||
-                message.Contains("SSL certificates", StringComparison.OrdinalIgnoreCase) ||
-                message.Contains("could not be established", StringComparison.OrdinalIgnoreCase) ||
-                message.Contains("certificate chain", StringComparison.OrdinalIgnoreCase)))
+            try
             {
-                _logger.LogWarning("STEP 2: VSphere API failed with SSL/certificate issue, attempting PowerCLI fallback");
-                TargetConnectionStatus = $"🔄 SSL issue detected, trying PowerCLI fallback...";
-                await Task.Delay(100); // Allow UI to update
-
-                try
-                {
-                    // Use HybridPowerShellService for PowerCLI connection (bypasses SSL issues)
-                    _logger.LogInformation("STEP 2: Attempting PowerCLI connection via HybridPowerShellService");
-                    
-                    var testScript = $@"
-                        # PowerCLI connection test with SSL bypass
-                        try {{
-                            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-                            Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+                // Use HybridPowerShellService for PowerCLI connection (supports admin operations)
+                _logger.LogInformation("STEP 2B: Connecting via PowerCLI for admin configuration support");
+                
+                var testScript = $@"
+                    # PowerCLI connection test with SSL bypass
+                    try {{
+                        Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+                        Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+                        
+                        $credential = New-Object System.Management.Automation.PSCredential('{SelectedTargetProfile.Username}', (ConvertTo-SecureString '{finalPassword.Replace("'", "''")}' -AsPlainText -Force))
+                        $connection = Connect-VIServer -Server '{SelectedTargetProfile.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
+                        
+                        if ($connection -and $connection.IsConnected) {{
+                            Write-Output 'POWERCLI_SUCCESS'
+                            Write-Output ""SESSION_ID:$($connection.SessionId)""
+                            Write-Output ""VERSION:$($connection.Version)""
+                            Write-Output ""BUILD:$($connection.Build)""
                             
-                            $credential = New-Object System.Management.Automation.PSCredential('{SelectedTargetProfile.Username}', (ConvertTo-SecureString '{finalPassword.Replace("'", "''")}' -AsPlainText -Force))
-                            $connection = Connect-VIServer -Server '{SelectedTargetProfile.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
+                            # Quick inventory test
+                            $vmCount = (Get-VM -Server $connection -ErrorAction SilentlyContinue).Count
+                            Write-Output ""VM_COUNT:$vmCount""
                             
-                            if ($connection -and $connection.IsConnected) {{
-                                Write-Output 'POWERCLI_SUCCESS'
-                                Write-Output ""SESSION_ID:$($connection.SessionId)""
-                                Write-Output ""VERSION:$($connection.Version)""
-                                Write-Output ""BUILD:$($connection.Build)""
-                                
-                                # Quick inventory test
-                                $vmCount = (Get-VM -Server $connection -ErrorAction SilentlyContinue).Count
-                                Write-Output ""VM_COUNT:$vmCount""
-                                
-                                # Keep connection for future use
-                                $global:TargetVIConnection = $connection
-                                Write-Output 'CONNECTION_ESTABLISHED'
-                            }} else {{
-                                Write-Output 'POWERCLI_FAILED: Connection object invalid'
-                            }}
-                        }} catch {{
-                            Write-Output ""POWERCLI_FAILED: $($_.Exception.Message)""
+                            # Keep connection for future use
+                            $global:TargetVIConnection = $connection
+                            Write-Output 'CONNECTION_ESTABLISHED'
+                        }} else {{
+                            Write-Output 'POWERCLI_FAILED: Connection object invalid'
                         }}
-                    ";
+                    }} catch {{
+                        Write-Output ""POWERCLI_FAILED: $($_.Exception.Message)""
+                    }}
+                ";
 
-                    result = await _powerShellService.RunCommandAsync(testScript);
-                    
-                    if (result.Contains("POWERCLI_SUCCESS") && result.Contains("CONNECTION_ESTABLISHED"))
-                    {
-                        // Parse PowerCLI connection details
-                        var lines = result.Split('\n');
-                        string version = "Unknown", build = "", vmCount = "0";
-                        foreach (var line in lines)
-                        {
-                            if (line.StartsWith("VERSION:")) version = line.Substring(8).Trim();
-                            if (line.StartsWith("BUILD:")) build = line.Substring(6).Trim();
-                            if (line.StartsWith("VM_COUNT:")) vmCount = line.Substring(9).Trim();
-                        }
-                        
-                        success = true;
-                        message = "Connection successful via PowerCLI";
-                        sessionId = $"PowerCLI-{DateTime.Now:yyyyMMdd-HHmmss}";
-                        usedPowerCLI = true;
-                        
-                        _logger.LogInformation("STEP 2: PowerCLI fallback successful - Version: {Version}, VM Count: {VmCount}", version, vmCount);
-                    }
-                    else
-                    {
-                        _logger.LogError("STEP 2: PowerCLI fallback also failed. Result: {Result}", result.Trim());
-                        message = $"Both VSphere API and PowerCLI failed. PowerCLI error: {result}";
-                    }
-                }
-                catch (Exception pcliEx)
+                powerCLIResult = await _powerShellService.RunCommandAsync(testScript);
+                
+                if (powerCLIResult.Contains("POWERCLI_SUCCESS") && powerCLIResult.Contains("CONNECTION_ESTABLISHED"))
                 {
-                    _logger.LogError(pcliEx, "STEP 2: Exception during PowerCLI fallback");
-                    message = $"VSphere API SSL error, PowerCLI fallback failed: {pcliEx.Message}";
+                    // Parse PowerCLI connection details
+                    var lines = powerCLIResult.Split('\n');
+                    string version = "Unknown", build = "", vmCount = "0";
+                    foreach (var line in lines)
+                    {
+                        if (line.StartsWith("SESSION_ID:")) powerCLISessionId = line.Substring(11).Trim();
+                        if (line.StartsWith("VERSION:")) version = line.Substring(8).Trim();
+                        if (line.StartsWith("BUILD:")) build = line.Substring(6).Trim();
+                        if (line.StartsWith("VM_COUNT:")) vmCount = line.Substring(9).Trim();
+                    }
+                    
+                    powerCLISuccess = true;
+                    _logger.LogInformation("STEP 2B: PowerCLI connection successful - Version: {Version}, VM Count: {VmCount}, SessionId: {SessionId}", 
+                        version, vmCount, powerCLISessionId);
+                }
+                else
+                {
+                    _logger.LogError("STEP 2B: PowerCLI connection failed. Result: {Result}", powerCLIResult.Trim());
                 }
             }
+            catch (Exception pcliEx)
+            {
+                _logger.LogError(pcliEx, "STEP 2B: Exception during PowerCLI connection");
+            }
 
-            if (success)
+            // Evaluate overall connection success - need at least one working connection
+            bool overallSuccess = apiSuccess || powerCLISuccess;
+            
+            if (overallSuccess)
                 {
-                _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service");
-                // Step 3: Set connection
+                _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service (API: {ApiStatus}, PowerCLI: {PowerCLIStatus})", 
+                    apiSuccess, powerCLISuccess);
+                
+                // Step 3: Set connection status for both API and PowerCLI
                 _sharedConnectionService.TargetConnection = SelectedTargetProfile;
-                _sharedConnectionService.TargetUsingPowerCLI = usedPowerCLI;
-                _sharedConnectionService.TargetPowerCLISessionId = usedPowerCLI ? sessionId : null;
+                _sharedConnectionService.TargetApiConnected = apiSuccess;
+                _sharedConnectionService.TargetUsingPowerCLI = powerCLISuccess;
+                _sharedConnectionService.TargetPowerCLISessionId = powerCLISuccess ? powerCLISessionId : null;
 
                 string version = "Unknown";
                 
-                if (usedPowerCLI)
+                if (powerCLISuccess)
                 {
                     // Version already parsed from PowerCLI output
-                    var lines = result.Split('\n');
+                    var lines = powerCLIResult.Split('\n');
                     foreach (var line in lines)
                     {
                         if (line.StartsWith("VERSION:")) version = line.Substring(8).Trim();
@@ -776,7 +779,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                     
                     _logger.LogInformation("STEP 3: PowerCLI connection active - Version: {Version}", version);
                 }
-                else
+                else if (apiSuccess)
                 {
                     // Get basic vCenter info using API
                     _logger.LogInformation("STEP 3: Getting vCenter version info via API");
@@ -786,29 +789,31 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 }
 
                 IsTargetConnected = true;
-                TargetConnectionStatus = $"✅ Connected - {SelectedTargetProfile.ServerAddress} (v{version})";
-                TargetConnectionDetails = usedPowerCLI ? 
-                    $"PowerCLI Session: Active\nVersion: {version}\nSSL: Bypassed" :
-                    $"API Session: Active\nVersion: {version}";
                 
-                ScriptOutput = usedPowerCLI ?
-                    $"PowerCLI connection established! (SSL certificates bypassed)\n" +
-                    $"Server: {SelectedTargetProfile.ServerAddress}\n" +
-                    $"Version: {version}\n" +
-                    $"Authentication: PowerCLI (used due to SSL certificate issues)\n\n" +
-                    $"Connection is ready for all operations.\n" +
-                    $"All operations will use PowerCLI commands.\n" +
-                    $"Use 'Disconnect' button to close the connection." :
-                    $"vCenter API connection established!\n" +
-                    $"Server: {SelectedTargetProfile.ServerAddress}\n" +
-                    $"Version: {version}\n" +
-                    $"Authentication: VSphere API\n\n" +
-                    $"Connection is ready for all operations.\n" +
-                    $"PowerCLI operations will use the HybridPowerShellService as needed.\n" +
-                    $"Use 'Disconnect' button to close the connection.";
+                // Create connection status that reflects both connections
+                string connectionTypes = "";
+                if (apiSuccess && powerCLISuccess) connectionTypes = "API+PowerCLI";
+                else if (powerCLISuccess) connectionTypes = "PowerCLI";
+                else if (apiSuccess) connectionTypes = "API";
+                
+                TargetConnectionStatus = $"✅ Connected - {SelectedTargetProfile.ServerAddress} (v{version})";
+                TargetConnectionDetails = $"API Connection: {(apiSuccess ? "Active" : "Failed")}\n" +
+                                        $"PowerCLI Connection: {(powerCLISuccess ? "Active" : "Failed")}\n" +
+                                        $"Version: {version}";
+                
+                ScriptOutput = $"Dual connection established to {SelectedTargetProfile.ServerAddress}!\n\n" +
+                              $"API Connection: {(apiSuccess ? "✅ Success" : "❌ Failed")}\n" +
+                              $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success (SSL bypassed)" : "❌ Failed")}\n" +
+                              $"Server: {SelectedTargetProfile.ServerAddress}\n" +
+                              $"Version: {version}\n\n" +
+                              $"Connection capabilities:\n" +
+                              $"• Standard operations: {(apiSuccess ? "API + PowerCLI fallback" : "PowerCLI only")}\n" +
+                              $"• Admin configuration: {(powerCLISuccess ? "Available" : "Not available")}\n\n" +
+                              $"Use 'Disconnect' button to close the connection.";
 
-                _logger.LogInformation("✅ Target vCenter API connection established successfully (Version: {Version})", version);
-                LogMessage($"✅ Target connection successful: {SelectedTargetProfile.ServerAddress} ({(usedPowerCLI ? "PowerCLI" : "API")})", "INFO");
+                _logger.LogInformation("✅ Target vCenter dual connection established successfully - API: {ApiStatus}, PowerCLI: {PowerCLIStatus}, Version: {Version}", 
+                    apiSuccess, powerCLISuccess, version);
+                LogMessage($"✅ Target connection successful: {SelectedTargetProfile.ServerAddress} ({connectionTypes})", "INFO");
 
                 // Update inventory summary
                 _logger.LogInformation("STEP 3: Starting inventory summary update task");
@@ -820,15 +825,24 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 }
             else
                 {
-                _logger.LogError("STEP 2: Connection FAILED - Success={Success} | Message={Message}", success, message);
-                LogMessage($"❌ Target connection failed: {message}", "ERROR");
+                _logger.LogError("STEP 2: Both connections FAILED - API: {ApiSuccess}, PowerCLI: {PowerCLISuccess}", 
+                    apiSuccess, powerCLISuccess);
+                
+                string failureMessage = $"API: {(apiSuccess ? "Success" : apiMessage)} | PowerCLI: {(powerCLISuccess ? "Success" : "Failed")}";
+                
+                LogMessage($"❌ Target connection failed: {failureMessage}", "ERROR");
                 IsTargetConnected = false;
-                TargetConnectionStatus = $"❌ Connection failed: {message}";
-                TargetConnectionDetails = "";
-                ScriptOutput = $"Connection failed: {message}";
+                TargetConnectionStatus = $"❌ Connection failed - both API and PowerCLI failed";
+                TargetConnectionDetails = $"API Connection: {(apiSuccess ? "Success" : "Failed")}\n" +
+                                        $"PowerCLI Connection: {(powerCLISuccess ? "Success" : "Failed")}\n" +
+                                        $"Details: {failureMessage}";
+                ScriptOutput = $"Connection failed to {SelectedTargetProfile.ServerAddress}:\n\n" +
+                              $"API Connection: {(apiSuccess ? "✅ Success" : $"❌ Failed - {apiMessage}")}\n" +
+                              $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success" : "❌ Failed")}\n\n" +
+                              $"At least one connection method must succeed to proceed.";
                 _sharedConnectionService.TargetConnection = null;
 
-                _logger.LogError("❌ Failed to establish target connection: {Message}", message);
+                _logger.LogError("❌ Failed to establish any target connection");
                 }
             }
         catch (Exception ex)
