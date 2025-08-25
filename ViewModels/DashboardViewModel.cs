@@ -402,7 +402,13 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 success, message, !string.IsNullOrEmpty(sessionToken));
 
             // If VSphere API fails with SSL issues, fall back to PowerCLI
-            if (!success && (message.Contains("SSL") || message.Contains("certificate") || message.Contains("PartialChain") || message.Contains("AuthenticationException")))
+            if (!success && (message.Contains("SSL", StringComparison.OrdinalIgnoreCase) || 
+                message.Contains("certificate", StringComparison.OrdinalIgnoreCase) || 
+                message.Contains("PartialChain", StringComparison.OrdinalIgnoreCase) || 
+                message.Contains("AuthenticationException", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("SSL certificates", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("could not be established", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("certificate chain", StringComparison.OrdinalIgnoreCase)))
             {
                 _logger.LogWarning("STEP 2: VSphere API failed with SSL/certificate issue, attempting PowerCLI fallback");
                 SourceConnectionStatus = $"🔄 SSL issue detected, trying PowerCLI fallback...";
@@ -650,7 +656,13 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 success, message, !string.IsNullOrEmpty(sessionToken));
 
             // If VSphere API fails with SSL issues, fall back to PowerCLI
-            if (!success && (message.Contains("SSL") || message.Contains("certificate") || message.Contains("PartialChain") || message.Contains("AuthenticationException")))
+            if (!success && (message.Contains("SSL", StringComparison.OrdinalIgnoreCase) || 
+                message.Contains("certificate", StringComparison.OrdinalIgnoreCase) || 
+                message.Contains("PartialChain", StringComparison.OrdinalIgnoreCase) || 
+                message.Contains("AuthenticationException", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("SSL certificates", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("could not be established", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("certificate chain", StringComparison.OrdinalIgnoreCase)))
             {
                 _logger.LogWarning("STEP 2: VSphere API failed with SSL/certificate issue, attempting PowerCLI fallback");
                 TargetConnectionStatus = $"🔄 SSL issue detected, trying PowerCLI fallback...";
