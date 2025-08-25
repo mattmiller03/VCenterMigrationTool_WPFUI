@@ -118,25 +118,64 @@ public class PersistentExternalConnectionService : IDisposable
                     }
                 }
                 
-                # Try to import PowerCLI
+                # Multiple strategies to handle assembly conflicts
+                $importSuccess = $false
+                $importError = $null
+                
+                # Strategy 1: Try standard import
                 try {
-                    Write-Output 'DIAGNOSTIC: Attempting to import VMware.PowerCLI...'
+                    Write-Output 'DIAGNOSTIC: Strategy 1 - Attempting standard VMware.PowerCLI import...'
                     Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-                    Write-Output 'DIAGNOSTIC: PowerCLI import successful'
-                    
-                    # Configure PowerCLI
-                    Write-Output 'DIAGNOSTIC: Configuring PowerCLI settings...'
-                    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-                    Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
-                    Write-Output 'DIAGNOSTIC: PowerCLI configuration complete'
-                    
-                    Write-Output 'MODULES_LOADED'
+                    Write-Output 'DIAGNOSTIC: Strategy 1 - PowerCLI import successful'
+                    $importSuccess = $true
                 } catch {
-                    Write-Output ""DIAGNOSTIC: PowerCLI import failed - Error: $($_.Exception.Message)""
-                    Write-Output ""DIAGNOSTIC: Error details: $($_.Exception.ToString())""
-                    throw
+                    $importError = $_.Exception.Message
+                    Write-Output ""DIAGNOSTIC: Strategy 1 failed - Error: $importError""
+                    
+                    # Strategy 2: Try importing core modules individually
+                    try {
+                        Write-Output 'DIAGNOSTIC: Strategy 2 - Attempting core module imports individually...'
+                        Import-Module VMware.VimAutomation.Core -Force -ErrorAction Stop
+                        Import-Module VMware.VimAutomation.Common -Force -ErrorAction SilentlyContinue
+                        Write-Output 'DIAGNOSTIC: Strategy 2 - Core modules imported successfully'
+                        $importSuccess = $true
+                    } catch {
+                        Write-Output ""DIAGNOSTIC: Strategy 2 failed - Error: $($_.Exception.Message)""
+                        
+                        # Strategy 3: Try with specific version selection
+                        try {
+                            Write-Output 'DIAGNOSTIC: Strategy 3 - Attempting newest version import...'
+                            $newestModule = Get-Module -Name VMware.PowerCLI -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
+                            if ($newestModule) {
+                                Import-Module $newestModule.ModuleBase -Force -ErrorAction Stop
+                                Write-Output ""DIAGNOSTIC: Strategy 3 - Successfully imported PowerCLI version: $($newestModule.Version)""
+                                $importSuccess = $true
+                            } else {
+                                Write-Output 'DIAGNOSTIC: Strategy 3 - No suitable PowerCLI module found'
+                            }
+                        } catch {
+                            Write-Output ""DIAGNOSTIC: Strategy 3 failed - Error: $($_.Exception.Message)""
+                        }
+                    }
                 }
-            ", TimeSpan.FromSeconds(60), skipConnectionCheck: true);
+                
+                if ($importSuccess) {
+                    # Configure PowerCLI
+                    try {
+                        Write-Output 'DIAGNOSTIC: Configuring PowerCLI settings...'
+                        Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+                        Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+                        Write-Output 'DIAGNOSTIC: PowerCLI configuration complete'
+                        Write-Output 'MODULES_LOADED'
+                    } catch {
+                        Write-Output ""DIAGNOSTIC: PowerCLI configuration failed but modules loaded - Error: $($_.Exception.Message)""
+                        Write-Output 'MODULES_LOADED'
+                    }
+                } else {
+                    Write-Output ""DIAGNOSTIC: All import strategies failed. Last error: $importError""
+                    throw ""Failed to import PowerCLI modules after trying multiple strategies: $importError""
+                }
+            ", TimeSpan.FromSeconds(90), skipConnectionCheck: true);
 
             if (!importResult.Contains("MODULES_LOADED"))
                 {
