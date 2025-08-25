@@ -10,6 +10,7 @@
 
     <UserControl.Resources>
         <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+        <helpers:AccentColorSelectionConverter x:Key="AccentColorSelectionConverter" />
     </UserControl.Resources>
 
     <StackPanel>
@@ -59,7 +60,13 @@
                                 <Setter Property="BorderThickness" Value="1"/>
                                 <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Name}" Value="{Binding DataContext.CurrentAccentColor, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                    <DataTrigger Value="True">
+                                        <DataTrigger.Binding>
+                                            <MultiBinding Converter="{StaticResource AccentColorSelectionConverter}">
+                                                <Binding Path="Name"/>
+                                                <Binding Path="DataContext.CurrentAccentColor" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                            </MultiBinding>
+                                        </DataTrigger.Binding>
                                         <Setter Property="BorderBrush" Value="{Binding HexValue}"/>
                                         <Setter Property="BorderThickness" Value="2"/>
                                     </DataTrigger>
