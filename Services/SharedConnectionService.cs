@@ -37,6 +37,22 @@ public class SharedConnectionService
     /// </summary>
     public VCenterConnection? TargetConnection { get; set; }
 
+    /// <summary>
+    /// Tracks whether source connection is using PowerCLI (due to SSL issues)
+    /// </summary>
+    public bool SourceUsingPowerCLI { get; set; }
+
+    /// <summary>
+    /// Tracks whether target connection is using PowerCLI (due to SSL issues)
+    /// </summary>
+    public bool TargetUsingPowerCLI { get; set; }
+
+    /// <summary>
+    /// Stores PowerCLI session info when using PowerCLI fallback
+    /// </summary>
+    public string? SourcePowerCLISessionId { get; set; }
+    public string? TargetPowerCLISessionId { get; set; }
+
     public async Task<(bool IsConnected, string ServerName, string Version)> GetConnectionStatusAsync(string connectionType)
     {
         var connection = connectionType.ToLower() switch
@@ -49,6 +65,34 @@ public class SharedConnectionService
         if (connection == null)
         {
             return (false, "Not configured", "");
+        }
+
+        // Check if using PowerCLI fallback
+        bool usingPowerCLI = connectionType.ToLower() switch
+        {
+            "source" => SourceUsingPowerCLI,
+            "target" => TargetUsingPowerCLI,
+            _ => false
+        };
+
+        if (usingPowerCLI)
+        {
+            // For PowerCLI connections, check if session is still valid
+            var sessionId = connectionType.ToLower() switch
+            {
+                "source" => SourcePowerCLISessionId,
+                "target" => TargetPowerCLISessionId,
+                _ => null
+            };
+
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                _logger.LogInformation("PowerCLI connection active for {ConnectionType}: {Server} (Session: {SessionId})", 
+                    connectionType, connection.ServerAddress, sessionId);
+                return (true, connection.ServerAddress ?? "Unknown", "PowerCLI Session");
+            }
+            
+            return (false, connection.ServerAddress ?? "Unknown", "PowerCLI session lost");
         }
 
         // Convert VCenterConnection to VCenterConnectionInfo for API service
@@ -186,6 +230,8 @@ public class SharedConnectionService
         {
             _inventoryService.ClearInventory(SourceConnection.ServerAddress!);
             SourceConnection = null;
+            SourceUsingPowerCLI = false;
+            SourcePowerCLISessionId = null;
             _logger.LogInformation("Cleared source connection and inventory");
         }
     }
@@ -199,6 +245,8 @@ public class SharedConnectionService
         {
             _inventoryService.ClearInventory(TargetConnection.ServerAddress!);
             TargetConnection = null;
+            TargetUsingPowerCLI = false;
+            TargetPowerCLISessionId = null;
             _logger.LogInformation("Cleared target connection and inventory");
         }
     }

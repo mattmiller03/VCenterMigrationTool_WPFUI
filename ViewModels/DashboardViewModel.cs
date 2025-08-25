@@ -488,6 +488,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service");
                 // Step 3: Set connection
                 _sharedConnectionService.SourceConnection = SelectedSourceProfile;
+                _sharedConnectionService.SourceUsingPowerCLI = usedPowerCLI;
+                _sharedConnectionService.SourcePowerCLISessionId = usedPowerCLI ? sessionId : null;
 
                 string version = "Unknown";
                 
@@ -742,6 +744,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service");
                 // Step 3: Set connection
                 _sharedConnectionService.TargetConnection = SelectedTargetProfile;
+                _sharedConnectionService.TargetUsingPowerCLI = usedPowerCLI;
+                _sharedConnectionService.TargetPowerCLISessionId = usedPowerCLI ? sessionId : null;
 
                 string version = "Unknown";
                 
