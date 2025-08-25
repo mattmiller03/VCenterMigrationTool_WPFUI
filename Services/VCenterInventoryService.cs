@@ -1152,6 +1152,7 @@ try {{
             else if (result.StartsWith("ERROR:"))
             {
                 _logger.LogWarning("SSO Admin script returned error for {VCenterName}: {Error}", vCenterName, result);
+                _logger.LogInformation("Note: VMware.vSphere.SsoAdmin module may be missing - this is normal for PowerCLI 13.x");
                 _logger.LogInformation("Falling back to basic role/permission discovery for {VCenterName}", vCenterName);
                 // Fallback to basic role/permission discovery
                 await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
@@ -1167,6 +1168,7 @@ try {{
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load roles and permissions using SSO Admin script for {VCenterName}", vCenterName);
+            _logger.LogInformation("Note: This may be due to missing VMware.vSphere.SsoAdmin module (deprecated in PowerCLI 13.x)");
             _logger.LogInformation("Falling back to basic role/permission discovery for {VCenterName}", vCenterName);
             // Fallback to basic role/permission discovery
             await LoadBasicRolesAndPermissionsAsync(vCenterName, inventory, connectionType);
@@ -1400,6 +1402,7 @@ try {{
         }}
     }} catch {{
         Write-LogWarning ""Could not import SSO Admin module: $($_.Exception.Message)"" -Category ""Module""
+        Write-LogInfo ""SSO Admin functionality will be limited to standard vCenter roles and permissions"" -Category ""Module""
     }}
 
     # Initialize result data

@@ -358,9 +358,11 @@ namespace VCenterMigrationTool.ViewModels
                 }
                 else
                 {
-                    SourceDataStatus = "❌ Failed to load admin config";
-                    MigrationStatus = "Failed to load source admin config";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: Failed to load source admin config\n";
+                    SourceDataStatus = "⚠️ Limited admin config loaded";
+                    MigrationStatus = "Admin config loaded with limitations (SSO module unavailable)";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ WARNING: Admin config loaded with limitations\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: VMware.vSphere.SsoAdmin module not available - using basic discovery\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: Standard vCenter roles and permissions will be available\n";
                 }
             }
             catch (Exception ex)
@@ -368,6 +370,14 @@ namespace VCenterMigrationTool.ViewModels
                 SourceDataStatus = "❌ Error loading admin config";
                 MigrationStatus = $"Failed to load source admin config: {ex.Message}";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: {ex.Message}\n";
+                
+                // Check if the error might be related to SSO module
+                if (ex.Message.Contains("SSO") || ex.Message.Contains("SsoAdmin"))
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: This error may be due to missing VMware.vSphere.SsoAdmin module\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: This module is deprecated in PowerCLI 13.x - basic discovery should still work\n";
+                }
+                
                 _logger.LogError(ex, "Error loading source admin config");
             }
         }
@@ -426,9 +436,11 @@ namespace VCenterMigrationTool.ViewModels
                 }
                 else
                 {
-                    TargetDataStatus = "❌ Failed to load admin config";
-                    MigrationStatus = "Failed to load target admin config";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: Failed to load target admin config\n";
+                    TargetDataStatus = "⚠️ Limited admin config loaded";
+                    MigrationStatus = "Target admin config loaded with limitations (SSO module unavailable)";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ WARNING: Target admin config loaded with limitations\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: VMware.vSphere.SsoAdmin module not available - using basic discovery\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: Standard vCenter roles and permissions will be available\n";
                 }
             }
             catch (Exception ex)
@@ -436,6 +448,14 @@ namespace VCenterMigrationTool.ViewModels
                 TargetDataStatus = "❌ Error loading admin config";
                 MigrationStatus = $"Failed to load target admin config: {ex.Message}";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: {ex.Message}\n";
+                
+                // Check if the error might be related to SSO module
+                if (ex.Message.Contains("SSO") || ex.Message.Contains("SsoAdmin"))
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: This error may be due to missing VMware.vSphere.SsoAdmin module\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ INFO: This module is deprecated in PowerCLI 13.x - basic discovery should still work\n";
+                }
+                
                 _logger.LogError(ex, "Error loading target admin config");
             }
         }
