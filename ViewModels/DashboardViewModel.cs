@@ -451,13 +451,30 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 if (pcliSuccess)
                 {
                     _logger.LogInformation("STEP 2B: Persistent PowerCLI connection established - SessionId: {SessionId}", pcliSessionId);
-                    // Test the connection by getting basic info
-                    var testResult = await _persistentConnectionService.ExecuteCommandAsync("source", 
-                        "$global:DefaultVIServers | Select-Object -First 1 | Select-Object Name, Version, Build, IsConnected | ConvertTo-Json");
                     
-                    if (!string.IsNullOrEmpty(testResult) && testResult.Contains("IsConnected"))
+                    // Allow PowerShell process to stabilize after connection before testing
+                    _logger.LogDebug("STEP 2B: Allowing PowerShell process to stabilize...");
+                    await Task.Delay(2000); // 2 second stabilization delay
+                    
+                    try
                     {
-                        _logger.LogInformation("STEP 2B: Connection test successful: {Result}", testResult.Trim());
+                        // Test the connection with a simple, safe command
+                        var testResult = await _persistentConnectionService.ExecuteCommandAsync("source", 
+                            "if ($global:DefaultVIServers -and $global:DefaultVIServers.Count -gt 0) { $global:DefaultVIServers[0] | Select-Object Name, IsConnected | ConvertTo-Json } else { 'No connections found' }");
+                        
+                        if (!string.IsNullOrEmpty(testResult) && !testResult.Contains("ERROR"))
+                        {
+                            _logger.LogInformation("STEP 2B: Connection test successful: {Result}", testResult.Trim());
+                        }
+                        else
+                        {
+                            _logger.LogWarning("STEP 2B: Connection test returned unexpected result: {Result}", testResult);
+                        }
+                    }
+                    catch (Exception testEx)
+                    {
+                        _logger.LogWarning(testEx, "STEP 2B: Connection test failed, but connection may still be functional");
+                        // Don't fail the entire process if just the test fails
                     }
                 }
                 else
@@ -715,13 +732,30 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
                 if (pcliSuccess)
                 {
                     _logger.LogInformation("STEP 2B: Persistent PowerCLI connection established - SessionId: {SessionId}", pcliSessionId);
-                    // Test the connection by getting basic info
-                    var testResult = await _persistentConnectionService.ExecuteCommandAsync("target", 
-                        "$global:DefaultVIServers | Select-Object -First 1 | Select-Object Name, Version, Build, IsConnected | ConvertTo-Json");
                     
-                    if (!string.IsNullOrEmpty(testResult) && testResult.Contains("IsConnected"))
+                    // Allow PowerShell process to stabilize after connection before testing
+                    _logger.LogDebug("STEP 2B: Allowing target PowerShell process to stabilize...");
+                    await Task.Delay(2000); // 2 second stabilization delay
+                    
+                    try
                     {
-                        _logger.LogInformation("STEP 2B: Connection test successful: {Result}", testResult.Trim());
+                        // Test the connection with a simple, safe command
+                        var testResult = await _persistentConnectionService.ExecuteCommandAsync("target", 
+                            "if ($global:DefaultVIServers -and $global:DefaultVIServers.Count -gt 0) { $global:DefaultVIServers[0] | Select-Object Name, IsConnected | ConvertTo-Json } else { 'No connections found' }");
+                        
+                        if (!string.IsNullOrEmpty(testResult) && !testResult.Contains("ERROR"))
+                        {
+                            _logger.LogInformation("STEP 2B: Target connection test successful: {Result}", testResult.Trim());
+                        }
+                        else
+                        {
+                            _logger.LogWarning("STEP 2B: Target connection test returned unexpected result: {Result}", testResult);
+                        }
+                    }
+                    catch (Exception testEx)
+                    {
+                        _logger.LogWarning(testEx, "STEP 2B: Target connection test failed, but connection may still be functional");
+                        // Don't fail the entire process if just the test fails
                     }
                 }
                 else

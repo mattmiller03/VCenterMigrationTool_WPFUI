@@ -298,9 +298,8 @@ public class PersistentExternalConnectionService : IDisposable
                         $global:DefaultVIServer = $connection
                         $global:CurrentVCenterConnection = $connection
                         
-                        # Quick test
-                        $vmCount = (Get-VM -Server $connection -ErrorAction SilentlyContinue).Count
-                        Write-Output ""VM_COUNT:$vmCount""
+                        # Lightweight connection verification (avoid heavy queries during setup)
+                        Write-Output ""CONNECTION_VERIFIED""
                     }} else {{
                         Write-Output ""CONNECTION_FAILED: Not connected""
                     }}
@@ -460,9 +459,28 @@ Write-Output '{endMarker}'
 ";
             }
 
-            // Send the command
-            await connection.StandardInput.WriteLineAsync(fullCommand);
-            await connection.StandardInput.FlushAsync();
+            // Check process stability before sending command
+            if (connection.Process.HasExited)
+            {
+                _logger.LogError("PowerShell process has exited for connection {Key}", connectionKey);
+                return "ERROR: PowerShell process has exited";
+            }
+            
+            // Send the command with error handling
+            try
+            {
+                await connection.StandardInput.WriteLineAsync(fullCommand);
+                await connection.StandardInput.FlushAsync();
+                
+                // Small delay to allow command to be processed
+                await Task.Delay(100);
+            }
+            catch (System.IO.IOException ioEx) when (ioEx.Message.Contains("pipe") || ioEx.Message.Contains("closed"))
+            {
+                _logger.LogError(ioEx, "Failed to send command - pipe closed for connection {Key}", connectionKey);
+                connection.IsConnected = false;
+                return $"ERROR: Cannot send command - pipe closed: {ioEx.Message}";
+            }
 
             // Wait for the end marker with timeout
             var startTime = DateTime.UtcNow;
@@ -487,9 +505,22 @@ Write-Output '{endMarker}'
             _logger.LogWarning("Command timed out after {Timeout} seconds", timeout.TotalSeconds);
             return "ERROR: Command timed out";
             }
+        catch (System.IO.IOException ioEx) when (ioEx.Message.Contains("pipe") || ioEx.Message.Contains("closed"))
+            {
+            _logger.LogError(ioEx, "PowerShell pipe error - process may have crashed");
+            
+            // Mark connection as failed and attempt cleanup
+            if (_connections.TryGetValue(connectionKey, out var failedConnection))
+            {
+                failedConnection.IsConnected = false;
+                _logger.LogWarning("Marking connection {Key} as failed due to pipe error", connectionKey);
+            }
+            
+            return $"ERROR: PowerShell process pipe closed - {ioEx.Message}";
+            }
         catch (Exception ex)
             {
-            _logger.LogError(ex, "Error executing command");
+            _logger.LogError(ex, "Error executing command on connection {Key}", connectionKey);
             return $"ERROR: {ex.Message}";
             }
         }
