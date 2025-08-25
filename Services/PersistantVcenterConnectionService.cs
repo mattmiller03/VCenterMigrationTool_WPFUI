@@ -594,11 +594,21 @@ Write-Output '{endMarker}'
 
             if (!connection.Process.HasExited)
                 {
-                // Try to disconnect gracefully
+                // Try to disconnect gracefully - only if PowerCLI is loaded and connected
                 try
                     {
-                    await connection.StandardInput.WriteLineAsync(
-                        $"Disconnect-VIServer -Server {connection.ConnectionInfo.ServerAddress} -Force -Confirm:$false");
+                    // Check if PowerCLI is loaded and has active connections before attempting disconnect
+                    var checkResult = await ExecuteCommandWithTimeoutAsync(connectionKey, 
+                        "if (Get-Command 'Get-VIServer' -ErrorAction SilentlyContinue) { if (Get-VIServer -ErrorAction SilentlyContinue) { 'CONNECTED' } else { 'NO_CONNECTION' } } else { 'NO_POWERCLI' }", 
+                        TimeSpan.FromSeconds(5), skipConnectionCheck: true);
+                    
+                    if (checkResult.Contains("CONNECTED"))
+                    {
+                        await connection.StandardInput.WriteLineAsync(
+                            $"Disconnect-VIServer -Server {connection.ConnectionInfo.ServerAddress} -Force -Confirm:$false");
+                    }
+                    // NOTE: Skip disconnect if PowerCLI not loaded or no active connections to avoid error noise
+                    
                     await connection.StandardInput.WriteLineAsync("exit");
                     await connection.StandardInput.FlushAsync();
 
