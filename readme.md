@@ -26,6 +26,14 @@ This document outlines the structure and development guide for the vCenter Migra
 - **Custom Converter Implementation**: Created `AccentColorSelectionConverter` with `MultiBinding` support for proper accent color highlighting
 - **XAML Binding Compliance**: Resolved invalid binding expressions in DataTrigger values using proper WPF patterns
 
+**Enhanced Folder Migration System:**
+- **Complete Export/Import Functionality**: Fully functional folder export to JSON and import with actual folder creation in target vCenter
+- **Copy-VMFolderStructure.ps1 Integration**: Updated MigrateFoldersAsync to use the proven Copy-VMFolderStructure.ps1 script for reliable folder replication
+- **Smart Folder Import**: Import functionality now creates actual VM folders with hierarchical structure preservation, duplicate detection, and parent folder auto-creation
+- **Enhanced Admin Config Migration**: Folder migration checkbox now performs complete folder structure replication between datacenters
+- **Real-time Progress Reporting**: Detailed logging with creation statistics (Created, Existed, Failed) and comprehensive error handling
+- **PowerShell Integration**: Uses embedded PowerShell scripts for reliable vCenter folder operations with SecureString password handling
+
 ### 2.2 Major Updates from v1.3 ✅
 
 **Enhanced PowerShell Logging System:**

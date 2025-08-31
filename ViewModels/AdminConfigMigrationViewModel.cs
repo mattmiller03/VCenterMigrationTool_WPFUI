@@ -1189,7 +1189,8 @@ namespace VCenterMigrationTool.ViewModels
                             var folders = System.Text.Json.JsonSerializer.Deserialize<List<FolderInfo>>(json);
                             if (folders != null)
                             {
-                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Loaded {folders.Count} folders - Import functionality will be implemented in future update\n";
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📁 Loaded {folders.Count} folders from export file\n";
+                                await ImportFoldersFromJson(folders);
                             }
                             break;
                         case "Tags":
@@ -1230,6 +1231,232 @@ namespace VCenterMigrationTool.ViewModels
             {
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Import failed: {ex.Message}\n";
                 _logger.LogError(ex, "Failed to import {CategoryName}", categoryName);
+            }
+        }
+
+        /// <summary>
+        /// Import folders from JSON and create them in the target vCenter
+        /// </summary>
+        private async Task ImportFoldersFromJson(List<FolderInfo> folders)
+        {
+            try
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔄 Starting folder import to target vCenter...\n";
+                
+                // Check target connection
+                var connectionCheck = await EnsureTargetConnectionAsync();
+                if (!connectionCheck)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Target connection failed - unable to import folders\n";
+                    return;
+                }
+                
+                // Get target inventory for datacenter information
+                var targetInventory = _sharedConnectionService.GetTargetInventory();
+                if (targetInventory?.Datacenters == null || targetInventory.Datacenters.Count == 0)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ No datacenters found in target vCenter\n";
+                    return;
+                }
+                
+                // Get the first datacenter as default target
+                var targetDatacenter = targetInventory.Datacenters.FirstOrDefault();
+                if (targetDatacenter == null)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Unable to determine target datacenter\n";
+                    return;
+                }
+                
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🎯 Target datacenter: '{targetDatacenter.Name}'\n";
+                
+                // Filter to only VM folders for import
+                var vmFolders = folders.Where(f => f.Type.Equals("VM", StringComparison.OrdinalIgnoreCase)).ToList();
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📂 Found {vmFolders.Count} VM folders to import\n";
+                
+                if (!vmFolders.Any())
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ No VM folders found in export file\n";
+                    return;
+                }
+                
+                // Group folders by datacenter and create them
+                var foldersByDatacenter = vmFolders.GroupBy(f => f.DatacenterName).ToList();
+                
+                foreach (var dcGroup in foldersByDatacenter)
+                {
+                    var sourceDcName = dcGroup.Key;
+                    var dcFolders = dcGroup.OrderBy(f => f.Path.Count(c => c == '/')).ToList(); // Create parent folders first
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📁 Processing {dcFolders.Count} folders from source datacenter '{sourceDcName}'\n";
+                    
+                    var createdCount = 0;
+                    var skippedCount = 0;
+                    var failedCount = 0;
+                    
+                    foreach (var folder in dcFolders)
+                    {
+                        try
+                        {
+                            // Skip root folders (vm, Discovered virtual machine, etc.)
+                            if (folder.Path.Count(c => c == '/') <= 2)
+                            {
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⏭️ Skipping root folder: {folder.Name}\n";
+                                skippedCount++;
+                                continue;
+                            }
+                            
+                            var result = await CreateFolderInTarget(folder, targetDatacenter.Name);
+                            
+                            if (result == "created")
+                            {
+                                createdCount++;
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Created folder: {folder.Name} in path: {folder.Path}\n";
+                            }
+                            else if (result == "exists")
+                            {
+                                skippedCount++;
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Folder already exists: {folder.Name}\n";
+                            }
+                            else
+                            {
+                                failedCount++;
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Failed to create folder: {folder.Name}\n";
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            failedCount++;
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Error creating folder '{folder.Name}': {ex.Message}\n";
+                            _logger.LogError(ex, "Error creating folder {FolderName}", folder.Name);
+                        }
+                    }
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📊 Datacenter '{sourceDcName}' import results: Created: {createdCount}, Existed: {skippedCount}, Failed: {failedCount}\n";
+                }
+                
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Folder import completed\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 💡 Tip: Refresh the target admin config to see the new folders\n";
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Folder import failed: {ex.Message}\n";
+                _logger.LogError(ex, "Error during folder import");
+            }
+        }
+        
+        /// <summary>
+        /// Create a single folder in the target vCenter using PowerShell
+        /// </summary>
+        private async Task<string> CreateFolderInTarget(FolderInfo folderInfo, string targetDatacenterName)
+        {
+            try
+            {
+                if (_sharedConnectionService.TargetConnection == null)
+                {
+                    throw new InvalidOperationException("Target connection not available");
+                }
+
+                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
+                
+                // Convert password to SecureString for PowerShell
+                var targetSecurePassword = new System.Security.SecureString();
+                foreach (char c in targetPassword)
+                {
+                    targetSecurePassword.AppendChar(c);
+                }
+                targetSecurePassword.MakeReadOnly();
+                
+                // Create PowerShell script to create the folder
+                var createFolderScript = @"
+                param(
+                    [string]$VCenterServer,
+                    [string]$Username,
+                    [securestring]$Password,
+                    [string]$TargetDatacenterName,
+                    [string]$FolderName,
+                    [string]$FolderPath
+                )
+                
+                try {
+                    # Connect to vCenter (reuse existing connection if available)
+                    $existingConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
+                    if (-not $existingConnection -or -not $existingConnection.IsConnected) {
+                        $credential = New-Object System.Management.Automation.PSCredential($Username, $Password)
+                        Connect-VIServer -Server $VCenterServer -Credential $credential -Force | Out-Null
+                    }
+                    
+                    # Get target datacenter
+                    $targetDc = Get-Datacenter -Name $TargetDatacenterName -ErrorAction SilentlyContinue
+                    if (-not $targetDc) {
+                        throw ""Target datacenter '$TargetDatacenterName' not found""
+                    }
+                    
+                    # Parse the folder path to get parent folder structure
+                    $pathParts = $FolderPath.Split('/') | Where-Object { $_ -ne '' }
+                    
+                    # Start from the datacenter's VM folder
+                    $parentFolder = Get-Folder -Type VM -Location $targetDc | Where-Object { $_.Name -eq 'vm' }
+                    
+                    # Navigate/create path excluding root parts
+                    for ($i = 1; $i -lt ($pathParts.Length - 1); $i++) {
+                        $pathPart = $pathParts[$i]
+                        if ($pathPart -eq 'vm' -or $pathPart -eq $targetDc.Name) { continue }
+                        
+                        $childFolder = Get-Folder -Type VM -Location $parentFolder -Name $pathPart -ErrorAction SilentlyContinue
+                        if (-not $childFolder) {
+                            $childFolder = New-Folder -Location $parentFolder -Name $pathPart -Type VM
+                        }
+                        $parentFolder = $childFolder
+                    }
+                    
+                    # Check if target folder already exists
+                    $existingFolder = Get-Folder -Type VM -Location $parentFolder -Name $FolderName -ErrorAction SilentlyContinue
+                    if ($existingFolder) {
+                        Write-Output ""EXISTS""
+                        return
+                    }
+                    
+                    # Create the target folder
+                    $newFolder = New-Folder -Location $parentFolder -Name $FolderName -Type VM
+                    Write-Output ""CREATED:$($newFolder.Name)""
+                    
+                } catch {
+                    Write-Output ""ERROR:$($_.Exception.Message)""
+                }
+                ";
+                
+                var parameters = new Dictionary<string, object>
+                {
+                    { "VCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
+                    { "Username", _sharedConnectionService.TargetConnection.Username },
+                    { "Password", targetSecurePassword },
+                    { "TargetDatacenterName", targetDatacenterName },
+                    { "FolderName", folderInfo.Name },
+                    { "FolderPath", folderInfo.Path }
+                };
+
+                var result = await _powerShellService.RunScriptAsync(createFolderScript, parameters);
+
+                if (result.Contains("CREATED:"))
+                {
+                    return "created";
+                }
+                else if (result.Contains("EXISTS"))
+                {
+                    return "exists";
+                }
+                else if (result.Contains("ERROR:"))
+                {
+                    var errorMessage = result.Substring(result.IndexOf("ERROR:") + 6);
+                    throw new Exception(errorMessage);
+                }
+                
+                return "unknown";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating folder {FolderName} in target", folderInfo.Name);
+                throw;
             }
         }
 
