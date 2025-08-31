@@ -20,6 +20,7 @@ namespace VCenterMigrationTool.ViewModels
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly PersistentExternalConnectionService _persistentConnectionService;
         private readonly CredentialService _credentialService;
+        private readonly ConfigurationService _configurationService;
         private readonly ILogger<AdminConfigMigrationViewModel> _logger;
 
         // Connection Status
@@ -126,6 +127,7 @@ namespace VCenterMigrationTool.ViewModels
             IErrorHandlingService errorHandlingService,
             PersistentExternalConnectionService persistentConnectionService,
             CredentialService credentialService,
+            ConfigurationService configurationService,
             ILogger<AdminConfigMigrationViewModel> logger)
         {
             _sharedConnectionService = sharedConnectionService;
@@ -133,6 +135,7 @@ namespace VCenterMigrationTool.ViewModels
             _errorHandlingService = errorHandlingService;
             _persistentConnectionService = persistentConnectionService;
             _credentialService = credentialService;
+            _configurationService = configurationService;
             _logger = logger;
 
             // Initialize activity log
@@ -673,13 +676,20 @@ namespace VCenterMigrationTool.ViewModels
                 MigrationStatus = "Migrating folders...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔄 Starting folder migration\n";
                 
-                // Get source data for logging
+                // Get source and target inventory for datacenter information
                 var sourceInventory = _sharedConnectionService.GetSourceInventory();
-                var folderCount = sourceInventory?.Folders?.Count ?? 0;
+                var targetInventory = _sharedConnectionService.GetTargetInventory();
                 
-                if (folderCount > 0)
+                if (sourceInventory?.Datacenters == null || sourceInventory.Datacenters.Count == 0)
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📁 Migrating {folderCount} folder structures (VM, Host, Network, Datastore)...\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ No datacenters found in source vCenter\n";
+                    return;
+                }
+                
+                if (targetInventory?.Datacenters == null || targetInventory.Datacenters.Count == 0)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ No datacenters found in target vCenter\n";
+                    return;
                 }
                 
                 if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
@@ -690,42 +700,97 @@ namespace VCenterMigrationTool.ViewModels
                 var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
                 var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
                 
+                // Get the first datacenter from each vCenter (or use mapping if available)
+                var sourceDatacenter = sourceInventory.Datacenters.FirstOrDefault();
+                var targetDatacenter = targetInventory.Datacenters.FirstOrDefault();
+                
+                if (sourceDatacenter == null || targetDatacenter == null)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Unable to determine source or target datacenter\n";
+                    return;
+                }
+                
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📁 Replicating folder structure from '{sourceDatacenter.Name}' to '{targetDatacenter.Name}'...\n";
+                
+                // Convert passwords to SecureString for PowerShell
+                var sourceSecurePassword = new System.Security.SecureString();
+                foreach (char c in sourcePassword)
+                {
+                    sourceSecurePassword.AppendChar(c);
+                }
+                sourceSecurePassword.MakeReadOnly();
+                
+                var targetSecurePassword = new System.Security.SecureString();
+                foreach (char c in targetPassword)
+                {
+                    targetSecurePassword.AppendChar(c);
+                }
+                targetSecurePassword.MakeReadOnly();
+                
+                // Use Copy-VMFolderStructure.ps1 for folder replication
                 var parameters = new Dictionary<string, object>
                 {
-                    { "SourceVCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
-                    { "TargetVCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
-                    { "ValidateOnly", ValidateOnly },
-                    { "SkipExisting", true },
-                    { "FolderTypes", new[] { "VM", "Host", "Network", "Datastore" } },
-                    { "BypassModuleCheck", true }
+                    { "SourceVCenter", _sharedConnectionService.SourceConnection.ServerAddress },
+                    { "TargetVCenter", _sharedConnectionService.TargetConnection.ServerAddress },
+                    { "SourceDatacenterName", sourceDatacenter.Name },
+                    { "TargetDatacenterName", targetDatacenter.Name },
+                    { "SourceUser", _sharedConnectionService.SourceConnection.Username },
+                    { "SourcePassword", sourceSecurePassword },
+                    { "TargetUser", _sharedConnectionService.TargetConnection.Username },
+                    { "TargetPassword", targetSecurePassword },
+                    { "LogPath", _configurationService.GetConfiguration().LogPath },
+                    { "SuppressConsoleOutput", false }
                 };
 
-                var result = await _powerShellService.RunDualVCenterScriptAsync(
-                    "Scripts\\Migrate-Folders.ps1",
-                    _sharedConnectionService.SourceConnection,
-                    sourcePassword,
-                    _sharedConnectionService.TargetConnection,
-                    targetPassword,
+                // Check if we're in validate-only mode
+                if (ValidateOnly)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Running in validation mode - no folders will be created\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Validation: Would replicate folders from '{sourceDatacenter.Name}' to '{targetDatacenter.Name}'\n";
+                    return;
+                }
+
+                var result = await _powerShellService.RunScriptAsync(
+                    "Scripts\\Copy-VMFolderStructure.ps1",
                     parameters);
 
-                if (result.StartsWith("SUCCESS:"))
+                // Parse the result for statistics
+                if (result.Contains("Successfully copied folder structure"))
                 {
-                    var action = ValidateOnly ? "validation" : "migration";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Folders {action} completed successfully\n";
+                    // Extract statistics from the result
+                    var lines = result.Split('\n');
+                    string stats = "";
+                    foreach (var line in lines)
+                    {
+                        if (line.Contains("Created:") || line.Contains("Skipped:") || line.Contains("Failed:"))
+                        {
+                            stats = line;
+                            break;
+                        }
+                    }
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ✅ Folder structure replicated successfully\n";
+                    if (!string.IsNullOrEmpty(stats))
+                    {
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📊 {stats}\n";
+                    }
                 }
-                else if (result.StartsWith("ERROR:"))
+                else if (result.Contains("ERROR:") || result.Contains("failed"))
                 {
-                    throw new Exception(result.Substring(6));
+                    var errorMessage = result.Contains("ERROR:") 
+                        ? result.Substring(result.IndexOf("ERROR:") + 6)
+                        : "Folder replication failed - check logs for details";
+                    throw new Exception(errorMessage);
                 }
                 else
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Folders migration result: {result}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ℹ️ Folder replication completed\n";
                 }
             }
             catch (Exception ex)
             {
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Folders migration failed: {ex.Message}\n";
-                _logger.LogError(ex, "Error during folders migration");
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Folder replication failed: {ex.Message}\n";
+                _logger.LogError(ex, "Error during folder replication");
                 throw;
             }
         }
