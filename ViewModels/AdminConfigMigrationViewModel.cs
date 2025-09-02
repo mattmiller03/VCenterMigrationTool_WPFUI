@@ -640,7 +640,7 @@ namespace VCenterMigrationTool.ViewModels
                 };
 
                 var result = await _powerShellService.RunDualVCenterScriptAsync(
-                    "Scripts\\Migrate-Roles.ps1",
+                    "Scripts\\Active\\Core Migration\\Migrate-Roles.ps1",
                     _sharedConnectionService.SourceConnection,
                     sourcePassword,
                     _sharedConnectionService.TargetConnection,
@@ -751,7 +751,7 @@ namespace VCenterMigrationTool.ViewModels
                 }
 
                 var result = await _powerShellService.RunScriptAsync(
-                    "Scripts\\Copy-VMFolderStructure.ps1",
+                    "Scripts\\Active\\Copy-VMFolderStructure_2.0.ps1",
                     parameters);
 
                 // Parse the result for statistics
@@ -831,7 +831,7 @@ namespace VCenterMigrationTool.ViewModels
                 };
 
                 var result = await _powerShellService.RunDualVCenterScriptAsync(
-                    "Scripts\\Migrate-Tags.ps1",
+                    "Scripts\\Active\\Core Migration\\Migrate-Tags.ps1",
                     _sharedConnectionService.SourceConnection,
                     sourcePassword,
                     _sharedConnectionService.TargetConnection,
@@ -895,7 +895,7 @@ namespace VCenterMigrationTool.ViewModels
                 };
 
                 var result = await _powerShellService.RunDualVCenterScriptAsync(
-                    "Scripts\\Migrate-CustomAttributes.ps1",
+                    "Scripts\\Active\\Core Migration\\Migrate-CustomAttributes.ps1",
                     _sharedConnectionService.SourceConnection,
                     sourcePassword,
                     _sharedConnectionService.TargetConnection,
@@ -959,7 +959,7 @@ namespace VCenterMigrationTool.ViewModels
                 };
 
                 var result = await _powerShellService.RunDualVCenterScriptAsync(
-                    "Scripts\\Migrate-Permissions.ps1",
+                    "Scripts\\Active\\Core Migration\\Migrate-Permissions.ps1",
                     _sharedConnectionService.SourceConnection,
                     sourcePassword,
                     _sharedConnectionService.TargetConnection,

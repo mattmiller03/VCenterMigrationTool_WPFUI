@@ -107,7 +107,7 @@ public partial class FolderStructureMigrationViewModel : ObservableObject
             OperationStatus = "Executing folder structure copy script...";
 
             string result = await _powerShellService.RunScriptOptimizedAsync(
-                ".\\Scripts\\copy-vmfolderstructure.ps1",
+                ".\\Scripts\\Active\\copy-vmfolderstructure.ps1",
                 scriptParams);
 
             OperationProgress = 100;
@@ -173,7 +173,7 @@ public partial class FolderStructureMigrationViewModel : ObservableObject
                 }
 
             var sourceResult = await _powerShellService.RunScriptOptimizedAsync(
-                ".\\Scripts\\Get-Datacenters.ps1",
+                ".\\Scripts\\Active\\Infrastructure Discovery\\Get-Datacenters.ps1",
                 sourceParams);
 
             // Get target datacenters
@@ -191,7 +191,7 @@ public partial class FolderStructureMigrationViewModel : ObservableObject
                 }
 
             var targetResult = await _powerShellService.RunScriptOptimizedAsync(
-                ".\\Scripts\\Get-Datacenters.ps1",
+                ".\\Scripts\\Active\\Infrastructure Discovery\\Get-Datacenters.ps1",
                 targetParams);
 
             LogOutput += $"Source vCenter datacenters: {sourceResult}\n";

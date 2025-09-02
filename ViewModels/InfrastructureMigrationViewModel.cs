@@ -994,7 +994,7 @@ namespace VCenterMigrationTool.ViewModels
                             ["ValidateOnly"] = ValidateOnly
                         };
 
-                        var result = await _powerShellService.RunScriptAsync("Scripts\\Migrate-VCenterObject.ps1", parameters);
+                        var result = await _powerShellService.RunScriptAsync("Scripts\\Active\\Core Migration\\Migrate-VCenterObject.ps1", parameters);
 
                         if (result.Contains("Successfully migrated"))
                         {

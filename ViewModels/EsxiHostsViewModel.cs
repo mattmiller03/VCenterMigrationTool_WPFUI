@@ -460,7 +460,7 @@ public partial class EsxiHostsViewModel : ActivityLogViewModelBase
                                                "VCenterMigrationTool", "Logs");
 
             // Get the absolute path to the script file
-            var scriptPath = Path.Combine(AppContext.BaseDirectory, "Scripts", "Backup-ESXiHostConfig.ps1");
+            var scriptPath = Path.Combine(AppContext.BaseDirectory, "Scripts", "Active", "Backup-ESXiHostConfig.ps1");
 
             if (!File.Exists(scriptPath))
             {

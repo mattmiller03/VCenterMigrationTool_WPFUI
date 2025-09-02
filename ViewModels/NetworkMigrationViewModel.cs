@@ -202,7 +202,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
 
             // Discover VDS switches using lightweight discovery script
             var discoveryResult = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Get-VDSSwitches.ps1",
+                "Scripts\\Active\\Network Management\\Get-VDSSwitches.ps1",
                 _sharedConnectionService.SourceConnection,
                 password,
                 parameters);
@@ -270,7 +270,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
 
             // Load target VDS configuration using Export-VDS.ps1 script
             var exportResult = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Export-VDS.ps1",
+                "Scripts\\Active\\Network Management\\Export-VDS.ps1",
                 _sharedConnectionService.TargetConnection,
                 password,
                 parameters);
@@ -532,7 +532,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
             MigrationProgress = 50;
 
             var result = await _powerShellService.RunDualVCenterScriptAsync(
-                "Scripts\\Migrate-NetworkConfiguration.ps1",
+                "Scripts\\Active\\Core Migration\\Migrate-NetworkConfiguration.ps1",
                 _sharedConnectionService.SourceConnection,
                 sourcePassword,
                 _sharedConnectionService.TargetConnection, 
@@ -633,7 +633,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
                 };
 
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Export-VDS.ps1",
+                "Scripts\\Active\\Network Management\\Export-VDS.ps1",
                 _sharedConnectionService.SourceConnection,
                 password,
                 parameters);
@@ -729,7 +729,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Reference file: {referenceFileName}\n";
 
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Export-VDS.ps1",
+                "Scripts\\Active\\Network Management\\Export-VDS.ps1",
                 _sharedConnectionService.SourceConnection,
                 password,
                 parameters);
@@ -815,7 +815,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
                 };
 
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Import-VDS.ps1",
+                "Scripts\\Active\\Network Management\\Import-VDS.ps1",
                 _sharedConnectionService.TargetConnection,
                 password,
                 parameters);
@@ -971,7 +971,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
             LogOutput += $"[{DateTime.Now:HH:mm:ss}] Replace existing: {RecreateIfExists}\n";
 
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Import-VDS.ps1",
+                "Scripts\\Active\\Network Management\\Import-VDS.ps1",
                 _sharedConnectionService.TargetConnection,
                 password,
                 parameters);

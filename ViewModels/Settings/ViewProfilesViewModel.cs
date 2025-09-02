@@ -117,7 +117,7 @@ public partial class ViewProfilesViewModel : ObservableObject
         try
             {
             string logPath = _configurationService.GetConfiguration().LogPath ?? "Logs";
-            string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Test-vCenterConnection.ps1", scriptParams, logPath);
+            string result = await _powerShellService.RunScriptAsync(".\\Scripts\\Active\\Test-VCenterConnection.ps1", scriptParams, logPath);
 
             // Parse the result and set simple status message
             if (result.Contains("Success"))

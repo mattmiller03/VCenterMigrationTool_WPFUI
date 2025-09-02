@@ -304,7 +304,7 @@ public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigatio
 
             // Use the new credential method
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Get-VMs.ps1",
+                "Scripts\\Active\\Infrastructure Discovery\\Get-VMs.ps1",
                 _sharedConnectionService.SourceConnection,
                 password);
 
@@ -377,7 +377,7 @@ public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigatio
                 };
 
             // Load target clusters
-            var scriptPath = Path.Combine("Scripts", "Get-Clusters.ps1");
+            var scriptPath = Path.Combine("Scripts", "Active", "Infrastructure Discovery", "Get-Clusters.ps1");
             var clusters = await _powerShellService.RunScriptAndGetObjectsOptimizedAsync<ClusterInfo>(scriptPath, parameters);
 
             TargetClusters.Clear();
@@ -497,7 +497,7 @@ public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigatio
                 };
 
             // Execute cleanup script
-            var scriptPath = Path.Combine("Scripts", "VMPostMigrationCleanup.ps1");
+            var scriptPath = Path.Combine("Scripts", "Active", "VM Migration-Backup", "VMPostMigrationCleanup.ps1");
             var result = await _powerShellService.RunScriptOptimizedAsync(scriptPath, parameters);
 
             if (result.Contains("SUCCESS") || result.Contains("completed"))
@@ -559,7 +559,7 @@ public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigatio
                 };
 
             // Execute migration script
-            var scriptPath = Path.Combine("Scripts", "CrossVcenterVMmigration_list.ps1");
+            var scriptPath = Path.Combine("Scripts", "Active", "VM Migration-Backup", "CrossVcenterVMmigration_list.ps1");
             var result = await _powerShellService.RunScriptOptimizedAsync(scriptPath, parameters);
 
             if (result.Contains("SUCCESS") || result.Contains("completed"))
@@ -745,7 +745,7 @@ public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigatio
             BackupStatus = "Executing VM backup script...";
 
             // Execute the external PowerShell script
-            var scriptPath = Path.Combine("Scripts", "BackupVMConfigurations.ps1");
+            var scriptPath = Path.Combine("Scripts", "Active", "VM Migration-Backup", "BackupVMConfigurations.ps1");
             var result = await _powerShellService.RunScriptAsync(scriptPath, parameters);
 
             BackupProgress = 80;
@@ -832,7 +832,7 @@ public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigatio
             BackupProgress = 50;
 
             // Execute the external validation script
-            var scriptPath = Path.Combine("Scripts", "ValidateVMBackups.ps1");
+            var scriptPath = Path.Combine("Scripts", "Active", "VM Migration-Backup", "ValidateVMBackup.ps1");
             var result = await _powerShellService.RunScriptAsync(scriptPath, parameters);
 
             if (!string.IsNullOrEmpty(result) && result.Contains("SUCCESS"))
@@ -902,7 +902,7 @@ public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigatio
             BackupProgress = 25;
 
             // Execute the external restore script
-            var scriptPath = Path.Combine("Scripts", "RestoreVMConfigurations.ps1");
+            var scriptPath = Path.Combine("Scripts", "Active", "VM Migration-Backup", "RestoreVMConfigurations.ps1");
             var result = await _powerShellService.RunScriptAsync(scriptPath, parameters);
 
             BackupProgress = 90;

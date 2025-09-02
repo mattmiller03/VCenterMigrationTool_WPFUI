@@ -1278,7 +1278,7 @@ try {{
                 var sdkAvailable = await CheckSDKAvailabilityAsync(connectionType);
 
                 // Use the updated SSO Admin script that handles both SDK and fallback
-                var scriptPath = Path.Combine(_scriptsDirectory, "Get-SSOAdminConfig.ps1");
+                var scriptPath = Path.Combine(_scriptsDirectory, "Active", "Get-SSOAdminConfig.ps1");
 
                 if (File.Exists(scriptPath))
                 {

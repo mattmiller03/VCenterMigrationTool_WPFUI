@@ -287,7 +287,7 @@ public partial class ResourcePoolMigrationViewModel : ActivityLogViewModelBase, 
 
             // Use the dedicated Get-Clusters.ps1 script
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Get-Clusters.ps1",
+                "Scripts\\Active\\Infrastructure Discovery\\Get-Clusters.ps1",
                 sourceConnection,
                 sourcePassword,
                 parameters);
@@ -383,7 +383,7 @@ public partial class ResourcePoolMigrationViewModel : ActivityLogViewModelBase, 
 
             // Use the dedicated Get-Clusters.ps1 script
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Get-Clusters.ps1",
+                "Scripts\\Active\\Infrastructure Discovery\\Get-Clusters.ps1",
                 targetConnection,
                 targetPassword,
                 parameters);
@@ -476,7 +476,7 @@ public partial class ResourcePoolMigrationViewModel : ActivityLogViewModelBase, 
 
             // Call the Get-ResourcePools.ps1 script
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Get-ResourcePools.ps1",
+                "Scripts\\Active\\Infrastructure Discovery\\Get-ResourcePools.ps1",
                 _sharedConnectionService.SourceConnection,
                 password,
                 parameters);
@@ -557,7 +557,7 @@ public partial class ResourcePoolMigrationViewModel : ActivityLogViewModelBase, 
 
             // Call the Get-ResourcePools.ps1 script
             var result = await _powerShellService.RunVCenterScriptAsync(
-                "Scripts\\Get-ResourcePools.ps1",
+                "Scripts\\Active\\Infrastructure Discovery\\Get-ResourcePools.ps1",
                 _sharedConnectionService.TargetConnection,
                 password,
                 parameters);

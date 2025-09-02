@@ -266,7 +266,7 @@ public class HybridPowerShellService : IDisposable
                 _logger.LogDebug("Set PSScriptRoot to: {Directory}", scriptDirectory);
                 
                 // Pre-load Write-ScriptLog.ps1 if it exists in the same directory
-                var logScriptPath = Path.Combine(scriptDirectory, "Write-ScriptLog.ps1");
+                var logScriptPath = Path.Combine(scriptDirectory, "Active", "Write-ScriptLog.ps1");
                 if (File.Exists(logScriptPath))
                 {
                     var logScriptContent = await File.ReadAllTextAsync(logScriptPath);
@@ -479,7 +479,7 @@ public class HybridPowerShellService : IDisposable
             // Add these new VM backup scripts
             "BackupVMConfigurations.ps1",
             "RestoreVMConfigurations.ps1",
-            "ValidateVMBackups.ps1",
+            "ValidateVMBackup.ps1",
             "Get-VMsForBackup.ps1",
             "Get-VMNetworkAdapters.ps1",
             "write-scriptlog.ps1",
@@ -558,7 +558,7 @@ public class HybridPowerShellService : IDisposable
 
                     // Create PowerShell process with logging script integration
                     var scriptsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts");
-                    var loggingScriptPath = Path.Combine(scriptsDirectory, "Write-ScriptLog.ps1");
+                    var loggingScriptPath = Path.Combine(scriptsDirectory, "Active", "Write-ScriptLog.ps1");
 
                     var psi = new ProcessStartInfo
                         {
@@ -852,7 +852,7 @@ public class HybridPowerShellService : IDisposable
 
     public async Task<string> CheckPrerequisitesAsync (string? logPath = null)
     {
-        var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Get-Prerequisites.ps1");
+        var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Active", "Get-Prerequisites.ps1");
         var parameters = new Dictionary<string, object>();
 
         // Use the configured log path if not provided
@@ -2054,7 +2054,7 @@ public class HybridPowerShellService : IDisposable
     {
         try
         {
-            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Migrate-VCenterObject.ps1");
+            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Active", "Core Migration", "Migrate-VCenterObject.ps1");
 
             // Ensure required parameters are present
             if (!parameters.ContainsKey("SourceVCenter") || !parameters.ContainsKey("TargetVCenter") ||

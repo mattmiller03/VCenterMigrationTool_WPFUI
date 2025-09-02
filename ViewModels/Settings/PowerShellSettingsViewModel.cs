@@ -246,7 +246,7 @@ namespace VCenterMigrationTool.ViewModels.Settings
 
                 // Use RunScriptOptimizedAsync with the parameters (this will auto-add LogPath if needed)
                 string result = await _powerShellService.RunScriptOptimizedAsync(
-                    ".\\Scripts\\Install-PowerCli.ps1",
+                    ".\\Scripts\\Active\\Install-PowerCli.ps1",
                     parameters);
 
                 // Parse the result to determine success/failure
