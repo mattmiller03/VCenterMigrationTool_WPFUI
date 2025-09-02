@@ -302,9 +302,9 @@ namespace VCenterMigrationTool.ViewModels
                 SourceDataStatus = "🔄 Verifying connection...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting source infrastructure loading - checking shared PowerCLI session\n";
                 
-                // Check if we already have an active PowerCLI connection in the shared session
+                // Check if we already have an active PowerCLI connection via PersistentExternalConnectionService
                 _logger.LogDebug("Verifying PowerCLI connection status for source infrastructure loading");
-                var isConnected = await _sharedPowerShellSession.IsVCenterConnectedAsync(isSource: true);
+                var isConnected = _sharedConnectionService.SourceUsingPowerCLI;
                 
                 if (!isConnected)
                 {
@@ -339,10 +339,11 @@ namespace VCenterMigrationTool.ViewModels
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Credentials retrieved successfully, initiating PowerCLI connection\n";
                     _logger.LogDebug("Attempting PowerCLI connection to source vCenter");
                     
-                    var connectResult = await _sharedPowerShellSession.ConnectToVCenterAsync(
-                        sourceConnection, 
-                        password, 
-                        isSource: true);
+                    // Source connections are established via PersistentExternalConnectionService in Dashboard
+                    // If we reach here, the connection should already be established
+                    // Log this as an unexpected state
+                    _logger.LogError("Source PowerCLI connection not found - this indicates a connection service mismatch");
+                    var connectResult = (success: false, message: "Source connection should be established via Dashboard using PersistentExternalConnectionService");
                         
                     if (!connectResult.success)
                     {
@@ -398,7 +399,7 @@ namespace VCenterMigrationTool.ViewModels
                 ";
                 
                 _logger.LogDebug("Executing datacenter enumeration script for source infrastructure");
-                var datacenterResult = await _sharedPowerShellSession.ExecuteCommandAsync(datacenterScript, isSource: true);
+                var datacenterResult = await _persistentConnectionService.ExecuteCommandAsync("source", datacenterScript);
                 _logger.LogInformation("Datacenter enumeration completed - result length: {Length} characters", datacenterResult.Length);
                 
                 if (datacenterResult.Contains("PHASE_ERROR"))
@@ -453,7 +454,7 @@ namespace VCenterMigrationTool.ViewModels
                     }
                 ";
                 
-                var clusterResult = await _sharedPowerShellSession.ExecuteCommandAsync(clusterScript, isSource: true);
+                var clusterResult = await _persistentConnectionService.ExecuteCommandAsync("source", clusterScript);
                 _logger.LogDebug("Cluster enumeration completed - result length: {Length} characters", clusterResult.Length);
                 
                 if (clusterResult.Contains("PHASE_ERROR"))
@@ -497,7 +498,7 @@ namespace VCenterMigrationTool.ViewModels
                     }
                 ";
                 
-                var hostResult = await _sharedPowerShellSession.ExecuteCommandAsync(hostScript, isSource: true);
+                var hostResult = await _persistentConnectionService.ExecuteCommandAsync("source", hostScript);
                 _logger.LogDebug("Host enumeration completed - result length: {Length} characters", hostResult.Length);
                 
                 if (hostResult.Contains("PHASE_ERROR"))
@@ -541,7 +542,7 @@ namespace VCenterMigrationTool.ViewModels
                     }
                 ";
                 
-                var datastoreResult = await _sharedPowerShellSession.ExecuteCommandAsync(datastoreScript, isSource: true);
+                var datastoreResult = await _persistentConnectionService.ExecuteCommandAsync("source", datastoreScript);
                 _logger.LogDebug("Datastore enumeration completed - result length: {Length} characters", datastoreResult.Length);
                 
                 if (datastoreResult.Contains("PHASE_ERROR"))
@@ -607,9 +608,9 @@ namespace VCenterMigrationTool.ViewModels
                 TargetDataStatus = "🔄 Verifying connection...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting target infrastructure loading - checking shared PowerCLI session\n";
                 
-                // Check if we already have an active PowerCLI connection in the shared session
+                // Check if we already have an active PowerCLI connection via PersistentExternalConnectionService
                 _logger.LogDebug("Verifying PowerCLI connection status for target infrastructure loading");
-                var isConnected = await _sharedPowerShellSession.IsVCenterConnectedAsync(isSource: false);
+                var isConnected = _sharedConnectionService.TargetUsingPowerCLI;
                 
                 if (!isConnected)
                 {
@@ -644,10 +645,11 @@ namespace VCenterMigrationTool.ViewModels
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Credentials retrieved successfully, initiating PowerCLI connection\n";
                     _logger.LogDebug("Attempting PowerCLI connection to target vCenter");
                     
-                    var connectResult = await _sharedPowerShellSession.ConnectToVCenterAsync(
-                        targetConnection, 
-                        password, 
-                        isSource: false);
+                    // Target connections are established via PersistentExternalConnectionService in Dashboard
+                    // If we reach here, the connection should already be established
+                    // Log this as an unexpected state
+                    _logger.LogError("Target PowerCLI connection not found - this indicates a connection service mismatch");
+                    var connectResult = (success: false, message: "Target connection should be established via Dashboard using PersistentExternalConnectionService");
                         
                     if (!connectResult.success)
                     {
@@ -703,7 +705,7 @@ namespace VCenterMigrationTool.ViewModels
                 ";
                 
                 _logger.LogDebug("Executing datacenter enumeration script for target infrastructure");
-                var datacenterResult = await _sharedPowerShellSession.ExecuteCommandAsync(datacenterScript, isSource: false);
+                var datacenterResult = await _persistentConnectionService.ExecuteCommandAsync("target", datacenterScript);
                 _logger.LogInformation("Datacenter enumeration completed - result length: {Length} characters", datacenterResult.Length);
                 
                 if (datacenterResult.Contains("PHASE_ERROR"))
@@ -758,7 +760,7 @@ namespace VCenterMigrationTool.ViewModels
                     }
                 ";
                 
-                var clusterResult = await _sharedPowerShellSession.ExecuteCommandAsync(clusterScript, isSource: false);
+                var clusterResult = await _persistentConnectionService.ExecuteCommandAsync("target", clusterScript);
                 _logger.LogDebug("Cluster enumeration completed - result length: {Length} characters", clusterResult.Length);
                 
                 if (clusterResult.Contains("PHASE_ERROR"))
@@ -802,7 +804,7 @@ namespace VCenterMigrationTool.ViewModels
                     }
                 ";
                 
-                var hostResult = await _sharedPowerShellSession.ExecuteCommandAsync(hostScript, isSource: false);
+                var hostResult = await _persistentConnectionService.ExecuteCommandAsync("target", hostScript);
                 _logger.LogDebug("Host enumeration completed - result length: {Length} characters", hostResult.Length);
                 
                 if (hostResult.Contains("PHASE_ERROR"))
@@ -846,7 +848,7 @@ namespace VCenterMigrationTool.ViewModels
                     }
                 ";
                 
-                var datastoreResult = await _sharedPowerShellSession.ExecuteCommandAsync(datastoreScript, isSource: false);
+                var datastoreResult = await _persistentConnectionService.ExecuteCommandAsync("target", datastoreScript);
                 _logger.LogDebug("Datastore enumeration completed - result length: {Length} characters", datastoreResult.Length);
                 
                 if (datastoreResult.Contains("PHASE_ERROR"))
