@@ -204,6 +204,7 @@ public partial class App
             services.AddTransient<ViewProfilesViewModel>();
             services.AddTransient<ProfileEditorViewModel>();
             services.AddSingleton<PersistentExternalConnectionService>();
+            services.AddSingleton<SharedPowerShellSessionService>();
             services.AddTransient<ViewModels.Dialogs.ErrorDialogViewModel>();
 
             // Dialogs

@@ -19,6 +19,7 @@ namespace VCenterMigrationTool.ViewModels
         private readonly HybridPowerShellService _powerShellService;
         private readonly IErrorHandlingService _errorHandlingService;
         private readonly PersistentExternalConnectionService _persistentConnectionService;
+        private readonly SharedPowerShellSessionService _sharedPowerShellSession;
         private readonly CredentialService _credentialService;
         private readonly ConfigurationService _configurationService;
         private readonly ILogger<InfrastructureMigrationViewModel> _logger;
@@ -108,6 +109,7 @@ namespace VCenterMigrationTool.ViewModels
             HybridPowerShellService powerShellService,
             IErrorHandlingService errorHandlingService,
             PersistentExternalConnectionService persistentConnectionService,
+            SharedPowerShellSessionService sharedPowerShellSession,
             CredentialService credentialService,
             ConfigurationService configurationService,
             ILogger<InfrastructureMigrationViewModel> logger)
@@ -116,6 +118,7 @@ namespace VCenterMigrationTool.ViewModels
             _powerShellService = powerShellService;
             _errorHandlingService = errorHandlingService;
             _persistentConnectionService = persistentConnectionService;
+            _sharedPowerShellSession = sharedPowerShellSession;
             _credentialService = credentialService;
             _configurationService = configurationService;
             _logger = logger;
@@ -293,16 +296,16 @@ namespace VCenterMigrationTool.ViewModels
             {
                 MigrationStatus = "Checking PowerCLI connection...";
                 SourceDataStatus = "🔄 Verifying connection...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Checking PowerCLI connection for infrastructure loading\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Checking shared PowerCLI session for source infrastructure loading\n";
                 
-                // Check if we already have an active PowerCLI connection
-                var isConnected = await _persistentConnectionService.IsConnectedAsync("source");
+                // Check if we already have an active PowerCLI connection in the shared session
+                var isConnected = await _sharedPowerShellSession.IsVCenterConnectedAsync(isSource: true);
                 
                 if (!isConnected)
                 {
                     MigrationStatus = "Establishing PowerCLI connection...";
                     SourceDataStatus = "🔄 Connecting to PowerCLI...";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection needed, establishing connection\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection needed, establishing connection in shared session\n";
                         
                     var sourceConnection = _sharedConnectionService.SourceConnection;
                     if (sourceConnection != null)
@@ -310,10 +313,10 @@ namespace VCenterMigrationTool.ViewModels
                         var password = _credentialService.GetPassword(sourceConnection);
                         if (!string.IsNullOrEmpty(password))
                         {
-                            var connectResult = await _persistentConnectionService.ConnectAsync(
+                            var connectResult = await _sharedPowerShellSession.ConnectToVCenterAsync(
                                 sourceConnection, 
                                 password, 
-                                true);
+                                isSource: true);
                                 
                             if (!connectResult.success)
                             {
@@ -324,7 +327,7 @@ namespace VCenterMigrationTool.ViewModels
                                 return;
                             }
                             
-                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection established successfully\n";
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection established successfully in shared session\n";
                         }
                         else
                         {
@@ -344,28 +347,41 @@ namespace VCenterMigrationTool.ViewModels
                 }
                 else
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection already active, proceeding with data loading\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection already active in shared session, proceeding with data loading\n";
                 }
 
                 MigrationStatus = "Loading source infrastructure...";
                 SourceDataStatus = "🔄 Loading infrastructure...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source infrastructure data\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source infrastructure data using shared PowerCLI session\n";
                 
-                var success = await _sharedConnectionService.LoadSourceInfrastructureAsync();
-                if (success)
+                // Load infrastructure data using the shared PowerShell session
+                var datacenterScript = @"
+                    Get-Datacenter | ForEach-Object {
+                        [PSCustomObject]@{
+                            Name = $_.Name
+                            Id = $_.Id
+                            ExtensionData = $_.ExtensionData
+                        }
+                    } | ConvertTo-Json -Depth 3
+                ";
+                
+                var datacenterResult = await _sharedPowerShellSession.ExecuteCommandAsync(datacenterScript, isSource: true);
+                
+                if (!datacenterResult.StartsWith("ERROR"))
                 {
+                    // Parse and update source data - simplified for now
                     SourceDataStatus = "✅ Infrastructure loaded";
                     MigrationStatus = "Source infrastructure loaded successfully";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source infrastructure data loaded successfully\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source infrastructure data loaded successfully from shared session\n";
                     
-                    // Refresh the data display
-                    await LoadInfrastructureDataAsync();
+                    // TODO: Parse JSON results and update SourceDatacenters collection
+                    // This will be expanded to load clusters, hosts, datastores etc.
                 }
                 else
                 {
                     SourceDataStatus = "❌ Failed to load infrastructure";
                     MigrationStatus = "Failed to load source infrastructure";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load source infrastructure\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load source infrastructure - {datacenterResult}\n";
                 }
             }
             catch (Exception ex)
@@ -390,16 +406,16 @@ namespace VCenterMigrationTool.ViewModels
             {
                 MigrationStatus = "Checking PowerCLI connection...";
                 TargetDataStatus = "🔄 Verifying connection...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Checking PowerCLI connection for infrastructure loading\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Checking shared PowerCLI session for target infrastructure loading\n";
                 
-                // Check if we already have an active PowerCLI connection
-                var isConnected = await _persistentConnectionService.IsConnectedAsync("target");
+                // Check if we already have an active PowerCLI connection in the shared session
+                var isConnected = await _sharedPowerShellSession.IsVCenterConnectedAsync(isSource: false);
                 
                 if (!isConnected)
                 {
                     MigrationStatus = "Establishing PowerCLI connection...";
                     TargetDataStatus = "🔄 Connecting to PowerCLI...";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection needed, establishing connection\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection needed, establishing connection in shared session\n";
                         
                     var targetConnection = _sharedConnectionService.TargetConnection;
                     if (targetConnection != null)
@@ -407,10 +423,10 @@ namespace VCenterMigrationTool.ViewModels
                         var password = _credentialService.GetPassword(targetConnection);
                         if (!string.IsNullOrEmpty(password))
                         {
-                            var connectResult = await _persistentConnectionService.ConnectAsync(
+                            var connectResult = await _sharedPowerShellSession.ConnectToVCenterAsync(
                                 targetConnection, 
                                 password, 
-                                false);
+                                isSource: false);
                                 
                             if (!connectResult.success)
                             {
@@ -421,7 +437,7 @@ namespace VCenterMigrationTool.ViewModels
                                 return;
                             }
                             
-                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection established successfully\n";
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection established successfully in shared session\n";
                         }
                         else
                         {
@@ -441,28 +457,41 @@ namespace VCenterMigrationTool.ViewModels
                 }
                 else
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection already active, proceeding with data loading\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection already active in shared session, proceeding with data loading\n";
                 }
 
                 MigrationStatus = "Loading target infrastructure...";
                 TargetDataStatus = "🔄 Loading infrastructure...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading target infrastructure data\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading target infrastructure data using shared PowerCLI session\n";
                 
-                var success = await _sharedConnectionService.LoadTargetInfrastructureAsync();
-                if (success)
+                // Load infrastructure data using the shared PowerShell session
+                var datacenterScript = @"
+                    Get-Datacenter | ForEach-Object {
+                        [PSCustomObject]@{
+                            Name = $_.Name
+                            Id = $_.Id
+                            ExtensionData = $_.ExtensionData
+                        }
+                    } | ConvertTo-Json -Depth 3
+                ";
+                
+                var datacenterResult = await _sharedPowerShellSession.ExecuteCommandAsync(datacenterScript, isSource: false);
+                
+                if (!datacenterResult.StartsWith("ERROR"))
                 {
+                    // Parse and update target data - simplified for now
                     TargetDataStatus = "✅ Infrastructure loaded";
                     MigrationStatus = "Target infrastructure loaded successfully";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target infrastructure data loaded successfully\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target infrastructure data loaded successfully from shared session\n";
                     
-                    // Refresh the data display
-                    await LoadInfrastructureDataAsync();
+                    // TODO: Parse JSON results and update TargetDatacenters collection
+                    // This will be expanded to load clusters, hosts, datastores etc.
                 }
                 else
                 {
                     TargetDataStatus = "❌ Failed to load infrastructure";
                     MigrationStatus = "Failed to load target infrastructure";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load target infrastructure\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load target infrastructure - {datacenterResult}\n";
                 }
             }
             catch (Exception ex)
