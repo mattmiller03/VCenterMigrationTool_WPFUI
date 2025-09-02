@@ -359,25 +359,48 @@ public class VCenterInventoryService
     {
         var script = @"
             # OPTIMIZED: Use simple SearchRoot approach for speed
-            $datacenters = Get-View -ViewType Datacenter | ForEach-Object {
-                $dc = $_
-                
-                # Use SearchRoot for fast counting within each datacenter
-                $clusterCount = [int](Get-View -ViewType ClusterComputeResource -SearchRoot $dc.MoRef | Measure-Object).Count
-                $hostCount = [int](Get-View -ViewType HostSystem -SearchRoot $dc.MoRef | Measure-Object).Count  
-                $vmCount = [int](Get-View -ViewType VirtualMachine -SearchRoot $dc.MoRef | Measure-Object).Count
-                $datastoreCount = [int](Get-View -ViewType Datastore -SearchRoot $dc.MoRef | Measure-Object).Count
-                
-                [PSCustomObject]@{
-                    Name = $dc.Name
-                    Id = $dc.MoRef.Value
-                    ClusterCount = $clusterCount
-                    HostCount = $hostCount  
-                    VmCount = $vmCount
-                    DatastoreCount = $datastoreCount
+            $results = @()
+            $datacenters = Get-View -ViewType Datacenter
+            
+            foreach ($dc in $datacenters) {
+                try {
+                    # Extract values immediately to avoid view object serialization issues
+                    $dcName = $dc.Name
+                    $dcId = $dc.MoRef.Value
+                    
+                    # Use SearchRoot for fast counting within each datacenter
+                    $clusterCount = [int](Get-View -ViewType ClusterComputeResource -SearchRoot $dc.MoRef | Measure-Object).Count
+                    $hostCount = [int](Get-View -ViewType HostSystem -SearchRoot $dc.MoRef | Measure-Object).Count  
+                    $vmCount = [int](Get-View -ViewType VirtualMachine -SearchRoot $dc.MoRef | Measure-Object).Count
+                    $datastoreCount = [int](Get-View -ViewType Datastore -SearchRoot $dc.MoRef | Measure-Object).Count
+                    
+                    # Create a clean object with only the needed properties
+                    $cleanObj = @{
+                        Name = $dcName
+                        Id = $dcId
+                        ClusterCount = $clusterCount
+                        HostCount = $hostCount  
+                        VmCount = $vmCount
+                        DatastoreCount = $datastoreCount
+                    }
+                    
+                    $results += $cleanObj
+                }
+                catch {
+                    Write-Warning ""Error processing datacenter $($dc.Name): $($_.Exception.Message)""
+                    # Add minimal info even on error
+                    $results += @{
+                        Name = if ($dc.Name) { $dc.Name } else { 'Unknown' }
+                        Id = if ($dc.MoRef.Value) { $dc.MoRef.Value } else { '' }
+                        ClusterCount = 0
+                        HostCount = 0
+                        VmCount = 0
+                        DatastoreCount = 0
+                    }
                 }
             }
-            $datacenters | ConvertTo-Json -Depth 2
+            
+            $results | ConvertTo-Json -Depth 2
         ";
 
         try
@@ -388,11 +411,41 @@ public class VCenterInventoryService
                 // Check if result looks like JSON before attempting to deserialize
                 if (result.TrimStart().StartsWith("[") || result.TrimStart().StartsWith("{"))
                 {
-                    var datacenters = JsonSerializer.Deserialize<DatacenterInfo[]>(result);
-                    if (datacenters != null)
+                    try
                     {
-                        inventory.Datacenters.AddRange(datacenters);
-                        _logger.LogInformation("Loaded {Count} datacenters for {VCenterName}", datacenters.Length, vCenterName);
+                        var datacenters = JsonSerializer.Deserialize<DatacenterInfo[]>(result);
+                        if (datacenters != null)
+                        {
+                            inventory.Datacenters.AddRange(datacenters);
+                            _logger.LogInformation("Loaded {Count} datacenters for {VCenterName}", datacenters.Length, vCenterName);
+                        }
+                    }
+                    catch (JsonException ex) when (ex.Message.Contains("duplicate") || ex.Message.Contains("same key"))
+                    {
+                        _logger.LogError("JSON deserialization failed due to duplicate key error: {Error}", ex.Message);
+                        _logger.LogDebug("Raw JSON that caused duplicate key error: {Json}", result);
+                        
+                        // Try to parse the JSON manually to extract datacenter information
+                        try
+                        {
+                            var fallbackDatacenters = ParseDatacentersManually(result);
+                            if (fallbackDatacenters.Any())
+                            {
+                                inventory.Datacenters.AddRange(fallbackDatacenters);
+                                _logger.LogInformation("Fallback parsing recovered {Count} datacenters for {VCenterName}", fallbackDatacenters.Count, vCenterName);
+                            }
+                        }
+                        catch (Exception fallbackEx)
+                        {
+                            _logger.LogError(fallbackEx, "Fallback datacenter parsing also failed for {VCenterName}", vCenterName);
+                            throw new InvalidOperationException($"Datacenter enumeration failed - duplicate key error: {ex.Message}");
+                        }
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogError("JSON deserialization failed: {Error}", ex.Message);
+                        _logger.LogDebug("Invalid JSON: {Json}", result);
+                        throw new InvalidOperationException($"Datacenter enumeration failed - invalid JSON: {ex.Message}");
                     }
                 }
                 else
@@ -2073,6 +2126,111 @@ try {{
 
         _logger.LogInformation("Admin Config Discovery Complete: {CustomRoles} custom roles, {TotalPermissions} permissions", 
             inventory.Roles.Count(r => !r.IsSystem), inventory.Permissions.Count);
+    }
+    
+    /// <summary>
+    /// Fallback method to manually parse datacenter JSON when standard deserialization fails due to duplicate keys
+    /// </summary>
+    private List<DatacenterInfo> ParseDatacentersManually(string jsonContent)
+    {
+        var datacenters = new List<DatacenterInfo>();
+        
+        try
+        {
+            // Use JsonDocument which is more tolerant of duplicate keys
+            using var document = JsonDocument.Parse(jsonContent);
+            
+            if (document.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var element in document.RootElement.EnumerateArray())
+                {
+                    var datacenter = ParseSingleDatacenter(element);
+                    if (datacenter != null)
+                    {
+                        datacenters.Add(datacenter);
+                    }
+                }
+            }
+            else if (document.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                var datacenter = ParseSingleDatacenter(document.RootElement);
+                if (datacenter != null)
+                {
+                    datacenters.Add(datacenter);
+                }
+            }
+            
+            _logger.LogInformation("Manual parsing recovered {Count} datacenters", datacenters.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Manual datacenter parsing failed");
+            throw;
+        }
+        
+        return datacenters;
+    }
+    
+    /// <summary>
+    /// Parse a single datacenter from a JSON element, handling potential duplicate keys gracefully
+    /// </summary>
+    private DatacenterInfo? ParseSingleDatacenter(JsonElement element)
+    {
+        try
+        {
+            var datacenter = new DatacenterInfo();
+            
+            // Extract properties one by one, taking the first occurrence if duplicates exist
+            if (element.TryGetProperty("Name", out var nameElement))
+            {
+                datacenter.Name = nameElement.GetString() ?? string.Empty;
+            }
+            
+            if (element.TryGetProperty("Id", out var idElement))
+            {
+                datacenter.Id = idElement.GetString() ?? string.Empty;
+            }
+            
+            if (element.TryGetProperty("ClusterCount", out var clusterCountElement))
+            {
+                if (clusterCountElement.ValueKind == JsonValueKind.Number)
+                {
+                    datacenter.ClusterCount = clusterCountElement.GetInt32();
+                }
+            }
+            
+            if (element.TryGetProperty("HostCount", out var hostCountElement))
+            {
+                if (hostCountElement.ValueKind == JsonValueKind.Number)
+                {
+                    datacenter.HostCount = hostCountElement.GetInt32();
+                }
+            }
+            
+            if (element.TryGetProperty("VmCount", out var vmCountElement))
+            {
+                if (vmCountElement.ValueKind == JsonValueKind.Number)
+                {
+                    datacenter.VmCount = vmCountElement.GetInt32();
+                }
+            }
+            
+            if (element.TryGetProperty("DatastoreCount", out var datastoreCountElement))
+            {
+                if (datastoreCountElement.ValueKind == JsonValueKind.Number)
+                {
+                    datacenter.DatastoreCount = datastoreCountElement.GetInt32();
+                }
+            }
+            
+            // Only return if we got at least a name
+            return !string.IsNullOrEmpty(datacenter.Name) ? datacenter : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error parsing individual datacenter element");
+            return null;
+        }
     }
 }
 

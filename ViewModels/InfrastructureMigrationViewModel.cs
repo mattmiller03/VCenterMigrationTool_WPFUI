@@ -378,11 +378,14 @@ namespace VCenterMigrationTool.ViewModels
                         $datacenterResults = @()
                         foreach ($dc in $datacenters) {
                             Write-Output ""Processing datacenter: $($dc.Name)""
-                            $datacenterResults += [PSCustomObject]@{
+                            
+                            # Extract only the safe properties to avoid ExtensionData serialization issues
+                            $cleanDatacenter = @{
                                 Name = $dc.Name
                                 Id = $dc.Id
-                                ExtensionData = $dc.ExtensionData
+                                # Removed ExtensionData to prevent LinkedView duplicate key errors
                             }
+                            $datacenterResults += $cleanDatacenter
                         }
                         
                         Write-Output 'PHASE_SUCCESS: Datacenter enumeration completed'
@@ -680,11 +683,14 @@ namespace VCenterMigrationTool.ViewModels
                         $datacenterResults = @()
                         foreach ($dc in $datacenters) {
                             Write-Output ""Processing datacenter: $($dc.Name)""
-                            $datacenterResults += [PSCustomObject]@{
+                            
+                            # Extract only the safe properties to avoid ExtensionData serialization issues
+                            $cleanDatacenter = @{
                                 Name = $dc.Name
                                 Id = $dc.Id
-                                ExtensionData = $dc.ExtensionData
+                                # Removed ExtensionData to prevent LinkedView duplicate key errors
                             }
+                            $datacenterResults += $cleanDatacenter
                         }
                         
                         Write-Output 'PHASE_SUCCESS: Datacenter enumeration completed'
