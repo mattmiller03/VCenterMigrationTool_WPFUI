@@ -23,7 +23,8 @@
       "Bash(timeout:*)",
       "Bash(git stash:*)",
       "Bash(git remote set-url:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []
