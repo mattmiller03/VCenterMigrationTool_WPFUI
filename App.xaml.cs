@@ -88,6 +88,11 @@ public partial class App
             services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
 
+            // Phase 2 Refactored Services
+            services.AddSingleton<PowerShellProcessManager>();
+            services.AddSingleton<ConnectionStateManager>();
+            services.AddSingleton<PowerCLIConfigurationService>();
+
             // HTTP Client for vSphere API
             services.AddHttpClient<VSphereApiService>(client =>
             {

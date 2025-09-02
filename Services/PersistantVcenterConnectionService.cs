@@ -2,563 +2,470 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 
 namespace VCenterMigrationTool.Services;
 
 /// <summary>
-/// Manages persistent external PowerShell processes with active vCenter connections
+/// Manages persistent vCenter connections using PowerShell processes
+/// Refactored to use dedicated managers for better separation of concerns
 /// </summary>
 public class PersistantVcenterConnectionService : IDisposable
-    {
+{
     private readonly ILogger<PersistantVcenterConnectionService> _logger;
-    private readonly ConcurrentDictionary<string, PersistentConnection> _connections = new();
+    private readonly PowerShellProcessManager _processManager;
+    private readonly ConnectionStateManager _connectionStateManager;
+    private readonly PowerCLIConfigurationService _powerCLIConfigurationService;
+    
+    // Store the managed processes by connection key
+    private readonly ConcurrentDictionary<string, PowerShellProcessManager.ManagedPowerShellProcess> _processes = new();
     private bool _disposed = false;
 
-    public class PersistentConnection
-        {
-        public Process Process { get; set; }
-        public StreamWriter StandardInput { get; set; }
-        public VCenterConnection ConnectionInfo { get; set; }
-        public DateTime ConnectedAt { get; set; }
-        public string SessionId { get; set; }
-        public string VCenterVersion { get; set; }
-        public bool IsConnected { get; set; }
-        public TaskCompletionSource<string> CurrentCommand { get; set; }
-        public StringBuilder OutputBuffer { get; set; } = new StringBuilder();
-        public object LockObject { get; set; } = new object();
-        }
-
-    public PersistantVcenterConnectionService (ILogger<PersistantVcenterConnectionService> logger)
-        {
+    public PersistantVcenterConnectionService(
+        ILogger<PersistantVcenterConnectionService> logger,
+        PowerShellProcessManager processManager,
+        ConnectionStateManager connectionStateManager,
+        PowerCLIConfigurationService powerCLIConfigurationService)
+    {
         _logger = logger;
-        }
+        _processManager = processManager;
+        _connectionStateManager = connectionStateManager;
+        _powerCLIConfigurationService = powerCLIConfigurationService;
+    }
 
     /// <summary>
     /// Establishes a persistent connection using an external PowerShell process
     /// </summary>
-    public async Task<(bool success, string message, string sessionId)> ConnectAsync (
+    public async Task<(bool success, string message, string sessionId)> ConnectAsync(
         VCenterConnection connectionInfo,
         string password,
         bool isSource = true,
         bool bypassModuleCheck = false)
-        {
+    {
         var connectionKey = isSource ? "source" : "target";
 
         try
-            {
-            _logger.LogInformation("Establishing persistent external connection to {Server} ({Type})",
+        {
+            _logger.LogInformation("🔗 Establishing persistent connection to {Server} ({ConnectionKey})",
                 connectionInfo.ServerAddress, connectionKey);
 
-            // Disconnect existing connection if any
+            // Initialize connection state tracking
+            _connectionStateManager.CreateOrUpdateConnection(connectionKey, connectionInfo, 
+                ConnectionStateManager.ConnectionStatus.Connecting);
+
+            // Clean up any existing connection
             await DisconnectAsync(connectionKey);
 
-            // Start a new PowerShell process
-            var process = StartPersistentPowerShellProcess();
+            // Step 1: Create PowerShell process
+            _logger.LogDebug("Creating PowerShell process for {ConnectionKey}...", connectionKey);
+            var process = await _processManager.CreatePersistentProcessAsync();
 
             if (process == null)
-                {
-                return (false, "Failed to start PowerShell process", null);
-                }
-
-            var connection = new PersistentConnection
-                {
-                Process = process,
-                StandardInput = process.StandardInput,
-                ConnectionInfo = connectionInfo,
-                ConnectedAt = DateTime.Now
-                };
-
-            // Set up output handling
-            process.OutputDataReceived += (sender, e) =>
             {
-                if (!string.IsNullOrEmpty(e.Data))
-                    {
-                    lock (connection.LockObject)
-                        {
-                        connection.OutputBuffer.AppendLine(e.Data);
-                        _logger.LogDebug("PS Output: {Output}", e.Data);
-                        }
-                    }
-            };
+                var errorMsg = "Failed to create PowerShell process";
+                _connectionStateManager.MarkConnectionFailed(connectionKey, errorMsg);
+                return (false, errorMsg, string.Empty);
+            }
 
-            process.ErrorDataReceived += (sender, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                    {
-                    _logger.LogWarning("PS Error: {Error}", e.Data);
-                    }
-            };
+            // Store the process
+            _processes[connectionKey] = process;
+            _logger.LogInformation("✅ PowerShell process created for {ConnectionKey} (PID: {ProcessId})", 
+                connectionKey, process.ProcessId);
 
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-
-            // Store the connection early so we can use ExecuteCommandAsync
-            _connections[connectionKey] = connection;
-
-            // Import PowerCLI modules unless explicitly bypassed
+            // Step 2: Configure PowerCLI (unless bypassed)
+            var sessionId = string.Empty;
+            
             if (bypassModuleCheck)
             {
-                _logger.LogInformation("Skipping PowerCLI module import due to bypassModuleCheck=true");
-                _logger.LogWarning("PowerCLI functionality will be limited - only basic PowerShell commands available");
+                _logger.LogInformation("⚠️ Bypassing PowerCLI configuration for {ConnectionKey}", connectionKey);
+                sessionId = $"bypass-{Guid.NewGuid():N}";
                 
-                // Still store connection info for basic PowerShell operations
-                connection.IsConnected = true;
-                connection.SessionId = $"bypass-{Guid.NewGuid():N}";
-                connection.VCenterVersion = "Unknown (bypass mode)";
-                _connections[connectionKey] = connection;
+                _connectionStateManager.MarkConnectionEstablished(connectionKey, sessionId, 
+                    "Unknown (bypass mode)", "", "Bypass Mode");
                 
-                return (true, "Connected in bypass mode - PowerCLI modules skipped", connection.SessionId);
+                return (true, "Connected in bypass mode - PowerCLI functionality limited", sessionId);
             }
 
-            _logger.LogInformation("Importing PowerCLI modules in persistent session...");
-            var importScript = PowerShellScriptBuilder.BuildPowerCLIImportScript();
-            var importResult = await ExecuteCommandWithTimeoutAsync(connectionKey, importScript, TimeSpan.FromSeconds(90), skipConnectionCheck: true);
+            _logger.LogDebug("Configuring PowerCLI for {ConnectionKey}...", connectionKey);
+            var configResult = await _powerCLIConfigurationService.ConfigurePowerCLIAsync(process, bypassModuleCheck);
 
-            if (!importResult.Contains("MODULES_LOADED"))
-                {
-                _logger.LogError("Failed to load PowerCLI modules in persistent session. Full output: {ImportResult}", importResult);
+            if (!configResult.Success)
+            {
+                var errorMsg = $"PowerCLI configuration failed: {configResult.Message}";
+                _logger.LogError("❌ {ErrorMessage}", errorMsg);
+                _connectionStateManager.MarkConnectionFailed(connectionKey, errorMsg);
+                
                 await DisconnectAsync(connectionKey);
-                return (false, $"Failed to load PowerCLI modules - {importResult}", null);
-                }
-            
-            // Extract and log which module type was successfully loaded
-            var moduleTypeMatch = System.Text.RegularExpressions.Regex.Match(importResult, @"MODULES_LOADED:(.+?)(?:\r?\n|$)");
-            var loadedModuleType = moduleTypeMatch.Success ? moduleTypeMatch.Groups[1].Value.Trim() : "Unknown";
-            _logger.LogInformation("Successfully loaded PowerCLI modules using: {ModuleType}", loadedModuleType);
-
-            // Configure PowerCLI settings
-            _logger.LogInformation("Configuring PowerCLI settings for {ModuleType}...", loadedModuleType);
-            var configScript = PowerShellScriptBuilder.BuildPowerCLIConfigurationScript(loadedModuleType);
-            var configResult = await ExecuteCommandWithTimeoutAsync(connectionKey, configScript, TimeSpan.FromSeconds(30), skipConnectionCheck: true);
-            
-            if (!configResult.Contains("CONFIG_SUCCESS"))
-            {
-                _logger.LogWarning("PowerCLI configuration had issues but continuing. Output: {ConfigResult}", configResult);
-            }
-            else
-            {
-                _logger.LogInformation("PowerCLI configuration completed successfully");
+                return (false, errorMsg, string.Empty);
             }
 
-            // Create credential and connect
-            _logger.LogInformation("Connecting to vCenter {Server}...", connectionInfo.ServerAddress);
+            _logger.LogInformation("✅ PowerCLI configured successfully using {ModuleType}", configResult.ModuleType);
 
+            // Step 3: Connect to vCenter
+            _logger.LogInformation("🔌 Connecting to vCenter {Server}...", connectionInfo.ServerAddress);
             var connectScript = PowerShellScriptBuilder.BuildVCenterConnectionScript(connectionInfo, password, connectionKey);
+            var connectResult = await _processManager.ExecuteCommandAsync(process, connectScript, TimeSpan.FromSeconds(120));
 
-            var connectResult = await ExecuteCommandWithTimeoutAsync(connectionKey, connectScript, TimeSpan.FromSeconds(120), skipConnectionCheck: true);
-
+            // Step 4: Process connection result
             if (connectResult.Contains("CONNECTION_SUCCESS"))
-                {
-                // Parse connection details
-                var lines = connectResult.Split('\n');
-                foreach (var line in lines)
-                    {
-                    if (line.StartsWith("SESSION_ID:"))
-                        connection.SessionId = line.Substring(11).Trim();
-                    if (line.StartsWith("VERSION:"))
-                        connection.VCenterVersion = line.Substring(8).Trim();
-                    }
+            {
+                // Parse connection details from PowerShell output
+                var connectionDetails = ParseConnectionDetails(connectResult);
+                sessionId = connectionDetails.SessionId;
 
-                connection.IsConnected = true;
+                _connectionStateManager.MarkConnectionEstablished(connectionKey, sessionId, 
+                    connectionDetails.Version, connectionDetails.Build, connectionDetails.ProductLine);
 
-                _logger.LogInformation("✅ Persistent connection established to {Server} (Session: {SessionId})",
-                    connectionInfo.ServerAddress, connection.SessionId);
+                _logger.LogInformation("✅ vCenter connection established for {ConnectionKey} (Session: {SessionId}, Version: {Version})",
+                    connectionKey, sessionId, connectionDetails.Version);
 
-                return (true, "Connected successfully", connection.SessionId);
-                }
+                return (true, "Connected successfully", sessionId);
+            }
             else
-                {
-                // Ultra-verbose logging of the complete PowerShell output
-                _logger.LogWarning("🔍 ULTRA-VERBOSE: Complete PowerShell output for {Server}:", connectionInfo.ServerAddress);
-                _logger.LogWarning("Raw output length: {Length} characters", connectResult?.Length ?? 0);
+            {
+                // Handle connection failure with detailed logging
+                var errorMessage = await HandleConnectionFailureAsync(connectionKey, connectionInfo, connectResult);
                 
-                var lines = connectResult.Split('\n');
-                _logger.LogWarning("Output contains {LineCount} lines", lines.Length);
-                
-                // Log all debug lines with appropriate levels
-                foreach (var line in lines)
-                {
-                    var trimmedLine = line.Trim();
-                    if (string.IsNullOrEmpty(trimmedLine)) continue;
-                    
-                    if (trimmedLine.StartsWith("DEBUG_ERROR_VAR:"))
-                    {
-                        _logger.LogError("PS_ERROR_VAR: {Line}", trimmedLine.Replace("DEBUG_ERROR_VAR:", "").Trim());
-                    }
-                    else if (trimmedLine.StartsWith("DEBUG_"))
-                    {
-                        _logger.LogInformation("PS_DEBUG: {Line}", trimmedLine);
-                    }
-                    else if (trimmedLine.StartsWith("CONNECTION_FAILED:"))
-                    {
-                        _logger.LogError("PS_ERROR: {Line}", trimmedLine);
-                    }
-                    else if (trimmedLine.StartsWith("CONNECTION_SUCCESS"))
-                    {
-                        _logger.LogInformation("PS_SUCCESS: {Line}", trimmedLine);
-                    }
-                    else if (trimmedLine.Contains("EXCEPTION") || trimmedLine.Contains("ERROR"))
-                    {
-                        _logger.LogError("PS_EXCEPTION: {Line}", trimmedLine);
-                    }
-                    else if (trimmedLine.StartsWith("DIAGNOSTIC:"))
-                    {
-                        _logger.LogWarning("PS_DIAGNOSTIC: {Line}", trimmedLine.Replace("DIAGNOSTIC:", "").Trim());
-                    }
-                    else
-                    {
-                        _logger.LogDebug("PS_OUTPUT: {Line}", trimmedLine);
-                    }
-                }
-
-                // Extract the primary error message
-                var errorMessage = connectResult.Contains("CONNECTION_FAILED:")
-                    ? connectResult.Substring(connectResult.IndexOf("CONNECTION_FAILED:") + 18).Split('\n')[0].Trim()
-                    : $"Connection failed - no CONNECTION_SUCCESS found";
-
-                _logger.LogError("🚫 PRIMARY ERROR MESSAGE: {ErrorMessage}", errorMessage);
-
-                // Provide specific guidance based on error patterns
-                if (errorMessage.ToLower().Contains("certificate") || errorMessage.ToLower().Contains("ssl"))
-                {
-                    _logger.LogError("PowerCLI SSL/Certificate Error for {Server}: {Error}", connectionInfo.ServerAddress, errorMessage);
-                    _logger.LogInformation("Suggestion: Verify PowerCLI InvalidCertificateAction is set to 'Ignore'");
-                }
-                else if (errorMessage.ToLower().Contains("authentication") || errorMessage.ToLower().Contains("login"))
-                {
-                    _logger.LogError("PowerCLI Authentication Error for {Server}: {Error}", connectionInfo.ServerAddress, errorMessage);
-                    _logger.LogInformation("Suggestion: Verify username and password are correct");
-                }
-                else if (errorMessage.ToLower().Contains("timeout") || errorMessage.ToLower().Contains("network"))
-                {
-                    _logger.LogError("PowerCLI Network/Timeout Error for {Server}: {Error}", connectionInfo.ServerAddress, errorMessage);
-                    _logger.LogInformation("Suggestion: Check network connectivity and firewall settings");
-                }
-                else
-                {
-                    _logger.LogError("PowerCLI Connection Error for {Server}: {Error}", connectionInfo.ServerAddress, errorMessage);
-                }
-
+                _connectionStateManager.MarkConnectionFailed(connectionKey, errorMessage);
                 await DisconnectAsync(connectionKey);
-                return (false, errorMessage, null);
-                }
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Failed to establish persistent connection to {Server}",
-                connectionInfo.ServerAddress);
-            await DisconnectAsync(connectionKey);
-            return (false, $"Connection error: {ex.Message}", null);
-            }
-        }
-
-    /// <summary>
-    /// Starts a persistent PowerShell process
-    /// </summary>
-    private Process StartPersistentPowerShellProcess ()
-        {
-        try
-            {
-            // Try PowerShell 7 first, then fall back to Windows PowerShell
-            var powershellPaths = new[]
-            {
-                "pwsh.exe",
-                @"C:\Program Files\PowerShell\7\pwsh.exe",
-                "powershell.exe"
-            };
-
-            foreach (var psPath in powershellPaths)
-                {
-                try
-                    {
-                    var psi = new ProcessStartInfo
-                        {
-                        FileName = psPath,
-                        Arguments = "-NoProfile -NoExit -ExecutionPolicy Unrestricted -Command -",
-                        RedirectStandardInput = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                        };
-
-                    var process = Process.Start(psi);
-
-                    if (process != null && !process.HasExited)
-                        {
-                        _logger.LogInformation("Started persistent PowerShell process: {Path} (PID: {PID})",
-                            psPath, process.Id);
-                        return process;
-                        }
-                    }
-                catch (Exception ex)
-                    {
-                    _logger.LogDebug("Could not start {Path}: {Error}", psPath, ex.Message);
-                    }
-                }
-
-            _logger.LogError("Failed to start any PowerShell executable");
-            return null;
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error starting PowerShell process");
-            return null;
-            }
-        }
-
-    /// <summary>
-    /// Executes a command in the persistent PowerShell session with timeout
-    /// </summary>
-    private async Task<string> ExecuteCommandWithTimeoutAsync (string connectionKey, string command, TimeSpan timeout, bool skipConnectionCheck = false)
-        {
-        if (!_connections.TryGetValue(connectionKey, out var connection))
-            {
-            return "ERROR: No active connection";
-            }
-
-        try
-            {
-            // Clear the output buffer
-            lock (connection.LockObject)
-                {
-                connection.OutputBuffer.Clear();
-                }
-
-            // Add a unique marker to know when command is complete
-            var endMarker = $"END_COMMAND_{Guid.NewGuid():N}";
-            
-            string fullCommand;
-            
-            // For initial setup commands (like importing PowerCLI), skip the vCenter connection check
-            if (skipConnectionCheck)
-            {
-                fullCommand = PowerShellScriptBuilder.BuildScriptWithEndMarker(command, endMarker);
-            }
-            else 
-            {
-                // Ensure the correct vCenter connection is active for this command
-                var validationScript = PowerShellScriptBuilder.BuildConnectionValidationScript(connectionKey);
-                var combinedScript = $@"
-{validationScript}
-
-# Execute the requested command if connection is valid
-{command}";
-                fullCommand = PowerShellScriptBuilder.BuildScriptWithEndMarker(combinedScript, endMarker);
-            }
-
-            // Check process stability before sending command
-            if (connection.Process.HasExited)
-            {
-                _logger.LogError("PowerShell process has exited for connection {Key}", connectionKey);
-                return "ERROR: PowerShell process has exited";
-            }
-            
-            // Send the command with error handling
-            try
-            {
-                await connection.StandardInput.WriteLineAsync(fullCommand);
-                await connection.StandardInput.FlushAsync();
                 
-                // Small delay to allow command to be processed
-                await Task.Delay(100);
-            }
-            catch (System.IO.IOException ioEx) when (ioEx.Message.Contains("pipe") || ioEx.Message.Contains("closed"))
-            {
-                _logger.LogError(ioEx, "Failed to send command - pipe closed for connection {Key}", connectionKey);
-                connection.IsConnected = false;
-                return $"ERROR: Cannot send command - pipe closed: {ioEx.Message}";
-            }
-
-            // Wait for the end marker with timeout
-            var startTime = DateTime.UtcNow;
-            while ((DateTime.UtcNow - startTime) < timeout)
-                {
-                await Task.Delay(100);
-
-                string currentOutput;
-                lock (connection.LockObject)
-                    {
-                    currentOutput = connection.OutputBuffer.ToString();
-                    }
-
-                if (currentOutput.Contains(endMarker))
-                    {
-                    // Remove the end marker and return the output
-                    var output = currentOutput.Replace(endMarker, "").Trim();
-                    return output;
-                    }
-                }
-
-            _logger.LogWarning("Command timed out after {Timeout} seconds", timeout.TotalSeconds);
-            return "ERROR: Command timed out";
-            }
-        catch (System.IO.IOException ioEx) when (ioEx.Message.Contains("pipe") || ioEx.Message.Contains("closed"))
-            {
-            _logger.LogError(ioEx, "PowerShell pipe error - process may have crashed");
-            
-            // Mark connection as failed and attempt cleanup
-            if (_connections.TryGetValue(connectionKey, out var failedConnection))
-            {
-                failedConnection.IsConnected = false;
-                _logger.LogWarning("Marking connection {Key} as failed due to pipe error", connectionKey);
-            }
-            
-            return $"ERROR: PowerShell process pipe closed - {ioEx.Message}";
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error executing command on connection {Key}", connectionKey);
-            return $"ERROR: {ex.Message}";
+                return (false, errorMessage, string.Empty);
             }
         }
+        catch (Exception ex)
+        {
+            var errorMessage = $"Unexpected error during connection: {ex.Message}";
+            _logger.LogError(ex, "💥 Exception while connecting to {Server}", connectionInfo.ServerAddress);
+            
+            _connectionStateManager.MarkConnectionFailed(connectionKey, errorMessage);
+            await DisconnectAsync(connectionKey);
+            
+            return (false, errorMessage, string.Empty);
+        }
+    }
+
+    /// <summary>
+    /// Connection details parsed from PowerShell output
+    /// </summary>
+    private class ConnectionDetails
+    {
+        public string SessionId { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
+        public string Build { get; set; } = string.Empty;
+        public string ProductLine { get; set; } = string.Empty;
+        public string User { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Parses connection details from PowerShell output
+    /// </summary>
+    private ConnectionDetails ParseConnectionDetails(string output)
+    {
+        var details = new ConnectionDetails();
+        
+        try
+        {
+            var lines = output.Split('\n');
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                if (trimmedLine.StartsWith("SESSION_ID:"))
+                    details.SessionId = trimmedLine.Substring(11).Trim();
+                else if (trimmedLine.StartsWith("VERSION:"))
+                    details.Version = trimmedLine.Substring(8).Trim();
+                else if (trimmedLine.StartsWith("BUILD:"))
+                    details.Build = trimmedLine.Substring(6).Trim();
+                else if (trimmedLine.StartsWith("PRODUCT_LINE:"))
+                    details.ProductLine = trimmedLine.Substring(13).Trim();
+                else if (trimmedLine.StartsWith("USER:"))
+                    details.User = trimmedLine.Substring(5).Trim();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error parsing connection details from output");
+        }
+
+        return details;
+    }
+
+    /// <summary>
+    /// Handles connection failure with detailed logging and error analysis
+    /// </summary>
+    private async Task<string> HandleConnectionFailureAsync(string connectionKey, VCenterConnection connectionInfo, string connectResult)
+    {
+        try
+        {
+            _logger.LogWarning("🔍 Analyzing connection failure for {Server}...", connectionInfo.ServerAddress);
+            
+            // Log complete output for debugging
+            _logger.LogDebug("Complete PowerShell output for {Server} ({Length} chars): {Output}", 
+                connectionInfo.ServerAddress, connectResult?.Length ?? 0, connectResult);
+
+            // Parse the output for specific error information
+            var lines = connectResult.Split('\n');
+            var errorLines = new List<string>();
+            var diagnosticLines = new List<string>();
+
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                if (string.IsNullOrEmpty(trimmedLine)) continue;
+                
+                if (trimmedLine.StartsWith("DEBUG_ERROR_VAR:"))
+                {
+                    errorLines.Add(trimmedLine.Replace("DEBUG_ERROR_VAR:", "").Trim());
+                    _logger.LogError("🚨 Error Variable: {Error}", trimmedLine.Replace("DEBUG_ERROR_VAR:", "").Trim());
+                }
+                else if (trimmedLine.StartsWith("CONNECTION_FAILED:"))
+                {
+                    errorLines.Add(trimmedLine.Replace("CONNECTION_FAILED:", "").Trim());
+                    _logger.LogError("❌ Connection Failed: {Error}", trimmedLine.Replace("CONNECTION_FAILED:", "").Trim());
+                }
+                else if (trimmedLine.StartsWith("DEBUG_ANALYSIS:"))
+                {
+                    diagnosticLines.Add(trimmedLine.Replace("DEBUG_ANALYSIS:", "").Trim());
+                    _logger.LogWarning("🔍 Analysis: {Analysis}", trimmedLine.Replace("DEBUG_ANALYSIS:", "").Trim());
+                }
+                else if (trimmedLine.Contains("EXCEPTION") || trimmedLine.Contains("ERROR"))
+                {
+                    errorLines.Add(trimmedLine);
+                    _logger.LogError("⚠️ Exception/Error: {Error}", trimmedLine);
+                }
+            }
+
+            // Determine primary error message
+            string primaryError;
+            if (errorLines.Any())
+            {
+                primaryError = errorLines.First();
+            }
+            else if (connectResult.Contains("CONNECTION_FAILED:"))
+            {
+                var startIndex = connectResult.IndexOf("CONNECTION_FAILED:") + 18;
+                primaryError = connectResult.Substring(startIndex).Split('\n')[0].Trim();
+            }
+            else
+            {
+                primaryError = "Connection failed - no specific error information available";
+            }
+
+            // Provide categorized guidance
+            var lowerError = primaryError.ToLower();
+            if (lowerError.Contains("certificate") || lowerError.Contains("ssl") || lowerError.Contains("tls"))
+            {
+                _logger.LogInformation("💡 Suggestion: SSL/Certificate issue detected - verify PowerCLI InvalidCertificateAction setting");
+            }
+            else if (lowerError.Contains("authentication") || lowerError.Contains("login") || lowerError.Contains("credential"))
+            {
+                _logger.LogInformation("💡 Suggestion: Authentication issue detected - verify username/password and account status");
+            }
+            else if (lowerError.Contains("timeout") || lowerError.Contains("network") || lowerError.Contains("connection"))
+            {
+                _logger.LogInformation("💡 Suggestion: Network/Timeout issue detected - check connectivity and firewall settings");
+            }
+
+            return primaryError;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error analyzing connection failure for {ConnectionKey}", connectionKey);
+            return $"Connection failed with analysis error: {ex.Message}";
+        }
+    }
 
     /// <summary>
     /// Executes a command in the context of a persistent connection
     /// </summary>
-    public async Task<string> ExecuteCommandAsync (string connectionKey, string command)
+    public async Task<string> ExecuteCommandAsync(string connectionKey, string command)
+    {
+        try
         {
-        return await ExecuteCommandWithTimeoutAsync(connectionKey, command, TimeSpan.FromMinutes(5), skipConnectionCheck: false);
+            if (_processes.TryGetValue(connectionKey, out var process))
+            {
+                _connectionStateManager.RecordActivity(connectionKey);
+                return await _processManager.ExecuteCommandAsync(process, command, TimeSpan.FromMinutes(5));
+            }
+            else
+            {
+                return $"ERROR: No active connection for {connectionKey}";
+            }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing command for connection {ConnectionKey}", connectionKey);
+            return $"ERROR: Command execution failed - {ex.Message}";
+        }
+    }
 
     /// <summary>
     /// Checks if a connection is still active
     /// </summary>
-    public async Task<bool> IsConnectedAsync (string connectionKey)
-        {
-        if (!_connections.TryGetValue(connectionKey, out var connection))
-            {
-            return false;
-            }
-
-        if (connection.Process.HasExited)
-            {
-            _logger.LogWarning("PowerShell process has exited for {Key}", connectionKey);
-            connection.IsConnected = false;
-            return false;
-            }
-
+    public async Task<bool> IsConnectedAsync(string connectionKey)
+    {
         try
+        {
+            // Check state manager first
+            var state = _connectionStateManager.GetConnectionState(connectionKey);
+            if (state?.Status != ConnectionStateManager.ConnectionStatus.Connected)
             {
-            var connectionVarName = $"VIConnection_{connectionKey.Replace("-", "_")}";
-            var result = await ExecuteCommandWithTimeoutAsync(connectionKey,
-                $"$global:{connectionVarName}.IsConnected",
-                TimeSpan.FromSeconds(5), skipConnectionCheck: false);
+                return false;
+            }
 
-            return result.Contains("True");
-            }
-        catch
+            // Verify process is still running
+            if (_processes.TryGetValue(connectionKey, out var process))
             {
-            return false;
+                if (process.HasExited)
+                {
+                    _logger.LogWarning("PowerShell process has exited for {ConnectionKey}", connectionKey);
+                    _connectionStateManager.MarkConnectionFailed(connectionKey, "PowerShell process has exited");
+                    return false;
+                }
+
+                // Test connection with a simple command
+                var testScript = PowerShellScriptBuilder.BuildConnectionValidationScript(connectionKey);
+                var result = await _processManager.ExecuteCommandAsync(process, testScript, TimeSpan.FromSeconds(10));
+                
+                var isActive = result.Contains("CONNECTION_ACTIVE");
+                if (!isActive)
+                {
+                    _connectionStateManager.MarkConnectionFailed(connectionKey, "Connection validation failed");
+                }
+                else
+                {
+                    _connectionStateManager.RecordActivity(connectionKey);
+                }
+
+                return isActive;
             }
+
+            return false;
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking connection status for {ConnectionKey}", connectionKey);
+            return false;
+        }
+    }
 
     /// <summary>
-    /// Gets connection info
+    /// Gets connection info for compatibility
     /// </summary>
-    public (bool isConnected, string sessionId, string version) GetConnectionInfo (string connectionKey)
-        {
-        if (_connections.TryGetValue(connectionKey, out var connection))
-            {
-            return (connection.IsConnected, connection.SessionId, connection.VCenterVersion);
-            }
-        return (false, null, null);
-        }
+    public (bool isConnected, string sessionId, string version) GetConnectionInfo(string connectionKey)
+    {
+        return _connectionStateManager.GetConnectionInfo(connectionKey);
+    }
 
     /// <summary>
     /// Disconnects and cleans up a connection
     /// </summary>
-    public async Task DisconnectAsync (string connectionKey)
+    public async Task DisconnectAsync(string connectionKey)
+    {
+        if (!_processes.TryRemove(connectionKey, out var process))
         {
-        if (!_connections.TryRemove(connectionKey, out var connection))
-            {
+            _logger.LogDebug("No process found for connection key {ConnectionKey}", connectionKey);
             return;
-            }
+        }
 
         try
+        {
+            var connectionState = _connectionStateManager.GetConnectionState(connectionKey);
+            var serverAddress = connectionState?.ConnectionInfo?.ServerAddress ?? "unknown";
+            
+            _logger.LogInformation("🔌 Disconnecting from {Server} ({ConnectionKey})", serverAddress, connectionKey);
+
+            if (!process.HasExited)
             {
-            _logger.LogInformation("Disconnecting from {Server} ({Key})",
-                connection.ConnectionInfo.ServerAddress, connectionKey);
-
-            if (!connection.Process.HasExited)
-                {
-                // Try to disconnect gracefully - only if PowerCLI is loaded and connected
+                // Try to disconnect gracefully from vCenter first
                 try
-                    {
+                {
                     // Check if PowerCLI is loaded and has active connections before attempting disconnect
-                    var checkResult = await ExecuteCommandWithTimeoutAsync(connectionKey, 
-                        "if (Get-Command 'Get-VIServer' -ErrorAction SilentlyContinue) { if (Get-VIServer -ErrorAction SilentlyContinue) { 'CONNECTED' } else { 'NO_CONNECTION' } } else { 'NO_POWERCLI' }", 
-                        TimeSpan.FromSeconds(5), skipConnectionCheck: true);
+                    var checkScript = @"
+                        try {
+                            if (Get-Command 'Get-VIServer' -ErrorAction SilentlyContinue) { 
+                                $connections = @(Get-VIServer -ErrorAction SilentlyContinue)
+                                if ($connections.Count -gt 0) { 
+                                    'POWERCLI_CONNECTED'
+                                } else { 
+                                    'POWERCLI_NO_CONNECTION' 
+                                }
+                            } else { 
+                                'NO_POWERCLI' 
+                            }
+                        } catch {
+                            'ERROR_CHECKING'
+                        }";
                     
-                    if (checkResult.Contains("CONNECTED"))
-                    {
-                        await connection.StandardInput.WriteLineAsync(
-                            $"Disconnect-VIServer -Server {connection.ConnectionInfo.ServerAddress} -Force -Confirm:$false");
-                    }
-                    // NOTE: Skip disconnect if PowerCLI not loaded or no active connections to avoid error noise
+                    var checkResult = await _processManager.ExecuteCommandAsync(process, checkScript, TimeSpan.FromSeconds(5));
                     
-                    await connection.StandardInput.WriteLineAsync("exit");
-                    await connection.StandardInput.FlushAsync();
-
-                    // Give it a moment to exit gracefully
-                    if (!connection.Process.WaitForExit(5000))
-                        {
-                        connection.Process.Kill(entireProcessTree: true);
-                        }
-                    }
-                catch
+                    if (checkResult.Contains("POWERCLI_CONNECTED"))
                     {
-                    // Force kill if graceful exit fails
-                    try
-                        {
-                        connection.Process.Kill(entireProcessTree: true);
-                        }
-                    catch { }
+                        var disconnectScript = serverAddress != "unknown" 
+                            ? $"Disconnect-VIServer -Server '{serverAddress}' -Force -Confirm:$false"
+                            : "Disconnect-VIServer * -Force -Confirm:$false";
+                        
+                        await _processManager.ExecuteCommandAsync(process, disconnectScript, TimeSpan.FromSeconds(10));
+                        _logger.LogInformation("✅ Disconnected from vCenter {Server}", serverAddress);
                     }
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "⚠️ Error during graceful vCenter disconnect for {ConnectionKey}", connectionKey);
+                }
 
-            connection.StandardInput?.Dispose();
-            connection.Process?.Dispose();
-            connection.IsConnected = false;
+                // Close the PowerShell process
+                await _processManager.TerminateProcessAsync(process, TimeSpan.FromSeconds(5));
+            }
 
-            _logger.LogInformation("✅ Disconnected from {Server}", connection.ConnectionInfo.ServerAddress);
-            }
-        catch (Exception ex)
-            {
-            _logger.LogError(ex, "Error during disconnect from {Key}", connectionKey);
-            }
+            // Update connection state
+            _connectionStateManager.RemoveConnection(connectionKey);
+
+            _logger.LogInformation("✅ Successfully cleaned up connection {ConnectionKey}", connectionKey);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error during disconnect cleanup for {ConnectionKey}", connectionKey);
+        }
+    }
 
     /// <summary>
     /// Disconnects all active connections
     /// </summary>
-    public async Task DisconnectAllAsync ()
-        {
-        var tasks = new List<Task>();
+    public async Task DisconnectAllAsync()
+    {
+        var connectionKeys = _processes.Keys.ToList();
+        _logger.LogInformation("🔌 Disconnecting {Count} active connections", connectionKeys.Count);
 
-        foreach (var key in _connections.Keys)
-            {
-            tasks.Add(DisconnectAsync(key));
-            }
-
+        var tasks = connectionKeys.Select(key => DisconnectAsync(key));
         await Task.WhenAll(tasks);
-        }
 
-    public void Dispose ()
-        {
+        _logger.LogInformation("✅ All connections disconnected successfully");
+    }
+
+    /// <summary>
+    /// Disposes the service and cleans up all resources
+    /// </summary>
+    public void Dispose()
+    {
         if (_disposed) return;
 
-        _logger.LogInformation("Disposing PersistantVcenterConnectionService - closing all connections");
+        _logger.LogInformation("🧹 Disposing PersistantVcenterConnectionService - cleaning up all connections");
 
-        DisconnectAllAsync().GetAwaiter().GetResult();
-
-        _disposed = true;
+        try
+        {
+            // Disconnect all connections synchronously
+            DisconnectAllAsync().GetAwaiter().GetResult();
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error during service disposal");
+        }
+        finally
+        {
+            _disposed = true;
+            _logger.LogInformation("✅ PersistantVcenterConnectionService disposed successfully");
+        }
+    }
     }
