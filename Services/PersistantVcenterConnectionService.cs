@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -225,8 +226,46 @@ public class PersistentExternalConnectionService : IDisposable
                     # Configure PowerCLI (works for both legacy and VCF modules)
                     try {
                         Write-Output ""DIAGNOSTIC: Configuring PowerCLI settings for $moduleType...""
+                        
+                        # Essential PowerCLI configurations for multiple vCenter connections
                         Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
                         Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+                        
+                        # CRITICAL: Enable multiple vCenter server connections (required for migration scenarios)
+                        Set-PowerCLIConfiguration -DefaultVIServerMode Multiple -Confirm:$false -Scope Session | Out-Null
+                        
+                        # Increase web operation timeout for slower vCenter responses
+                        Set-PowerCLIConfiguration -WebOperationTimeoutSeconds 300 -Confirm:$false -Scope Session | Out-Null
+                        
+                        # Configure proxy settings (bypass proxy for internal connections)
+                        Set-PowerCLIConfiguration -ProxyPolicy NoProxy -Confirm:$false -Scope Session | Out-Null
+                        
+                        # Enhanced SSL/TLS configuration for maximum compatibility
+                        try {
+                            # Force TLS 1.2+ for secure connections
+                            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13
+                            
+                            # Disable SSL certificate validation at .NET level
+                            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+                            
+                            Write-Output ""DIAGNOSTIC: Enhanced SSL/TLS configuration applied for $moduleType""
+                        }
+                        catch {
+                            Write-Output ""DIAGNOSTIC: Advanced SSL configuration failed for $moduleType, continuing with PowerCLI settings only""
+                        }
+                        
+                        # Verify configuration was applied correctly
+                        try {
+                            $config = Get-PowerCLIConfiguration
+                            Write-Output ""CONFIG_VERIFICATION: InvalidCertificateAction=$($config.InvalidCertificateAction)""
+                            Write-Output ""CONFIG_VERIFICATION: DefaultVIServerMode=$($config.DefaultVIServerMode)""
+                            Write-Output ""CONFIG_VERIFICATION: WebOperationTimeout=$($config.WebOperationTimeoutSeconds)""
+                            Write-Output ""CONFIG_VERIFICATION: ProxyPolicy=$($config.ProxyPolicy)""
+                        }
+                        catch {
+                            Write-Output ""DIAGNOSTIC: Configuration verification failed but continuing""
+                        }
+                        
                         Write-Output ""DIAGNOSTIC: PowerCLI configuration complete for $moduleType""
                         Write-Output ""MODULES_LOADED:$moduleType""
                     } catch {
@@ -271,15 +310,46 @@ public class PersistentExternalConnectionService : IDisposable
                     }}
                 }}
 
+                # Re-apply critical PowerCLI configuration before connection (ensure settings persist)
+                try {{
+                    Write-Output ""DIAGNOSTIC: Re-applying PowerCLI configuration before connection...""
+                    
+                    # Essential configurations for vCenter connection
+                    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+                    Set-PowerCLIConfiguration -DefaultVIServerMode Multiple -Confirm:$false -Scope Session | Out-Null
+                    Set-PowerCLIConfiguration -WebOperationTimeoutSeconds 300 -Confirm:$false -Scope Session | Out-Null
+                    Set-PowerCLIConfiguration -ProxyPolicy NoProxy -Confirm:$false -Scope Session | Out-Null
+                    
+                    # Verify current configuration
+                    $config = Get-PowerCLIConfiguration
+                    Write-Output ""DIAGNOSTIC: Current DefaultVIServerMode: $($config.DefaultVIServerMode)""
+                    Write-Output ""DIAGNOSTIC: Current InvalidCertificateAction: $($config.InvalidCertificateAction)""
+                }} catch {{
+                    Write-Output ""DIAGNOSTIC: PowerCLI configuration update failed: $($_.Exception.Message)""
+                }}
+
                 # Create credential
                 $password = '{password.Replace("'", "''")}'
                 $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
                 $credential = New-Object System.Management.Automation.PSCredential('{connectionInfo.Username.Replace("'", "''")}', $securePassword)
                 $password = $null  # Clear from memory
                 
-                # Connect to vCenter
+                # Connect to vCenter with enhanced diagnostics
                 try {{
                     Write-Output ""DIAGNOSTIC: Attempting connection to {connectionInfo.ServerAddress}""
+                    Write-Output ""DIAGNOSTIC: Using credential for user: {connectionInfo.Username.Replace("'", "''")}""
+                    
+                    # Check for existing connections before attempting new connection
+                    $existingConnections = Get-VIServer -ErrorAction SilentlyContinue
+                    if ($existingConnections) {{
+                        Write-Output ""DIAGNOSTIC: Found $($existingConnections.Count) existing vCenter connections""
+                        $existingConnections | ForEach-Object {{
+                            Write-Output ""DIAGNOSTIC: - Existing connection: $($_.Name) (Connected: $($_.IsConnected))""
+                        }}
+                    }} else {{
+                        Write-Output ""DIAGNOSTIC: No existing vCenter connections found""
+                    }}
+                    
                     $connection = Connect-VIServer -Server '{connectionInfo.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
                     
                     if ($connection -and $connection.IsConnected) {{
@@ -305,6 +375,34 @@ public class PersistentExternalConnectionService : IDisposable
                     }}
                 }} catch {{
                     Write-Output ""CONNECTION_FAILED: $($_.Exception.Message)""
+                    Write-Output ""DIAGNOSTIC: Connection failure details:""
+                    Write-Output ""DIAGNOSTIC: - Server: {connectionInfo.ServerAddress}""
+                    Write-Output ""DIAGNOSTIC: - User: {connectionInfo.Username.Replace("'", "''")}""
+                    Write-Output ""DIAGNOSTIC: - Exception Type: $($_.Exception.GetType().Name)""
+                    
+                    # Additional diagnostics for common connection issues
+                    try {{
+                        Write-Output ""DIAGNOSTIC: Testing network connectivity...""
+                        $ping = Test-NetConnection -ComputerName '{connectionInfo.ServerAddress}' -Port 443 -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+                        if ($ping.TcpTestSucceeded) {{
+                            Write-Output ""DIAGNOSTIC: Network connectivity to port 443: SUCCESS""
+                        }} else {{
+                            Write-Output ""DIAGNOSTIC: Network connectivity to port 443: FAILED""
+                        }}
+                    }} catch {{
+                        Write-Output ""DIAGNOSTIC: Network connectivity test failed: $($_.Exception.Message)""
+                    }}
+                    
+                    # Check if this is a certificate or authentication issue
+                    if ($_.Exception.Message -like '*certificate*' -or $_.Exception.Message -like '*SSL*' -or $_.Exception.Message -like '*TLS*') {{
+                        Write-Output ""DIAGNOSTIC: This appears to be a certificate/SSL issue""
+                        Write-Output ""DIAGNOSTIC: Current InvalidCertificateAction setting should ignore certificates""
+                    }} elseif ($_.Exception.Message -like '*authentication*' -or $_.Exception.Message -like '*login*' -or $_.Exception.Message -like '*credential*') {{
+                        Write-Output ""DIAGNOSTIC: This appears to be an authentication issue""
+                        Write-Output ""DIAGNOSTIC: Please verify username and password are correct""
+                    }} elseif ($_.Exception.Message -like '*timeout*' -or $_.Exception.Message -like '*connection*') {{
+                        Write-Output ""DIAGNOSTIC: This appears to be a network connectivity or timeout issue""
+                    }}
                 }}
             ";
 
@@ -334,11 +432,49 @@ public class PersistentExternalConnectionService : IDisposable
                 // Log the full result for debugging
                 _logger.LogWarning("Connection result did not contain CONNECTION_SUCCESS. Full result: {Result}", connectResult);
                 
+                // Extract error message and diagnostics
                 var errorMessage = connectResult.Contains("CONNECTION_FAILED:")
-                    ? connectResult.Substring(connectResult.IndexOf("CONNECTION_FAILED:") + 18).Trim()
+                    ? connectResult.Substring(connectResult.IndexOf("CONNECTION_FAILED:") + 18).Split('\n')[0].Trim()
                     : $"Connection failed - Result: {connectResult.Trim()}";
 
-                _logger.LogError("Connection failed: {Error}", errorMessage);
+                // Extract and log diagnostic information
+                var lines = connectResult.Split('\n');
+                var diagnostics = lines.Where(l => l.Contains("DIAGNOSTIC:")).ToList();
+                
+                if (diagnostics.Any())
+                {
+                    _logger.LogWarning("PowerCLI Connection Diagnostics for {Server}:", connectionInfo.ServerAddress);
+                    foreach (var diagnostic in diagnostics)
+                    {
+                        var cleanDiagnostic = diagnostic.Replace("DIAGNOSTIC:", "").Trim();
+                        if (!string.IsNullOrEmpty(cleanDiagnostic))
+                        {
+                            _logger.LogWarning("  - {Diagnostic}", cleanDiagnostic);
+                        }
+                    }
+                }
+
+                // Provide specific guidance based on error patterns
+                if (errorMessage.ToLower().Contains("certificate") || errorMessage.ToLower().Contains("ssl"))
+                {
+                    _logger.LogError("PowerCLI SSL/Certificate Error for {Server}: {Error}", connectionInfo.ServerAddress, errorMessage);
+                    _logger.LogInformation("Suggestion: Verify PowerCLI InvalidCertificateAction is set to 'Ignore'");
+                }
+                else if (errorMessage.ToLower().Contains("authentication") || errorMessage.ToLower().Contains("login"))
+                {
+                    _logger.LogError("PowerCLI Authentication Error for {Server}: {Error}", connectionInfo.ServerAddress, errorMessage);
+                    _logger.LogInformation("Suggestion: Verify username and password are correct");
+                }
+                else if (errorMessage.ToLower().Contains("timeout") || errorMessage.ToLower().Contains("network"))
+                {
+                    _logger.LogError("PowerCLI Network/Timeout Error for {Server}: {Error}", connectionInfo.ServerAddress, errorMessage);
+                    _logger.LogInformation("Suggestion: Check network connectivity and firewall settings");
+                }
+                else
+                {
+                    _logger.LogError("PowerCLI Connection Error for {Server}: {Error}", connectionInfo.ServerAddress, errorMessage);
+                }
+
                 await DisconnectAsync(connectionKey);
                 return (false, errorMessage, null);
                 }
