@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Threading.Tasks;
@@ -68,16 +69,48 @@ namespace VCenterMigrationTool.Services
 
                 // Configure PowerCLI settings
                 var initScript = @"
-                    # Configure PowerCLI settings
+                    # Configure PowerCLI settings for multiple vCenter connections and SSL bypass
                     try {
+                        # Configure SSL certificate handling (ignore all certificate errors)
                         Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session
+                        
+                        # Disable customer experience improvement program
                         Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session
+                        
+                        # Enable multiple vCenter server connections (critical for migration scenarios)
+                        Set-PowerCLIConfiguration -DefaultVIServerMode Multiple -Confirm:$false -Scope Session
+                        
+                        # Set web operation timeout (increase for slower vCenter responses)
+                        Set-PowerCLIConfiguration -WebOperationTimeoutSeconds 300 -Confirm:$false -Scope Session
+                        
+                        # Configure proxy settings if needed (bypass proxy for internal connections)
+                        Set-PowerCLIConfiguration -ProxyPolicy NoProxy -Confirm:$false -Scope Session
+                        
+                        # Additional SSL/TLS configuration for maximum compatibility
+                        try {
+                            # Force TLS 1.2+ for secure connections
+                            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13
+                            
+                            # Disable SSL certificate validation at .NET level
+                            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+                            
+                            Write-Output 'SSL_CONFIG: Enhanced SSL/TLS configuration applied'
+                        }
+                        catch {
+                            Write-Output 'SSL_WARNING: Advanced SSL configuration failed, continuing with PowerCLI settings only'
+                        }
                         
                         # Initialize global connection variables
                         $global:SourceVIConnection = $null
                         $global:TargetVIConnection = $null
                         
-                        Write-Output 'INIT_SUCCESS: PowerCLI configured and global variables initialized'
+                        # Display current PowerCLI configuration for verification
+                        $config = Get-PowerCLIConfiguration
+                        Write-Output ""CONFIG_VERIFICATION: InvalidCertificateAction=$($config.InvalidCertificateAction)""
+                        Write-Output ""CONFIG_VERIFICATION: DefaultVIServerMode=$($config.DefaultVIServerMode)""
+                        Write-Output ""CONFIG_VERIFICATION: WebOperationTimeout=$($config.WebOperationTimeoutSeconds)""
+                        
+                        Write-Output 'INIT_SUCCESS: PowerCLI configured for multiple vCenter connections with SSL bypass'
                     }
                     catch {
                         Write-Output ""INIT_ERROR: $($_.Exception.Message)""
@@ -89,7 +122,17 @@ namespace VCenterMigrationTool.Services
                 if (result.Contains("INIT_SUCCESS"))
                 {
                     _isInitialized = true;
-                    _logger.LogInformation("Shared PowerShell session initialized successfully");
+                    _logger.LogInformation("Shared PowerShell session initialized successfully with multiple vCenter support and SSL bypass");
+                    
+                    // Log configuration verification if present
+                    if (result.Contains("CONFIG_VERIFICATION"))
+                    {
+                        var lines = result.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var line in lines.Where(l => l.Contains("CONFIG_VERIFICATION")))
+                        {
+                            _logger.LogInformation("PowerCLI Configuration: {ConfigLine}", line.Replace("CONFIG_VERIFICATION: ", ""));
+                        }
+                    }
                 }
                 else
                 {
