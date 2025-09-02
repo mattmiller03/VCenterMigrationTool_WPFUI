@@ -23,7 +23,7 @@ public partial class ResourcePoolMigrationViewModel : ActivityLogViewModelBase, 
     private readonly SharedConnectionService _sharedConnectionService;
     private readonly ConfigurationService _configurationService;
     private readonly CredentialService _credentialService;
-    private readonly PersistentExternalConnectionService _persistentConnectionService;
+    private readonly PersistantVcenterConnectionService _persistentConnectionService;
     private readonly ILogger<ResourcePoolMigrationViewModel> _logger;
 
     // Source and Target Connection Properties
@@ -145,7 +145,7 @@ public partial class ResourcePoolMigrationViewModel : ActivityLogViewModelBase, 
         SharedConnectionService sharedConnectionService,
         ConfigurationService configurationService,
         CredentialService credentialService,
-        PersistentExternalConnectionService persistentConnectionService,
+        PersistantVcenterConnectionService persistentConnectionService,
         ILogger<ResourcePoolMigrationViewModel> logger)
         {
         _powerShellService = powerShellService;

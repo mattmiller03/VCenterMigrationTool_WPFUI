@@ -17,7 +17,7 @@ namespace VCenterMigrationTool.ViewModels;
 
 public partial class EsxiHostsViewModel : ActivityLogViewModelBase
     {
-        private readonly PersistentExternalConnectionService _persistentConnectionService;
+        private readonly PersistantVcenterConnectionService _persistentConnectionService;
         private readonly SharedConnectionService _sharedConnectionService;
         private readonly ConfigurationService _configurationService;
         private readonly PowerShellLoggingService _powerShellLoggingService;
@@ -84,7 +84,7 @@ public partial class EsxiHostsViewModel : ActivityLogViewModelBase
 
 
     public EsxiHostsViewModel (
-            PersistentExternalConnectionService persistentConnectionService,
+            PersistantVcenterConnectionService persistentConnectionService,
             SharedConnectionService sharedConnectionService,
             ConfigurationService configurationService,
             PowerShellLoggingService powerShellLoggingService,

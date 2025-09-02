@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace VCenterMigrationTool.Services;
 
@@ -15,17 +16,20 @@ public class SharedConnectionService
     private readonly VCenterInventoryService _inventoryService;
     private readonly VSphereApiService _vSphereApiService;
     private readonly ILogger<SharedConnectionService> _logger;
+    private readonly IServiceProvider _serviceProvider;
 
     public SharedConnectionService(
         CredentialService credentialService, 
         VCenterInventoryService inventoryService,
         VSphereApiService vSphereApiService,
-        ILogger<SharedConnectionService> logger)
+        ILogger<SharedConnectionService> logger,
+        IServiceProvider serviceProvider)
     {
         _credentialService = credentialService;
         _inventoryService = inventoryService;
         _vSphereApiService = vSphereApiService;
         _logger = logger;
+        _serviceProvider = serviceProvider;
     }
     /// <summary>
     /// Gets or sets the currently selected source vCenter connection.
@@ -65,11 +69,28 @@ public class SharedConnectionService
 
     /// <summary>
     /// Quick check if a connection is active (supports both API and PowerCLI)
+    /// Enhanced with persistent connection service synchronization
     /// </summary>
     public async Task<bool> IsConnectedAsync(string connectionType)
     {
         var status = await GetConnectionStatusAsync(connectionType);
         return status.IsConnected;
+    }
+
+    /// <summary>
+    /// Gets the persistent connection service with error handling
+    /// </summary>
+    private PersistantVcenterConnectionService? GetPersistentConnectionService()
+    {
+        try
+        {
+            return _serviceProvider.GetService<PersistantVcenterConnectionService>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to resolve PersistantVcenterConnectionService");
+            return null;
+        }
     }
 
     public async Task<(bool IsConnected, string ServerName, string Version)> GetConnectionStatusAsync(string connectionType)
@@ -86,7 +107,59 @@ public class SharedConnectionService
             return (false, "Not configured", "");
         }
 
-        // Check both PowerCLI and API connections with dual connection support
+        // Enhanced connection checking with persistent service synchronization
+        var persistentService = GetPersistentConnectionService();
+        
+        // First, check if we have an active persistent PowerCLI connection
+        if (persistentService != null)
+        {
+            try
+            {
+                var isPersistentConnected = await persistentService.IsConnectedAsync(connectionType.ToLower());
+                if (isPersistentConnected)
+                {
+                    var (isConnected, sessionId, version) = persistentService.GetConnectionInfo(connectionType.ToLower());
+                    if (isConnected)
+                    {
+                        // Sync our internal state with the persistent service
+                        if (connectionType.ToLower() == "source")
+                        {
+                            SourceUsingPowerCLI = true;
+                            SourcePowerCLISessionId = sessionId;
+                        }
+                        else if (connectionType.ToLower() == "target")
+                        {
+                            TargetUsingPowerCLI = true;
+                            TargetPowerCLISessionId = sessionId;
+                        }
+                        
+                        _logger.LogInformation("Persistent PowerCLI connection active for {ConnectionType}: {Server} (Session: {SessionId})", 
+                            connectionType, connection.ServerAddress, sessionId);
+                        return (true, connection.ServerAddress ?? "Unknown", version ?? "PowerCLI Session");
+                    }
+                }
+                else
+                {
+                    // Clear stale PowerCLI state if persistent service shows no connection
+                    if (connectionType.ToLower() == "source")
+                    {
+                        SourceUsingPowerCLI = false;
+                        SourcePowerCLISessionId = null;
+                    }
+                    else if (connectionType.ToLower() == "target")
+                    {
+                        TargetUsingPowerCLI = false;
+                        TargetPowerCLISessionId = null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error checking persistent connection for {ConnectionType}", connectionType);
+            }
+        }
+
+        // Fallback to legacy PowerCLI state checking
         bool hasPowerCLI = connectionType.ToLower() switch
         {
             "source" => SourceUsingPowerCLI,
@@ -101,8 +174,8 @@ public class SharedConnectionService
             _ => false
         };
 
-        // Check PowerCLI connection first (preferred for admin operations)
-        if (hasPowerCLI)
+        // Check legacy PowerCLI state if persistent service unavailable
+        if (hasPowerCLI && persistentService == null)
         {
             var sessionId = connectionType.ToLower() switch
             {
@@ -113,9 +186,9 @@ public class SharedConnectionService
 
             if (!string.IsNullOrEmpty(sessionId))
             {
-                _logger.LogInformation("PowerCLI connection active for {ConnectionType}: {Server} (Session: {SessionId})", 
+                _logger.LogInformation("Legacy PowerCLI connection state for {ConnectionType}: {Server} (Session: {SessionId})", 
                     connectionType, connection.ServerAddress, sessionId);
-                return (true, connection.ServerAddress ?? "Unknown", "PowerCLI Session");
+                return (true, connection.ServerAddress ?? "Unknown", "PowerCLI Session (Legacy)");
             }
         }
         
@@ -572,6 +645,38 @@ public class SharedConnectionService
             _logger.LogError(ex, "Error getting inventory counts for {ConnectionType} connection to {Server}", 
                 connectionType, connection.ServerAddress);
             return null;
+        }
+    }
+    
+    /// <summary>
+    /// Synchronizes connection states during page navigation
+    /// This ensures that connection states are properly maintained across navigation
+    /// </summary>
+    public async Task SynchronizeConnectionStatesAsync()
+    {
+        _logger.LogInformation("Synchronizing connection states during navigation");
+        
+        try
+        {
+            // Check and sync source connection
+            if (SourceConnection != null)
+            {
+                var status = await GetConnectionStatusAsync("source");
+                _logger.LogInformation("Source connection sync: Connected={IsConnected}, Server={ServerName}", 
+                    status.IsConnected, status.ServerName);
+            }
+            
+            // Check and sync target connection  
+            if (TargetConnection != null)
+            {
+                var status = await GetConnectionStatusAsync("target");
+                _logger.LogInformation("Target connection sync: Connected={IsConnected}, Server={ServerName}", 
+                    status.IsConnected, status.ServerName);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error synchronizing connection states during navigation");
         }
     }
     }

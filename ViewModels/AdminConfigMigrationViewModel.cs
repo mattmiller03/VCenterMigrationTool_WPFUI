@@ -18,7 +18,7 @@ namespace VCenterMigrationTool.ViewModels
         private readonly SharedConnectionService _sharedConnectionService;
         private readonly HybridPowerShellService _powerShellService;
         private readonly IErrorHandlingService _errorHandlingService;
-        private readonly PersistentExternalConnectionService _persistentConnectionService;
+        private readonly PersistantVcenterConnectionService _persistentConnectionService;
         private readonly CredentialService _credentialService;
         private readonly ConfigurationService _configurationService;
         private readonly ILogger<AdminConfigMigrationViewModel> _logger;
@@ -125,7 +125,7 @@ namespace VCenterMigrationTool.ViewModels
             SharedConnectionService sharedConnectionService,
             HybridPowerShellService powerShellService,
             IErrorHandlingService errorHandlingService,
-            PersistentExternalConnectionService persistentConnectionService,
+            PersistantVcenterConnectionService persistentConnectionService,
             CredentialService credentialService,
             ConfigurationService configurationService,
             ILogger<AdminConfigMigrationViewModel> logger)
@@ -146,6 +146,9 @@ namespace VCenterMigrationTool.ViewModels
         {
             try
             {
+                // First, synchronize connection states with persistent services
+                await _sharedConnectionService.SynchronizeConnectionStatesAsync();
+                
                 await LoadConnectionStatusAsync();
                 await LoadAdminConfigDataAsync();
             }

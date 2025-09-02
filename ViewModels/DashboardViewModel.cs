@@ -18,7 +18,7 @@ namespace VCenterMigrationTool.ViewModels;
 public partial class DashboardViewModel : ObservableObject, INavigationAware
     {
     private readonly HybridPowerShellService _powerShellService;
-    private readonly PersistentExternalConnectionService _persistentConnectionService;
+    private readonly PersistantVcenterConnectionService _persistentConnectionService;
     private readonly VSphereApiService _vSphereApiService;
     private readonly ConnectionProfileService _profileService;
     private readonly CredentialService _credentialService;
@@ -166,7 +166,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
     public DashboardViewModel (
         HybridPowerShellService powerShellService,
-        PersistentExternalConnectionService persistentConnectionService,
+        PersistantVcenterConnectionService persistentConnectionService,
         VSphereApiService vSphereApiService,
         ConnectionProfileService profileService,
         CredentialService credentialService,
@@ -426,7 +426,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             try
             {
-                // Establish persistent PowerCLI connection using PersistentExternalConnectionService
+                // Establish persistent PowerCLI connection using PersistantVcenterConnectionService
                 _logger.LogInformation("STEP 2B: Establishing persistent PowerCLI connection for admin operations");
                 
                 // First try with PowerCLI modules (bypassModuleCheck: false)
@@ -707,7 +707,7 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
             try
             {
-                // Establish persistent PowerCLI connection using PersistentExternalConnectionService
+                // Establish persistent PowerCLI connection using PersistantVcenterConnectionService
                 _logger.LogInformation("STEP 2B: Establishing persistent PowerCLI connection for admin operations");
                 
                 // First try with PowerCLI modules (bypassModuleCheck: false)

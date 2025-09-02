@@ -23,7 +23,7 @@ public partial class VCenterMigrationViewModel : ActivityLogViewModelBase, INavi
     private readonly HybridPowerShellService _powerShellService;
     private readonly SharedConnectionService _sharedConnectionService;
     private readonly IErrorHandlingService _errorHandlingService;
-    private readonly PersistentExternalConnectionService _persistentConnectionService;
+    private readonly PersistantVcenterConnectionService _persistentConnectionService;
 
     // Connection Status
     [ObservableProperty] private bool _isSourceConnected;
@@ -84,7 +84,7 @@ public partial class VCenterMigrationViewModel : ActivityLogViewModelBase, INavi
         HybridPowerShellService powerShellService, 
         SharedConnectionService sharedConnectionService,
         IErrorHandlingService errorHandlingService,
-        PersistentExternalConnectionService persistentConnectionService)
+        PersistantVcenterConnectionService persistentConnectionService)
     {
         _logger = logger;
         _powerShellService = powerShellService;

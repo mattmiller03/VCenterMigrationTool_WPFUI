@@ -203,7 +203,7 @@ public partial class App
             services.AddTransient<FilePathsSettingsViewModel>();
             services.AddTransient<ViewProfilesViewModel>();
             services.AddTransient<ProfileEditorViewModel>();
-            services.AddSingleton<PersistentExternalConnectionService>();
+            services.AddSingleton<PersistantVcenterConnectionService>();
             services.AddSingleton<SharedPowerShellSessionService>();
             services.AddTransient<ViewModels.Dialogs.ErrorDialogViewModel>();
 
@@ -269,7 +269,7 @@ public partial class App
                 }
 
             // Clean up persistent connection service processes
-            var persistentConnectionService = Host.Services.GetService<PersistentExternalConnectionService>();
+            var persistentConnectionService = Host.Services.GetService<PersistantVcenterConnectionService>();
             if (persistentConnectionService != null)
                 {
                 logger?.LogInformation("Cleaning up persistent vCenter connection processes");

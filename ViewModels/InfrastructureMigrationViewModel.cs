@@ -19,7 +19,7 @@ namespace VCenterMigrationTool.ViewModels
         private readonly SharedConnectionService _sharedConnectionService;
         private readonly HybridPowerShellService _powerShellService;
         private readonly IErrorHandlingService _errorHandlingService;
-        private readonly PersistentExternalConnectionService _persistentConnectionService;
+        private readonly PersistantVcenterConnectionService _persistentConnectionService;
         private readonly SharedPowerShellSessionService _sharedPowerShellSession;
         private readonly CredentialService _credentialService;
         private readonly ConfigurationService _configurationService;
@@ -109,7 +109,7 @@ namespace VCenterMigrationTool.ViewModels
             SharedConnectionService sharedConnectionService,
             HybridPowerShellService powerShellService,
             IErrorHandlingService errorHandlingService,
-            PersistentExternalConnectionService persistentConnectionService,
+            PersistantVcenterConnectionService persistentConnectionService,
             SharedPowerShellSessionService sharedPowerShellSession,
             CredentialService credentialService,
             ConfigurationService configurationService,
@@ -132,6 +132,9 @@ namespace VCenterMigrationTool.ViewModels
         {
             try
             {
+                // First, synchronize connection states with persistent services
+                await _sharedConnectionService.SynchronizeConnectionStatesAsync();
+                
                 await LoadConnectionStatusAsync();
                 await LoadInfrastructureDataAsync();
             }
@@ -302,7 +305,7 @@ namespace VCenterMigrationTool.ViewModels
                 SourceDataStatus = "🔄 Verifying connection...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting source infrastructure loading - checking shared PowerCLI session\n";
                 
-                // Check if we already have an active PowerCLI connection via PersistentExternalConnectionService
+                // Check if we already have an active PowerCLI connection via PersistantVcenterConnectionService
                 _logger.LogDebug("Verifying PowerCLI connection status for source infrastructure loading");
                 var isConnected = _sharedConnectionService.SourceUsingPowerCLI;
                 
@@ -339,11 +342,11 @@ namespace VCenterMigrationTool.ViewModels
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Credentials retrieved successfully, initiating PowerCLI connection\n";
                     _logger.LogDebug("Attempting PowerCLI connection to source vCenter");
                     
-                    // Source connections are established via PersistentExternalConnectionService in Dashboard
+                    // Source connections are established via PersistantVcenterConnectionService in Dashboard
                     // If we reach here, the connection should already be established
                     // Log this as an unexpected state
                     _logger.LogError("Source PowerCLI connection not found - this indicates a connection service mismatch");
-                    var connectResult = (success: false, message: "Source connection should be established via Dashboard using PersistentExternalConnectionService");
+                    var connectResult = (success: false, message: "Source connection should be established via Dashboard using PersistantVcenterConnectionService");
                         
                     if (!connectResult.success)
                     {
@@ -608,7 +611,7 @@ namespace VCenterMigrationTool.ViewModels
                 TargetDataStatus = "🔄 Verifying connection...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting target infrastructure loading - checking shared PowerCLI session\n";
                 
-                // Check if we already have an active PowerCLI connection via PersistentExternalConnectionService
+                // Check if we already have an active PowerCLI connection via PersistantVcenterConnectionService
                 _logger.LogDebug("Verifying PowerCLI connection status for target infrastructure loading");
                 var isConnected = _sharedConnectionService.TargetUsingPowerCLI;
                 
@@ -645,11 +648,11 @@ namespace VCenterMigrationTool.ViewModels
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Credentials retrieved successfully, initiating PowerCLI connection\n";
                     _logger.LogDebug("Attempting PowerCLI connection to target vCenter");
                     
-                    // Target connections are established via PersistentExternalConnectionService in Dashboard
+                    // Target connections are established via PersistantVcenterConnectionService in Dashboard
                     // If we reach here, the connection should already be established
                     // Log this as an unexpected state
                     _logger.LogError("Target PowerCLI connection not found - this indicates a connection service mismatch");
-                    var connectResult = (success: false, message: "Target connection should be established via Dashboard using PersistentExternalConnectionService");
+                    var connectResult = (success: false, message: "Target connection should be established via Dashboard using PersistantVcenterConnectionService");
                         
                     if (!connectResult.success)
                     {

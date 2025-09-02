@@ -22,7 +22,7 @@ public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigatio
     private readonly SharedConnectionService _sharedConnectionService;
     private readonly ConfigurationService _configurationService;
     private readonly CredentialService _credentialService;
-    private readonly PersistentExternalConnectionService _persistentConnectionService;
+    private readonly PersistantVcenterConnectionService _persistentConnectionService;
     private readonly ILogger<VmMigrationViewModel> _logger;
 
     // Source and Target VM Collections
@@ -162,7 +162,7 @@ public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigatio
         SharedConnectionService sharedConnectionService,
         ConfigurationService configurationService,
         CredentialService credentialService,
-        PersistentExternalConnectionService persistentConnectionService,
+        PersistantVcenterConnectionService persistentConnectionService,
         ILogger<VmMigrationViewModel> logger)
         {
         _powerShellService = powerShellService;
@@ -187,6 +187,9 @@ public partial class VmMigrationViewModel : ActivityLogViewModelBase, INavigatio
         {
         try
         {
+            // First, synchronize connection states with persistent services
+            await _sharedConnectionService.SynchronizeConnectionStatesAsync();
+            
             await LoadConnectionStatusAsync();
         }
         catch (Exception ex)

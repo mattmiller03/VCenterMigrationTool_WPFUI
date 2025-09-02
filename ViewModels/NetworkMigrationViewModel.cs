@@ -24,7 +24,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
     private readonly SharedConnectionService _sharedConnectionService;
     private readonly ConfigurationService _configurationService;
     private readonly CredentialService _credentialService;
-    private readonly PersistentExternalConnectionService _persistentConnectionService;
+    private readonly PersistantVcenterConnectionService _persistentConnectionService;
     private readonly ILogger<NetworkMigrationViewModel> _logger;
 
     // vDS Configuration Data
@@ -110,7 +110,7 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
         SharedConnectionService sharedConnectionService,
         ConfigurationService configurationService,
         CredentialService credentialService,
-        PersistentExternalConnectionService persistentConnectionService,
+        PersistantVcenterConnectionService persistentConnectionService,
         ILogger<NetworkMigrationViewModel> logger)
         {
         _powerShellService = powerShellService;
@@ -135,6 +135,9 @@ public partial class NetworkMigrationViewModel : ActivityLogViewModelBase, INavi
         {
         try
         {
+            // First, synchronize connection states with persistent services
+            await _sharedConnectionService.SynchronizeConnectionStatesAsync();
+            
             // Check connection status via SharedConnectionService (supports both API and PowerCLI)
             var sourceConnected = await _sharedConnectionService.IsConnectedAsync("source");
             var targetConnected = await _sharedConnectionService.IsConnectedAsync("target");

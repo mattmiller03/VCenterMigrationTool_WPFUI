@@ -15,9 +15,9 @@ namespace VCenterMigrationTool.Services;
 /// <summary>
 /// Manages persistent external PowerShell processes with active vCenter connections
 /// </summary>
-public class PersistentExternalConnectionService : IDisposable
+public class PersistantVcenterConnectionService : IDisposable
     {
-    private readonly ILogger<PersistentExternalConnectionService> _logger;
+    private readonly ILogger<PersistantVcenterConnectionService> _logger;
     private readonly ConcurrentDictionary<string, PersistentConnection> _connections = new();
     private bool _disposed = false;
 
@@ -35,7 +35,7 @@ public class PersistentExternalConnectionService : IDisposable
         public object LockObject { get; set; } = new object();
         }
 
-    public PersistentExternalConnectionService (ILogger<PersistentExternalConnectionService> logger)
+    public PersistantVcenterConnectionService (ILogger<PersistantVcenterConnectionService> logger)
         {
         _logger = logger;
         }
@@ -796,7 +796,7 @@ Write-Output '{endMarker}'
         {
         if (_disposed) return;
 
-        _logger.LogInformation("Disposing PersistentExternalConnectionService - closing all connections");
+        _logger.LogInformation("Disposing PersistantVcenterConnectionService - closing all connections");
 
         DisconnectAllAsync().GetAwaiter().GetResult();
 

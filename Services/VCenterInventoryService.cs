@@ -14,7 +14,7 @@ namespace VCenterMigrationTool.Services;
 /// </summary>
 public class VCenterInventoryService
 {
-    private readonly PersistentExternalConnectionService _persistentConnectionService;
+    private readonly PersistantVcenterConnectionService _persistentConnectionService;
     private readonly ILogger<VCenterInventoryService> _logger;
     private readonly ConfigurationService _configurationService;
     private readonly string _scriptsDirectory;
@@ -23,7 +23,7 @@ public class VCenterInventoryService
     private readonly object _cacheLock = new();
 
     public VCenterInventoryService(
-        PersistentExternalConnectionService persistentConnectionService, 
+        PersistantVcenterConnectionService persistentConnectionService, 
         ILogger<VCenterInventoryService> logger,
         ConfigurationService configurationService)
     {
@@ -123,7 +123,7 @@ public class VCenterInventoryService
             inventory.VCenterVersion = await GetVCenterVersionAsync(vCenterName, username, password, connectionType);
 
             // Load all inventory components sequentially to avoid stream concurrency issues
-            // The PersistentExternalConnectionService uses a single StreamWriter that cannot handle parallel access
+            // The PersistantVcenterConnectionService uses a single StreamWriter that cannot handle parallel access
             _logger.LogInformation("Loading inventory components sequentially for {VCenterName}", vCenterName);
             
             await LoadDatacentersAsync(vCenterName, username, password, inventory, connectionType);
