@@ -318,8 +318,9 @@ namespace VCenterMigrationTool.ViewModels
                             if (!connectResult.success)
                             {
                                 SourceDataStatus = "❌ PowerCLI connection failed";
-                                MigrationStatus = "Failed to establish PowerCLI connection required for infrastructure loading";
-                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Could not establish PowerCLI connection to vCenter\n";
+                                MigrationStatus = $"PowerCLI connection failed: {connectResult.message}";
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: PowerCLI connection failed - {connectResult.message}\n";
+                                _logger.LogError("PowerCLI connection failed for source: {Error}", connectResult.message);
                                 return;
                             }
                             
@@ -410,8 +411,9 @@ namespace VCenterMigrationTool.ViewModels
                             if (!connectResult.success)
                             {
                                 TargetDataStatus = "❌ PowerCLI connection failed";
-                                MigrationStatus = "Failed to establish PowerCLI connection required for infrastructure loading";
-                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Could not establish PowerCLI connection to vCenter\n";
+                                MigrationStatus = $"PowerCLI connection failed: {connectResult.message}";
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: PowerCLI connection failed - {connectResult.message}\n";
+                                _logger.LogError("PowerCLI connection failed for target: {Error}", connectResult.message);
                                 return;
                             }
                             
