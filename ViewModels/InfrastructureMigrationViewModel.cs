@@ -291,6 +291,57 @@ namespace VCenterMigrationTool.ViewModels
 
             try
             {
+                MigrationStatus = "Verifying PowerCLI connection...";
+                SourceDataStatus = "🔄 Verifying connection...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Verifying PowerCLI connection for infrastructure loading\n";
+                
+                // Check if PowerCLI connection is active for source
+                var testResult = await _persistentConnectionService.ExecuteCommandAsync("source", "Get-VIServer");
+                if (testResult.Contains("ERROR") || testResult.Contains("No active PowerCLI connections"))
+                {
+                    // PowerCLI connection not available, attempt to establish it
+                    MigrationStatus = "Establishing PowerCLI connection...";
+                    SourceDataStatus = "🔄 Connecting to PowerCLI...";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection not active, attempting to establish connection\n";
+                    
+                    var sourceConnection = _sharedConnectionService.SourceConnection;
+                    if (sourceConnection != null)
+                    {
+                        var password = _credentialService.GetPassword(sourceConnection);
+                        if (!string.IsNullOrEmpty(password))
+                        {
+                            var connectResult = await _persistentConnectionService.ConnectAsync(
+                                sourceConnection, 
+                                password, 
+                                true);
+                                
+                            if (!connectResult.success)
+                            {
+                                SourceDataStatus = "❌ PowerCLI connection failed";
+                                MigrationStatus = "Failed to establish PowerCLI connection required for infrastructure loading";
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Could not establish PowerCLI connection to vCenter\n";
+                                return;
+                            }
+                            
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection established successfully\n";
+                        }
+                        else
+                        {
+                            SourceDataStatus = "❌ Credentials unavailable";
+                            MigrationStatus = "Source credentials not available for PowerCLI connection";
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Source credentials not available\n";
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        SourceDataStatus = "❌ Connection not configured";
+                        MigrationStatus = "Source connection not configured";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Source connection configuration not found\n";
+                        return;
+                    }
+                }
+
                 MigrationStatus = "Loading source infrastructure...";
                 SourceDataStatus = "🔄 Loading infrastructure...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source infrastructure data\n";
@@ -332,6 +383,57 @@ namespace VCenterMigrationTool.ViewModels
 
             try
             {
+                MigrationStatus = "Verifying PowerCLI connection...";
+                TargetDataStatus = "🔄 Verifying connection...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Verifying PowerCLI connection for infrastructure loading\n";
+                
+                // Check if PowerCLI connection is active for target
+                var testResult = await _persistentConnectionService.ExecuteCommandAsync("target", "Get-VIServer");
+                if (testResult.Contains("ERROR") || testResult.Contains("No active PowerCLI connections"))
+                {
+                    // PowerCLI connection not available, attempt to establish it
+                    MigrationStatus = "Establishing PowerCLI connection...";
+                    TargetDataStatus = "🔄 Connecting to PowerCLI...";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection not active, attempting to establish connection\n";
+                    
+                    var targetConnection = _sharedConnectionService.TargetConnection;
+                    if (targetConnection != null)
+                    {
+                        var password = _credentialService.GetPassword(targetConnection);
+                        if (!string.IsNullOrEmpty(password))
+                        {
+                            var connectResult = await _persistentConnectionService.ConnectAsync(
+                                targetConnection, 
+                                password, 
+                                false);
+                                
+                            if (!connectResult.success)
+                            {
+                                TargetDataStatus = "❌ PowerCLI connection failed";
+                                MigrationStatus = "Failed to establish PowerCLI connection required for infrastructure loading";
+                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Could not establish PowerCLI connection to vCenter\n";
+                                return;
+                            }
+                            
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection established successfully\n";
+                        }
+                        else
+                        {
+                            TargetDataStatus = "❌ Credentials unavailable";
+                            MigrationStatus = "Target credentials not available for PowerCLI connection";
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Target credentials not available\n";
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        TargetDataStatus = "❌ Connection not configured";
+                        MigrationStatus = "Target connection not configured";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Target connection configuration not found\n";
+                        return;
+                    }
+                }
+
                 MigrationStatus = "Loading target infrastructure...";
                 TargetDataStatus = "🔄 Loading infrastructure...";
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading target infrastructure data\n";
