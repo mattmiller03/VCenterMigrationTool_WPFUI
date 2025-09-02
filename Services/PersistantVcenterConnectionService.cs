@@ -464,29 +464,104 @@ public class PersistantVcenterConnectionService : IDisposable
                     Write-Output ""DEBUG_CONNECT: - Force: True""
                     Write-Output ""DEBUG_CONNECT: - ErrorAction: Stop""
                     
-                    # Execute the connection command with verbose error handling
+                    # Execute the connection command with controlled error capture
                     Write-Output ""DEBUG_CONNECT: Executing Connect-VIServer now...""
-                    $connection = Connect-VIServer -Server '{connectionInfo.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
-                    Write-Output ""DEBUG_CONNECT: Connect-VIServer command completed without exception""
+                    $connectionError = $null
+                    $connection = $null
                     
-                    # Analyze the connection result
-                    if ($connection) {{
-                        Write-Output ""DEBUG_CONNECT: Connection object returned: $(if ($connection) {{ 'YES' }} else {{ 'NO' }})""
-                        Write-Output ""DEBUG_CONNECT: Connection type: $($connection.GetType().Name)""
-                        Write-Output ""DEBUG_CONNECT: Connection IsConnected: $($connection.IsConnected)""
+                    try {{
+                        # Capture both output and error streams
+                        Write-Output ""DEBUG_CONNECT: Calling Connect-VIServer with error variable capture""
+                        $connection = Connect-VIServer -Server '{connectionInfo.ServerAddress}' -Credential $credential -Force -ErrorAction Stop -ErrorVariable connectionError 2>&1
+                        Write-Output ""DEBUG_CONNECT: Connect-VIServer command completed without throwing exception""
+                        Write-Output ""DEBUG_CONNECT: Connection variable type: $($connection.GetType().FullName)""
+                    }}
+                    catch {{
+                        Write-Output ""DEBUG_CONNECT: Connect-VIServer threw exception during execution""
+                        $connectionError = $_.Exception
+                        Write-Output ""DEBUG_CONNECT: Exception captured in variable: $($connectionError.GetType().FullName)""
+                    }}
+                    
+                    # Analyze error variable content if populated
+                    if ($connectionError) {{
+                        Write-Output ""DEBUG_ERROR_VAR: Connection error variable is populated""
+                        Write-Output ""DEBUG_ERROR_VAR: Error variable type: $($connectionError.GetType().FullName)""
                         
-                        if ($connection.IsConnected) {{
+                        if ($connectionError -is [System.Exception]) {{
+                            Write-Output ""DEBUG_ERROR_VAR: Error is Exception type""
+                            Write-Output ""DEBUG_ERROR_VAR: Exception message: $($connectionError.Message)""
+                            Write-Output ""DEBUG_ERROR_VAR: Exception type: $($connectionError.GetType().Name)""
+                            
+                            if ($connectionError.InnerException) {{
+                                Write-Output ""DEBUG_ERROR_VAR: Inner exception: $($connectionError.InnerException.Message)""
+                                Write-Output ""DEBUG_ERROR_VAR: Inner exception type: $($connectionError.InnerException.GetType().Name)""
+                            }}
+                        }}
+                        elseif ($connectionError -is [System.Management.Automation.ErrorRecord]) {{
+                            Write-Output ""DEBUG_ERROR_VAR: Error is ErrorRecord type""
+                            Write-Output ""DEBUG_ERROR_VAR: ErrorRecord message: $($connectionError.Exception.Message)""
+                            Write-Output ""DEBUG_ERROR_VAR: ErrorRecord category: $($connectionError.CategoryInfo.Category)""
+                            Write-Output ""DEBUG_ERROR_VAR: ErrorRecord reason: $($connectionError.CategoryInfo.Reason)""
+                            Write-Output ""DEBUG_ERROR_VAR: ErrorRecord target: $($connectionError.TargetObject)""
+                            Write-Output ""DEBUG_ERROR_VAR: ErrorRecord script stack trace: $($connectionError.ScriptStackTrace)""
+                        }}
+                        elseif ($connectionError -is [Array] -and $connectionError.Count -gt 0) {{
+                            Write-Output ""DEBUG_ERROR_VAR: Error variable contains array with $($connectionError.Count) items""
+                            for ($i = 0; $i -lt $connectionError.Count; $i++) {{
+                                $errorItem = $connectionError[$i]
+                                Write-Output ""DEBUG_ERROR_VAR: Array item [$i] type: $($errorItem.GetType().FullName)""
+                                Write-Output ""DEBUG_ERROR_VAR: Array item [$i] content: $errorItem""
+                            }}
+                        }}
+                        else {{
+                            Write-Output ""DEBUG_ERROR_VAR: Error variable content (string): $connectionError""
+                        }}
+                    }} else {{
+                        Write-Output ""DEBUG_ERROR_VAR: No connection error captured in variable""
+                    }}
+                    
+                    Write-Output ""DEBUG_CONNECT: Post-execution analysis complete""
+                    
+                    # Analyze the connection result with enhanced error context
+                    if ($connection) {{
+                        # Filter out non-connection objects from the result (sometimes includes error messages)
+                        $actualConnection = $null
+                        if ($connection -is [Array]) {{
+                            Write-Output ""DEBUG_CONNECT: Connection result is an array with $($connection.Count) items""
+                            foreach ($item in $connection) {{
+                                Write-Output ""DEBUG_CONNECT: Array item type: $($item.GetType().FullName)""
+                                if ($item.GetType().Name -eq 'VIServer') {{
+                                    $actualConnection = $item
+                                    Write-Output ""DEBUG_CONNECT: Found VIServer object in array""
+                                }}
+                            }}
+                        }}
+                        elseif ($connection.GetType().Name -eq 'VIServer') {{
+                            $actualConnection = $connection
+                            Write-Output ""DEBUG_CONNECT: Direct VIServer object returned""
+                        }}
+                        else {{
+                            Write-Output ""DEBUG_CONNECT: Unexpected connection type: $($connection.GetType().FullName)""
+                            Write-Output ""DEBUG_CONNECT: Connection content: $connection""
+                        }}
+                        
+                        if ($actualConnection) {{
+                            Write-Output ""DEBUG_CONNECT: Connection object returned: YES""
+                            Write-Output ""DEBUG_CONNECT: Connection type: $($actualConnection.GetType().Name)""
+                            Write-Output ""DEBUG_CONNECT: Connection IsConnected: $($actualConnection.IsConnected)""
+                        
+                        if ($actualConnection.IsConnected) {{
                             Write-Output ""DEBUG_CONNECT: ✅ CONNECTION SUCCESSFUL!""
                             Write-Output ""CONNECTION_SUCCESS""
-                            Write-Output ""SESSION_ID:$($connection.SessionId)""
-                            Write-Output ""VERSION:$($connection.Version)""
-                            Write-Output ""BUILD:$($connection.Build)""
-                            Write-Output ""USER:$($connection.User)""
-                            Write-Output ""PORT:$($connection.Port)""
-                            Write-Output ""PRODUCT_LINE:$($connection.ProductLine)""
+                            Write-Output ""SESSION_ID:$($actualConnection.SessionId)""
+                            Write-Output ""VERSION:$($actualConnection.Version)""
+                            Write-Output ""BUILD:$($actualConnection.Build)""
+                            Write-Output ""USER:$($actualConnection.User)""
+                            Write-Output ""PORT:$($actualConnection.Port)""
+                            Write-Output ""PRODUCT_LINE:$($actualConnection.ProductLine)""
                             
                             # Store in global variables
-                            $global:VIConnection_{connectionKey.Replace("-", "_")} = $connection
+                            $global:VIConnection_{connectionKey.Replace("-", "_")} = $actualConnection
                             Write-Output ""DEBUG_CONNECT: Stored in global variable: VIConnection_{connectionKey.Replace("-", "_")}""
                             
                             # Update default server
@@ -494,8 +569,8 @@ public class PersistantVcenterConnectionService : IDisposable
                                 $global:PreviousDefaultVIServer = $global:DefaultVIServer
                                 Write-Output ""DEBUG_CONNECT: Saved previous default server: $($global:PreviousDefaultVIServer.Name)""
                             }}
-                            $global:DefaultVIServer = $connection
-                            $global:CurrentVCenterConnection = $connection
+                            $global:DefaultVIServer = $actualConnection
+                            $global:CurrentVCenterConnection = $actualConnection
                             Write-Output ""DEBUG_CONNECT: Set as new default server""
                             
                             # Verify storage
@@ -508,11 +583,29 @@ public class PersistantVcenterConnectionService : IDisposable
                             Write-Output ""CONNECTION_VERIFIED""
                         }} else {{
                             Write-Output ""DEBUG_CONNECT: ❌ Connection object returned but IsConnected = False""
-                            Write-Output ""CONNECTION_FAILED: Connection object indicates not connected""
+                            
+                            # Check if we have error information to explain why IsConnected is false
+                            if ($connectionError) {{
+                                Write-Output ""CONNECTION_FAILED: Connection object indicates not connected - Error: $connectionError""
+                            }} else {{
+                                Write-Output ""CONNECTION_FAILED: Connection object indicates not connected - No specific error captured""
+                            }}
+                        }}
+                        }} else {{
+                            Write-Output ""DEBUG_CONNECT: ❌ Connection result contains no VIServer object""
+                            if ($connectionError) {{
+                                Write-Output ""CONNECTION_FAILED: No VIServer object found - Error: $connectionError""
+                            }} else {{
+                                Write-Output ""CONNECTION_FAILED: No VIServer object found in result""
+                            }}
                         }}
                     }} else {{
-                        Write-Output ""DEBUG_CONNECT: ❌ No connection object returned""
-                        Write-Output ""CONNECTION_FAILED: No connection object returned""
+                        Write-Output ""DEBUG_CONNECT: ❌ No connection result returned""
+                        if ($connectionError) {{
+                            Write-Output ""CONNECTION_FAILED: No connection result - Error: $connectionError""
+                        }} else {{
+                            Write-Output ""CONNECTION_FAILED: No connection result returned""
+                        }}
                     }}
                     
                 }} catch {{
@@ -602,7 +695,11 @@ public class PersistantVcenterConnectionService : IDisposable
                     var trimmedLine = line.Trim();
                     if (string.IsNullOrEmpty(trimmedLine)) continue;
                     
-                    if (trimmedLine.StartsWith("DEBUG_"))
+                    if (trimmedLine.StartsWith("DEBUG_ERROR_VAR:"))
+                    {
+                        _logger.LogError("PS_ERROR_VAR: {Line}", trimmedLine.Replace("DEBUG_ERROR_VAR:", "").Trim());
+                    }
+                    else if (trimmedLine.StartsWith("DEBUG_"))
                     {
                         _logger.LogInformation("PS_DEBUG: {Line}", trimmedLine);
                     }
