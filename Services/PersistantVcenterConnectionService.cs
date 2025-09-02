@@ -406,7 +406,7 @@ public class PersistantVcenterConnectionService : IDisposable
                 }}
             ";
 
-            var connectResult = await ExecuteCommandWithTimeoutAsync(connectionKey, connectScript, TimeSpan.FromSeconds(60), skipConnectionCheck: false);
+            var connectResult = await ExecuteCommandWithTimeoutAsync(connectionKey, connectScript, TimeSpan.FromSeconds(60), skipConnectionCheck: true);
 
             if (connectResult.Contains("CONNECTION_SUCCESS"))
                 {
