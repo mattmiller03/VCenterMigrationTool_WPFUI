@@ -15,13 +15,17 @@ namespace VCenterMigrationTool.Services
     public class SharedPowerShellSessionService : IDisposable
     {
         private readonly ILogger<SharedPowerShellSessionService> _logger;
+        private readonly PowerShellLoggingService _psLoggingService;
         private Runspace _runspace;
         private bool _isInitialized = false;
         private readonly object _sessionLock = new object();
 
-        public SharedPowerShellSessionService(ILogger<SharedPowerShellSessionService> logger)
+        public SharedPowerShellSessionService(
+            ILogger<SharedPowerShellSessionService> logger,
+            PowerShellLoggingService psLoggingService)
         {
             _logger = logger;
+            _psLoggingService = psLoggingService;
             InitializeSession();
         }
 
@@ -115,10 +119,13 @@ namespace VCenterMigrationTool.Services
 
             var connectionType = isSource ? "Source" : "Target";
             var globalVarName = isSource ? "$global:SourceVIConnection" : "$global:TargetVIConnection";
+            var scriptName = $"Connect-{connectionType}VCenter";
+            var sessionId = _psLoggingService.StartScriptLogging(scriptName, connectionType.ToLower());
 
             try
             {
                 _logger.LogInformation("Connecting to {Type} vCenter: {Server}", connectionType, connectionInfo.ServerAddress);
+                _psLoggingService.LogScriptAction(sessionId, scriptName, "CONNECTION_START", $"Connecting to {connectionType} vCenter: {connectionInfo.ServerAddress}");
 
                 var connectScript = $@"
                     try {{
@@ -160,6 +167,8 @@ namespace VCenterMigrationTool.Services
                 if (result.Contains("CONNECTION_SUCCESS") || result.Contains("ALREADY_CONNECTED"))
                 {
                     _logger.LogInformation("Successfully connected to {Type} vCenter: {Server}", connectionType, connectionInfo.ServerAddress);
+                    _psLoggingService.LogScriptOutput(sessionId, scriptName, result, "SUCCESS");
+                    _psLoggingService.EndScriptLogging(sessionId, scriptName, true, $"Successfully connected to {connectionType} vCenter");
                     return (true, "Connected successfully");
                 }
                 else
@@ -169,12 +178,16 @@ namespace VCenterMigrationTool.Services
                         : $"Connection failed - Result: {result.Trim()}";
                     
                     _logger.LogError("Failed to connect to {Type} vCenter {Server}: {Error}", connectionType, connectionInfo.ServerAddress, errorMessage);
+                    _psLoggingService.LogScriptError(sessionId, scriptName, errorMessage);
+                    _psLoggingService.EndScriptLogging(sessionId, scriptName, false, errorMessage);
                     return (false, errorMessage);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception connecting to {Type} vCenter {Server}", connectionType, connectionInfo.ServerAddress);
+                _psLoggingService.LogScriptError(sessionId, scriptName, ex.Message);
+                _psLoggingService.EndScriptLogging(sessionId, scriptName, false, $"Exception: {ex.Message}");
                 return (false, $"Connection error: {ex.Message}");
             }
         }
@@ -237,9 +250,13 @@ namespace VCenterMigrationTool.Services
 
             var connectionType = isSource ? "Source" : "Target";
             var globalVarName = isSource ? "$global:SourceVIConnection" : "$global:TargetVIConnection";
+            var scriptName = $"Execute-{connectionType}Command";
+            var sessionId = _psLoggingService.StartScriptLogging(scriptName, connectionType.ToLower());
 
             try
             {
+                _psLoggingService.LogScriptAction(sessionId, scriptName, "COMMAND_START", $"Executing PowerCLI command on {connectionType}");
+                _psLoggingService.LogScriptOutput(sessionId, scriptName, $"Command: {command.Substring(0, Math.Min(command.Length, 200))}", "DEBUG");
                 var wrappedScript = $@"
                     # Ensure we're using the correct connection
                     if ({globalVarName} -eq $null -or -not {globalVarName}.IsConnected) {{
@@ -259,11 +276,26 @@ namespace VCenterMigrationTool.Services
                     }}
                 ";
 
-                return await Task.Run(() => ExecuteScriptInternal(wrappedScript));
+                var result = await Task.Run(() => ExecuteScriptInternal(wrappedScript));
+                
+                if (result.StartsWith("ERROR"))
+                {
+                    _psLoggingService.LogScriptError(sessionId, scriptName, result);
+                    _psLoggingService.EndScriptLogging(sessionId, scriptName, false, "Command execution failed");
+                }
+                else
+                {
+                    _psLoggingService.LogScriptOutput(sessionId, scriptName, result.Substring(0, Math.Min(result.Length, 1000)), "SUCCESS");
+                    _psLoggingService.EndScriptLogging(sessionId, scriptName, true, "Command executed successfully");
+                }
+                
+                return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error executing command in shared session");
+                _psLoggingService.LogScriptError(sessionId, scriptName, ex.Message);
+                _psLoggingService.EndScriptLogging(sessionId, scriptName, false, $"Exception: {ex.Message}");
                 return $"ERROR: {ex.Message}";
             }
         }
@@ -298,14 +330,29 @@ namespace VCenterMigrationTool.Services
                         foreach (var error in powerShell.Streams.Error)
                         {
                             output.Add($"ERROR: {error}");
+                            _logger.LogWarning("PowerShell Error in shared session: {Error}", error.ToString());
                         }
                     }
 
-                    return string.Join(Environment.NewLine, output);
+                    // Also capture warnings, verbose, and debug streams for comprehensive logging
+                    foreach (var warning in powerShell.Streams.Warning)
+                    {
+                        _logger.LogWarning("PowerShell Warning in shared session: {Warning}", warning.Message);
+                    }
+
+                    foreach (var verbose in powerShell.Streams.Verbose)
+                    {
+                        _logger.LogDebug("PowerShell Verbose in shared session: {Verbose}", verbose.Message);
+                    }
+
+                    var resultString = string.Join(Environment.NewLine, output);
+                    _logger.LogDebug("PowerShell execution result length: {Length} characters", resultString.Length);
+                    
+                    return resultString;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error executing PowerShell script");
+                    _logger.LogError(ex, "Error executing PowerShell script in shared session");
                     return $"ERROR: {ex.Message}";
                 }
             }

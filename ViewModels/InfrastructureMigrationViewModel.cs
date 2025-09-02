@@ -289,107 +289,299 @@ namespace VCenterMigrationTool.ViewModels
             if (!IsSourceConnected)
             {
                 MigrationStatus = "Source connection not available";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Source connection not available for infrastructure loading\n";
+                _logger.LogWarning("LoadSourceInfrastructure called but IsSourceConnected is false");
                 return;
             }
 
             try
             {
+                _logger.LogInformation("Starting source infrastructure data loading process");
                 MigrationStatus = "Checking PowerCLI connection...";
                 SourceDataStatus = "🔄 Verifying connection...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Checking shared PowerCLI session for source infrastructure loading\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting source infrastructure loading - checking shared PowerCLI session\n";
                 
                 // Check if we already have an active PowerCLI connection in the shared session
+                _logger.LogDebug("Verifying PowerCLI connection status for source infrastructure loading");
                 var isConnected = await _sharedPowerShellSession.IsVCenterConnectedAsync(isSource: true);
                 
                 if (!isConnected)
                 {
+                    _logger.LogInformation("PowerCLI connection needed for source infrastructure, establishing connection");
                     MigrationStatus = "Establishing PowerCLI connection...";
                     SourceDataStatus = "🔄 Connecting to PowerCLI...";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection needed, establishing connection in shared session\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] No active PowerCLI session found, establishing connection to source vCenter\n";
                         
                     var sourceConnection = _sharedConnectionService.SourceConnection;
-                    if (sourceConnection != null)
-                    {
-                        var password = _credentialService.GetPassword(sourceConnection);
-                        if (!string.IsNullOrEmpty(password))
-                        {
-                            var connectResult = await _sharedPowerShellSession.ConnectToVCenterAsync(
-                                sourceConnection, 
-                                password, 
-                                isSource: true);
-                                
-                            if (!connectResult.success)
-                            {
-                                SourceDataStatus = "❌ PowerCLI connection failed";
-                                MigrationStatus = $"PowerCLI connection failed: {connectResult.message}";
-                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: PowerCLI connection failed - {connectResult.message}\n";
-                                _logger.LogError("PowerCLI connection failed for source: {Error}", connectResult.message);
-                                return;
-                            }
-                            
-                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection established successfully in shared session\n";
-                        }
-                        else
-                        {
-                            SourceDataStatus = "❌ Credentials unavailable";
-                            MigrationStatus = "Source credentials not available for PowerCLI connection";
-                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Source credentials not available\n";
-                            return;
-                        }
-                    }
-                    else
+                    if (sourceConnection == null)
                     {
                         SourceDataStatus = "❌ Connection not configured";
                         MigrationStatus = "Source connection not configured";
-                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Source connection configuration not found\n";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Source connection configuration not found - cannot load infrastructure\n";
+                        _logger.LogError("Source connection configuration is null");
                         return;
                     }
+
+                    _logger.LogDebug("Source connection configured for server: {Server}, user: {User}", sourceConnection.ServerAddress, sourceConnection.Username);
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source connection configured - Server: {sourceConnection.ServerAddress}, User: {sourceConnection.Username}\n";
+
+                    var password = _credentialService.GetPassword(sourceConnection);
+                    if (string.IsNullOrEmpty(password))
+                    {
+                        SourceDataStatus = "❌ Credentials unavailable";
+                        MigrationStatus = "Source credentials not available for PowerCLI connection";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Source credentials not available from credential service\n";
+                        _logger.LogError("Failed to retrieve password for source connection from credential service");
+                        return;
+                    }
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Credentials retrieved successfully, initiating PowerCLI connection\n";
+                    _logger.LogDebug("Attempting PowerCLI connection to source vCenter");
+                    
+                    var connectResult = await _sharedPowerShellSession.ConnectToVCenterAsync(
+                        sourceConnection, 
+                        password, 
+                        isSource: true);
+                        
+                    if (!connectResult.success)
+                    {
+                        SourceDataStatus = "❌ PowerCLI connection failed";
+                        MigrationStatus = $"PowerCLI connection failed: {connectResult.message}";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: PowerCLI connection failed - {connectResult.message}\n";
+                        _logger.LogError("PowerCLI connection to source vCenter failed: {Error}", connectResult.message);
+                        return;
+                    }
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection established successfully to source vCenter\n";
+                    _logger.LogInformation("Successfully established PowerCLI connection to source vCenter");
                 }
                 else
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection already active in shared session, proceeding with data loading\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Existing PowerCLI connection found and verified, proceeding with infrastructure enumeration\n";
+                    _logger.LogDebug("Using existing PowerCLI connection for source infrastructure loading");
                 }
 
+                // Start comprehensive infrastructure data loading
                 MigrationStatus = "Loading source infrastructure...";
-                SourceDataStatus = "🔄 Loading infrastructure...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source infrastructure data using shared PowerCLI session\n";
+                SourceDataStatus = "🔄 Enumerating datacenters...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting comprehensive source infrastructure enumeration\n";
+                _logger.LogInformation("Beginning comprehensive source infrastructure data enumeration");
                 
-                // Load infrastructure data using the shared PowerShell session
+                // Load Datacenters with detailed logging
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 1: Loading datacenters from source vCenter\n";
                 var datacenterScript = @"
-                    Get-Datacenter | ForEach-Object {
-                        [PSCustomObject]@{
-                            Name = $_.Name
-                            Id = $_.Id
-                            ExtensionData = $_.ExtensionData
+                    try {
+                        Write-Output 'PHASE_START: Datacenter enumeration'
+                        $datacenters = Get-Datacenter -ErrorAction Stop
+                        Write-Output ""DATACENTER_COUNT: Found $($datacenters.Count) datacenter(s)""
+                        
+                        $datacenterResults = @()
+                        foreach ($dc in $datacenters) {
+                            Write-Output ""Processing datacenter: $($dc.Name)""
+                            $datacenterResults += [PSCustomObject]@{
+                                Name = $dc.Name
+                                Id = $dc.Id
+                                ExtensionData = $dc.ExtensionData
+                            }
                         }
-                    } | ConvertTo-Json -Depth 3
+                        
+                        Write-Output 'PHASE_SUCCESS: Datacenter enumeration completed'
+                        $datacenterResults | ConvertTo-Json -Depth 3
+                    }
+                    catch {
+                        Write-Output ""PHASE_ERROR: Datacenter enumeration failed - $($_.Exception.Message)""
+                    }
                 ";
                 
+                _logger.LogDebug("Executing datacenter enumeration script for source infrastructure");
                 var datacenterResult = await _sharedPowerShellSession.ExecuteCommandAsync(datacenterScript, isSource: true);
+                _logger.LogInformation("Datacenter enumeration completed - result length: {Length} characters", datacenterResult.Length);
                 
-                if (!datacenterResult.StartsWith("ERROR"))
+                if (datacenterResult.Contains("PHASE_ERROR"))
                 {
-                    // Parse and update source data - simplified for now
+                    var errorMessage = ExtractErrorMessage(datacenterResult, "PHASE_ERROR");
+                    SourceDataStatus = "❌ Failed to load datacenters";
+                    MigrationStatus = "Failed to load source datacenters";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Datacenter enumeration failed - {errorMessage}\n";
+                    _logger.LogError("Source datacenter enumeration failed: {Error}", errorMessage);
+                    return;
+                }
+                
+                // Extract datacenter count from result
+                var datacenterCount = ExtractCountFromResult(datacenterResult, "DATACENTER_COUNT");
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 1 completed: Found {datacenterCount} datacenter(s)\n";
+                
+                // Show preview of datacenter results
+                if (datacenterResult.Length > 0)
+                {
+                    var previewLength = Math.Min(datacenterResult.Length, 300);
+                    var preview = datacenterResult.Substring(0, previewLength);
+                    if (datacenterResult.Length > 300) preview += "...";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Datacenter data preview: {preview}\n";
+                }
+
+                // Load Clusters
+                SourceDataStatus = "🔄 Enumerating clusters...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 2: Loading clusters from source vCenter\n";
+                var clusterScript = @"
+                    try {
+                        Write-Output 'PHASE_START: Cluster enumeration'
+                        $clusters = Get-Cluster -ErrorAction Stop
+                        Write-Output ""CLUSTER_COUNT: Found $($clusters.Count) cluster(s)""
+                        
+                        $clusterResults = @()
+                        foreach ($cluster in $clusters) {
+                            Write-Output ""Processing cluster: $($cluster.Name)""
+                            $clusterResults += [PSCustomObject]@{
+                                Name = $cluster.Name
+                                Id = $cluster.Id
+                                ParentFolder = $cluster.ParentFolder.Name
+                                HAEnabled = $cluster.HAEnabled
+                                DrsEnabled = $cluster.DrsEnabled
+                            }
+                        }
+                        
+                        Write-Output 'PHASE_SUCCESS: Cluster enumeration completed'
+                        $clusterResults | ConvertTo-Json -Depth 3
+                    }
+                    catch {
+                        Write-Output ""PHASE_ERROR: Cluster enumeration failed - $($_.Exception.Message)""
+                    }
+                ";
+                
+                var clusterResult = await _sharedPowerShellSession.ExecuteCommandAsync(clusterScript, isSource: true);
+                _logger.LogDebug("Cluster enumeration completed - result length: {Length} characters", clusterResult.Length);
+                
+                if (clusterResult.Contains("PHASE_ERROR"))
+                {
+                    var errorMessage = ExtractErrorMessage(clusterResult, "PHASE_ERROR");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Cluster enumeration failed - {errorMessage}\n";
+                    _logger.LogWarning("Source cluster enumeration failed: {Error}", errorMessage);
+                }
+                else
+                {
+                    var clusterCount = ExtractCountFromResult(clusterResult, "CLUSTER_COUNT");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 2 completed: Found {clusterCount} cluster(s)\n";
+                }
+
+                // Load ESXi Hosts
+                SourceDataStatus = "🔄 Enumerating hosts...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 3: Loading ESXi hosts from source vCenter\n";
+                var hostScript = @"
+                    try {
+                        Write-Output 'PHASE_START: Host enumeration'
+                        $vmhosts = Get-VMHost -ErrorAction Stop
+                        Write-Output ""HOST_COUNT: Found $($vmhosts.Count) ESXi host(s)""
+                        
+                        $hostResults = @()
+                        foreach ($vmhost in $vmhosts) {
+                            Write-Output ""Processing host: $($vmhost.Name)""
+                            $hostResults += [PSCustomObject]@{
+                                Name = $vmhost.Name
+                                Id = $vmhost.Id
+                                ConnectionState = $vmhost.ConnectionState.ToString()
+                                Version = $vmhost.Version
+                                Build = $vmhost.Build
+                            }
+                        }
+                        
+                        Write-Output 'PHASE_SUCCESS: Host enumeration completed'
+                        $hostResults | ConvertTo-Json -Depth 3
+                    }
+                    catch {
+                        Write-Output ""PHASE_ERROR: Host enumeration failed - $($_.Exception.Message)""
+                    }
+                ";
+                
+                var hostResult = await _sharedPowerShellSession.ExecuteCommandAsync(hostScript, isSource: true);
+                _logger.LogDebug("Host enumeration completed - result length: {Length} characters", hostResult.Length);
+                
+                if (hostResult.Contains("PHASE_ERROR"))
+                {
+                    var errorMessage = ExtractErrorMessage(hostResult, "PHASE_ERROR");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Host enumeration failed - {errorMessage}\n";
+                    _logger.LogWarning("Source host enumeration failed: {Error}", errorMessage);
+                }
+                else
+                {
+                    var hostCount = ExtractCountFromResult(hostResult, "HOST_COUNT");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 3 completed: Found {hostCount} ESXi host(s)\n";
+                }
+
+                // Load Datastores
+                SourceDataStatus = "🔄 Enumerating datastores...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 4: Loading datastores from source vCenter\n";
+                var datastoreScript = @"
+                    try {
+                        Write-Output 'PHASE_START: Datastore enumeration'
+                        $datastores = Get-Datastore -ErrorAction Stop
+                        Write-Output ""DATASTORE_COUNT: Found $($datastores.Count) datastore(s)""
+                        
+                        $datastoreResults = @()
+                        foreach ($ds in $datastores) {
+                            Write-Output ""Processing datastore: $($ds.Name)""
+                            $datastoreResults += [PSCustomObject]@{
+                                Name = $ds.Name
+                                Id = $ds.Id
+                                CapacityGB = [math]::Round($ds.CapacityGB, 2)
+                                FreeSpaceGB = [math]::Round($ds.FreeSpaceGB, 2)
+                                Type = $ds.Type
+                            }
+                        }
+                        
+                        Write-Output 'PHASE_SUCCESS: Datastore enumeration completed'
+                        $datastoreResults | ConvertTo-Json -Depth 3
+                    }
+                    catch {
+                        Write-Output ""PHASE_ERROR: Datastore enumeration failed - $($_.Exception.Message)""
+                    }
+                ";
+                
+                var datastoreResult = await _sharedPowerShellSession.ExecuteCommandAsync(datastoreScript, isSource: true);
+                _logger.LogDebug("Datastore enumeration completed - result length: {Length} characters", datastoreResult.Length);
+                
+                if (datastoreResult.Contains("PHASE_ERROR"))
+                {
+                    var errorMessage = ExtractErrorMessage(datastoreResult, "PHASE_ERROR");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Datastore enumeration failed - {errorMessage}\n";
+                    _logger.LogWarning("Source datastore enumeration failed: {Error}", errorMessage);
+                }
+                else
+                {
+                    var datastoreCount = ExtractCountFromResult(datastoreResult, "DATASTORE_COUNT");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 4 completed: Found {datastoreCount} datastore(s)\n";
+                }
+                
+                // Final status update
+                if (!datacenterResult.Contains("PHASE_ERROR"))
+                {
                     SourceDataStatus = "✅ Infrastructure loaded";
                     MigrationStatus = "Source infrastructure loaded successfully";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source infrastructure data loaded successfully from shared session\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] SUCCESS: Source infrastructure enumeration completed successfully\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Infrastructure summary - DCs: {ExtractCountFromResult(datacenterResult, "DATACENTER_COUNT")}, " +
+                                  $"Clusters: {ExtractCountFromResult(clusterResult, "CLUSTER_COUNT")}, " +
+                                  $"Hosts: {ExtractCountFromResult(hostResult, "HOST_COUNT")}, " +
+                                  $"Datastores: {ExtractCountFromResult(datastoreResult, "DATASTORE_COUNT")}\n";
                     
-                    // TODO: Parse JSON results and update SourceDatacenters collection
-                    // This will be expanded to load clusters, hosts, datastores etc.
+                    _logger.LogInformation("Source infrastructure enumeration completed successfully");
+                    
+                    // TODO: Parse JSON results and update SourceDatacenters, SourceClusters, SourceHosts, SourceDatastores collections
+                    // This will be expanded to fully populate the UI collections
                 }
                 else
                 {
                     SourceDataStatus = "❌ Failed to load infrastructure";
                     MigrationStatus = "Failed to load source infrastructure";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load source infrastructure - {datacenterResult}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Source infrastructure loading failed at datacenter enumeration phase\n";
+                    _logger.LogError("Source infrastructure loading failed at datacenter enumeration phase");
                 }
             }
             catch (Exception ex)
             {
                 SourceDataStatus = "❌ Error loading infrastructure";
                 MigrationStatus = $"Failed to load source infrastructure: {ex.Message}";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
-                _logger.LogError(ex, "Error loading source infrastructure");
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] EXCEPTION: Infrastructure loading failed - {ex.Message}\n";
+                _logger.LogError(ex, "Exception occurred during source infrastructure loading");
             }
         }
 
@@ -399,107 +591,299 @@ namespace VCenterMigrationTool.ViewModels
             if (!IsTargetConnected)
             {
                 MigrationStatus = "Target connection not available";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Target connection not available for infrastructure loading\n";
+                _logger.LogWarning("LoadTargetInfrastructure called but IsTargetConnected is false");
                 return;
             }
 
             try
             {
+                _logger.LogInformation("Starting target infrastructure data loading process");
                 MigrationStatus = "Checking PowerCLI connection...";
                 TargetDataStatus = "🔄 Verifying connection...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Checking shared PowerCLI session for target infrastructure loading\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting target infrastructure loading - checking shared PowerCLI session\n";
                 
                 // Check if we already have an active PowerCLI connection in the shared session
+                _logger.LogDebug("Verifying PowerCLI connection status for target infrastructure loading");
                 var isConnected = await _sharedPowerShellSession.IsVCenterConnectedAsync(isSource: false);
                 
                 if (!isConnected)
                 {
+                    _logger.LogInformation("PowerCLI connection needed for target infrastructure, establishing connection");
                     MigrationStatus = "Establishing PowerCLI connection...";
                     TargetDataStatus = "🔄 Connecting to PowerCLI...";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection needed, establishing connection in shared session\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] No active PowerCLI session found, establishing connection to target vCenter\n";
                         
                     var targetConnection = _sharedConnectionService.TargetConnection;
-                    if (targetConnection != null)
-                    {
-                        var password = _credentialService.GetPassword(targetConnection);
-                        if (!string.IsNullOrEmpty(password))
-                        {
-                            var connectResult = await _sharedPowerShellSession.ConnectToVCenterAsync(
-                                targetConnection, 
-                                password, 
-                                isSource: false);
-                                
-                            if (!connectResult.success)
-                            {
-                                TargetDataStatus = "❌ PowerCLI connection failed";
-                                MigrationStatus = $"PowerCLI connection failed: {connectResult.message}";
-                                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: PowerCLI connection failed - {connectResult.message}\n";
-                                _logger.LogError("PowerCLI connection failed for target: {Error}", connectResult.message);
-                                return;
-                            }
-                            
-                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection established successfully in shared session\n";
-                        }
-                        else
-                        {
-                            TargetDataStatus = "❌ Credentials unavailable";
-                            MigrationStatus = "Target credentials not available for PowerCLI connection";
-                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Target credentials not available\n";
-                            return;
-                        }
-                    }
-                    else
+                    if (targetConnection == null)
                     {
                         TargetDataStatus = "❌ Connection not configured";
                         MigrationStatus = "Target connection not configured";
-                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Target connection configuration not found\n";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Target connection configuration not found - cannot load infrastructure\n";
+                        _logger.LogError("Target connection configuration is null");
                         return;
                     }
+
+                    _logger.LogDebug("Target connection configured for server: {Server}, user: {User}", targetConnection.ServerAddress, targetConnection.Username);
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target connection configured - Server: {targetConnection.ServerAddress}, User: {targetConnection.Username}\n";
+
+                    var password = _credentialService.GetPassword(targetConnection);
+                    if (string.IsNullOrEmpty(password))
+                    {
+                        TargetDataStatus = "❌ Credentials unavailable";
+                        MigrationStatus = "Target credentials not available for PowerCLI connection";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Target credentials not available from credential service\n";
+                        _logger.LogError("Failed to retrieve password for target connection from credential service");
+                        return;
+                    }
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Credentials retrieved successfully, initiating PowerCLI connection\n";
+                    _logger.LogDebug("Attempting PowerCLI connection to target vCenter");
+                    
+                    var connectResult = await _sharedPowerShellSession.ConnectToVCenterAsync(
+                        targetConnection, 
+                        password, 
+                        isSource: false);
+                        
+                    if (!connectResult.success)
+                    {
+                        TargetDataStatus = "❌ PowerCLI connection failed";
+                        MigrationStatus = $"PowerCLI connection failed: {connectResult.message}";
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: PowerCLI connection failed - {connectResult.message}\n";
+                        _logger.LogError("PowerCLI connection to target vCenter failed: {Error}", connectResult.message);
+                        return;
+                    }
+                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection established successfully to target vCenter\n";
+                    _logger.LogInformation("Successfully established PowerCLI connection to target vCenter");
                 }
                 else
                 {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection already active in shared session, proceeding with data loading\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Existing PowerCLI connection found and verified, proceeding with infrastructure enumeration\n";
+                    _logger.LogDebug("Using existing PowerCLI connection for target infrastructure loading");
                 }
 
+                // Start comprehensive infrastructure data loading
                 MigrationStatus = "Loading target infrastructure...";
-                TargetDataStatus = "🔄 Loading infrastructure...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading target infrastructure data using shared PowerCLI session\n";
+                TargetDataStatus = "🔄 Enumerating datacenters...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Starting comprehensive target infrastructure enumeration\n";
+                _logger.LogInformation("Beginning comprehensive target infrastructure data enumeration");
                 
-                // Load infrastructure data using the shared PowerShell session
+                // Load Datacenters with detailed logging
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 1: Loading datacenters from target vCenter\n";
                 var datacenterScript = @"
-                    Get-Datacenter | ForEach-Object {
-                        [PSCustomObject]@{
-                            Name = $_.Name
-                            Id = $_.Id
-                            ExtensionData = $_.ExtensionData
+                    try {
+                        Write-Output 'PHASE_START: Datacenter enumeration'
+                        $datacenters = Get-Datacenter -ErrorAction Stop
+                        Write-Output ""DATACENTER_COUNT: Found $($datacenters.Count) datacenter(s)""
+                        
+                        $datacenterResults = @()
+                        foreach ($dc in $datacenters) {
+                            Write-Output ""Processing datacenter: $($dc.Name)""
+                            $datacenterResults += [PSCustomObject]@{
+                                Name = $dc.Name
+                                Id = $dc.Id
+                                ExtensionData = $dc.ExtensionData
+                            }
                         }
-                    } | ConvertTo-Json -Depth 3
+                        
+                        Write-Output 'PHASE_SUCCESS: Datacenter enumeration completed'
+                        $datacenterResults | ConvertTo-Json -Depth 3
+                    }
+                    catch {
+                        Write-Output ""PHASE_ERROR: Datacenter enumeration failed - $($_.Exception.Message)""
+                    }
                 ";
                 
+                _logger.LogDebug("Executing datacenter enumeration script for target infrastructure");
                 var datacenterResult = await _sharedPowerShellSession.ExecuteCommandAsync(datacenterScript, isSource: false);
+                _logger.LogInformation("Datacenter enumeration completed - result length: {Length} characters", datacenterResult.Length);
                 
-                if (!datacenterResult.StartsWith("ERROR"))
+                if (datacenterResult.Contains("PHASE_ERROR"))
                 {
-                    // Parse and update target data - simplified for now
+                    var errorMessage = ExtractErrorMessage(datacenterResult, "PHASE_ERROR");
+                    TargetDataStatus = "❌ Failed to load datacenters";
+                    MigrationStatus = "Failed to load target datacenters";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Datacenter enumeration failed - {errorMessage}\n";
+                    _logger.LogError("Target datacenter enumeration failed: {Error}", errorMessage);
+                    return;
+                }
+                
+                // Extract datacenter count from result
+                var datacenterCount = ExtractCountFromResult(datacenterResult, "DATACENTER_COUNT");
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 1 completed: Found {datacenterCount} datacenter(s)\n";
+                
+                // Show preview of datacenter results
+                if (datacenterResult.Length > 0)
+                {
+                    var previewLength = Math.Min(datacenterResult.Length, 300);
+                    var preview = datacenterResult.Substring(0, previewLength);
+                    if (datacenterResult.Length > 300) preview += "...";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Datacenter data preview: {preview}\n";
+                }
+
+                // Load Clusters
+                TargetDataStatus = "🔄 Enumerating clusters...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 2: Loading clusters from target vCenter\n";
+                var clusterScript = @"
+                    try {
+                        Write-Output 'PHASE_START: Cluster enumeration'
+                        $clusters = Get-Cluster -ErrorAction Stop
+                        Write-Output ""CLUSTER_COUNT: Found $($clusters.Count) cluster(s)""
+                        
+                        $clusterResults = @()
+                        foreach ($cluster in $clusters) {
+                            Write-Output ""Processing cluster: $($cluster.Name)""
+                            $clusterResults += [PSCustomObject]@{
+                                Name = $cluster.Name
+                                Id = $cluster.Id
+                                ParentFolder = $cluster.ParentFolder.Name
+                                HAEnabled = $cluster.HAEnabled
+                                DrsEnabled = $cluster.DrsEnabled
+                            }
+                        }
+                        
+                        Write-Output 'PHASE_SUCCESS: Cluster enumeration completed'
+                        $clusterResults | ConvertTo-Json -Depth 3
+                    }
+                    catch {
+                        Write-Output ""PHASE_ERROR: Cluster enumeration failed - $($_.Exception.Message)""
+                    }
+                ";
+                
+                var clusterResult = await _sharedPowerShellSession.ExecuteCommandAsync(clusterScript, isSource: false);
+                _logger.LogDebug("Cluster enumeration completed - result length: {Length} characters", clusterResult.Length);
+                
+                if (clusterResult.Contains("PHASE_ERROR"))
+                {
+                    var errorMessage = ExtractErrorMessage(clusterResult, "PHASE_ERROR");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Cluster enumeration failed - {errorMessage}\n";
+                    _logger.LogWarning("Target cluster enumeration failed: {Error}", errorMessage);
+                }
+                else
+                {
+                    var clusterCount = ExtractCountFromResult(clusterResult, "CLUSTER_COUNT");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 2 completed: Found {clusterCount} cluster(s)\n";
+                }
+
+                // Load ESXi Hosts
+                TargetDataStatus = "🔄 Enumerating hosts...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 3: Loading ESXi hosts from target vCenter\n";
+                var hostScript = @"
+                    try {
+                        Write-Output 'PHASE_START: Host enumeration'
+                        $vmhosts = Get-VMHost -ErrorAction Stop
+                        Write-Output ""HOST_COUNT: Found $($vmhosts.Count) ESXi host(s)""
+                        
+                        $hostResults = @()
+                        foreach ($vmhost in $vmhosts) {
+                            Write-Output ""Processing host: $($vmhost.Name)""
+                            $hostResults += [PSCustomObject]@{
+                                Name = $vmhost.Name
+                                Id = $vmhost.Id
+                                ConnectionState = $vmhost.ConnectionState.ToString()
+                                Version = $vmhost.Version
+                                Build = $vmhost.Build
+                            }
+                        }
+                        
+                        Write-Output 'PHASE_SUCCESS: Host enumeration completed'
+                        $hostResults | ConvertTo-Json -Depth 3
+                    }
+                    catch {
+                        Write-Output ""PHASE_ERROR: Host enumeration failed - $($_.Exception.Message)""
+                    }
+                ";
+                
+                var hostResult = await _sharedPowerShellSession.ExecuteCommandAsync(hostScript, isSource: false);
+                _logger.LogDebug("Host enumeration completed - result length: {Length} characters", hostResult.Length);
+                
+                if (hostResult.Contains("PHASE_ERROR"))
+                {
+                    var errorMessage = ExtractErrorMessage(hostResult, "PHASE_ERROR");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Host enumeration failed - {errorMessage}\n";
+                    _logger.LogWarning("Target host enumeration failed: {Error}", errorMessage);
+                }
+                else
+                {
+                    var hostCount = ExtractCountFromResult(hostResult, "HOST_COUNT");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 3 completed: Found {hostCount} ESXi host(s)\n";
+                }
+
+                // Load Datastores
+                TargetDataStatus = "🔄 Enumerating datastores...";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 4: Loading datastores from target vCenter\n";
+                var datastoreScript = @"
+                    try {
+                        Write-Output 'PHASE_START: Datastore enumeration'
+                        $datastores = Get-Datastore -ErrorAction Stop
+                        Write-Output ""DATASTORE_COUNT: Found $($datastores.Count) datastore(s)""
+                        
+                        $datastoreResults = @()
+                        foreach ($ds in $datastores) {
+                            Write-Output ""Processing datastore: $($ds.Name)""
+                            $datastoreResults += [PSCustomObject]@{
+                                Name = $ds.Name
+                                Id = $ds.Id
+                                CapacityGB = [math]::Round($ds.CapacityGB, 2)
+                                FreeSpaceGB = [math]::Round($ds.FreeSpaceGB, 2)
+                                Type = $ds.Type
+                            }
+                        }
+                        
+                        Write-Output 'PHASE_SUCCESS: Datastore enumeration completed'
+                        $datastoreResults | ConvertTo-Json -Depth 3
+                    }
+                    catch {
+                        Write-Output ""PHASE_ERROR: Datastore enumeration failed - $($_.Exception.Message)""
+                    }
+                ";
+                
+                var datastoreResult = await _sharedPowerShellSession.ExecuteCommandAsync(datastoreScript, isSource: false);
+                _logger.LogDebug("Datastore enumeration completed - result length: {Length} characters", datastoreResult.Length);
+                
+                if (datastoreResult.Contains("PHASE_ERROR"))
+                {
+                    var errorMessage = ExtractErrorMessage(datastoreResult, "PHASE_ERROR");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Datastore enumeration failed - {errorMessage}\n";
+                    _logger.LogWarning("Target datastore enumeration failed: {Error}", errorMessage);
+                }
+                else
+                {
+                    var datastoreCount = ExtractCountFromResult(datastoreResult, "DATASTORE_COUNT");
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Phase 4 completed: Found {datastoreCount} datastore(s)\n";
+                }
+                
+                // Final status update
+                if (!datacenterResult.Contains("PHASE_ERROR"))
+                {
                     TargetDataStatus = "✅ Infrastructure loaded";
                     MigrationStatus = "Target infrastructure loaded successfully";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target infrastructure data loaded successfully from shared session\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] SUCCESS: Target infrastructure enumeration completed successfully\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Infrastructure summary - DCs: {ExtractCountFromResult(datacenterResult, "DATACENTER_COUNT")}, " +
+                                  $"Clusters: {ExtractCountFromResult(clusterResult, "CLUSTER_COUNT")}, " +
+                                  $"Hosts: {ExtractCountFromResult(hostResult, "HOST_COUNT")}, " +
+                                  $"Datastores: {ExtractCountFromResult(datastoreResult, "DATASTORE_COUNT")}\n";
                     
-                    // TODO: Parse JSON results and update TargetDatacenters collection
-                    // This will be expanded to load clusters, hosts, datastores etc.
+                    _logger.LogInformation("Target infrastructure enumeration completed successfully");
+                    
+                    // TODO: Parse JSON results and update TargetDatacenters, TargetClusters, TargetHosts, TargetDatastores collections
+                    // This will be expanded to fully populate the UI collections
                 }
                 else
                 {
                     TargetDataStatus = "❌ Failed to load infrastructure";
                     MigrationStatus = "Failed to load target infrastructure";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to load target infrastructure - {datacenterResult}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Target infrastructure loading failed at datacenter enumeration phase\n";
+                    _logger.LogError("Target infrastructure loading failed at datacenter enumeration phase");
                 }
             }
             catch (Exception ex)
             {
                 TargetDataStatus = "❌ Error loading infrastructure";
                 MigrationStatus = $"Failed to load target infrastructure: {ex.Message}";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n";
-                _logger.LogError(ex, "Error loading target infrastructure");
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] EXCEPTION: Infrastructure loading failed - {ex.Message}\n";
+                _logger.LogError(ex, "Exception occurred during target infrastructure loading");
             }
         }
 
@@ -663,28 +1047,93 @@ namespace VCenterMigrationTool.ViewModels
         {
             try
             {
+                _logger.LogDebug("Attempting to retrieve source datacenters for migration");
                 var sourceInventory = _sharedConnectionService.GetSourceInventory();
                 if (sourceInventory?.Datacenters != null && sourceInventory.Datacenters.Any())
                 {
+                    _logger.LogInformation("Found cached source datacenters: {Count} items", sourceInventory.Datacenters.Count);
                     return sourceInventory.Datacenters;
                 }
 
                 // If no cached inventory, try to load it
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Loading source infrastructure data...\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] No cached datacenter data found, loading source infrastructure...\n";
+                _logger.LogInformation("No cached source datacenters found, loading fresh data");
                 var success = await _sharedConnectionService.LoadSourceInfrastructureAsync();
                 if (success)
                 {
                     sourceInventory = _sharedConnectionService.GetSourceInventory();
-                    return sourceInventory?.Datacenters ?? new List<DatacenterInfo>();
+                    var datacenters = sourceInventory?.Datacenters ?? new List<DatacenterInfo>();
+                    _logger.LogInformation("Successfully loaded source infrastructure - found {Count} datacenters", datacenters.Count);
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Successfully loaded {datacenters.Count} source datacenters\n";
+                    return datacenters;
                 }
-
+                
+                _logger.LogWarning("Failed to load source infrastructure data");
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Failed to load source infrastructure data\n";
                 return new List<DatacenterInfo>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading source datacenters");
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR loading source datacenters: {ex.Message}\n";
+                _logger.LogError(ex, "Exception occurred while loading source datacenters for migration");
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] EXCEPTION loading source datacenters: {ex.Message}\n";
                 return new List<DatacenterInfo>();
+            }
+        }
+        
+        /// <summary>
+        /// Helper method to extract error messages from PowerShell script results
+        /// </summary>
+        private string ExtractErrorMessage(string result, string errorPrefix)
+        {
+            try
+            {
+                var errorIndex = result.IndexOf(errorPrefix + ":", StringComparison.OrdinalIgnoreCase);
+                if (errorIndex >= 0)
+                {
+                    var startIndex = errorIndex + errorPrefix.Length + 1;
+                    var endIndex = result.IndexOf('\n', startIndex);
+                    if (endIndex < 0) endIndex = result.Length;
+                    
+                    return result.Substring(startIndex, endIndex - startIndex).Trim();
+                }
+                return "Unknown error occurred";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to extract error message from PowerShell result");
+                return "Error parsing failed";
+            }
+        }
+        
+        /// <summary>
+        /// Helper method to extract count values from PowerShell script results
+        /// </summary>
+        private string ExtractCountFromResult(string result, string countPrefix)
+        {
+            try
+            {
+                var countIndex = result.IndexOf(countPrefix + ":", StringComparison.OrdinalIgnoreCase);
+                if (countIndex >= 0)
+                {
+                    var startIndex = countIndex + countPrefix.Length + 1;
+                    var endIndex = result.IndexOf('\n', startIndex);
+                    if (endIndex < 0) endIndex = result.Length;
+                    
+                    var countText = result.Substring(startIndex, endIndex - startIndex).Trim();
+                    // Extract just the number from "Found X datacenter(s)" format
+                    var words = countText.Split(' ');
+                    if (words.Length > 1)
+                    {
+                        return words[1]; // Should be the count number
+                    }
+                    return countText;
+                }
+                return "0";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to extract count from PowerShell result");
+                return "?";
             }
         }
     }
