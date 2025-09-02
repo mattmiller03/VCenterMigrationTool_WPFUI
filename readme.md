@@ -270,6 +270,7 @@ This resolves mouse wheel scrolling issues across all pages by handling scroll e
 - **VM Operations**: BackupVMConfigurations.ps1, RestoreVMConfigurations.ps1, ValidateVMBackups.ps1
 - **Network Operations**: Migrate-NetworkConfiguration.ps1, Get-NetworkTopology.ps1
 - **Host Operations**: VMHostConfigV2.ps1, Invoke-VMHostConfig.ps1
+- **Folder Operations**: Copy-VMFolderStructure.ps1 (v2.0 with enhanced datacenter support)
 - **Migration Operations**: CrossVcenterVMmigration_list.ps1, VMPostMigrationCleanup.ps1
 
 **PowerCLI Script Detection:**
@@ -288,6 +289,9 @@ private bool IsPowerCliScript(string scriptPath)
         "Migrate-NetworkConfiguration.ps1",
         "Get-NetworkTopology.ps1",
         
+        // Folder migration scripts
+        "Copy-VMFolderStructure.ps1",
+        
         // Existing scripts...
     };
     // ...
@@ -302,6 +306,7 @@ private bool IsPowerCliScript(string scriptPath)
 - **ESXi Host Management**: Complete backup, restore, and migration functionality
 - **VM Migration**: Complete UI with backup functionality, migration configuration, and post-migration cleanup
 - **Network Migration**: Full network topology discovery and migration system
+- **Folder Migration**: Complete VM folder structure export/import and replication functionality
 - **Settings**: PowerShell/PowerCLI prerequisites and configuration management
 - **UI Navigation**: Smooth scrolling and modern interface across all pages
 
@@ -309,9 +314,8 @@ private bool IsPowerCliScript(string scriptPath)
 
 **High Priority:**
 1. **Resource Pool Migration**: Complete the ResourcePoolMigrationPage with actual PowerShell integration
-2. **Folder Structure Migration**: Implement VM folder structure migration capabilities
-3. **Migration Validation**: Enhanced pre-migration validation across all migration types
-4. **Bulk Operations**: Multi-selection and batch processing improvements
+2. **Migration Validation**: Enhanced pre-migration validation across all migration types
+3. **Bulk Operations**: Multi-selection and batch processing improvements
 
 **Medium Priority:**
 1. **Migration Scheduling**: Queue and schedule migration operations
@@ -459,12 +463,11 @@ All PowerShell scripts now use the centralized logging function:
 
 **Recommended Development Order:**
 1. Complete Resource Pool Migration page
-2. Implement Folder Structure Migration
-3. Add comprehensive migration validation
-4. Create migration templates and saved configurations
-5. Enhance reporting and analytics
+2. Add comprehensive migration validation
+3. Create migration templates and saved configurations
+4. Enhance reporting and analytics
 
-The application now provides a comprehensive migration suite with professional-grade VM backup, network migration, host management capabilities, and robust PowerShell logging with dashboard integration. The next phase should focus on completing the remaining migration types (Resource Pools, Folder Structure) and enhancing the overall user experience with advanced features and validation.
+The application now provides a comprehensive migration suite with professional-grade VM backup, network migration, folder structure migration, host management capabilities, and robust PowerShell logging with dashboard integration. The next phase should focus on completing the remaining migration types (Resource Pools) and enhancing the overall user experience with advanced features and validation.
 
 ## 14. Recent Code Changes Summary (v1.4)
 
@@ -472,12 +475,13 @@ The application now provides a comprehensive migration suite with professional-g
 - `DashboardViewModel.cs`: Complete dual connection rewrite with simultaneous API + PowerCLI connection establishment
 - `SharedConnectionService.cs`: Enhanced with `SourceApiConnected`/`TargetApiConnected` properties and improved `GetConnectionStatusAsync()` logic
 - `VCenterInventoryService.cs`: Enhanced SSO Admin module error handling with informative fallback messages
-- `AdminConfigMigrationViewModel.cs`: Improved user experience with context-aware error messages for SSO module issues
+- `AdminConfigMigrationViewModel.cs`: Complete folder migration implementation with actual folder creation, export/import functionality, and Copy-VMFolderStructure.ps1 integration
 - `AppearanceSettingsView.xaml`: Fixed DataTrigger binding error using MultiBinding approach
 - `AccentColorSelectionConverter.cs`: New custom converter for proper accent color selection in settings
 
 **Key Technical Improvements:**
 - **Dual Connection Architecture**: Always attempts both API and PowerCLI connections for maximum compatibility
+- **Complete Folder Migration**: Functional export/import system with actual folder creation using PowerShell integration
 - **Enhanced Error Communication**: Clear, user-friendly messages explaining SSO module limitations
 - **Proper XAML Binding**: Resolved DataTrigger binding issues using WPF-compliant patterns
 - **Connection State Tracking**: Independent tracking of API and PowerCLI connection success/failure

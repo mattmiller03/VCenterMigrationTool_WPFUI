@@ -1006,7 +1006,57 @@ namespace VCenterMigrationTool.ViewModels
         [RelayCommand]
         private async Task ExportFolders()
         {
-            await ExportCategory("Folders", SourceFolders.ToList());
+            try
+            {
+                // Add diagnostic logging before export
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔍 Diagnosing folder export...\n";
+                
+                // Check source connection
+                var sourceConnected = _sharedConnectionService.SourceConnection != null;
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source connection available: {sourceConnected}\n";
+                
+                if (sourceConnected)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source server: {_sharedConnectionService.SourceConnection.ServerAddress}\n";
+                }
+                
+                // Check source inventory
+                var sourceInventory = _sharedConnectionService.GetSourceInventory();
+                var hasInventory = sourceInventory != null;
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source inventory available: {hasInventory}\n";
+                
+                if (hasInventory)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Inventory last updated: {sourceInventory.LastUpdated}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Total folders in inventory: {sourceInventory.Folders?.Count ?? 0}\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] SourceFolders collection count: {SourceFolders.Count}\n";
+                    
+                    // List sample folder data if available
+                    if (sourceInventory.Folders != null && sourceInventory.Folders.Count > 0)
+                    {
+                        var sampleFolders = sourceInventory.Folders.Take(3);
+                        foreach (var folder in sampleFolders)
+                        {
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Sample folder: '{folder.Name}' (Path: {folder.Path}, DC: {folder.DatacenterName})\n";
+                        }
+                    }
+                }
+                
+                // Check if we need to refresh inventory
+                if (!hasInventory || (sourceInventory?.Folders?.Count ?? 0) == 0)
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚠️ No folder data available. Try refreshing the admin configuration first.\n";
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 💡 Click 'Refresh Source Admin Config' or 'Refresh Target Admin Config' to load folder data.\n";
+                    return;
+                }
+
+                await ExportCategory("Folders", SourceFolders.ToList());
+            }
+            catch (Exception ex)
+            {
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ Folder export diagnostic failed: {ex.Message}\n";
+                _logger.LogError(ex, "Error during folder export diagnostics");
+            }
         }
 
         [RelayCommand]

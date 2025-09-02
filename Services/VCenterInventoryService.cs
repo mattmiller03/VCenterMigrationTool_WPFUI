@@ -756,84 +756,173 @@ public class VCenterInventoryService
     private async Task LoadFoldersAsync(string vCenterName, string username, string password, VCenterInventory inventory, string connectionType)
     {
         var script = @"
-            # Get all VM folders (not including root 'vm' folders)
-            $folders = Get-Folder -Type VM | Where-Object { 
-                $_.Name -ne 'vm' -and 
-                $_.Name -ne 'Datacenters' -and
-                $_.ParentId -ne $null
-            } | ForEach-Object {
-                $folder = $_
+            try {
+                # Check PowerCLI connection first
+                $viServers = Get-VIServer -ErrorAction SilentlyContinue
+                if (-not $viServers -or $viServers.Count -eq 0) {
+                    Write-Output ""ERROR: No active PowerCLI connections found""
+                    return
+                }
                 
-                # Get parent datacenter
-                $datacenter = $null
-                try {
-                    $parent = $folder.Parent
-                    while ($parent -and !$datacenter) {
-                        if ($parent.GetType().Name -like '*Datacenter*') {
-                            $datacenter = $parent
-                            break
+                Write-Output ""INFO: Connected to $($viServers.Count) vCenter(s)""
+                
+                # Get all VM folders (not including root 'vm' folders)
+                Write-Output ""INFO: Discovering VM folders...""
+                $allFolders = Get-Folder -Type VM -ErrorAction SilentlyContinue
+                
+                if (-not $allFolders) {
+                    Write-Output ""WARNING: No VM folders found or Get-Folder failed""
+                    Write-Output ""[]""
+                    return
+                }
+                
+                Write-Output ""INFO: Found $($allFolders.Count) total VM folders""
+                
+                $folders = $allFolders | Where-Object { 
+                    $_.Name -ne 'vm' -and 
+                    $_.Name -ne 'Datacenters' -and
+                    $_.ParentId -ne $null
+                } | ForEach-Object {
+                    $folder = $_
+                    
+                    # Get parent datacenter
+                    $datacenter = $null
+                    try {
+                        $parent = $folder.Parent
+                        while ($parent -and !$datacenter) {
+                            if ($parent.GetType().Name -like '*Datacenter*') {
+                                $datacenter = $parent
+                                break
+                            }
+                            # Check if parent is root folder
+                            if ($parent.Name -eq 'Datacenters' -or !$parent.Parent) {
+                                break
+                            }
+                            $parent = $parent.Parent
                         }
-                        # Check if parent is root folder
-                        if ($parent.Name -eq 'Datacenters' -or !$parent.Parent) {
-                            break
-                        }
-                        $parent = $parent.Parent
+                    } catch {
+                        # If we can't traverse parents, continue without datacenter
                     }
-                } catch {
-                    # If we can't traverse parents, continue without datacenter
+                    
+                    # Build folder path
+                    $path = ""/$($folder.Name)""
+                    $currentFolder = $folder
+                    try {
+                        while ($currentFolder.Parent -and $currentFolder.Parent.Name -ne 'vm' -and $currentFolder.Parent.Name -ne 'Datacenters') {
+                            $currentFolder = $currentFolder.Parent
+                            $path = ""/$($currentFolder.Name)$path""
+                        }
+                        
+                        # Add datacenter to path if available
+                        if ($datacenter) {
+                            $path = ""/$($datacenter.Name)/vm$path""
+                        }
+                    } catch {
+                        # Use simple path if traversal fails
+                        $path = ""/$($folder.Name)""
+                    }
+                    
+                    [PSCustomObject]@{
+                        Name = $folder.Name
+                        Id = $folder.Id
+                        Type = 'VM'
+                        Path = $path
+                        DatacenterName = if ($datacenter) { $datacenter.Name } else { 'Unknown' }
+                        ChildItemCount = 0  # Simplified to avoid potential errors
+                    }
                 }
                 
-                # Build folder path
-                $path = $folder.Name
-                $currentFolder = $folder
-                while ($currentFolder.Parent -and $currentFolder.Parent.Name -ne 'vm' -and $currentFolder.Parent.Name -ne 'Datacenters') {
-                    $currentFolder = $currentFolder.Parent
-                    $path = $currentFolder.Name + '/' + $path
+                Write-Output ""INFO: Filtered to $($folders.Count) user-created folders""
+                
+                if ($folders.Count -eq 0) {
+                    Write-Output ""[]""
+                } else {
+                    $folders | ConvertTo-Json -Depth 2
                 }
                 
-                [PSCustomObject]@{
-                    Name = $folder.Name
-                    Id = $folder.Id
-                    Type = 'VM'
-                    Path = $path
-                    DatacenterName = if ($datacenter) { $datacenter.Name } else { '' }
-                    ChildItemCount = ($folder | Get-ChildItem -ErrorAction SilentlyContinue | Measure-Object).Count
-                }
+            } catch {
+                Write-Output ""ERROR: $($_.Exception.Message)""
+                Write-Output ""[]""
             }
-            $folders | ConvertTo-Json -Depth 2
         ";
 
         try
         {
             var result = await _persistentConnectionService.ExecuteCommandAsync(connectionType, script);
+            _logger.LogDebug("Folder discovery script result for {VCenterName}: {Result}", vCenterName, result);
+            
             if (!string.IsNullOrEmpty(result))
             {
-                // Check if result looks like JSON before attempting to deserialize
-                if (result.TrimStart().StartsWith("[") || result.TrimStart().StartsWith("{"))
+                // Split result into lines to separate diagnostic messages from JSON
+                var lines = result.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                                 .Select(line => line.Trim())
+                                 .ToList();
+                
+                // Log diagnostic messages
+                var diagnosticLines = lines.Where(line => 
+                    line.StartsWith("INFO:") || 
+                    line.StartsWith("WARNING:") || 
+                    line.StartsWith("ERROR:")).ToList();
+                
+                foreach (var diagLine in diagnosticLines)
                 {
-                    var folderDictionaries = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(result);
-                    if (folderDictionaries != null && folderDictionaries.Count > 0)
+                    if (diagLine.StartsWith("ERROR:"))
+                        _logger.LogError("Folder discovery: {Message}", diagLine);
+                    else if (diagLine.StartsWith("WARNING:"))
+                        _logger.LogWarning("Folder discovery: {Message}", diagLine);
+                    else
+                        _logger.LogInformation("Folder discovery: {Message}", diagLine);
+                }
+                
+                // Find JSON content (either array or object)
+                var jsonLines = lines.Where(line => 
+                    line.StartsWith("[") || line.StartsWith("{") ||
+                    line.EndsWith("]") || line.EndsWith("}") ||
+                    (line.Contains("\"Name\"") && line.Contains("\"Id\""))).ToList();
+                
+                var jsonContent = string.Join("\n", jsonLines);
+                
+                // Check if we have valid JSON
+                if (!string.IsNullOrEmpty(jsonContent) && (jsonContent.TrimStart().StartsWith("[") || jsonContent.TrimStart().StartsWith("{")))
+                {
+                    try
                     {
-                        // Convert dictionaries to FolderInfo objects and add to inventory
-                        foreach (var folderDict in folderDictionaries)
+                        var folderDictionaries = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonContent);
+                        if (folderDictionaries != null && folderDictionaries.Count > 0)
                         {
-                            var folderInfo = new FolderInfo
+                            // Convert dictionaries to FolderInfo objects and add to inventory
+                            foreach (var folderDict in folderDictionaries)
                             {
-                                Name = GetStringValueFromDict(folderDict, "Name", ""),
-                                Id = GetStringValueFromDict(folderDict, "Id", ""),
-                                Type = GetStringValueFromDict(folderDict, "Type", "VM"),
-                                Path = GetStringValueFromDict(folderDict, "Path", ""),
-                                DatacenterName = GetStringValueFromDict(folderDict, "DatacenterName", ""),
-                                ChildCount = GetIntValueFromDict(folderDict, "ChildItemCount", 0)
-                            };
-                            inventory.Folders.Add(folderInfo);
+                                var folderInfo = new FolderInfo
+                                {
+                                    Name = GetStringValueFromDict(folderDict, "Name", ""),
+                                    Id = GetStringValueFromDict(folderDict, "Id", ""),
+                                    Type = GetStringValueFromDict(folderDict, "Type", "VM"),
+                                    Path = GetStringValueFromDict(folderDict, "Path", ""),
+                                    DatacenterName = GetStringValueFromDict(folderDict, "DatacenterName", ""),
+                                    ChildCount = GetIntValueFromDict(folderDict, "ChildItemCount", 0)
+                                };
+                                inventory.Folders.Add(folderInfo);
+                            }
+                            _logger.LogInformation("Successfully loaded {Count} folders for {VCenterName}", inventory.Folders.Count, vCenterName);
                         }
-                        _logger.LogInformation("Successfully loaded {Count} folders for {VCenterName}", inventory.Folders.Count, vCenterName);
+                        else
+                        {
+                            _logger.LogWarning("No folders found in valid JSON response for {VCenterName}", vCenterName);
+                        }
                     }
+                    catch (JsonException jsonEx)
+                    {
+                        _logger.LogError(jsonEx, "Failed to parse folder JSON for {VCenterName}. JSON content: {JsonContent}", vCenterName, jsonContent);
+                    }
+                }
+                else if (result.Contains("ERROR:"))
+                {
+                    _logger.LogError("Folder discovery script reported errors for {VCenterName}: {Result}", vCenterName, result);
                 }
                 else
                 {
-                    _logger.LogWarning("Invalid JSON response for folders from {VCenterName}: {Response}", vCenterName, result);
+                    _logger.LogWarning("No valid JSON found in folder response for {VCenterName}. Full response: {Response}", vCenterName, result);
                 }
             }
             else
