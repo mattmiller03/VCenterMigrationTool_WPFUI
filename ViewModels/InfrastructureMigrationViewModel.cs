@@ -291,19 +291,19 @@ namespace VCenterMigrationTool.ViewModels
 
             try
             {
-                MigrationStatus = "Verifying PowerCLI connection...";
+                MigrationStatus = "Checking PowerCLI connection...";
                 SourceDataStatus = "🔄 Verifying connection...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Verifying PowerCLI connection for infrastructure loading\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Checking PowerCLI connection for infrastructure loading\n";
                 
-                // Check if PowerCLI connection is active for source
-                var testResult = await _persistentConnectionService.ExecuteCommandAsync("source", "Get-VIServer");
-                if (testResult.Contains("ERROR") || testResult.Contains("No active PowerCLI connections"))
+                // Check if we already have an active PowerCLI connection
+                var isConnected = await _persistentConnectionService.IsConnectedAsync("source");
+                
+                if (!isConnected)
                 {
-                    // PowerCLI connection not available, attempt to establish it
                     MigrationStatus = "Establishing PowerCLI connection...";
                     SourceDataStatus = "🔄 Connecting to PowerCLI...";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection not active, attempting to establish connection\n";
-                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection needed, establishing connection\n";
+                        
                     var sourceConnection = _sharedConnectionService.SourceConnection;
                     if (sourceConnection != null)
                     {
@@ -341,6 +341,10 @@ namespace VCenterMigrationTool.ViewModels
                         ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Source connection configuration not found\n";
                         return;
                     }
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection already active, proceeding with data loading\n";
                 }
 
                 MigrationStatus = "Loading source infrastructure...";
@@ -384,19 +388,19 @@ namespace VCenterMigrationTool.ViewModels
 
             try
             {
-                MigrationStatus = "Verifying PowerCLI connection...";
+                MigrationStatus = "Checking PowerCLI connection...";
                 TargetDataStatus = "🔄 Verifying connection...";
-                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Verifying PowerCLI connection for infrastructure loading\n";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Checking PowerCLI connection for infrastructure loading\n";
                 
-                // Check if PowerCLI connection is active for target
-                var testResult = await _persistentConnectionService.ExecuteCommandAsync("target", "Get-VIServer");
-                if (testResult.Contains("ERROR") || testResult.Contains("No active PowerCLI connections"))
+                // Check if we already have an active PowerCLI connection
+                var isConnected = await _persistentConnectionService.IsConnectedAsync("target");
+                
+                if (!isConnected)
                 {
-                    // PowerCLI connection not available, attempt to establish it
                     MigrationStatus = "Establishing PowerCLI connection...";
                     TargetDataStatus = "🔄 Connecting to PowerCLI...";
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection not active, attempting to establish connection\n";
-                    
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection needed, establishing connection\n";
+                        
                     var targetConnection = _sharedConnectionService.TargetConnection;
                     if (targetConnection != null)
                     {
@@ -434,6 +438,10 @@ namespace VCenterMigrationTool.ViewModels
                         ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Target connection configuration not found\n";
                         return;
                     }
+                }
+                else
+                {
+                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] PowerCLI connection already active, proceeding with data loading\n";
                 }
 
                 MigrationStatus = "Loading target infrastructure...";
