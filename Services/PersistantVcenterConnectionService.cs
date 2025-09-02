@@ -295,118 +295,278 @@ public class PersistantVcenterConnectionService : IDisposable
             _logger.LogInformation("Connecting to vCenter {Server}...", connectionInfo.ServerAddress);
 
             var connectScript = $@"
-                # Diagnostic: Check PowerCLI availability
-                Write-Output ""DIAGNOSTIC: Checking PowerCLI module availability""
-                $powerCLIModule = Get-Module -Name VMware.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
-                if ($powerCLIModule) {{
-                    Write-Output ""DIAGNOSTIC: PowerCLI module found - version $($powerCLIModule.Version)""
-                }} else {{
-                    Write-Output ""DIAGNOSTIC: PowerCLI module not found - attempting to import""
-                    try {{
-                        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-                        Write-Output ""DIAGNOSTIC: PowerCLI module imported successfully""
-                    }} catch {{
-                        Write-Output ""DIAGNOSTIC: Failed to import PowerCLI module: $($_.Exception.Message)""
+                # ===== ULTRA-VERBOSE POWERCLI CONNECTION DEBUGGING =====
+                Write-Output ""DEBUG_START: Beginning PowerCLI connection sequence for {connectionKey}""
+                Write-Output ""DEBUG_TIMESTAMP: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff')""
+                Write-Output ""DEBUG_POWERSHELL_VERSION: $($PSVersionTable.PSVersion)""
+                Write-Output ""DEBUG_EXECUTION_POLICY: $(Get-ExecutionPolicy)""
+                
+                # Environment diagnostics
+                Write-Output ""DEBUG_ENV: Current working directory: $(Get-Location)""
+                Write-Output ""DEBUG_ENV: PowerShell process ID: $PID""
+                Write-Output ""DEBUG_ENV: Current user: $($env:USERNAME)""
+                Write-Output ""DEBUG_ENV: Domain: $($env:USERDOMAIN)""
+                
+                # Check PowerCLI module availability and status
+                Write-Output ""DEBUG_MODULES: Checking PowerCLI module availability""
+                try {{
+                    $powerCLIModule = Get-Module -Name VMware.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
+                    $loadedModules = Get-Module -Name VMware* -ErrorAction SilentlyContinue
+                    
+                    if ($powerCLIModule) {{
+                        Write-Output ""DEBUG_MODULES: PowerCLI module found - version: $($powerCLIModule.Version -join ', ')""
+                        Write-Output ""DEBUG_MODULES: Module base path: $($powerCLIModule[0].ModuleBase)""
+                    }} else {{
+                        Write-Output ""DEBUG_MODULES: PowerCLI module not found in available modules""
                     }}
+                    
+                    if ($loadedModules) {{
+                        Write-Output ""DEBUG_MODULES: Currently loaded VMware modules: $($loadedModules.Name -join ', ')""
+                        $loadedModules | ForEach-Object {{
+                            Write-Output ""DEBUG_MODULES: - $($_.Name) v$($_.Version) from $($_.ModuleBase)""
+                        }}
+                    }} else {{
+                        Write-Output ""DEBUG_MODULES: No VMware modules currently loaded""
+                        Write-Output ""DEBUG_MODULES: Attempting to import core PowerCLI module""
+                        try {{
+                            Import-Module VMware.VimAutomation.Core -Force -ErrorAction Stop
+                            Write-Output ""DEBUG_MODULES: Successfully imported VMware.VimAutomation.Core""
+                        }} catch {{
+                            Write-Output ""DEBUG_MODULES: Failed to import VMware.VimAutomation.Core: $($_.Exception.Message)""
+                        }}
+                    }}
+                }} catch {{
+                    Write-Output ""DEBUG_MODULES: Module check failed: $($_.Exception.Message)""
                 }}
 
-                # Re-apply critical PowerCLI configuration before connection (ensure settings persist)
+                # Check available PowerCLI commands
+                Write-Output ""DEBUG_COMMANDS: Checking PowerCLI command availability""
                 try {{
-                    Write-Output ""DIAGNOSTIC: Re-applying PowerCLI configuration before connection...""
+                    $connectCmd = Get-Command Connect-VIServer -ErrorAction SilentlyContinue
+                    $getServerCmd = Get-Command Get-VIServer -ErrorAction SilentlyContinue
+                    $configCmd = Get-Command Set-PowerCLIConfiguration -ErrorAction SilentlyContinue
                     
-                    # Essential configurations for vCenter connection
+                    Write-Output ""DEBUG_COMMANDS: Connect-VIServer available: $(if ($connectCmd) {{ 'YES' }} else {{ 'NO' }})""
+                    Write-Output ""DEBUG_COMMANDS: Get-VIServer available: $(if ($getServerCmd) {{ 'YES' }} else {{ 'NO' }})""
+                    Write-Output ""DEBUG_COMMANDS: Set-PowerCLIConfiguration available: $(if ($configCmd) {{ 'YES' }} else {{ 'NO' }})""
+                    
+                    if ($connectCmd) {{
+                        Write-Output ""DEBUG_COMMANDS: Connect-VIServer source: $($connectCmd.Source)""
+                        Write-Output ""DEBUG_COMMANDS: Connect-VIServer version: $($connectCmd.Version)""
+                    }}
+                }} catch {{
+                    Write-Output ""DEBUG_COMMANDS: Command check failed: $($_.Exception.Message)""
+                }}
+
+                # PowerCLI configuration diagnostics and setup
+                Write-Output ""DEBUG_CONFIG: Applying PowerCLI configuration""
+                try {{
+                    # Get current configuration before changes
+                    $currentConfig = Get-PowerCLIConfiguration -ErrorAction SilentlyContinue
+                    if ($currentConfig) {{
+                        Write-Output ""DEBUG_CONFIG: Current InvalidCertificateAction: $($currentConfig.InvalidCertificateAction)""
+                        Write-Output ""DEBUG_CONFIG: Current DefaultVIServerMode: $($currentConfig.DefaultVIServerMode)""
+                        Write-Output ""DEBUG_CONFIG: Current WebOperationTimeout: $($currentConfig.WebOperationTimeoutSeconds)""
+                        Write-Output ""DEBUG_CONFIG: Current ProxyPolicy: $($currentConfig.ProxyPolicy)""
+                        Write-Output ""DEBUG_CONFIG: Current ParticipateInCEIP: $($currentConfig.ParticipateInCeip)""
+                    }} else {{
+                        Write-Output ""DEBUG_CONFIG: Unable to get current PowerCLI configuration""
+                    }}
+                    
+                    # Apply essential configurations
+                    Write-Output ""DEBUG_CONFIG: Setting InvalidCertificateAction to Ignore""
                     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+                    
+                    Write-Output ""DEBUG_CONFIG: Setting DefaultVIServerMode to Multiple""
                     Set-PowerCLIConfiguration -DefaultVIServerMode Multiple -Confirm:$false -Scope Session | Out-Null
+                    
+                    Write-Output ""DEBUG_CONFIG: Setting WebOperationTimeoutSeconds to 300""
                     Set-PowerCLIConfiguration -WebOperationTimeoutSeconds 300 -Confirm:$false -Scope Session | Out-Null
+                    
+                    Write-Output ""DEBUG_CONFIG: Setting ProxyPolicy to NoProxy""
                     Set-PowerCLIConfiguration -ProxyPolicy NoProxy -Confirm:$false -Scope Session | Out-Null
                     
-                    # Verify current configuration
-                    $config = Get-PowerCLIConfiguration
-                    Write-Output ""DIAGNOSTIC: Current DefaultVIServerMode: $($config.DefaultVIServerMode)""
-                    Write-Output ""DIAGNOSTIC: Current InvalidCertificateAction: $($config.InvalidCertificateAction)""
+                    # Verify configuration was applied
+                    $verifyConfig = Get-PowerCLIConfiguration
+                    Write-Output ""DEBUG_CONFIG: VERIFIED InvalidCertificateAction: $($verifyConfig.InvalidCertificateAction)""
+                    Write-Output ""DEBUG_CONFIG: VERIFIED DefaultVIServerMode: $($verifyConfig.DefaultVIServerMode)""
+                    Write-Output ""DEBUG_CONFIG: VERIFIED WebOperationTimeout: $($verifyConfig.WebOperationTimeoutSeconds)""
+                    Write-Output ""DEBUG_CONFIG: VERIFIED ProxyPolicy: $($verifyConfig.ProxyPolicy)""
+                    
                 }} catch {{
-                    Write-Output ""DIAGNOSTIC: PowerCLI configuration update failed: $($_.Exception.Message)""
+                    Write-Output ""DEBUG_CONFIG: PowerCLI configuration failed: $($_.Exception.Message)""
+                    Write-Output ""DEBUG_CONFIG: Exception type: $($_.Exception.GetType().Name)""
+                    Write-Output ""DEBUG_CONFIG: Stack trace: $($_.Exception.StackTrace)""
                 }}
 
-                # Create credential
-                $password = '{password.Replace("'", "''")}'
-                $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-                $credential = New-Object System.Management.Automation.PSCredential('{connectionInfo.Username.Replace("'", "''")}', $securePassword)
-                $password = $null  # Clear from memory
-                
-                # Connect to vCenter with enhanced diagnostics
+                # Credential creation diagnostics
+                Write-Output ""DEBUG_CRED: Creating PowerShell credential object""
                 try {{
-                    Write-Output ""DIAGNOSTIC: Attempting connection to {connectionInfo.ServerAddress}""
-                    Write-Output ""DIAGNOSTIC: Using credential for user: {connectionInfo.Username.Replace("'", "''")}""
+                    Write-Output ""DEBUG_CRED: Target server: {connectionInfo.ServerAddress}""
+                    Write-Output ""DEBUG_CRED: Target username: {connectionInfo.Username.Replace("'", "''")}""
+                    Write-Output ""DEBUG_CRED: Password length: $(('{password.Replace("'", "''")}'.Length)) characters""
                     
-                    # Check for existing connections before attempting new connection
+                    $password = '{password.Replace("'", "''")}'
+                    Write-Output ""DEBUG_CRED: Password variable created successfully""
+                    
+                    $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+                    Write-Output ""DEBUG_CRED: SecureString created successfully""
+                    
+                    $credential = New-Object System.Management.Automation.PSCredential('{connectionInfo.Username.Replace("'", "''")}', $securePassword)
+                    Write-Output ""DEBUG_CRED: PSCredential object created successfully""
+                    Write-Output ""DEBUG_CRED: Credential username: $($credential.UserName)""
+                    Write-Output ""DEBUG_CRED: Credential has password: $(if ($credential.Password) {{ 'YES' }} else {{ 'NO' }})""
+                    
+                    $password = $null  # Clear from memory
+                    Write-Output ""DEBUG_CRED: Password variable cleared from memory""
+                }} catch {{
+                    Write-Output ""DEBUG_CRED: Credential creation failed: $($_.Exception.Message)""
+                    Write-Output ""DEBUG_CRED: Exception type: $($_.Exception.GetType().Name)""
+                    return
+                }}
+
+                # Pre-connection environment check
+                Write-Output ""DEBUG_PRECON: Checking pre-connection environment""
+                try {{
+                    # Check existing connections
                     $existingConnections = Get-VIServer -ErrorAction SilentlyContinue
                     if ($existingConnections) {{
-                        Write-Output ""DIAGNOSTIC: Found $($existingConnections.Count) existing vCenter connections""
+                        Write-Output ""DEBUG_PRECON: Found $($existingConnections.Count) existing vCenter connections""
                         $existingConnections | ForEach-Object {{
-                            Write-Output ""DIAGNOSTIC: - Existing connection: $($_.Name) (Connected: $($_.IsConnected))""
+                            Write-Output ""DEBUG_PRECON: - Server: $($_.Name) | Connected: $($_.IsConnected) | Version: $($_.Version) | User: $($_.User)""
                         }}
                     }} else {{
-                        Write-Output ""DIAGNOSTIC: No existing vCenter connections found""
+                        Write-Output ""DEBUG_PRECON: No existing vCenter connections found""
                     }}
                     
-                    $connection = Connect-VIServer -Server '{connectionInfo.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
-                    
-                    if ($connection -and $connection.IsConnected) {{
-                        Write-Output ""CONNECTION_SUCCESS""
-                        Write-Output ""SESSION_ID:$($connection.SessionId)""
-                        Write-Output ""VERSION:$($connection.Version)""
-                        Write-Output ""BUILD:$($connection.Build)""
-                        
-                        # Store in connection-specific global variables to avoid conflicts
-                        $global:VIConnection_{connectionKey.Replace("-", "_")} = $connection
-                        
-                        # Set as default for this session but save existing default if any
-                        if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {{
-                            $global:PreviousDefaultVIServer = $global:DefaultVIServer
-                        }}
-                        $global:DefaultVIServer = $connection
-                        $global:CurrentVCenterConnection = $connection
-                        
-                        # Lightweight connection verification (avoid heavy queries during setup)
-                        Write-Output ""CONNECTION_VERIFIED""
+                    # Network connectivity test
+                    Write-Output ""DEBUG_PRECON: Testing network connectivity to {connectionInfo.ServerAddress}:443""
+                    $ping = Test-NetConnection -ComputerName '{connectionInfo.ServerAddress}' -Port 443 -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+                    if ($ping) {{
+                        Write-Output ""DEBUG_PRECON: Network test - TcpTestSucceeded: $($ping.TcpTestSucceeded)""
+                        Write-Output ""DEBUG_PRECON: Network test - RemoteAddress: $($ping.RemoteAddress)""
+                        Write-Output ""DEBUG_PRECON: Network test - InterfaceAlias: $($ping.InterfaceAlias)""
+                        Write-Output ""DEBUG_PRECON: Network test - PingSucceeded: $($ping.PingSucceeded)""
                     }} else {{
-                        Write-Output ""CONNECTION_FAILED: Not connected""
+                        Write-Output ""DEBUG_PRECON: Network test failed - no response object""
                     }}
                 }} catch {{
-                    Write-Output ""CONNECTION_FAILED: $($_.Exception.Message)""
-                    Write-Output ""DIAGNOSTIC: Connection failure details:""
-                    Write-Output ""DIAGNOSTIC: - Server: {connectionInfo.ServerAddress}""
-                    Write-Output ""DIAGNOSTIC: - User: {connectionInfo.Username.Replace("'", "''")}""
-                    Write-Output ""DIAGNOSTIC: - Exception Type: $($_.Exception.GetType().Name)""
-                    
-                    # Additional diagnostics for common connection issues
-                    try {{
-                        Write-Output ""DIAGNOSTIC: Testing network connectivity...""
-                        $ping = Test-NetConnection -ComputerName '{connectionInfo.ServerAddress}' -Port 443 -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
-                        if ($ping.TcpTestSucceeded) {{
-                            Write-Output ""DIAGNOSTIC: Network connectivity to port 443: SUCCESS""
-                        }} else {{
-                            Write-Output ""DIAGNOSTIC: Network connectivity to port 443: FAILED""
-                        }}
-                    }} catch {{
-                        Write-Output ""DIAGNOSTIC: Network connectivity test failed: $($_.Exception.Message)""
-                    }}
-                    
-                    # Check if this is a certificate or authentication issue
-                    if ($_.Exception.Message -like '*certificate*' -or $_.Exception.Message -like '*SSL*' -or $_.Exception.Message -like '*TLS*') {{
-                        Write-Output ""DIAGNOSTIC: This appears to be a certificate/SSL issue""
-                        Write-Output ""DIAGNOSTIC: Current InvalidCertificateAction setting should ignore certificates""
-                    }} elseif ($_.Exception.Message -like '*authentication*' -or $_.Exception.Message -like '*login*' -or $_.Exception.Message -like '*credential*') {{
-                        Write-Output ""DIAGNOSTIC: This appears to be an authentication issue""
-                        Write-Output ""DIAGNOSTIC: Please verify username and password are correct""
-                    }} elseif ($_.Exception.Message -like '*timeout*' -or $_.Exception.Message -like '*connection*') {{
-                        Write-Output ""DIAGNOSTIC: This appears to be a network connectivity or timeout issue""
-                    }}
+                    Write-Output ""DEBUG_PRECON: Pre-connection check failed: $($_.Exception.Message)""
                 }}
+
+                # THE ACTUAL CONNECTION ATTEMPT WITH MAXIMUM DIAGNOSTICS
+                Write-Output ""DEBUG_CONNECT: ===== STARTING CONNECT-VISERVER ATTEMPT ====""
+                Write-Output ""DEBUG_CONNECT: Connection timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff')""
+                try {{
+                    Write-Output ""DEBUG_CONNECT: Calling Connect-VIServer with parameters:""
+                    Write-Output ""DEBUG_CONNECT: - Server: {connectionInfo.ServerAddress}""
+                    Write-Output ""DEBUG_CONNECT: - User: {connectionInfo.Username.Replace("'", "''")}""
+                    Write-Output ""DEBUG_CONNECT: - Force: True""
+                    Write-Output ""DEBUG_CONNECT: - ErrorAction: Stop""
+                    
+                    # Execute the connection command with verbose error handling
+                    Write-Output ""DEBUG_CONNECT: Executing Connect-VIServer now...""
+                    $connection = Connect-VIServer -Server '{connectionInfo.ServerAddress}' -Credential $credential -Force -ErrorAction Stop
+                    Write-Output ""DEBUG_CONNECT: Connect-VIServer command completed without exception""
+                    
+                    # Analyze the connection result
+                    if ($connection) {{
+                        Write-Output ""DEBUG_CONNECT: Connection object returned: $(if ($connection) {{ 'YES' }} else {{ 'NO' }})""
+                        Write-Output ""DEBUG_CONNECT: Connection type: $($connection.GetType().Name)""
+                        Write-Output ""DEBUG_CONNECT: Connection IsConnected: $($connection.IsConnected)""
+                        
+                        if ($connection.IsConnected) {{
+                            Write-Output ""DEBUG_CONNECT: ✅ CONNECTION SUCCESSFUL!""
+                            Write-Output ""CONNECTION_SUCCESS""
+                            Write-Output ""SESSION_ID:$($connection.SessionId)""
+                            Write-Output ""VERSION:$($connection.Version)""
+                            Write-Output ""BUILD:$($connection.Build)""
+                            Write-Output ""USER:$($connection.User)""
+                            Write-Output ""PORT:$($connection.Port)""
+                            Write-Output ""PRODUCT_LINE:$($connection.ProductLine)""
+                            
+                            # Store in global variables
+                            $global:VIConnection_{connectionKey.Replace("-", "_")} = $connection
+                            Write-Output ""DEBUG_CONNECT: Stored in global variable: VIConnection_{connectionKey.Replace("-", "_")}""
+                            
+                            # Update default server
+                            if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {{
+                                $global:PreviousDefaultVIServer = $global:DefaultVIServer
+                                Write-Output ""DEBUG_CONNECT: Saved previous default server: $($global:PreviousDefaultVIServer.Name)""
+                            }}
+                            $global:DefaultVIServer = $connection
+                            $global:CurrentVCenterConnection = $connection
+                            Write-Output ""DEBUG_CONNECT: Set as new default server""
+                            
+                            # Verify storage
+                            $storedConnection = $global:VIConnection_{connectionKey.Replace("-", "_")}
+                            Write-Output ""DEBUG_CONNECT: Verification - stored connection exists: $(if ($storedConnection) {{ 'YES' }} else {{ 'NO' }})""
+                            if ($storedConnection) {{
+                                Write-Output ""DEBUG_CONNECT: Verification - stored connection IsConnected: $($storedConnection.IsConnected)""
+                            }}
+                            
+                            Write-Output ""CONNECTION_VERIFIED""
+                        }} else {{
+                            Write-Output ""DEBUG_CONNECT: ❌ Connection object returned but IsConnected = False""
+                            Write-Output ""CONNECTION_FAILED: Connection object indicates not connected""
+                        }}
+                    }} else {{
+                        Write-Output ""DEBUG_CONNECT: ❌ No connection object returned""
+                        Write-Output ""CONNECTION_FAILED: No connection object returned""
+                    }}
+                    
+                }} catch {{
+                    Write-Output ""DEBUG_CONNECT: ❌ CONNECT-VISERVER THREW EXCEPTION""
+                    Write-Output ""CONNECTION_FAILED: $($_.Exception.Message)""
+                    
+                    # Ultra-detailed exception analysis
+                    Write-Output ""DEBUG_EXCEPTION: Exception type: $($_.Exception.GetType().FullName)""
+                    Write-Output ""DEBUG_EXCEPTION: Exception message: $($_.Exception.Message)""
+                    
+                    if ($_.Exception.InnerException) {{
+                        Write-Output ""DEBUG_EXCEPTION: Inner exception type: $($_.Exception.InnerException.GetType().FullName)""
+                        Write-Output ""DEBUG_EXCEPTION: Inner exception message: $($_.Exception.InnerException.Message)""
+                    }}
+                    
+                    Write-Output ""DEBUG_EXCEPTION: Stack trace:""
+                    Write-Output $_.Exception.StackTrace
+                    
+                    # Category analysis
+                    Write-Output ""DEBUG_EXCEPTION: Error category: $($_.CategoryInfo.Category)""
+                    Write-Output ""DEBUG_EXCEPTION: Error reason: $($_.CategoryInfo.Reason)""
+                    Write-Output ""DEBUG_EXCEPTION: Error target name: $($_.CategoryInfo.TargetName)""
+                    Write-Output ""DEBUG_EXCEPTION: Error target type: $($_.CategoryInfo.TargetType)""
+                    
+                    # Specific error pattern analysis
+                    $errorMsg = $_.Exception.Message
+                    if ($errorMsg -like '*certificate*' -or $errorMsg -like '*SSL*' -or $errorMsg -like '*TLS*') {{
+                        Write-Output ""DEBUG_ANALYSIS: 🔒 CERTIFICATE/SSL ISSUE DETECTED""
+                        Write-Output ""DEBUG_ANALYSIS: Current InvalidCertificateAction should be 'Ignore'""
+                        Write-Output ""DEBUG_ANALYSIS: This may be a PowerCLI SSL bypass failure""
+                    }} elseif ($errorMsg -like '*authentication*' -or $errorMsg -like '*login*' -or $errorMsg -like '*credential*' -or $errorMsg -like '*password*') {{
+                        Write-Output ""DEBUG_ANALYSIS: 🔑 AUTHENTICATION ISSUE DETECTED""
+                        Write-Output ""DEBUG_ANALYSIS: Verify username/password are correct""
+                        Write-Output ""DEBUG_ANALYSIS: Check if account is locked or password expired""
+                    }} elseif ($errorMsg -like '*timeout*' -or $errorMsg -like '*connection*' -or $errorMsg -like '*network*') {{
+                        Write-Output ""DEBUG_ANALYSIS: 🌐 NETWORK/TIMEOUT ISSUE DETECTED""
+                        Write-Output ""DEBUG_ANALYSIS: Check network connectivity and firewall settings""
+                    }} elseif ($errorMsg -like '*session*' -or $errorMsg -like '*token*') {{
+                        Write-Output ""DEBUG_ANALYSIS: 🎫 SESSION/TOKEN ISSUE DETECTED""
+                        Write-Output ""DEBUG_ANALYSIS: This may be a vCenter session limit or token issue""
+                    }} else {{
+                        Write-Output ""DEBUG_ANALYSIS: ❓ UNKNOWN ERROR PATTERN""
+                        Write-Output ""DEBUG_ANALYSIS: This may be a new or unusual connection issue""
+                    }}
+                    
+                    # Final diagnostics
+                    Write-Output ""DEBUG_FINAL: Connection attempt failed at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff')""
+                    Write-Output ""DEBUG_FINAL: PowerShell session will remain active for further debugging""
+                }}
+                
+                Write-Output ""DEBUG_END: PowerCLI connection sequence completed for {connectionKey}""
             ";
 
-            var connectResult = await ExecuteCommandWithTimeoutAsync(connectionKey, connectScript, TimeSpan.FromSeconds(60), skipConnectionCheck: true);
+            var connectResult = await ExecuteCommandWithTimeoutAsync(connectionKey, connectScript, TimeSpan.FromSeconds(120), skipConnectionCheck: true);
 
             if (connectResult.Contains("CONNECTION_SUCCESS"))
                 {
@@ -429,30 +589,51 @@ public class PersistantVcenterConnectionService : IDisposable
                 }
             else
                 {
-                // Log the full result for debugging
-                _logger.LogWarning("Connection result did not contain CONNECTION_SUCCESS. Full result: {Result}", connectResult);
+                // Ultra-verbose logging of the complete PowerShell output
+                _logger.LogWarning("🔍 ULTRA-VERBOSE: Complete PowerShell output for {Server}:", connectionInfo.ServerAddress);
+                _logger.LogWarning("Raw output length: {Length} characters", connectResult?.Length ?? 0);
                 
-                // Extract error message and diagnostics
-                var errorMessage = connectResult.Contains("CONNECTION_FAILED:")
-                    ? connectResult.Substring(connectResult.IndexOf("CONNECTION_FAILED:") + 18).Split('\n')[0].Trim()
-                    : $"Connection failed - Result: {connectResult.Trim()}";
-
-                // Extract and log diagnostic information
                 var lines = connectResult.Split('\n');
-                var diagnostics = lines.Where(l => l.Contains("DIAGNOSTIC:")).ToList();
+                _logger.LogWarning("Output contains {LineCount} lines", lines.Length);
                 
-                if (diagnostics.Any())
+                // Log all debug lines with appropriate levels
+                foreach (var line in lines)
                 {
-                    _logger.LogWarning("PowerCLI Connection Diagnostics for {Server}:", connectionInfo.ServerAddress);
-                    foreach (var diagnostic in diagnostics)
+                    var trimmedLine = line.Trim();
+                    if (string.IsNullOrEmpty(trimmedLine)) continue;
+                    
+                    if (trimmedLine.StartsWith("DEBUG_"))
                     {
-                        var cleanDiagnostic = diagnostic.Replace("DIAGNOSTIC:", "").Trim();
-                        if (!string.IsNullOrEmpty(cleanDiagnostic))
-                        {
-                            _logger.LogWarning("  - {Diagnostic}", cleanDiagnostic);
-                        }
+                        _logger.LogInformation("PS_DEBUG: {Line}", trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("CONNECTION_FAILED:"))
+                    {
+                        _logger.LogError("PS_ERROR: {Line}", trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("CONNECTION_SUCCESS"))
+                    {
+                        _logger.LogInformation("PS_SUCCESS: {Line}", trimmedLine);
+                    }
+                    else if (trimmedLine.Contains("EXCEPTION") || trimmedLine.Contains("ERROR"))
+                    {
+                        _logger.LogError("PS_EXCEPTION: {Line}", trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("DIAGNOSTIC:"))
+                    {
+                        _logger.LogWarning("PS_DIAGNOSTIC: {Line}", trimmedLine.Replace("DIAGNOSTIC:", "").Trim());
+                    }
+                    else
+                    {
+                        _logger.LogDebug("PS_OUTPUT: {Line}", trimmedLine);
                     }
                 }
+
+                // Extract the primary error message
+                var errorMessage = connectResult.Contains("CONNECTION_FAILED:")
+                    ? connectResult.Substring(connectResult.IndexOf("CONNECTION_FAILED:") + 18).Split('\n')[0].Trim()
+                    : $"Connection failed - no CONNECTION_SUCCESS found";
+
+                _logger.LogError("🚫 PRIMARY ERROR MESSAGE: {ErrorMessage}", errorMessage);
 
                 // Provide specific guidance based on error patterns
                 if (errorMessage.ToLower().Contains("certificate") || errorMessage.ToLower().Contains("ssl"))
