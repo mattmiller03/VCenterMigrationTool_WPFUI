@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
@@ -568,8 +569,8 @@ namespace VCenterMigrationTool.ViewModels
                     
                     _logger.LogInformation("Source infrastructure enumeration completed successfully");
                     
-                    // TODO: Parse JSON results and update SourceDatacenters, SourceClusters, SourceHosts, SourceDatastores collections
-                    // This will be expanded to fully populate the UI collections
+                    // Parse JSON results and update SourceDatacenters, SourceClusters, SourceHosts, SourceDatastores collections
+                    await ParseAndUpdateSourceCollectionsAsync(datacenterResult, clusterResult, hostResult, datastoreResult);
                 }
                 else
                 {
@@ -873,8 +874,8 @@ namespace VCenterMigrationTool.ViewModels
                     
                     _logger.LogInformation("Target infrastructure enumeration completed successfully");
                     
-                    // TODO: Parse JSON results and update TargetDatacenters, TargetClusters, TargetHosts, TargetDatastores collections
-                    // This will be expanded to fully populate the UI collections
+                    // Parse JSON results and update TargetDatacenters, TargetClusters, TargetHosts, TargetDatastores collections
+                    await ParseAndUpdateTargetCollectionsAsync(datacenterResult, clusterResult, hostResult, datastoreResult);
                 }
                 else
                 {
@@ -1083,6 +1084,342 @@ namespace VCenterMigrationTool.ViewModels
                 _logger.LogError(ex, "Exception occurred while loading source datacenters for migration");
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] EXCEPTION loading source datacenters: {ex.Message}\n";
                 return new List<DatacenterInfo>();
+            }
+        }
+        
+        /// <summary>
+        /// Parse PowerShell JSON results and update source infrastructure collections
+        /// </summary>
+        private async Task ParseAndUpdateSourceCollectionsAsync(string datacenterResult, string clusterResult, string hostResult, string datastoreResult)
+        {
+            try
+            {
+                _logger.LogDebug("Starting to parse and update source infrastructure collections");
+                
+                // Clear existing collections first
+                SourceDatacenters.Clear();
+                SourceClusters.Clear();
+                SourceHosts.Clear();
+                SourceDatastores.Clear();
+                
+                // Parse and populate Datacenters
+                if (!datacenterResult.Contains("PHASE_ERROR") && datacenterResult.Contains("PHASE_SUCCESS"))
+                {
+                    try
+                    {
+                        var jsonStartIndex = datacenterResult.LastIndexOf('[');
+                        var jsonEndIndex = datacenterResult.LastIndexOf(']');
+                        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex)
+                        {
+                            var jsonData = datacenterResult.Substring(jsonStartIndex, jsonEndIndex - jsonStartIndex + 1);
+                            var datacenters = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonData);
+                            
+                            foreach (var dc in datacenters ?? new List<Dictionary<string, object>>())
+                            {
+                                var datacenterInfo = new DatacenterInfo
+                                {
+                                    Name = dc.ContainsKey("Name") ? dc["Name"]?.ToString() ?? "" : "",
+                                    Id = dc.ContainsKey("Id") ? dc["Id"]?.ToString() ?? "" : ""
+                                };
+                                SourceDatacenters.Add(datacenterInfo);
+                            }
+                            
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Parsed {SourceDatacenters.Count} datacenters into UI collection\n";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse datacenter JSON data");
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Failed to parse datacenter data - {ex.Message}\n";
+                    }
+                }
+                
+                // Parse and populate Clusters
+                if (!clusterResult.Contains("PHASE_ERROR") && clusterResult.Contains("PHASE_SUCCESS"))
+                {
+                    try
+                    {
+                        var jsonStartIndex = clusterResult.LastIndexOf('[');
+                        var jsonEndIndex = clusterResult.LastIndexOf(']');
+                        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex)
+                        {
+                            var jsonData = clusterResult.Substring(jsonStartIndex, jsonEndIndex - jsonStartIndex + 1);
+                            var clusters = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonData);
+                            
+                            foreach (var cluster in clusters ?? new List<Dictionary<string, object>>())
+                            {
+                                var clusterInfo = new ClusterInfo
+                                {
+                                    Name = cluster.ContainsKey("Name") ? cluster["Name"]?.ToString() ?? "" : "",
+                                    Id = cluster.ContainsKey("Id") ? cluster["Id"]?.ToString() ?? "" : "",
+                                    DatacenterName = cluster.ContainsKey("ParentFolder") ? cluster["ParentFolder"]?.ToString() ?? "" : "",
+                                    HAEnabled = cluster.ContainsKey("HAEnabled") && bool.TryParse(cluster["HAEnabled"]?.ToString(), out var ha) && ha,
+                                    DrsEnabled = cluster.ContainsKey("DrsEnabled") && bool.TryParse(cluster["DrsEnabled"]?.ToString(), out var drs) && drs
+                                };
+                                SourceClusters.Add(clusterInfo);
+                            }
+                            
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Parsed {SourceClusters.Count} clusters into UI collection\n";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse cluster JSON data");
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Failed to parse cluster data - {ex.Message}\n";
+                    }
+                }
+                
+                // Parse and populate Hosts
+                if (!hostResult.Contains("PHASE_ERROR") && hostResult.Contains("PHASE_SUCCESS"))
+                {
+                    try
+                    {
+                        var jsonStartIndex = hostResult.LastIndexOf('[');
+                        var jsonEndIndex = hostResult.LastIndexOf(']');
+                        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex)
+                        {
+                            var jsonData = hostResult.Substring(jsonStartIndex, jsonEndIndex - jsonStartIndex + 1);
+                            var hosts = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonData);
+                            
+                            foreach (var host in hosts ?? new List<Dictionary<string, object>>())
+                            {
+                                var hostInfo = new EsxiHost
+                                {
+                                    Name = host.ContainsKey("Name") ? host["Name"]?.ToString() ?? "" : "",
+                                    Id = host.ContainsKey("Id") ? host["Id"]?.ToString() ?? "" : "",
+                                    ConnectionState = host.ContainsKey("ConnectionState") ? host["ConnectionState"]?.ToString() ?? "" : "",
+                                    Version = host.ContainsKey("Version") ? host["Version"]?.ToString() ?? "" : "",
+                                    Build = host.ContainsKey("Build") ? host["Build"]?.ToString() ?? "" : ""
+                                };
+                                SourceHosts.Add(hostInfo);
+                            }
+                            
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Parsed {SourceHosts.Count} hosts into UI collection\n";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse host JSON data");
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Failed to parse host data - {ex.Message}\n";
+                    }
+                }
+                
+                // Parse and populate Datastores
+                if (!datastoreResult.Contains("PHASE_ERROR") && datastoreResult.Contains("PHASE_SUCCESS"))
+                {
+                    try
+                    {
+                        var jsonStartIndex = datastoreResult.LastIndexOf('[');
+                        var jsonEndIndex = datastoreResult.LastIndexOf(']');
+                        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex)
+                        {
+                            var jsonData = datastoreResult.Substring(jsonStartIndex, jsonEndIndex - jsonStartIndex + 1);
+                            var datastores = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonData);
+                            
+                            foreach (var ds in datastores ?? new List<Dictionary<string, object>>())
+                            {
+                                var datastoreInfo = new DatastoreInfo
+                                {
+                                    Name = ds.ContainsKey("Name") ? ds["Name"]?.ToString() ?? "" : "",
+                                    Id = ds.ContainsKey("Id") ? ds["Id"]?.ToString() ?? "" : "",
+                                    Type = ds.ContainsKey("Type") ? ds["Type"]?.ToString() ?? "" : "",
+                                    CapacityGB = ds.ContainsKey("CapacityGB") && double.TryParse(ds["CapacityGB"]?.ToString(), out var cap) ? cap : 0,
+                                    UsedGB = ds.ContainsKey("FreeSpaceGB") && double.TryParse(ds["FreeSpaceGB"]?.ToString(), out var free) && ds.ContainsKey("CapacityGB") && double.TryParse(ds["CapacityGB"]?.ToString(), out var totalCap) ? totalCap - free : 0
+                                };
+                                SourceDatastores.Add(datastoreInfo);
+                            }
+                            
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Parsed {SourceDatastores.Count} datastores into UI collection\n";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse datastore JSON data");
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Failed to parse datastore data - {ex.Message}\n";
+                    }
+                }
+                
+                // Update the data status to reflect the parsed counts
+                SourceDataStatus = $"✅ {SourceDatacenters.Count} datacenters, {SourceClusters.Count} clusters, {SourceHosts.Count} hosts, {SourceDatastores.Count} datastores";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Source UI collections updated - Infrastructure overview panel should now show current data\n";
+                
+                _logger.LogInformation("Successfully parsed and updated source infrastructure collections - DCs: {DCs}, Clusters: {Clusters}, Hosts: {Hosts}, Datastores: {Datastores}",
+                    SourceDatacenters.Count, SourceClusters.Count, SourceHosts.Count, SourceDatastores.Count);
+                    
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception occurred while parsing source infrastructure collections");
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to parse source infrastructure data - {ex.Message}\n";
+            }
+        }
+        
+        /// <summary>
+        /// Parse PowerShell JSON results and update target infrastructure collections
+        /// </summary>
+        private async Task ParseAndUpdateTargetCollectionsAsync(string datacenterResult, string clusterResult, string hostResult, string datastoreResult)
+        {
+            try
+            {
+                _logger.LogDebug("Starting to parse and update target infrastructure collections");
+                
+                // Clear existing collections first
+                TargetDatacenters.Clear();
+                TargetClusters.Clear();
+                TargetHosts.Clear();
+                TargetDatastores.Clear();
+                
+                // Parse and populate Datacenters
+                if (!datacenterResult.Contains("PHASE_ERROR") && datacenterResult.Contains("PHASE_SUCCESS"))
+                {
+                    try
+                    {
+                        var jsonStartIndex = datacenterResult.LastIndexOf('[');
+                        var jsonEndIndex = datacenterResult.LastIndexOf(']');
+                        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex)
+                        {
+                            var jsonData = datacenterResult.Substring(jsonStartIndex, jsonEndIndex - jsonStartIndex + 1);
+                            var datacenters = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonData);
+                            
+                            foreach (var dc in datacenters ?? new List<Dictionary<string, object>>())
+                            {
+                                var datacenterInfo = new DatacenterInfo
+                                {
+                                    Name = dc.ContainsKey("Name") ? dc["Name"]?.ToString() ?? "" : "",
+                                    Id = dc.ContainsKey("Id") ? dc["Id"]?.ToString() ?? "" : ""
+                                };
+                                TargetDatacenters.Add(datacenterInfo);
+                            }
+                            
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Parsed {TargetDatacenters.Count} datacenters into UI collection\n";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse datacenter JSON data");
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Failed to parse datacenter data - {ex.Message}\n";
+                    }
+                }
+                
+                // Parse and populate Clusters
+                if (!clusterResult.Contains("PHASE_ERROR") && clusterResult.Contains("PHASE_SUCCESS"))
+                {
+                    try
+                    {
+                        var jsonStartIndex = clusterResult.LastIndexOf('[');
+                        var jsonEndIndex = clusterResult.LastIndexOf(']');
+                        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex)
+                        {
+                            var jsonData = clusterResult.Substring(jsonStartIndex, jsonEndIndex - jsonStartIndex + 1);
+                            var clusters = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonData);
+                            
+                            foreach (var cluster in clusters ?? new List<Dictionary<string, object>>())
+                            {
+                                var clusterInfo = new ClusterInfo
+                                {
+                                    Name = cluster.ContainsKey("Name") ? cluster["Name"]?.ToString() ?? "" : "",
+                                    Id = cluster.ContainsKey("Id") ? cluster["Id"]?.ToString() ?? "" : "",
+                                    DatacenterName = cluster.ContainsKey("ParentFolder") ? cluster["ParentFolder"]?.ToString() ?? "" : "",
+                                    HAEnabled = cluster.ContainsKey("HAEnabled") && bool.TryParse(cluster["HAEnabled"]?.ToString(), out var ha) && ha,
+                                    DrsEnabled = cluster.ContainsKey("DrsEnabled") && bool.TryParse(cluster["DrsEnabled"]?.ToString(), out var drs) && drs
+                                };
+                                TargetClusters.Add(clusterInfo);
+                            }
+                            
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Parsed {TargetClusters.Count} clusters into UI collection\n";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse cluster JSON data");
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Failed to parse cluster data - {ex.Message}\n";
+                    }
+                }
+                
+                // Parse and populate Hosts
+                if (!hostResult.Contains("PHASE_ERROR") && hostResult.Contains("PHASE_SUCCESS"))
+                {
+                    try
+                    {
+                        var jsonStartIndex = hostResult.LastIndexOf('[');
+                        var jsonEndIndex = hostResult.LastIndexOf(']');
+                        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex)
+                        {
+                            var jsonData = hostResult.Substring(jsonStartIndex, jsonEndIndex - jsonStartIndex + 1);
+                            var hosts = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonData);
+                            
+                            foreach (var host in hosts ?? new List<Dictionary<string, object>>())
+                            {
+                                var hostInfo = new EsxiHost
+                                {
+                                    Name = host.ContainsKey("Name") ? host["Name"]?.ToString() ?? "" : "",
+                                    Id = host.ContainsKey("Id") ? host["Id"]?.ToString() ?? "" : "",
+                                    ConnectionState = host.ContainsKey("ConnectionState") ? host["ConnectionState"]?.ToString() ?? "" : "",
+                                    Version = host.ContainsKey("Version") ? host["Version"]?.ToString() ?? "" : "",
+                                    Build = host.ContainsKey("Build") ? host["Build"]?.ToString() ?? "" : ""
+                                };
+                                TargetHosts.Add(hostInfo);
+                            }
+                            
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Parsed {TargetHosts.Count} hosts into UI collection\n";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse host JSON data");
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Failed to parse host data - {ex.Message}\n";
+                    }
+                }
+                
+                // Parse and populate Datastores
+                if (!datastoreResult.Contains("PHASE_ERROR") && datastoreResult.Contains("PHASE_SUCCESS"))
+                {
+                    try
+                    {
+                        var jsonStartIndex = datastoreResult.LastIndexOf('[');
+                        var jsonEndIndex = datastoreResult.LastIndexOf(']');
+                        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex)
+                        {
+                            var jsonData = datastoreResult.Substring(jsonStartIndex, jsonEndIndex - jsonStartIndex + 1);
+                            var datastores = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(jsonData);
+                            
+                            foreach (var ds in datastores ?? new List<Dictionary<string, object>>())
+                            {
+                                var datastoreInfo = new DatastoreInfo
+                                {
+                                    Name = ds.ContainsKey("Name") ? ds["Name"]?.ToString() ?? "" : "",
+                                    Id = ds.ContainsKey("Id") ? ds["Id"]?.ToString() ?? "" : "",
+                                    Type = ds.ContainsKey("Type") ? ds["Type"]?.ToString() ?? "" : "",
+                                    CapacityGB = ds.ContainsKey("CapacityGB") && double.TryParse(ds["CapacityGB"]?.ToString(), out var cap) ? cap : 0,
+                                    UsedGB = ds.ContainsKey("FreeSpaceGB") && double.TryParse(ds["FreeSpaceGB"]?.ToString(), out var free) && ds.ContainsKey("CapacityGB") && double.TryParse(ds["CapacityGB"]?.ToString(), out var totalCap) ? totalCap - free : 0
+                                };
+                                TargetDatastores.Add(datastoreInfo);
+                            }
+                            
+                            ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Parsed {TargetDatastores.Count} datastores into UI collection\n";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse datastore JSON data");
+                        ActivityLog += $"[{DateTime.Now:HH:mm:ss}] WARNING: Failed to parse datastore data - {ex.Message}\n";
+                    }
+                }
+                
+                // Update the data status to reflect the parsed counts
+                TargetDataStatus = $"✅ {TargetDatacenters.Count} datacenters, {TargetClusters.Count} clusters, {TargetHosts.Count} hosts, {TargetDatastores.Count} datastores";
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] Target UI collections updated - Infrastructure overview panel should now show current data\n";
+                
+                _logger.LogInformation("Successfully parsed and updated target infrastructure collections - DCs: {DCs}, Clusters: {Clusters}, Hosts: {Hosts}, Datastores: {Datastores}",
+                    TargetDatacenters.Count, TargetClusters.Count, TargetHosts.Count, TargetDatastores.Count);
+                    
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception occurred while parsing target infrastructure collections");
+                ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ERROR: Failed to parse target infrastructure data - {ex.Message}\n";
             }
         }
         
