@@ -1,16 +1,12 @@
 # Get-Clusters.ps1 - Retrieves cluster information from vCenter
 param(
     [string]$VCenterServer,
-    [System.Management.Automation.PSCredential]$Credentials,
     [bool]$BypassModuleCheck = $false,
     [string]$LogPath = "",
     [bool]$SuppressConsoleOutput = $false
 )
 
-# Handle credential variable name compatibility
-if ($credential -and -not $Credentials) {
-    $Credentials = $credential
-}
+# Credential handling removed - using centralized connections
 
 # Import logging functions
 . "$PSScriptRoot\Write-ScriptLog.ps1"
@@ -36,35 +32,20 @@ try {
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
     Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
     
-    # Connect to vCenter (scripts run in isolated sessions, so no existing connections available)
-    Write-LogInfo "Establishing vCenter connection..." -Category "Connection"
-    
-    if (-not $VCenterServer -or -not $Credentials) {
-        $errorMsg = "vCenter connection parameters are required (VCenterServer, Credentials) since scripts run in isolated sessions."
-        Write-LogCritical $errorMsg -Category "Connection"
-        throw $errorMsg
+    # Use existing vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing vCenter connection: $VCenterServer" -Category "Connection"
+    $connectionUsed = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
+    if (-not $connectionUsed -or -not $connectionUsed.IsConnected) {
+        throw "vCenter connection to '$VCenterServer' not found or not active. Please establish connection through main UI first."
     }
-    
-    try {
-        Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-        # Force connection and ignore SSL certificate issues
-        $connectionUsed = Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
-        Write-LogSuccess "Successfully connected to vCenter: $($connectionUsed.Name)" -Category "Connection"
-        Write-LogInfo "  Server: $($connectionUsed.Name)" -Category "Connection"
-        Write-LogInfo "  User: $($connectionUsed.User)" -Category "Connection"
-        Write-LogInfo "  Version: $($connectionUsed.Version)" -Category "Connection"
-    }
-    catch {
-        Write-LogError "Failed to connect to vCenter $VCenterServer : $($_.Exception.Message)" -Category "Connection"
-        throw "Failed to establish vCenter connection: $($_.Exception.Message)"
-    }
+    Write-LogSuccess "Using vCenter connection: $($connectionUsed.Name) (v$($connectionUsed.Version))" -Category "Connection"
     
     # Retrieve clusters from vCenter with timeout
     Write-LogInfo "Retrieving clusters from vCenter..." -Category "Discovery"
     
     try {
         # Use a simple Get-Cluster call with timeout
-        $clusters = Get-Cluster -ErrorAction Stop
+        $clusters = Get-Cluster -Server $connectionUsed -ErrorAction Stop
         
         if ($clusters) {
             $clusterCount = if ($clusters.Count) { $clusters.Count } else { 1 }
@@ -76,19 +57,19 @@ try {
                 
                 try {
                     # Get cluster view for more detailed information
-                    $clusterView = Get-View -VIObject $cluster -ErrorAction SilentlyContinue
+                    $clusterView = Get-View -VIObject $cluster -Server $connectionUsed -ErrorAction SilentlyContinue
                     
                     # Get hosts and VMs information
-                    $hosts = Get-VMHost -Location $cluster -ErrorAction SilentlyContinue
-                    $vms = Get-VM -Location $cluster -ErrorAction SilentlyContinue
-                    $datastores = Get-Datastore -Location $cluster -ErrorAction SilentlyContinue
+                    $hosts = Get-VMHost -Location $cluster -Server $connectionUsed -ErrorAction SilentlyContinue
+                    $vms = Get-VM -Location $cluster -Server $connectionUsed -ErrorAction SilentlyContinue
+                    $datastores = Get-Datastore -Location $cluster -Server $connectionUsed -ErrorAction SilentlyContinue
                     
                     # Calculate totals
                     $totalCpuGhz = if ($hosts) { ($hosts | Measure-Object -Property CpuTotalMhz -Sum).Sum / 1000 } else { 0 }
                     $totalMemoryGB = if ($hosts) { ($hosts | Measure-Object -Property MemoryTotalGB -Sum).Sum } else { 0 }
                     
                     # Get datacenter name
-                    $datacenter = Get-Datacenter -Cluster $cluster -ErrorAction SilentlyContinue
+                    $datacenter = Get-Datacenter -Cluster $cluster -Server $connectionUsed -ErrorAction SilentlyContinue
                     $datacenterName = if ($datacenter) { $datacenter.Name } else { "" }
                     
                     $clusterInfo = @{

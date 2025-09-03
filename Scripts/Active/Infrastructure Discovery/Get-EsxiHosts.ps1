@@ -12,9 +12,6 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$VCenterServer,
     
-    [Parameter(Mandatory=$true)]
-    [System.Management.Automation.PSCredential]$Credentials,
-    
     [Parameter()]
     [string]$LogPath,
 
@@ -42,18 +39,20 @@ try {
     # PowerCLI modules are managed by the service layer
     Write-LogInfo "PowerCLI modules are managed by the service layer" -Category "Initialization"
 
-    # Connect to vCenter using provided credentials
-    Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-    # Force connection and ignore SSL certificate issues
-    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
-    Write-LogSuccess "Connected to vCenter: $($viConnection.Name)" -Category "Connection"
+    # Use existing vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing vCenter connection: $VCenterServer" -Category "Connection"
+    $viConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
+    if (-not $viConnection -or -not $viConnection.IsConnected) {
+        throw "vCenter connection to '$VCenterServer' not found or not active. Please establish connection through main UI first."
+    }
+    Write-LogSuccess "Using vCenter connection: $($viConnection.Name) (v$($viConnection.Version))" -Category "Connection"
 
     # Get all clusters and for each cluster, get its hosts
     Write-LogInfo "Retrieving cluster and host topology..." -Category "Discovery"
-    $topology = Get-Cluster | ForEach-Object {
+    $topology = Get-Cluster -Server $viConnection | ForEach-Object {
         $cluster = $_
         $clusterCount++
-        $hostsInCluster = $cluster | Get-VMHost
+        $hostsInCluster = $cluster | Get-VMHost -Server $viConnection
         $hostCount += $hostsInCluster.Count
         Write-LogDebug "Processing cluster '$($cluster.Name)' with $($hostsInCluster.Count) hosts." -Category "Discovery"
         

@@ -3,9 +3,6 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$VCenterServer,
     
-    [Parameter(Mandatory = $true)]
-    [System.Management.Automation.PSCredential]$Credential,
-    
     [bool]$BypassModuleCheck = $false,
     [string]$LogPath = "",
     [bool]$SuppressConsoleOutput = $false
@@ -37,31 +34,19 @@ try {
     # Configure PowerCLI settings
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     
-    # Connect to vCenter using PSCredential
-    Write-LogInfo "Connecting to vCenter server: $VCenterServer" -Category "Connection"
-    
-    try {
-        $connection = Connect-VIServer -Server $VCenterServer -Credential $Credential -Force -ErrorAction Stop
-        
-        if ($connection.IsConnected) {
-            Write-LogSuccess "Successfully connected to vCenter: $($connection.Name)" -Category "Connection"
-            Write-LogInfo "  Version: $($connection.Version)" -Category "Connection"
-            Write-LogInfo "  Build: $($connection.Build)" -Category "Connection"
-        }
-        else {
-            throw "Connection object returned but IsConnected is false"
-        }
+    # Use existing vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing vCenter connection: $VCenterServer" -Category "Connection"
+    $connection = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
+    if (-not $connection -or -not $connection.IsConnected) {
+        throw "vCenter connection to '$VCenterServer' not found or not active. Please establish connection through main UI first."
     }
-    catch {
-        Write-LogError "Failed to connect to vCenter: $($_.Exception.Message)" -Category "Connection"
-        throw $_
-    }
+    Write-LogSuccess "Using vCenter connection: $($connection.Name) (v$($connection.Version))" -Category "Connection"
     
     # Get all VMs
     Write-LogInfo "Retrieving virtual machines..." -Category "Discovery"
     
     try {
-        $vms = Get-VM -ErrorAction Stop
+        $vms = Get-VM -Server $connection -ErrorAction Stop
         
         if ($vms) {
             Write-LogSuccess "Found $($vms.Count) virtual machines" -Category "Discovery"
@@ -130,15 +115,7 @@ catch {
     Write-LogCritical $errorMessage -Category "Error"
     Write-LogError "Stack trace: $($_.ScriptStackTrace)" -Category "Error"
     
-    # Try to disconnect if connected
-    if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {
-        try {
-            # DISCONNECT REMOVED - Using persistent connections managed by application
-        }
-        catch {
-            # Ignore disconnect errors
-        }
-    }
+    # No cleanup needed - using persistent connections managed by application
     
     # Return error in JSON format
     $errorResult = @{

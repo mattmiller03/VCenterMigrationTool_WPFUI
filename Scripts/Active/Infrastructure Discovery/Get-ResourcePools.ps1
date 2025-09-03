@@ -14,9 +14,6 @@ param(
     [string]$VCenterServer,
     
     [Parameter(Mandatory=$true)]
-    [System.Management.Automation.PSCredential]$Credentials,
-    
-    [Parameter(Mandatory=$true)]
     [string]$ClusterName,
     
     [Parameter()]
@@ -45,15 +42,17 @@ try {
     # PowerCLI modules are managed by the service layer
     Write-LogInfo "PowerCLI modules are managed by the service layer" -Category "Initialization"
 
-    # Connect to vCenter
-    Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-    # Force connection and ignore SSL certificate issues
-    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
-    Write-LogSuccess "Connected to vCenter: $($viConnection.Name)" -Category "Connection"
+    # Use existing vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing vCenter connection: $VCenterServer" -Category "Connection"
+    $viConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
+    if (-not $viConnection -or -not $viConnection.IsConnected) {
+        throw "vCenter connection to '$VCenterServer' not found or not active. Please establish connection through main UI first."
+    }
+    Write-LogSuccess "Using vCenter connection: $($viConnection.Name) (v$($viConnection.Version))" -Category "Connection"
     
     # Get the specified cluster
     Write-LogInfo "Finding cluster: $ClusterName" -Category "Discovery"
-    $cluster = Get-Cluster -Name $ClusterName -ErrorAction Stop
+    $cluster = Get-Cluster -Name $ClusterName -Server $viConnection -ErrorAction Stop
     Write-LogSuccess "Found cluster '$($cluster.Name)'" -Category "Discovery"
     
     # Get resource pools from the cluster
@@ -61,7 +60,7 @@ try {
     Write-LogInfo "Retrieving resource pools from cluster using vSphere API..." -Category "Discovery"
     
     # Get all resource pools in cluster using API (much faster)
-    $resourcePools = Get-View -ViewType ResourcePool -SearchRoot $cluster.MoRef | 
+    $resourcePools = Get-View -ViewType ResourcePool -SearchRoot $cluster.MoRef -Server $viConnection | 
         Where-Object { $_.Name -notin @('Resources', 'vCLS') }
     
     $poolCount = $resourcePools.Count
@@ -76,7 +75,7 @@ try {
             # Get VM names efficiently using API
             $vmNames = @()
             if ($pool.Vm -and $pool.Vm.Count -gt 0) {
-                $vms = Get-View -Id $pool.Vm -ErrorAction SilentlyContinue
+                $vms = Get-View -Id $pool.Vm -Server $viConnection -ErrorAction SilentlyContinue
                 $vmNames = $vms | ForEach-Object { $_.Name }
             }
             
@@ -85,7 +84,7 @@ try {
             $parentType = ""
             try {
                 if ($pool.Parent) {
-                    $parent = Get-View $pool.Parent -ErrorAction SilentlyContinue
+                    $parent = Get-View $pool.Parent -Server $viConnection -ErrorAction SilentlyContinue
                     if ($parent) {
                         $parentName = $parent.Name
                         $parentType = $parent.GetType().Name

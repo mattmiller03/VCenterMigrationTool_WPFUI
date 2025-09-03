@@ -14,13 +14,7 @@
 #>
 param(
     [Parameter(Mandatory=$true)]
-    [System.Management.Automation.PSCredential]$SourceCredentials,
-    
-    [Parameter(Mandatory=$true)]
     [string]$SourceVCenterServer,
-    
-    [Parameter(Mandatory=$true)]
-    [System.Management.Automation.PSCredential]$TargetCredentials,
     
     [Parameter(Mandatory=$true)]
     [string]$TargetVCenterServer,
@@ -188,15 +182,21 @@ try {
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
     
-    # Connect to source vCenter
-    Write-LogInfo "Connecting to source vCenter: $SourceVCenterServer" -Category "Connection"
-    $sourceConnection = Connect-VIServer -Server $SourceVCenterServer -Credential $SourceCredentials -Force -ErrorAction Stop
-    Write-LogSuccess "Connected to source vCenter: $($sourceConnection.Name) (v$($sourceConnection.Version))" -Category "Connection"
+    # Use existing vCenter connections established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing source vCenter connection: $SourceVCenterServer" -Category "Connection"
+    $sourceConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $SourceVCenterServer }
+    if (-not $sourceConnection -or -not $sourceConnection.IsConnected) {
+        throw "Source vCenter connection to '$SourceVCenterServer' not found or not active. Please establish connection through main UI first."
+    }
+    Write-LogSuccess "Using source vCenter connection: $($sourceConnection.Name) (v$($sourceConnection.Version))" -Category "Connection"
     
-    # Connect to target vCenter
-    Write-LogInfo "Connecting to target vCenter: $TargetVCenterServer" -Category "Connection"
-    $targetConnection = Connect-VIServer -Server $TargetVCenterServer -Credential $TargetCredentials -Force -ErrorAction Stop
-    Write-LogSuccess "Connected to target vCenter: $($targetConnection.Name) (v$($targetConnection.Version))" -Category "Connection"
+    # Use existing target vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing target vCenter connection: $TargetVCenterServer" -Category "Connection"
+    $targetConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $TargetVCenterServer }
+    if (-not $targetConnection -or -not $targetConnection.IsConnected) {
+        throw "Target vCenter connection to '$TargetVCenterServer' not found or not active. Please establish connection through main UI first."
+    }
+    Write-LogSuccess "Using target vCenter connection: $($targetConnection.Name) (v$($targetConnection.Version))" -Category "Connection"
     
     # Get all available privileges for validation against target vCenter
     Write-LogInfo "Retrieving all available privileges in target vCenter for validation..." -Category "Validation"

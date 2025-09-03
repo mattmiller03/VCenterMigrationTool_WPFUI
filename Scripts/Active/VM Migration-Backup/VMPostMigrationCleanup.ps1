@@ -14,8 +14,6 @@ param(
     [string]$JsonBackupPath,
     [Parameter(Mandatory=$true)]
     [string]$NewVCenterServer,
-    [Parameter(Mandatory=$true)]
-    [pscredential]$Credential,
     [Parameter(Mandatory=$false)]
     [string]$LogPath,
     [Parameter(Mandatory=$false)]
@@ -103,9 +101,13 @@ try {
     
     # PowerCLI module management handled by service layer
 
-    Write-LogInfo "Connecting to vCenter server: $NewVCenterServer" -Category "Connection"
-    Connect-VIServer -Server $NewVCenterServer -Credential $Credential -ErrorAction Stop
-    Write-LogSuccess "Connected to vCenter." -Category "Connection"
+    # Use existing vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing vCenter connection: $NewVCenterServer" -Category "Connection"
+    $viConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $NewVCenterServer }
+    if (-not $viConnection -or -not $viConnection.IsConnected) {
+        throw "vCenter connection to '$NewVCenterServer' not found or not active. Please establish connection through main UI first."
+    }
+    Write-LogSuccess "Using vCenter connection: $($viConnection.Name)" -Category "Connection"
 
     $backupVMs = Load-VMBackupJson -JsonFilePath $JsonBackupPath
 

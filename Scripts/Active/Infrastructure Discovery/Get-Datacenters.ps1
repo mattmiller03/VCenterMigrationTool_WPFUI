@@ -30,7 +30,6 @@
 [CmdletBinding()]
 param(
     [string]$VCenterServer,
-    [System.Management.Automation.PSCredential]$Credentials,
     [bool]$BypassModuleCheck = $false,
     [string]$LogPath = "",
     [bool]$SuppressConsoleOutput = $false
@@ -60,83 +59,14 @@ try {
     # PowerCLI module management handled by service layer
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
     
-    # Check connection status and establish connection if needed
-    Write-LogInfo "Checking vCenter connection status..." -Category "Connection"
-    $connectionEstablished = $false
-    $connectionUsed = $null
-    
-    # Strategy 1: Check existing default connection
-    try {
-        if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {
-            # Test the connection with a simple command
-            $null = Get-VIServer -Server $global:DefaultVIServer -ErrorAction Stop
-            Write-LogSuccess "Using existing default vCenter connection: $($global:DefaultVIServer.Name)" -Category "Connection"
-            $connectionEstablished = $true
-            $connectionUsed = $global:DefaultVIServer
-            $viConnection = $global:DefaultVIServer  # For compatibility with cleanup
-        }
-        else {
-            Write-LogInfo "No active default vCenter connection found" -Category "Connection"
-        }
+    # Use existing vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing vCenter connection: $VCenterServer" -Category "Connection"
+    $connectionUsed = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
+    if (-not $connectionUsed -or -not $connectionUsed.IsConnected) {
+        throw "vCenter connection to '$VCenterServer' not found or not active. Please establish connection through main UI first."
     }
-    catch {
-        Write-LogWarning "Default connection appears invalid: $($_.Exception.Message)" -Category "Connection"
-        $global:DefaultVIServer = $null
-    }
-    
-    # Strategy 2: If no default connection, find any active connections
-    if (-not $connectionEstablished) {
-        Write-LogInfo "Scanning for active vCenter connections..." -Category "Connection"
-        try {
-            $allConnections = Get-VIServer -ErrorAction SilentlyContinue
-            if ($allConnections) {
-                $activeConnections = $allConnections | Where-Object { $_.IsConnected }
-                if ($activeConnections) {
-                    $connectionUsed = $activeConnections | Select-Object -First 1
-                    $global:DefaultVIServer = $connectionUsed
-                    $viConnection = $connectionUsed  # For compatibility with cleanup
-                    Write-LogSuccess "Found active vCenter connection: $($connectionUsed.Name)" -Category "Connection"
-                    $connectionEstablished = $true
-                }
-                else {
-                    Write-LogInfo "Found $($allConnections.Count) vCenter connections but none are active" -Category "Connection"
-                }
-            }
-            else {
-                Write-LogInfo "No existing vCenter connections found" -Category "Connection"
-            }
-        }
-        catch {
-            Write-LogWarning "Error scanning for connections: $($_.Exception.Message)" -Category "Connection"
-        }
-    }
-    
-    # Strategy 3: If credentials provided, establish new connection
-    if (-not $connectionEstablished -and $VCenterServer -and $Credentials) {
-        Write-LogInfo "Attempting to establish new vCenter connection to: $VCenterServer" -Category "Connection"
-        try {
-            # Force connection and ignore SSL certificate issues
-            $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
-            $connectionUsed = $viConnection
-            Write-LogSuccess "Successfully connected to vCenter: $($viConnection.Name)" -Category "Connection"
-            $connectionEstablished = $true
-        }
-        catch {
-            Write-LogError "Failed to connect to vCenter $VCenterServer : $($_.Exception.Message)" -Category "Connection"
-        }
-    }
-    
-    # Final connection validation
-    if (-not $connectionEstablished) {
-        $errorMsg = "No vCenter connection available. "
-        if (-not $VCenterServer) {
-            $errorMsg += "Please connect to vCenter first or provide connection parameters (VCenterServer, Credentials)."
-        } else {
-            $errorMsg += "Unable to establish connection with provided credentials."
-        }
-        Write-LogCritical $errorMsg -Category "Connection"
-        throw $errorMsg
-    }
+    $connectionEstablished = $true
+    $viConnection = $connectionUsed  # For compatibility with cleanup
     
     # Log connection details
     Write-LogInfo "Active vCenter connection details:" -Category "Connection"
@@ -148,7 +78,7 @@ try {
     Write-LogInfo "Retrieving datacenters from vCenter..." -Category "Discovery"
     
     try {
-        $datacenters = Get-Datacenter -ErrorAction Stop
+        $datacenters = Get-Datacenter -Server $connectionUsed -ErrorAction Stop
         
         if ($datacenters) {
             $datacenterCount = if ($datacenters.Count) { $datacenters.Count } else { 1 }
@@ -171,7 +101,7 @@ try {
                     $numNetworks = 0
                     
                     try {
-                        $hosts = $dc | Get-VMHost -ErrorAction SilentlyContinue
+                        $hosts = $dc | Get-VMHost -Server $connectionUsed -ErrorAction SilentlyContinue
                         $numHosts = if ($hosts) { ($hosts | Measure-Object).Count } else { 0 }
                     }
                     catch { 
@@ -179,7 +109,7 @@ try {
                     }
                     
                     try {
-                        $clusters = $dc | Get-Cluster -ErrorAction SilentlyContinue
+                        $clusters = $dc | Get-Cluster -Server $connectionUsed -ErrorAction SilentlyContinue
                         $numClusters = if ($clusters) { ($clusters | Measure-Object).Count } else { 0 }
                     }
                     catch { 
@@ -187,7 +117,7 @@ try {
                     }
                     
                     try {
-                        $vms = $dc | Get-VM -ErrorAction SilentlyContinue
+                        $vms = $dc | Get-VM -Server $connectionUsed -ErrorAction SilentlyContinue
                         $numVMs = if ($vms) { ($vms | Measure-Object).Count } else { 0 }
                     }
                     catch { 
@@ -195,7 +125,7 @@ try {
                     }
                     
                     try {
-                        $datastores = $dc | Get-Datastore -ErrorAction SilentlyContinue
+                        $datastores = $dc | Get-Datastore -Server $connectionUsed -ErrorAction SilentlyContinue
                         $numDatastores = if ($datastores) { ($datastores | Measure-Object).Count } else { 0 }
                     }
                     catch { 
@@ -203,7 +133,7 @@ try {
                     }
                     
                     try {
-                        $networks = $dc | Get-VirtualPortGroup -ErrorAction SilentlyContinue
+                        $networks = $dc | Get-VirtualPortGroup -Server $connectionUsed -ErrorAction SilentlyContinue
                         $numNetworks = if ($networks) { ($networks | Measure-Object).Count } else { 0 }
                     }
                     catch { 
@@ -282,20 +212,8 @@ catch {
     exit 1
 }
 finally {
-    # Only disconnect if we created the connection (not if we reused existing)
-    if ($viConnection -and $viConnection.IsConnected -and $VCenterServer -and $Credentials) {
-        try {
-            Write-LogInfo "Disconnecting from vCenter..." -Category "Connection"
-            # DISCONNECT REMOVED - Using persistent connections managed by application
-            Write-LogSuccess "Disconnected from vCenter" -Category "Connection"
-        }
-        catch {
-            Write-LogWarning "Failed to disconnect cleanly: $($_.Exception.Message)" -Category "Connection"
-        }
-    }
-    elseif ($viConnection -and $viConnection.IsConnected) {
-        Write-LogInfo "Keeping existing vCenter connection active" -Category "Connection"
-    }
+    # No cleanup needed - using persistent connections managed by application
+    Write-LogInfo "Keeping existing vCenter connection active" -Category "Connection"
     
     # Stop logging and output result
     if ($scriptSuccess) {

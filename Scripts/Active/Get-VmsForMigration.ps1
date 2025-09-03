@@ -13,9 +13,6 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$VCenterServer,
     
-    [Parameter(Mandatory=$true)]
-    [System.Management.Automation.PSCredential]$Credentials,
-    
     [Parameter()]
     [switch]$BypassModuleCheck,
     
@@ -42,11 +39,13 @@ try {
     # PowerCLI modules are managed by the service layer
     Write-LogInfo "PowerCLI modules are managed by the service layer" -Category "Initialization"
 
-    # Connect to vCenter using provided credentials
-    Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-    # Force connection and ignore SSL certificate issues
-    $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
-    Write-LogSuccess "Connected to vCenter: $($viConnection.Name)" -Category "Connection"
+    # Use existing vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing vCenter connection: $VCenterServer" -Category "Connection"
+    $viConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
+    if (-not $viConnection -or -not $viConnection.IsConnected) {
+        throw "vCenter connection to '$VCenterServer' not found or not active. Please establish connection through main UI first."
+    }
+    Write-LogSuccess "Using vCenter connection: $($viConnection.Name)" -Category "Connection"
     
     # Get all VMs with relevant information
     Write-LogInfo "Retrieving VM information..." -Category "Discovery"

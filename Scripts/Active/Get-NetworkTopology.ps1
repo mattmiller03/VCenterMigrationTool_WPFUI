@@ -10,7 +10,6 @@
 #>
 param(
     [Parameter(Mandatory=$true)] [string]$VCenterServer,
-    [Parameter(Mandatory=$true)] [System.Management.Automation.PSCredential]$Credentials,
     [Parameter()][bool]$BypassModuleCheck = $false,
     [Parameter()][string]$LogPath,
     [Parameter()][bool]$SuppressConsoleOutput = $false
@@ -33,13 +32,16 @@ try {
     # PowerCLI modules managed by service layer
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     
-    # Connect to vCenter
-    Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-    Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
-    Write-LogSuccess "Connected to vCenter." -Category "Connection"
+    # Use existing vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing vCenter connection: $VCenterServer" -Category "Connection"
+    $viConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
+    if (-not $viConnection -or -not $viConnection.IsConnected) {
+        throw "vCenter connection to '$VCenterServer' not found or not active. Please establish connection through main UI first."
+    }
+    Write-LogSuccess "Using vCenter connection: $($viConnection.Name)" -Category "Connection"
     
     # Get all ESXi hosts
-    $vmHosts = Get-VMHost
+    $vmHosts = Get-VMHost -Server $viConnection
     $networkTopology = @()
     
     foreach ($vmHost in $vmHosts) {

@@ -4,19 +4,7 @@ param(
     [string]$SourceVCenter,
     
     [Parameter(Mandatory=$true)]
-    [string]$SourceUsername,
-    
-    [Parameter(Mandatory=$true)]
-    [string]$SourcePassword,
-    
-    [Parameter(Mandatory=$true)]
     [string]$TargetVCenter,
-    
-    [Parameter(Mandatory=$true)]
-    [string]$TargetUsername,
-    
-    [Parameter(Mandatory=$true)]
-    [string]$TargetPassword,
     
     [Parameter(Mandatory=$true)]
     [string]$ObjectType,
@@ -49,19 +37,21 @@ try {
     # PowerCLI module management handled by service layer
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     
-    # Connect to source vCenter
-    Write-LogInfo "Connecting to source vCenter: $SourceVCenter" -Category "Connection"
-    $sourceSecurePassword = ConvertTo-SecureString -String $SourcePassword -AsPlainText -Force
-    $sourceCredential = New-Object System.Management.Automation.PSCredential($SourceUsername, $sourceSecurePassword)
-    $sourceConnection = Connect-VIServer -Server $SourceVCenter -Credential $sourceCredential -ErrorAction Stop
-    Write-LogSuccess "Connected to source vCenter: $($sourceConnection.Name)" -Category "Connection"
+    # Use existing vCenter connections established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing source vCenter connection: $SourceVCenter" -Category "Connection"
+    $sourceConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $SourceVCenter }
+    if (-not $sourceConnection -or -not $sourceConnection.IsConnected) {
+        throw "Source vCenter connection to '$SourceVCenter' not found or not active. Please establish connection through main UI first."
+    }
+    Write-LogSuccess "Using source vCenter connection: $($sourceConnection.Name)" -Category "Connection"
     
-    # Connect to target vCenter
-    Write-LogInfo "Connecting to target vCenter: $TargetVCenter" -Category "Connection"
-    $targetSecurePassword = ConvertTo-SecureString -String $TargetPassword -AsPlainText -Force
-    $targetCredential = New-Object System.Management.Automation.PSCredential($TargetUsername, $targetSecurePassword)
-    $targetConnection = Connect-VIServer -Server $TargetVCenter -Credential $targetCredential -ErrorAction Stop -Force
-    Write-LogSuccess "Connected to target vCenter: $($targetConnection.Name)" -Category "Connection"
+    # Use existing target vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing target vCenter connection: $TargetVCenter" -Category "Connection"
+    $targetConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $TargetVCenter }
+    if (-not $targetConnection -or -not $targetConnection.IsConnected) {
+        throw "Target vCenter connection to '$TargetVCenter' not found or not active. Please establish connection through main UI first."
+    }
+    Write-LogSuccess "Using target vCenter connection: $($targetConnection.Name)" -Category "Connection"
     
     # Switch to source connection for object retrieval
     $global:DefaultVIServer = $sourceConnection
@@ -72,7 +62,7 @@ try {
             Write-LogInfo "Migrating role: $ObjectName" -Category "Migration"
             
             # Get source role
-            $sourceRole = Get-VIRole -Name $ObjectName -ErrorAction Stop
+            $sourceRole = Get-VIRole -Name $ObjectName -Server $sourceConnection -ErrorAction Stop
             if (-not $sourceRole) {
                 throw "Role '$ObjectName' not found in source vCenter"
             }
@@ -83,14 +73,14 @@ try {
             $global:DefaultVIServer = $targetConnection
             
             # Check if role already exists
-            $existingRole = Get-VIRole -Name $ObjectName -ErrorAction SilentlyContinue
+            $existingRole = Get-VIRole -Name $ObjectName -Server $targetConnection -ErrorAction SilentlyContinue
             if ($existingRole) {
                 Write-LogWarning "Role '$ObjectName' already exists in target vCenter" -Category "Migration"
                 $finalSummary = "Role already exists in target - skipped"
             }
             else {
                 # Create role in target
-                $targetRole = New-VIRole -Name $sourceRole.Name -Privilege $sourceRole.PrivilegeList -ErrorAction Stop
+                $targetRole = New-VIRole -Name $sourceRole.Name -Privilege $sourceRole.PrivilegeList -Server $targetConnection -ErrorAction Stop
                 Write-LogSuccess "Created role '$($targetRole.Name)' in target vCenter" -Category "Migration"
                 $finalSummary = "Successfully migrated role '$ObjectName'"
             }
@@ -100,7 +90,7 @@ try {
             Write-LogInfo "Migrating folder: $ObjectName" -Category "Migration"
             
             # Get source folder
-            $sourceFolder = Get-Folder -Name $ObjectName -Type VM -ErrorAction Stop
+            $sourceFolder = Get-Folder -Name $ObjectName -Type VM -Server $sourceConnection -ErrorAction Stop
             if (-not $sourceFolder) {
                 throw "Folder '$ObjectName' not found in source vCenter"
             }
@@ -111,15 +101,15 @@ try {
             $global:DefaultVIServer = $targetConnection
             
             # Check if folder already exists
-            $existingFolder = Get-Folder -Name $ObjectName -Type VM -ErrorAction SilentlyContinue
+            $existingFolder = Get-Folder -Name $ObjectName -Type VM -Server $targetConnection -ErrorAction SilentlyContinue
             if ($existingFolder) {
                 Write-LogWarning "Folder '$ObjectName' already exists in target vCenter" -Category "Migration"
                 $finalSummary = "Folder already exists in target - skipped"
             }
             else {
                 # Create folder in target (under vm root for now)
-                $vmFolder = Get-Folder -Name "vm" -Type VM
-                $targetFolder = New-Folder -Name $sourceFolder.Name -Location $vmFolder -ErrorAction Stop
+                $vmFolder = Get-Folder -Name "vm" -Type VM -Server $targetConnection
+                $targetFolder = New-Folder -Name $sourceFolder.Name -Location $vmFolder -Server $targetConnection -ErrorAction Stop
                 Write-LogSuccess "Created folder '$($targetFolder.Name)' in target vCenter" -Category "Migration"
                 $finalSummary = "Successfully migrated folder '$ObjectName'"
             }
@@ -129,7 +119,7 @@ try {
             Write-LogInfo "Migrating resource pool: $ObjectName" -Category "Migration"
             
             # Get source resource pool
-            $sourceRP = Get-ResourcePool -Name $ObjectName -ErrorAction Stop
+            $sourceRP = Get-ResourcePool -Name $ObjectName -Server $sourceConnection -ErrorAction Stop
             if (-not $sourceRP) {
                 throw "Resource pool '$ObjectName' not found in source vCenter"
             }
@@ -140,7 +130,7 @@ try {
             $global:DefaultVIServer = $targetConnection
             
             # Check if resource pool already exists
-            $existingRP = Get-ResourcePool -Name $ObjectName -ErrorAction SilentlyContinue
+            $existingRP = Get-ResourcePool -Name $ObjectName -Server $targetConnection -ErrorAction SilentlyContinue
             if ($existingRP) {
                 Write-LogWarning "Resource pool '$ObjectName' already exists in target vCenter" -Category "Migration"
                 $finalSummary = "Resource pool already exists in target - skipped"
@@ -155,7 +145,7 @@ try {
             Write-LogInfo "Migrating custom attribute: $ObjectName" -Category "Migration"
             
             # Get source custom attribute
-            $sourceAttr = Get-CustomAttribute -Name $ObjectName -ErrorAction Stop
+            $sourceAttr = Get-CustomAttribute -Name $ObjectName -Server $sourceConnection -ErrorAction Stop
             if (-not $sourceAttr) {
                 throw "Custom attribute '$ObjectName' not found in source vCenter"
             }
@@ -166,14 +156,14 @@ try {
             $global:DefaultVIServer = $targetConnection
             
             # Check if custom attribute already exists
-            $existingAttr = Get-CustomAttribute -Name $ObjectName -ErrorAction SilentlyContinue
+            $existingAttr = Get-CustomAttribute -Name $ObjectName -Server $targetConnection -ErrorAction SilentlyContinue
             if ($existingAttr) {
                 Write-LogWarning "Custom attribute '$ObjectName' already exists in target vCenter" -Category "Migration"
                 $finalSummary = "Custom attribute already exists in target - skipped"
             }
             else {
                 # Create custom attribute in target
-                $targetAttr = New-CustomAttribute -Name $sourceAttr.Name -TargetType $sourceAttr.TargetType -ErrorAction Stop
+                $targetAttr = New-CustomAttribute -Name $sourceAttr.Name -TargetType $sourceAttr.TargetType -Server $targetConnection -ErrorAction Stop
                 Write-LogSuccess "Created custom attribute '$($targetAttr.Name)' in target vCenter" -Category "Migration"
                 $finalSummary = "Successfully migrated custom attribute '$ObjectName'"
             }
@@ -182,9 +172,8 @@ try {
         "Datacenter" {
             Write-LogInfo "Migrating datacenter: $ObjectName" -Category "Migration"
             
-            # Switch to target connection and verify
-            $global:DefaultVIServer = $targetConnection
-            Write-LogDebug "Current connection: $($global:DefaultVIServer.Name)" -Category "Connection"
+            # Working with target connection
+            Write-LogDebug "Working with target connection: $($targetConnection.Name)" -Category "Connection"
             
             # Check if datacenter already exists in TARGET vCenter
             $existingDC = Get-Datacenter -Name $ObjectName -Server $targetConnection -ErrorAction SilentlyContinue

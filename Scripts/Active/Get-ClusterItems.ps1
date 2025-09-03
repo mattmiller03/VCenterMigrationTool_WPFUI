@@ -10,8 +10,6 @@
 #>
 param(
     [string]$VCenterServer,
-    [string]$Username,
-    [string]$Password,
     [string]$ClusterName,
     [bool]$BypassModuleCheck = $false,
     [string]$LogPath = "",
@@ -59,15 +57,14 @@ try {
     }
     
     try {
-        Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
-        $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-        $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
-        $viConnection = Connect-VIServer -Server $VCenterServer -Credential $credential -ErrorAction Stop
+        # Use existing vCenter connection established by PersistentVcenterConnectionService
+        Write-LogInfo "Using existing vCenter connection: $VCenterServer" -Category "Connection"
+        $viConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
+        if (-not $viConnection -or -not $viConnection.IsConnected) {
+            throw "vCenter connection to '$VCenterServer' not found or not active. Please establish connection through main UI first."
+        }
         $connectionUsed = $viConnection
-        Write-LogSuccess "Successfully connected to vCenter: $($viConnection.Name)" -Category "Connection"
-        Write-LogInfo "  Server: $($viConnection.Name)" -Category "Connection"
-        Write-LogInfo "  User: $($viConnection.User)" -Category "Connection"
-        Write-LogInfo "  Version: $($viConnection.Version)" -Category "Connection"
+        Write-LogSuccess "Using vCenter connection: $($viConnection.Name) (v$($viConnection.Version))" -Category "Connection"
     }
     catch {
         Write-LogError "Failed to connect to vCenter $VCenterServer : $($_.Exception.Message)" -Category "Connection"

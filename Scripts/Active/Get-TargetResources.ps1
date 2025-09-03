@@ -11,10 +11,6 @@
 param(
     [Parameter(Mandatory=$true)]
     [string]$VCenterServer,
-    [Parameter(Mandatory=$true)]
-    [string]$Username,
-    [Parameter(Mandatory=$true)]
-    [string]$Password,
     [Parameter(Mandatory=$false)]
     [string]$LogPath,
     [Parameter(Mandatory=$false)]
@@ -41,17 +37,18 @@ try {
     
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -ParticipateInCEIP $false -Scope Session -Confirm:$false | Out-Null
     
-    # Connect to vCenter
-    Write-LogInfo "Connecting to target vCenter..." -Category "Connection"
-    $securePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-    $credential = New-Object System.Management.Automation.PSCredential($Username, $securePassword)
-    $connection = Connect-VIServer -Server $VCenterServer -Credential $credential -Force -ErrorAction Stop
-    Write-LogSuccess "Successfully connected to $($connection.Name)." -Category "Connection"
+    # Use existing vCenter connection established by PersistentVcenterConnectionService
+    Write-LogInfo "Using existing vCenter connection: $VCenterServer" -Category "Connection"
+    $connection = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
+    if (-not $connection -or -not $connection.IsConnected) {
+        throw "vCenter connection to '$VCenterServer' not found or not active. Please establish connection through main UI first."
+    }
+    Write-LogSuccess "Using vCenter connection: $($connection.Name)" -Category "Connection"
     
     # Get hosts and datastores
     Write-LogInfo "Retrieving hosts and datastores..." -Category "Discovery"
-    $hosts = Get-VMHost -ErrorAction Stop | ForEach-Object { @{ Name = $_.Name } }
-    $datastores = Get-Datastore -ErrorAction Stop | ForEach-Object { @{ Name = $_.Name } }
+    $hosts = Get-VMHost -Server $connection -ErrorAction Stop | ForEach-Object { @{ Name = $_.Name } }
+    $datastores = Get-Datastore -Server $connection -ErrorAction Stop | ForEach-Object { @{ Name = $_.Name } }
     
     $stats.HostsFound = $hosts.Count
     $stats.DatastoresFound = $datastores.Count
