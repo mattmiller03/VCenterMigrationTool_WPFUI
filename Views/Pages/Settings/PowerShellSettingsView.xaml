@@ -30,17 +30,88 @@
             <TextBlock Grid.Column="1" Text="{Binding PowerShellVersion}" Margin="10,0,0,0" VerticalAlignment="Center" Height="38" TextWrapping="Wrap"/>
         </Grid>
 
-        <!-- PowerCLI Status -->
+        <!-- Overall Module Status -->
         <Grid Margin="0,0,0,15">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="PowerCLI Status:" FontWeight="Medium" VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="1" Text="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToStringConverter}, ConverterParameter=Installed;Not Installed}" Margin="10,0,10,0" VerticalAlignment="Center" Height="52"/>
-            <ui:SymbolIcon Grid.Column="2" Symbol="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToSymbolConverter}}" Foreground="{Binding IsPowerCliInstalled, Converter={StaticResource BoolToColorConverter}}" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="0" Text="Overall Status:" FontWeight="Medium" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="{Binding OverallModuleStatus}" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
         </Grid>
+
+        <!-- Required Modules Collection -->
+        <TextBlock Text="Required Modules:" FontWeight="Medium" Margin="0,10,0,10"/>
+        <ItemsControl ItemsSource="{Binding RequiredModules}" Margin="0,0,0,15">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <ui:Card Margin="0,0,0,10" Padding="15">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Module Icon -->
+                            <ui:SymbolIcon Grid.Column="0" Grid.RowSpan="3" 
+                                           Symbol="{Binding IsInstalled, Converter={StaticResource BoolToSymbolConverter}}" 
+                                           Foreground="{Binding IsInstalled, Converter={StaticResource BoolToColorConverter}}" 
+                                           VerticalAlignment="Center" Margin="0,0,15,0" FontSize="24"/>
+
+                            <!-- Module Name -->
+                            <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"/>
+
+                            <!-- Module Description -->
+                            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Description}" 
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" TextWrapping="Wrap"/>
+
+                            <!-- Module Status and Version -->
+                            <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,0">
+                                <TextBlock Text="Status: " FontWeight="Medium" FontSize="11"/>
+                                <TextBlock Text="{Binding Status}" FontSize="11" Margin="0,0,10,0"/>
+                                <TextBlock Text="Version: " FontWeight="Medium" FontSize="11"/>
+                                <TextBlock Text="{Binding InstalledVersion}" FontSize="11"/>
+                            </StackPanel>
+
+                            <!-- Required Badge -->
+                            <Border Grid.Column="2" Grid.RowSpan="3" Background="{DynamicResource SystemAccentColorLight2}" 
+                                    CornerRadius="10" Padding="8,4" VerticalAlignment="Center" Margin="10,0,10,0"
+                                    Visibility="{Binding IsRequired, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Required" FontSize="10" Foreground="White" FontWeight="Medium"/>
+                            </Border>
+
+                            <!-- Install Button (only for PowerCLI) -->
+                            <ui:Button Grid.Column="3" Grid.RowSpan="3" Content="Install" FontSize="11" Padding="8,4"
+                                       Command="{Binding DataContext.InstallPowerCliCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       VerticalAlignment="Center">
+                                <ui:Button.Style>
+                                    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Name}" Value="VMware.PowerCLI"/>
+                                                    <Condition Binding="{Binding IsInstalled}" Value="False"/>
+                                                    <Condition Binding="{Binding DataContext.IsInstallingPowerCli, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="False"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ui:Button.Style>
+                            </ui:Button>
+                        </Grid>
+                    </ui:Card>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
         <!-- Status Messages -->
         <TextBlock Text="{Binding PrerequisiteCheckStatus}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10"/>
@@ -135,8 +206,8 @@
         </StackPanel>
 
         <!-- Success Message -->
-        <ui:InfoBar Title="PowerCLI Ready!" 
-                    Message="PowerCLI module is installed and ready to use." 
+        <ui:InfoBar Title="Prerequisites Ready!" 
+                    Message="{Binding OverallModuleStatus}" 
                     Severity="Success" 
                     IsOpen="{Binding IsPowerCliInstalled}" 
                     Margin="0,0,0,20" />
