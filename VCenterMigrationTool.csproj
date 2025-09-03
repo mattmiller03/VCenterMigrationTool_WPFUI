@@ -22,19 +22,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Meziantou.Framework.Win32.CredentialManager" Version="1.7.4" />
+		<PackageReference Include="Meziantou.Framework.Win32.CredentialManager" Version="1.7.5" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
 		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.8" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<!-- PowerShell SDK packages for in-process execution -->
-		<PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.6" />
+		<PackageReference Include="Microsoft.PowerShell.SDK" Version="7.5.2" />
 		<PackageReference Include="System.Management.Automation" Version="7.4.6" />
 		<PackageReference Include="Serilog" Version="4.3.0" />
 		<PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
 		<PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
 		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
 		<PackageReference Include="System.Formats.Asn1" Version="9.0.8" />
-		<PackageReference Include="System.IO.Packaging" Version="9.0.1" />
+		<PackageReference Include="System.IO.Packaging" Version="9.0.8" />
 		<PackageReference Include="System.Text.Json" Version="9.0.8" />
 		<PackageReference Include="WPF-UI" Version="4.0.3" />
 		<PackageReference Include="WPF-UI.DependencyInjection" Version="4.0.3" />

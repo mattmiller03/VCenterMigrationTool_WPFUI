@@ -25,6 +25,7 @@ public class UnifiedPowerShellService : IDisposable
     private readonly ILogger<UnifiedPowerShellService> _logger;
     private readonly ConfigurationService _configurationService;
     private readonly PowerShellLoggingService _psLoggingService;
+    private readonly PowerShellPathService _powerShellPathService;
     private readonly ConcurrentDictionary<int, Process> _activeProcesses = new();
     private readonly ConcurrentDictionary<string, ManagedPowerShellProcess> _persistentSessions = new();
     private readonly Timer _cleanupTimer;
@@ -38,11 +39,13 @@ public class UnifiedPowerShellService : IDisposable
     public UnifiedPowerShellService(
         ILogger<UnifiedPowerShellService> logger,
         ConfigurationService configurationService,
-        PowerShellLoggingService psLoggingService)
+        PowerShellLoggingService psLoggingService,
+        PowerShellPathService powerShellPathService)
     {
         _logger = logger;
         _configurationService = configurationService;
         _psLoggingService = psLoggingService;
+        _powerShellPathService = powerShellPathService;
 
         // Initialize cleanup timer
         _cleanupTimer = new Timer(PerformCleanup, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
@@ -253,16 +256,15 @@ public class UnifiedPowerShellService : IDisposable
     }
 
     /// <summary>
-    /// Starts a PowerShell process with optimal configuration
+    /// Starts a PowerShell process with optimal configuration using bundled PowerShell
     /// </summary>
     private async Task<Process?> StartPowerShellProcessAsync()
     {
-        var powershellPaths = new[]
-        {
-            "pwsh.exe",                                    // PowerShell 7+ (preferred)
-            @"C:\Program Files\PowerShell\7\pwsh.exe",    // PowerShell 7 explicit path
-            "powershell.exe"                               // Windows PowerShell (fallback)
-        };
+        // Use PowerShell path service to get the optimal PowerShell executable
+        var powerShellPath = _powerShellPathService.GetPowerShellExecutablePath();
+        _logger.LogInformation("🚀 Using PowerShell executable: {Path}", powerShellPath);
+        
+        var powershellPaths = new[] { powerShellPath };
 
         foreach (var psPath in powershellPaths)
         {
@@ -270,17 +272,37 @@ public class UnifiedPowerShellService : IDisposable
             {
                 _logger.LogDebug("Attempting to start PowerShell using: {Path}", psPath);
 
-                var startInfo = new ProcessStartInfo
+                ProcessStartInfo startInfo;
+                
+                // Handle dotnet tool vs direct executable
+                if (psPath.Contains("dotnet tool run"))
                 {
-                    FileName = psPath,
-                    Arguments = "-NoProfile -NoExit -ExecutionPolicy Unrestricted -Command -",
-                    RedirectStandardInput = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WorkingDirectory = Environment.CurrentDirectory
-                };
+                    startInfo = new ProcessStartInfo
+                    {
+                        FileName = "dotnet",
+                        Arguments = "tool run pwsh -- -NoProfile -NoExit -ExecutionPolicy Unrestricted -Command -",
+                        RedirectStandardInput = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        WorkingDirectory = Environment.CurrentDirectory
+                    };
+                }
+                else
+                {
+                    startInfo = new ProcessStartInfo
+                    {
+                        FileName = psPath,
+                        Arguments = "-NoProfile -NoExit -ExecutionPolicy Unrestricted -Command -",
+                        RedirectStandardInput = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        WorkingDirectory = Environment.CurrentDirectory
+                    };
+                }
 
                 var process = Process.Start(startInfo);
 
@@ -441,7 +463,8 @@ public class UnifiedPowerShellService : IDisposable
             _logger.LogDebug("Importing PowerCLI modules in process {ProcessId}...", managedProcess.ProcessId);
 
             var importScript = PowerShellScriptBuilder.BuildPowerCLIImportScript();
-            var output = await ExecuteCommandAsync(managedProcess, importScript, TimeSpan.FromSeconds(90));
+            // Increase timeout for PowerCLI imports - they can take 3-5 minutes on slower systems
+            var output = await ExecuteCommandAsync(managedProcess, importScript, TimeSpan.FromMinutes(5));
 
             var result = new PowerCLIConfigResult();
 

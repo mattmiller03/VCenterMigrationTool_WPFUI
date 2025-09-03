@@ -17,6 +17,7 @@ public class PowerShellScriptBuilder
         return @"
 # ===== POWERCLI MODULE IMPORT WITH MULTIPLE STRATEGIES =====
 Write-Output 'DIAGNOSTIC: Starting PowerCLI module import...'
+Write-Output 'PROGRESS: PowerCLI import - Scanning available modules...'
 
 # Check for both current and future PowerCLI modules
 $legacyPowerCLI = Get-Module -Name VMware.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
@@ -48,6 +49,7 @@ $moduleType = 'Unknown'
 if ($vcfPowerCLI) {
     try {
         Write-Output 'DIAGNOSTIC: Strategy 1 - Attempting VCF.PowerCLI import (vSphere 9+)...'
+        Write-Output 'PROGRESS: PowerCLI import - Loading VCF.PowerCLI modules...'
         Import-Module VCF.PowerCLI -Force -ErrorAction Stop
         Write-Output 'DIAGNOSTIC: Strategy 1 - VCF.PowerCLI import successful'
         $importSuccess = $true
@@ -62,6 +64,7 @@ if ($vcfPowerCLI) {
 if (-not $importSuccess -and $legacyPowerCLI) {
     try {
         Write-Output 'DIAGNOSTIC: Strategy 2 - Attempting legacy VMware.PowerCLI import...'
+        Write-Output 'PROGRESS: PowerCLI import - Loading legacy VMware.PowerCLI modules...'
         Import-Module VMware.PowerCLI -Force -ErrorAction Stop
         Write-Output 'DIAGNOSTIC: Strategy 2 - Legacy PowerCLI import successful'
         $importSuccess = $true
@@ -73,6 +76,7 @@ if (-not $importSuccess -and $legacyPowerCLI) {
         # Strategy 3: Try importing legacy core modules individually
         try {
             Write-Output 'DIAGNOSTIC: Strategy 3 - Attempting legacy core module imports individually...'
+            Write-Output 'PROGRESS: PowerCLI import - Loading core modules individually...'
             Import-Module VMware.VimAutomation.Core -Force -ErrorAction Stop
             Import-Module VMware.VimAutomation.Common -Force -ErrorAction SilentlyContinue
             Write-Output 'DIAGNOSTIC: Strategy 3 - Legacy core modules imported successfully'

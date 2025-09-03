@@ -24,7 +24,11 @@
       "Bash(git stash:*)",
       "Bash(git remote set-url:*)",
       "Bash(rg:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "WebFetch(domain:www.nuget.org)",
+      "Bash(dotnet tool restore:*)",
+      "Bash(dotnet tool list:*)",
+      "Bash(dotnet tool run pwsh:*)"
     ],
     "deny": [],
     "ask": []

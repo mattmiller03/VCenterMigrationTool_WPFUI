@@ -174,18 +174,39 @@ public class UnifiedConnectionService : IDisposable
 
             if (!configResult.Success)
             {
-                var errorMsg = $"PowerCLI configuration failed: {configResult.Message}";
-                _logger.LogError("❌ {ErrorMessage}", errorMsg);
-                MarkConnectionFailed(connectionKey, errorMsg);
+                _logger.LogWarning("⚠️ PowerCLI configuration failed, attempting bypass mode as fallback...");
                 
-                await DisconnectAsync(connectionKey);
-                return (false, errorMsg, string.Empty);
+                // Try bypass mode as fallback when PowerCLI import fails
+                var bypassResult = await _powerShellService.ConfigurePowerCLIAsync(process, bypassModuleCheck: true);
+                
+                if (bypassResult.Success)
+                {
+                    _logger.LogInformation("✅ Fallback to bypass mode successful - limited functionality available");
+                    context.IsPowerCLIConfigured = false; // Mark as not having full PowerCLI
+                    context.ModuleType = bypassResult.ModuleType;
+                    context.IsUsingPowerCLI = false;
+                    
+                    // Continue with bypass mode instead of failing
+                    configResult = bypassResult;
+                }
+                else
+                {
+                    var errorMsg = $"PowerCLI configuration failed and bypass mode also failed: {configResult.Message}";
+                    _logger.LogError("❌ {ErrorMessage}", errorMsg);
+                    MarkConnectionFailed(connectionKey, errorMsg);
+                    
+                    await DisconnectAsync(connectionKey);
+                    return (false, errorMsg, string.Empty);
+                }
             }
 
-            // Update context with PowerCLI info
-            context.IsPowerCLIConfigured = true;
-            context.ModuleType = configResult.ModuleType;
-            context.IsUsingPowerCLI = true;
+            // Update context with PowerCLI info (only if not already set by bypass mode)
+            if (!context.ModuleType?.Contains("Bypass") == true)
+            {
+                context.IsPowerCLIConfigured = true;
+                context.ModuleType = configResult.ModuleType;
+                context.IsUsingPowerCLI = true;
+            }
 
             _logger.LogInformation("✅ PowerCLI configured successfully using {ModuleType}", configResult.ModuleType);
 
