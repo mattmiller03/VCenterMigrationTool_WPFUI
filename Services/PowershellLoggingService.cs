@@ -17,8 +17,8 @@ public class PowerShellLoggingService : IDisposable
     private readonly string _logDirectory;
     private readonly ConcurrentQueue<LogEntry> _logBuffer = new();
     private readonly object _fileLock = new();
-    private string _currentLogFile;
-    private StreamWriter _currentStreamWriter;
+    private readonly Dictionary<string, StreamWriter> _scriptLogWriters = new();
+    private readonly Dictionary<string, string> _scriptLogFiles = new();
 
     public class LogEntry
         {
@@ -88,45 +88,61 @@ public class PowerShellLoggingService : IDisposable
             Directory.CreateDirectory(_logDirectory);
             _logger.LogInformation("Created PowerShell log directory: {LogDirectory}", _logDirectory);
             }
-
-        // Initialize daily log file
-        InitializeDailyLogFile();
         }
 
-    private void InitializeDailyLogFile ()
+    private StreamWriter CreateScriptLogFile (string sessionId, string scriptName)
         {
         lock (_fileLock)
             {
-            // Close existing writer if any
-            _currentStreamWriter?.Close();
-            _currentStreamWriter?.Dispose();
+            // Create individual log file for this script execution
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            var safeScriptName = Path.GetFileNameWithoutExtension(scriptName).Replace(" ", "_");
+            var logFileName = $"{safeScriptName}_{sessionId}_{timestamp}.log";
+            var logFilePath = Path.Combine(_logDirectory, logFileName);
 
-            // Create new daily log file
-            var date = DateTime.Now.ToString("yyyy-MM-dd");
-            _currentLogFile = Path.Combine(_logDirectory, $"powershell_{date}.log");
+            // Store the file path for this session
+            _scriptLogFiles[sessionId] = logFilePath;
 
-            // Open file in append mode
-            _currentStreamWriter = new StreamWriter(_currentLogFile, append: true, Encoding.UTF8)
+            // Create and configure the StreamWriter
+            var writer = new StreamWriter(logFilePath, append: false, Encoding.UTF8)
                 {
                 AutoFlush = true
                 };
 
-            WriteLogHeader();
+            // Write header for this script execution
+            WriteScriptLogHeader(writer, scriptName, sessionId);
+
+            // Store the writer for this session
+            _scriptLogWriters[sessionId] = writer;
+
+            return writer;
             }
         }
 
-    private void WriteLogHeader ()
+    private void WriteScriptLogHeader (StreamWriter writer, string scriptName, string sessionId)
         {
-        _currentStreamWriter.WriteLine($"");
-        _currentStreamWriter.WriteLine($"=================================================================");
-        _currentStreamWriter.WriteLine($"PowerShell Script Execution Log - {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-        _currentStreamWriter.WriteLine($"=================================================================");
-        _currentStreamWriter.WriteLine($"");
+        writer.WriteLine($"=================================================================");
+        writer.WriteLine($"PowerShell Script Execution Log");
+        writer.WriteLine($"Script: {scriptName}");
+        writer.WriteLine($"Session ID: {sessionId}");
+        writer.WriteLine($"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+        writer.WriteLine($"=================================================================");
+        writer.WriteLine($"");
         }
 
     public string StartScriptLogging (string scriptName, string connectionType = "source")
         {
         var sessionId = Guid.NewGuid().ToString("N").Substring(0, 8);
+
+        // Create individual log file for this script execution
+        var scriptWriter = CreateScriptLogFile(sessionId, scriptName);
+
+        // Write session start info to the individual log file
+        scriptWriter.WriteLine($"[SESSION START] {sessionId} - {scriptName}");
+        scriptWriter.WriteLine($"Connection: {connectionType}");
+        scriptWriter.WriteLine($"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+        scriptWriter.WriteLine($"----------------------------------------");
+        scriptWriter.WriteLine($"");
 
         var entry = new LogEntry
             {
@@ -140,15 +156,8 @@ public class PowerShellLoggingService : IDisposable
 
         WriteLog(entry);
 
-        // Write session header to file
-        lock (_fileLock)
-            {
-            _currentStreamWriter.WriteLine($"");
-            _currentStreamWriter.WriteLine($"[SESSION START] {sessionId} - {scriptName}");
-            _currentStreamWriter.WriteLine($"Connection: {connectionType}");
-            _currentStreamWriter.WriteLine($"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
-            _currentStreamWriter.WriteLine($"----------------------------------------");
-            }
+        _logger.LogInformation("Created individual log file for script: {ScriptName} with session: {SessionId} at: {LogPath}", 
+            scriptName, sessionId, _scriptLogFiles[sessionId]);
 
         return sessionId;
         }
@@ -167,18 +176,32 @@ public class PowerShellLoggingService : IDisposable
 
         WriteLog(entry);
 
-        // Write session footer to file
+        // Write session footer to individual script file and close it
         lock (_fileLock)
             {
-            _currentStreamWriter.WriteLine($"----------------------------------------");
-            _currentStreamWriter.WriteLine($"[SESSION END] {sessionId} - {scriptName}");
-            _currentStreamWriter.WriteLine($"Result: {(success ? "SUCCESS" : "FAILED")}");
-            if (!string.IsNullOrEmpty(summary))
+            if (_scriptLogWriters.TryGetValue(sessionId, out var scriptWriter))
                 {
-                _currentStreamWriter.WriteLine($"Summary: {summary}");
+                scriptWriter.WriteLine($"");
+                scriptWriter.WriteLine($"----------------------------------------");
+                scriptWriter.WriteLine($"[SESSION END] {sessionId} - {scriptName}");
+                scriptWriter.WriteLine($"Result: {(success ? "SUCCESS" : "FAILED")}");
+                if (!string.IsNullOrEmpty(summary))
+                    {
+                    scriptWriter.WriteLine($"Summary: {summary}");
+                    }
+                scriptWriter.WriteLine($"Ended: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+                scriptWriter.WriteLine($"=================================================================");
+
+                // Close and dispose the script-specific writer
+                scriptWriter.Close();
+                scriptWriter.Dispose();
+                
+                // Remove from tracking dictionaries
+                _scriptLogWriters.Remove(sessionId);
+                
+                _logger.LogInformation("Completed and closed log file for script: {ScriptName} session: {SessionId}", 
+                    scriptName, sessionId);
                 }
-            _currentStreamWriter.WriteLine($"Ended: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
-            _currentStreamWriter.WriteLine($"");
             }
         }
 
@@ -193,22 +216,16 @@ public class PowerShellLoggingService : IDisposable
             _logBuffer.TryDequeue(out _);
             }
 
-        // Write to file
+        // Write to individual script file if available
         lock (_fileLock)
             {
-            // Check if we need a new daily file
-            var currentDate = DateTime.Now.ToString("yyyy-MM-dd");
-            if (!_currentLogFile.Contains(currentDate))
+            if (!string.IsNullOrEmpty(entry.SessionId) && 
+                _scriptLogWriters.TryGetValue(entry.SessionId, out var scriptWriter))
                 {
-                InitializeDailyLogFile();
+                var logLine = $"{entry.Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{entry.Level}] [{entry.Source}] {entry.Message}";
+                scriptWriter.WriteLine(logLine);
                 }
-
-            var logLine = $"{entry.Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{entry.Level}] [{entry.SessionId}] [{entry.ScriptName}] {entry.Message}";
-            _currentStreamWriter.WriteLine(logLine);
             }
-
-        // Don't duplicate PowerShell logs to application logger
-        // PowerShell scripts have their own logs in the PowerShell folder
 
         // Raise event for real-time monitoring
         LogEntryAdded?.Invoke(this, entry);
@@ -323,14 +340,21 @@ public class PowerShellLoggingService : IDisposable
 
     public string GetCurrentLogFilePath ()
         {
-        return _currentLogFile;
+        // Return the log directory path since we now have individual files
+        return _logDirectory;
         }
 
     public List<string> GetAvailableLogFiles ()
         {
-        return Directory.GetFiles(_logDirectory, "powershell_*.log")
-                       .OrderByDescending(f => f)
+        // Return all individual script log files, sorted by creation time (newest first)
+        return Directory.GetFiles(_logDirectory, "*.log")
+                       .OrderByDescending(f => File.GetCreationTime(f))
                        .ToList();
+        }
+
+    public string? GetScriptLogFilePath (string sessionId)
+        {
+        return _scriptLogFiles.TryGetValue(sessionId, out var filePath) ? filePath : null;
         }
 
     public async Task<string> ReadLogFileAsync (string filePath)
@@ -344,8 +368,22 @@ public class PowerShellLoggingService : IDisposable
         {
         lock (_fileLock)
             {
-            _currentStreamWriter?.Close();
-            _currentStreamWriter?.Dispose();
+            // Close and dispose all open script log writers
+            foreach (var writer in _scriptLogWriters.Values)
+                {
+                try
+                    {
+                    writer?.Close();
+                    writer?.Dispose();
+                    }
+                catch (Exception ex)
+                    {
+                    _logger.LogWarning(ex, "Error disposing script log writer");
+                    }
+                }
+            
+            _scriptLogWriters.Clear();
+            _scriptLogFiles.Clear();
             }
         }
     }
