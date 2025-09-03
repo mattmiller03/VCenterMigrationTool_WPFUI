@@ -136,12 +136,13 @@ public class UnifiedConnectionService : IDisposable
             await DisconnectAsync(connectionKey);
 
             // Step 1: Create PowerShell process
-            _logger.LogDebug("Creating PowerShell process for {ConnectionKey}...", connectionKey);
+            _logger.LogInformation("🔧 Creating PowerShell process for {ConnectionKey}...", connectionKey);
             var process = await _powerShellService.CreatePersistentProcessAsync($"vcenter-{connectionKey}");
 
             if (process == null)
             {
                 var errorMsg = "Failed to create PowerShell process";
+                _logger.LogError("❌ {ErrorMessage}", errorMsg);
                 MarkConnectionFailed(connectionKey, errorMsg);
                 return (false, errorMsg, string.Empty);
             }
@@ -165,8 +166,11 @@ public class UnifiedConnectionService : IDisposable
                 return (true, "Connected in bypass mode - PowerCLI functionality limited", sessionId);
             }
 
-            _logger.LogDebug("Configuring PowerCLI for {ConnectionKey}...", connectionKey);
+            _logger.LogInformation("⚙️ Configuring PowerCLI for {ConnectionKey}...", connectionKey);
             var configResult = await _powerShellService.ConfigurePowerCLIAsync(process, bypassModuleCheck);
+
+            _logger.LogInformation("🔍 DEBUG: PowerCLI config result - Success: {Success}, Message: {Message}, ModuleType: {ModuleType}", 
+                configResult.Success, configResult.Message, configResult.ModuleType);
 
             if (!configResult.Success)
             {
@@ -190,6 +194,10 @@ public class UnifiedConnectionService : IDisposable
             var connectScript = PowerShellScriptBuilder.BuildVCenterConnectionScript(connectionInfo, password, connectionKey);
             var connectResult = await _powerShellService.ExecuteCommandAsync(process, connectScript, TimeSpan.FromSeconds(120));
 
+            // DEBUG: Log the raw PowerShell output for troubleshooting
+            _logger.LogInformation("🔍 DEBUG: PowerShell connection result ({Length} chars): {Result}", 
+                connectResult?.Length ?? 0, connectResult);
+
             // Step 4: Process connection result
             if (connectResult.Contains("CONNECTION_SUCCESS"))
             {
@@ -208,6 +216,7 @@ public class UnifiedConnectionService : IDisposable
             else
             {
                 // Handle connection failure with detailed logging
+                _logger.LogError("❌ Connection failed - CONNECTION_SUCCESS not found in PowerShell output");
                 var errorMessage = await HandleConnectionFailureAsync(connectionKey, connectionInfo, connectResult);
                 
                 MarkConnectionFailed(connectionKey, errorMessage);
