@@ -16,9 +16,8 @@ namespace VCenterMigrationTool.ViewModels
     public partial class AdminConfigMigrationViewModel : ActivityLogViewModelBase, INavigationAware
     {
         private readonly SharedConnectionService _sharedConnectionService;
-        private readonly HybridPowerShellService _powerShellService;
-        private readonly IErrorHandlingService _errorHandlingService;
         private readonly PersistantVcenterConnectionService _persistentConnectionService;
+        private readonly IErrorHandlingService _errorHandlingService;
         private readonly CredentialService _credentialService;
         private readonly ConfigurationService _configurationService;
         private readonly ILogger<AdminConfigMigrationViewModel> _logger;
@@ -123,7 +122,6 @@ namespace VCenterMigrationTool.ViewModels
 
         public AdminConfigMigrationViewModel(
             SharedConnectionService sharedConnectionService,
-            HybridPowerShellService powerShellService,
             IErrorHandlingService errorHandlingService,
             PersistantVcenterConnectionService persistentConnectionService,
             CredentialService credentialService,
@@ -131,7 +129,6 @@ namespace VCenterMigrationTool.ViewModels
             ILogger<AdminConfigMigrationViewModel> logger)
         {
             _sharedConnectionService = sharedConnectionService;
-            _powerShellService = powerShellService;
             _errorHandlingService = errorHandlingService;
             _persistentConnectionService = persistentConnectionService;
             _credentialService = credentialService;
@@ -625,29 +622,15 @@ namespace VCenterMigrationTool.ViewModels
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📋 Migrating {customRoleCount} custom roles to target vCenter...\n";
                 }
                 
-                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
-                {
-                    throw new InvalidOperationException("Source or target connection not available");
-                }
-
-                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
-                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
-                
                 var parameters = new Dictionary<string, object>
                 {
-                    { "SourceVCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
-                    { "TargetVCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
                     { "ValidateOnly", ValidateOnly },
                     { "OverwriteExisting", true },
                     { "BypassModuleCheck", true }
                 };
 
-                var result = await _powerShellService.RunDualVCenterScriptAsync(
+                var result = await _persistentConnectionService.ExecuteDualVCenterScriptAsync(
                     "Scripts\\Active\\Core Migration\\Migrate-Roles.ps1",
-                    _sharedConnectionService.SourceConnection,
-                    sourcePassword,
-                    _sharedConnectionService.TargetConnection,
-                    targetPassword,
                     parameters);
 
                 if (result.StartsWith("SUCCESS:"))
@@ -695,14 +678,6 @@ namespace VCenterMigrationTool.ViewModels
                     return;
                 }
                 
-                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
-                {
-                    throw new InvalidOperationException("Source or target connection not available");
-                }
-
-                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
-                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
-                
                 // Get the first datacenter from each vCenter (or use mapping if available)
                 var sourceDatacenter = sourceInventory.Datacenters.FirstOrDefault();
                 var targetDatacenter = targetInventory.Datacenters.FirstOrDefault();
@@ -715,32 +690,11 @@ namespace VCenterMigrationTool.ViewModels
                 
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 📁 Replicating folder structure from '{sourceDatacenter.Name}' to '{targetDatacenter.Name}'...\n";
                 
-                // Convert passwords to SecureString for PowerShell
-                var sourceSecurePassword = new System.Security.SecureString();
-                foreach (char c in sourcePassword)
-                {
-                    sourceSecurePassword.AppendChar(c);
-                }
-                sourceSecurePassword.MakeReadOnly();
-                
-                var targetSecurePassword = new System.Security.SecureString();
-                foreach (char c in targetPassword)
-                {
-                    targetSecurePassword.AppendChar(c);
-                }
-                targetSecurePassword.MakeReadOnly();
-                
                 // Use Copy-VMFolderStructure.ps1 for folder replication
                 var parameters = new Dictionary<string, object>
                 {
-                    { "SourceVCenter", _sharedConnectionService.SourceConnection.ServerAddress },
-                    { "TargetVCenter", _sharedConnectionService.TargetConnection.ServerAddress },
                     { "SourceDatacenterName", sourceDatacenter.Name },
                     { "TargetDatacenterName", targetDatacenter.Name },
-                    { "SourceUser", _sharedConnectionService.SourceConnection.Username },
-                    { "SourcePassword", sourceSecurePassword },
-                    { "TargetUser", _sharedConnectionService.TargetConnection.Username },
-                    { "TargetPassword", targetSecurePassword },
                     { "LogPath", _configurationService.GetConfiguration().LogPath },
                     { "SuppressConsoleOutput", false }
                 };
@@ -753,9 +707,10 @@ namespace VCenterMigrationTool.ViewModels
                     return;
                 }
 
-                var result = await _powerShellService.RunScriptAsync(
+                var result = await _persistentConnectionService.ExecuteScriptAsync(
                     "Scripts\\Active\\Copy-VMFolderStructure_2.0.ps1",
-                    parameters);
+                    parameters,
+                    true);
 
                 // Parse the result for statistics
                 if (result.Contains("Successfully copied folder structure"))
@@ -815,30 +770,16 @@ namespace VCenterMigrationTool.ViewModels
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🏷️ Migrating {categoryCount} categories and {tagCount} tags...\n";
                 }
                 
-                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
-                {
-                    throw new InvalidOperationException("Source or target connection not available");
-                }
-
-                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
-                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
-                
                 var parameters = new Dictionary<string, object>
                 {
-                    { "SourceVCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
-                    { "TargetVCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
                     { "ValidateOnly", ValidateOnly },
                     { "OverwriteExisting", false },
                     { "MigrateTagAssignments", false }, // Skip tag assignments for now
                     { "BypassModuleCheck", true }
                 };
 
-                var result = await _powerShellService.RunDualVCenterScriptAsync(
+                var result = await _persistentConnectionService.ExecuteDualVCenterScriptAsync(
                     "Scripts\\Active\\Core Migration\\Migrate-Tags.ps1",
-                    _sharedConnectionService.SourceConnection,
-                    sourcePassword,
-                    _sharedConnectionService.TargetConnection,
-                    targetPassword,
                     parameters);
 
                 if (result.StartsWith("SUCCESS:"))
@@ -879,30 +820,16 @@ namespace VCenterMigrationTool.ViewModels
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ⚙️ Migrating {attributeCount} custom attributes...\n";
                 }
                 
-                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
-                {
-                    throw new InvalidOperationException("Source or target connection not available");
-                }
-
-                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
-                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
-                
                 var parameters = new Dictionary<string, object>
                 {
-                    { "SourceVCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
-                    { "TargetVCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
                     { "ValidateOnly", ValidateOnly },
                     { "OverwriteExisting", false },
                     { "MigrateAttributeValues", false }, // Skip values migration for now
                     { "BypassModuleCheck", true }
                 };
 
-                var result = await _powerShellService.RunDualVCenterScriptAsync(
+                var result = await _persistentConnectionService.ExecuteDualVCenterScriptAsync(
                     "Scripts\\Active\\Core Migration\\Migrate-CustomAttributes.ps1",
-                    _sharedConnectionService.SourceConnection,
-                    sourcePassword,
-                    _sharedConnectionService.TargetConnection,
-                    targetPassword,
                     parameters);
 
                 if (result.StartsWith("SUCCESS:"))
@@ -943,30 +870,16 @@ namespace VCenterMigrationTool.ViewModels
                     ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔐 Migrating {permissionCount} permission assignments...\n";
                 }
                 
-                if (_sharedConnectionService.SourceConnection == null || _sharedConnectionService.TargetConnection == null)
-                {
-                    throw new InvalidOperationException("Source or target connection not available");
-                }
-
-                var sourcePassword = _credentialService.GetPassword(_sharedConnectionService.SourceConnection);
-                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
-                
                 var parameters = new Dictionary<string, object>
                 {
-                    { "SourceVCenterServer", _sharedConnectionService.SourceConnection.ServerAddress },
-                    { "TargetVCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
                     { "ValidateOnly", ValidateOnly },
                     { "OverwriteExisting", false },
                     { "SkipMissingEntities", true },
                     { "BypassModuleCheck", true }
                 };
 
-                var result = await _powerShellService.RunDualVCenterScriptAsync(
+                var result = await _persistentConnectionService.ExecuteDualVCenterScriptAsync(
                     "Scripts\\Active\\Core Migration\\Migrate-Permissions.ps1",
-                    _sharedConnectionService.SourceConnection,
-                    sourcePassword,
-                    _sharedConnectionService.TargetConnection,
-                    targetPassword,
                     parameters);
 
                 if (result.StartsWith("SUCCESS:"))
@@ -1404,27 +1317,9 @@ namespace VCenterMigrationTool.ViewModels
         {
             try
             {
-                if (_sharedConnectionService.TargetConnection == null)
-                {
-                    throw new InvalidOperationException("Target connection not available");
-                }
-
-                var targetPassword = _credentialService.GetPassword(_sharedConnectionService.TargetConnection);
-                
-                // Convert password to SecureString for PowerShell
-                var targetSecurePassword = new System.Security.SecureString();
-                foreach (char c in targetPassword)
-                {
-                    targetSecurePassword.AppendChar(c);
-                }
-                targetSecurePassword.MakeReadOnly();
-                
                 // Create PowerShell script to create the folder
                 var createFolderScript = @"
                 param(
-                    [string]$VCenterServer,
-                    [string]$Username,
-                    [securestring]$Password,
                     [string]$TargetDatacenterName,
                     [string]$FolderName,
                     [string]$FolderPath
@@ -1433,9 +1328,8 @@ namespace VCenterMigrationTool.ViewModels
                 try {
                     # Use existing vCenter connection managed by PersistantVcenterConnectionService
                     # Connection should already be established - verify it exists
-                    $existingConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
-                    if (-not $existingConnection -or -not $existingConnection.IsConnected) {
-                        throw ""vCenter connection to '$VCenterServer' not found or not active. Please ensure connection is established first.""
+                    if (-not $global:DefaultVIServers -or $global:DefaultVIServers.Count -eq 0) {
+                        throw ""No vCenter connections found. Please ensure connection is established first.""
                     }
                     
                     # Get target datacenter
@@ -1480,15 +1374,12 @@ namespace VCenterMigrationTool.ViewModels
                 
                 var parameters = new Dictionary<string, object>
                 {
-                    { "VCenterServer", _sharedConnectionService.TargetConnection.ServerAddress },
-                    { "Username", _sharedConnectionService.TargetConnection.Username },
-                    { "Password", targetSecurePassword },
                     { "TargetDatacenterName", targetDatacenterName },
                     { "FolderName", folderInfo.Name },
                     { "FolderPath", folderInfo.Path }
                 };
 
-                var result = await _powerShellService.RunScriptAsync(createFolderScript, parameters);
+                var result = await _persistentConnectionService.ExecuteCommandAsync(createFolderScript, true);
 
                 if (result.Contains("CREATED:"))
                 {
@@ -1561,15 +1452,8 @@ namespace VCenterMigrationTool.ViewModels
                     return false;
                 }
                 
-                var password = _credentialService.GetPassword(sourceProfile);
-                if (string.IsNullOrEmpty(password))
-                {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: No credentials available for source connection\n";
-                    return false;
-                }
-                
                 // Attempt PowerCLI reconnection
-                var reconnectSuccess = await AttemptPowerCLIReconnection(sourceProfile, password, "source");
+                var reconnectSuccess = await AttemptPowerCLIReconnection(sourceProfile, "source");
                 
                 if (reconnectSuccess)
                 {
@@ -1625,15 +1509,8 @@ namespace VCenterMigrationTool.ViewModels
                     return false;
                 }
                 
-                var password = _credentialService.GetPassword(targetProfile);
-                if (string.IsNullOrEmpty(password))
-                {
-                    ActivityLog += $"[{DateTime.Now:HH:mm:ss}] ❌ ERROR: No credentials available for target connection\n";
-                    return false;
-                }
-                
                 // Attempt PowerCLI reconnection
-                var reconnectSuccess = await AttemptPowerCLIReconnection(targetProfile, password, "target");
+                var reconnectSuccess = await AttemptPowerCLIReconnection(targetProfile, "target");
                 
                 if (reconnectSuccess)
                 {
@@ -1663,13 +1540,13 @@ namespace VCenterMigrationTool.ViewModels
         /// <summary>
         /// Attempt to reconnect using PowerCLI directly 
         /// </summary>
-        private async Task<bool> AttemptPowerCLIReconnection(VCenterConnection connectionProfile, string password, string connectionType)
+        private async Task<bool> AttemptPowerCLIReconnection(VCenterConnection connectionProfile, string connectionType)
         {
             try
             {
                 ActivityLog += $"[{DateTime.Now:HH:mm:ss}] 🔄 Attempting PowerCLI reconnection to {connectionProfile.ServerAddress}...\n";
                 
-                // Use HybridPowerShellService to attempt connection
+                // Use PersistentConnectionService to attempt connection
                 var connectionScript = $@"
                     # DO NOT DISCONNECT - Using persistent connections managed by application
                     # Existing connections should be preserved for other operations
@@ -1690,7 +1567,7 @@ namespace VCenterMigrationTool.ViewModels
                     }}
                 ";
 
-                var result = await _powerShellService.RunScriptAsync(connectionScript, new Dictionary<string, object>());
+                var result = await _persistentConnectionService.ExecuteCommandAsync(connectionScript, true);
                 
                 if (!string.IsNullOrEmpty(result) && result.Contains("SUCCESS: PowerCLI connection established"))
                 {

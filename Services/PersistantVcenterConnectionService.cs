@@ -2,7 +2,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using VCenterMigrationTool.Models;
 
@@ -442,6 +444,155 @@ public class PersistantVcenterConnectionService : IDisposable
         await Task.WhenAll(tasks);
 
         _logger.LogInformation("✅ All connections disconnected successfully");
+    }
+
+    /// <summary>
+    /// Executes a PowerShell script in the persistent connection process for the specified connection type
+    /// </summary>
+    public async Task<string> ExecuteScriptAsync(string scriptPath, Dictionary<string, object>? parameters = null, bool useSourceConnection = true)
+    {
+        var connectionKey = useSourceConnection ? "source" : "target";
+        
+        if (!_processes.TryGetValue(connectionKey, out var process))
+        {
+            throw new InvalidOperationException($"No persistent connection established for {connectionKey}. Please connect first.");
+        }
+
+        var connectionState = _connectionStateManager.GetConnectionState(connectionKey);
+        if (connectionState?.Status != Services.ConnectionStateManager.ConnectionStatus.Connected)
+        {
+            throw new InvalidOperationException($"Connection for {connectionKey} is not active. Please reconnect.");
+        }
+
+        try
+        {
+            _logger.LogInformation("Executing script {ScriptPath} in persistent {ConnectionKey} process", scriptPath, connectionKey);
+            
+            // Build script with parameters
+            var scriptContent = await File.ReadAllTextAsync(scriptPath);
+            
+            if (parameters != null && parameters.Any())
+            {
+                var parameterScript = BuildParameterScript(parameters);
+                scriptContent = parameterScript + "\n\n" + scriptContent;
+            }
+
+            var result = await _processManager.ExecuteCommandAsync(process, scriptContent, TimeSpan.FromMinutes(10));
+            _logger.LogDebug("Script execution completed for {ScriptPath}", scriptPath);
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing script {ScriptPath} in {ConnectionKey} process", scriptPath, connectionKey);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Executes a PowerShell script that requires both source and target connections (dual-vCenter operations)
+    /// </summary>
+    public async Task<string> ExecuteDualVCenterScriptAsync(string scriptPath, Dictionary<string, object>? parameters = null)
+    {
+        if (!_processes.TryGetValue("source", out var sourceProcess))
+        {
+            throw new InvalidOperationException("No persistent source connection established. Please connect first.");
+        }
+
+        if (!_processes.TryGetValue("target", out var targetProcess))
+        {
+            throw new InvalidOperationException("No persistent target connection established. Please connect first.");
+        }
+
+        var sourceState = _connectionStateManager.GetConnectionState("source");
+        var targetState = _connectionStateManager.GetConnectionState("target");
+        if (sourceState?.Status != Services.ConnectionStateManager.ConnectionStatus.Connected || 
+            targetState?.Status != Services.ConnectionStateManager.ConnectionStatus.Connected)
+        {
+            throw new InvalidOperationException("Source or target connection is not active. Please reconnect.");
+        }
+
+        try
+        {
+            _logger.LogInformation("Executing dual-vCenter script {ScriptPath}", scriptPath);
+            
+            // For dual-vCenter scripts, we need to execute in the source process but ensure both connections are available
+            // The script will use $global:DefaultVIServers to access both connections
+            var scriptContent = await File.ReadAllTextAsync(scriptPath);
+            
+            if (parameters != null && parameters.Any())
+            {
+                var parameterScript = BuildParameterScript(parameters);
+                scriptContent = parameterScript + "\n\n" + scriptContent;
+            }
+
+            // Execute in source process which should have access to both connections via shared session state
+            var result = await _processManager.ExecuteCommandAsync(sourceProcess, scriptContent, TimeSpan.FromMinutes(15));
+            _logger.LogDebug("Dual-vCenter script execution completed for {ScriptPath}", scriptPath);
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing dual-vCenter script {ScriptPath}", scriptPath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Executes a PowerShell command/script content directly in the persistent connection process
+    /// </summary>
+    public async Task<string> ExecuteCommandAsync(string command, bool useSourceConnection = true, TimeSpan? timeout = null)
+    {
+        var connectionKey = useSourceConnection ? "source" : "target";
+        
+        if (!_processes.TryGetValue(connectionKey, out var process))
+        {
+            throw new InvalidOperationException($"No persistent connection established for {connectionKey}. Please connect first.");
+        }
+
+        var connectionState = _connectionStateManager.GetConnectionState(connectionKey);
+        if (connectionState?.Status != Services.ConnectionStateManager.ConnectionStatus.Connected)
+        {
+            throw new InvalidOperationException($"Connection for {connectionKey} is not active. Please reconnect.");
+        }
+
+        try
+        {
+            _logger.LogDebug("Executing command in persistent {ConnectionKey} process", connectionKey);
+            var result = await _processManager.ExecuteCommandAsync(process, command, timeout ?? TimeSpan.FromMinutes(5));
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing command in {ConnectionKey} process", connectionKey);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Builds parameter script to set PowerShell variables
+    /// </summary>
+    private static string BuildParameterScript(Dictionary<string, object> parameters)
+    {
+        var paramScript = new StringBuilder();
+        paramScript.AppendLine("# Script parameters");
+        
+        foreach (var param in parameters)
+        {
+            var value = param.Value switch
+            {
+                string s => $"'{s.Replace("'", "''")}'",
+                bool b => b ? "$true" : "$false",
+                int i => i.ToString(),
+                double d => d.ToString("F2"),
+                _ => $"'{param.Value?.ToString()?.Replace("'", "''") ?? ""}'"
+            };
+            
+            paramScript.AppendLine($"${param.Key} = {value}");
+        }
+        
+        return paramScript.ToString();
     }
 
     /// <summary>
