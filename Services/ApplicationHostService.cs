@@ -55,8 +55,8 @@ public class ApplicationHostService : IHostedService
             // Show the window
             _navigationWindow!.ShowWindow();
 
-            // Navigate to the initial page
-            _navigationWindow.Navigate(typeof(DashboardPage));
+            // Navigate to the initial page - changed from Dashboard to VCenter Migration
+            _navigationWindow.Navigate(typeof(VCenterMigrationPage));
         }
     }
 }

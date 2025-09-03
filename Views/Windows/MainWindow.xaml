@@ -19,11 +19,122 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        
+        <!-- vCenter Connection Banner -->
+        <Border Grid.Row="1" 
+                Background="{DynamicResource ControlFillColorInputActiveBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="20,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Source vCenter Connection -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <ui:SymbolIcon Symbol="Server24" Margin="0,0,8,0"/>
+                    <TextBlock Text="Source:" 
+                              FontWeight="SemiBold"
+                              VerticalAlignment="Center"
+                              Margin="0,0,8,0"/>
+                </StackPanel>
+                
+                <ComboBox Grid.Column="1" 
+                         ItemsSource="{Binding SourceProfiles}"
+                         SelectedItem="{Binding SelectedSourceProfile}"
+                         DisplayMemberPath="Name"
+                         MinWidth="150"
+                         Margin="0,0,10,0"/>
+                
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Border Background="{Binding SourceConnectionBackgroundBrush}"
+                           BorderBrush="{Binding SourceConnectionBorderBrush}"
+                           BorderThickness="1"
+                           CornerRadius="3"
+                           Padding="8,4"
+                           Margin="0,0,8,0">
+                        <TextBlock Text="{Binding SourceConnectionStatus}"
+                                  FontSize="11"
+                                  Foreground="{Binding SourceConnectionTextBrush}"/>
+                    </Border>
+                    <ui:Button Content="Connect" 
+                              Command="{Binding ConnectSourceCommand}"
+                              IsEnabled="{Binding CanConnectSource}"
+                              Appearance="Primary"
+                              FontSize="11"
+                              Padding="12,6"
+                              Margin="0,0,4,0"/>
+                    <ui:Button Content="×" 
+                              Command="{Binding DisconnectSourceCommand}"
+                              IsEnabled="{Binding CanDisconnectSource}"
+                              Appearance="Danger"
+                              FontSize="11"
+                              Padding="8,6"/>
+                </StackPanel>
+                
+                <!-- Separator -->
+                <Border Grid.Column="3" 
+                       Width="1" 
+                       Background="{DynamicResource ControlStrokeColorSecondaryBrush}"
+                       Margin="10,4"/>
+                
+                <!-- Target vCenter Connection -->
+                <StackPanel Grid.Column="4" Orientation="Horizontal">
+                    <ui:SymbolIcon Symbol="ServerMultiple20" Margin="0,0,8,0"/>
+                    <TextBlock Text="Target:" 
+                              FontWeight="SemiBold"
+                              VerticalAlignment="Center"
+                              Margin="0,0,8,0"/>
+                </StackPanel>
+                
+                <ComboBox Grid.Column="5" 
+                         ItemsSource="{Binding TargetProfiles}"
+                         SelectedItem="{Binding SelectedTargetProfile}"
+                         DisplayMemberPath="Name"
+                         MinWidth="150"
+                         Margin="0,0,10,0"/>
+                
+                <StackPanel Grid.Column="6" Orientation="Horizontal">
+                    <Border Background="{Binding TargetConnectionBackgroundBrush}"
+                           BorderBrush="{Binding TargetConnectionBorderBrush}"
+                           BorderThickness="1"
+                           CornerRadius="3"
+                           Padding="8,4"
+                           Margin="0,0,8,0">
+                        <TextBlock Text="{Binding TargetConnectionStatus}"
+                                  FontSize="11"
+                                  Foreground="{Binding TargetConnectionTextBrush}"/>
+                    </Border>
+                    <ui:Button Content="Connect" 
+                              Command="{Binding ConnectTargetCommand}"
+                              IsEnabled="{Binding CanConnectTarget}"
+                              Appearance="Primary"
+                              FontSize="11"
+                              Padding="12,6"
+                              Margin="0,0,4,0"/>
+                    <ui:Button Content="×" 
+                              Command="{Binding DisconnectTargetCommand}"
+                              IsEnabled="{Binding CanDisconnectTarget}"
+                              Appearance="Danger"
+                              FontSize="11"
+                              Padding="8,6"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
         <ui:NavigationView helpers:WindowScrollBehavior.EnableGlobalScroll="True"
                            x:Name="RootNavigation"
-                           Grid.Row="1"
+                           Grid.Row="2"
                            MenuItemsSource="{Binding NavigationItems, Mode=OneWay}"
                            FooterMenuItemsSource="{Binding NavigationFooter, Mode=OneWay}"
                            IsBackButtonVisible="Visible"

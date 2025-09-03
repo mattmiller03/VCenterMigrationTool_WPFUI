@@ -184,8 +184,6 @@ public partial class App
             services.AddSingleton<MainWindowViewModel>();
 
             // Standard Pages and ViewModels
-            services.AddSingleton<DashboardPage>();
-            services.AddSingleton<DashboardViewModel>();
             services.AddSingleton<VCenterMigrationPage>();
             services.AddSingleton<VCenterMigrationViewModel>();
             services.AddTransient<EsxiHostsViewModel>();
