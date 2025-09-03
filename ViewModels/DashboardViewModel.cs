@@ -17,6 +17,11 @@ namespace VCenterMigrationTool.ViewModels;
 
 public partial class DashboardViewModel : ObservableObject, INavigationAware
     {
+    // Phase 3: Unified Services (New Architecture)
+    private readonly UnifiedPowerShellService _unifiedPowerShellService;
+    private readonly UnifiedConnectionService _unifiedConnectionService;
+    
+    // Legacy services (for backward compatibility during migration)
     private readonly HybridPowerShellService _powerShellService;
     private readonly PersistantVcenterConnectionService _persistentConnectionService;
     private readonly VSphereApiService _vSphereApiService;
@@ -165,6 +170,11 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
     }
 
     public DashboardViewModel (
+        // Phase 3: Unified Services (New Architecture)
+        UnifiedPowerShellService unifiedPowerShellService,
+        UnifiedConnectionService unifiedConnectionService,
+        
+        // Legacy services (for backward compatibility during migration)
         HybridPowerShellService powerShellService,
         PersistantVcenterConnectionService persistentConnectionService,
         VSphereApiService vSphereApiService,
@@ -176,6 +186,11 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         IDialogService dialogService,
         ILogger<DashboardViewModel> logger)
         {
+        // Initialize unified services first
+        _unifiedPowerShellService = unifiedPowerShellService;
+        _unifiedConnectionService = unifiedConnectionService;
+        
+        // Initialize legacy services for backward compatibility
         _powerShellService = powerShellService;
         _persistentConnectionService = persistentConnectionService;
         _vSphereApiService = vSphereApiService;
@@ -188,6 +203,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         _logger = logger;
 
         Profiles = _profileService.Profiles;
+        
+        _logger.LogInformation("✅ DashboardViewModel initialized with unified services architecture");
         }
 
     public async Task OnNavigatedToAsync ()
@@ -280,44 +297,66 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         {
         try
             {
-            // Check source connection
-            var sourceConnected = await _persistentConnectionService.IsConnectedAsync("source");
-            if (sourceConnected)
+            _logger.LogDebug("🔍 Checking connection status using unified services...");
+            
+            // Check source connection using unified service
+            var sourceConnected = await _unifiedConnectionService.IsConnectedAsync("source");
+            var sourceContext = _unifiedConnectionService.GetConnectionContext("source");
+            
+            if (sourceConnected && sourceContext != null)
                 {
-                var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("source");
-                if (isConnected && _sharedConnectionService.SourceConnection != null)
-                    {
-                    IsSourceConnected = true;
-                    SourceConnectionStatus = $"✅ Connected - {_sharedConnectionService.SourceConnection.ServerAddress} (v{version})";
-                    SourceConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
-                    }
+                IsSourceConnected = true;
+                SourceConnectionStatus = $"✅ Connected - {sourceContext.ConnectionInfo.ServerAddress} (v{sourceContext.VCenterVersion})";
+                SourceConnectionDetails = $"Session: {sourceContext.SessionId}\nVersion: {sourceContext.VCenterVersion}\n" +
+                                        $"Build: {sourceContext.VCenterBuild}\nProduct: {sourceContext.ProductLine}\n" +
+                                        $"Connected: {sourceContext.ConnectedAt:yyyy-MM-dd HH:mm:ss}\n" +
+                                        $"Last Activity: {sourceContext.LastActivityAt:yyyy-MM-dd HH:mm:ss}";
+                
+                // Update shared connection service for backward compatibility
+                _sharedConnectionService.SourceConnection = sourceContext.ConnectionInfo;
                 }
-            else if (_sharedConnectionService.SourceConnection != null)
+            else
                 {
-                // Connection was lost
                 IsSourceConnected = false;
-                SourceConnectionStatus = "⚠️ Connection lost - reconnect required";
+                SourceConnectionStatus = sourceContext?.Status.ToString() switch
+                {
+                    "Connecting" => "🔄 Connecting...",
+                    "Reconnecting" => "🔄 Reconnecting...", 
+                    "Failed" => $"❌ Connection failed: {sourceContext.LastError}",
+                    "Timeout" => "⏰ Connection timeout",
+                    _ => "⭕ Connection not active"
+                };
                 SourceConnectionDetails = "";
                 _sharedConnectionService.SourceConnection = null;
                 }
 
-            // Check target connection
-            var targetConnected = await _persistentConnectionService.IsConnectedAsync("target");
-            if (targetConnected)
+            // Check target connection using unified service  
+            var targetConnected = await _unifiedConnectionService.IsConnectedAsync("target");
+            var targetContext = _unifiedConnectionService.GetConnectionContext("target");
+            
+            if (targetConnected && targetContext != null)
                 {
-                var (isConnected, sessionId, version) = _persistentConnectionService.GetConnectionInfo("target");
-                if (isConnected && _sharedConnectionService.TargetConnection != null)
-                    {
-                    IsTargetConnected = true;
-                    TargetConnectionStatus = $"✅ Connected - {_sharedConnectionService.TargetConnection.ServerAddress} (v{version})";
-                    TargetConnectionDetails = $"Session: {sessionId}\nVersion: {version}";
-                    }
+                IsTargetConnected = true;
+                TargetConnectionStatus = $"✅ Connected - {targetContext.ConnectionInfo.ServerAddress} (v{targetContext.VCenterVersion})";
+                TargetConnectionDetails = $"Session: {targetContext.SessionId}\nVersion: {targetContext.VCenterVersion}\n" +
+                                        $"Build: {targetContext.VCenterBuild}\nProduct: {targetContext.ProductLine}\n" +
+                                        $"Connected: {targetContext.ConnectedAt:yyyy-MM-dd HH:mm:ss}\n" +
+                                        $"Last Activity: {targetContext.LastActivityAt:yyyy-MM-dd HH:mm:ss}";
+                
+                // Update shared connection service for backward compatibility
+                _sharedConnectionService.TargetConnection = targetContext.ConnectionInfo;
                 }
-            else if (_sharedConnectionService.TargetConnection != null)
+            else
                 {
-                // Connection was lost
                 IsTargetConnected = false;
-                TargetConnectionStatus = "⚠️ Connection lost - reconnect required";
+                TargetConnectionStatus = targetContext?.Status.ToString() switch
+                {
+                    "Connecting" => "🔄 Connecting...",
+                    "Reconnecting" => "🔄 Reconnecting...",
+                    "Failed" => $"❌ Connection failed: {targetContext.LastError}",
+                    "Timeout" => "⏰ Connection timeout", 
+                    _ => "⭕ Connection not active"
+                };
                 TargetConnectionDetails = "";
                 _sharedConnectionService.TargetConnection = null;
                 }
@@ -344,11 +383,9 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         ScriptOutput = string.Empty;
         LogMessage($"Initiating source connection to {SelectedSourceProfile.ServerAddress}", "INFO");
 
-        _logger.LogInformation("=== ESTABLISHING PERSISTENT SOURCE CONNECTION ===");
+        _logger.LogInformation("=== ESTABLISHING SOURCE CONNECTION (UNIFIED SERVICES) ===");
         _logger.LogInformation("Selected Source Profile: {Server} | User: {Username}", 
             SelectedSourceProfile.ServerAddress, SelectedSourceProfile.Username);
-        _logger.LogInformation("PowerCLI Bypass Status: {PowerCliStatus}", 
-            HybridPowerShellService.PowerCliConfirmedInstalled);
 
         // Step 1: Get credentials
         SourceConnectionStatus = "🔐 Retrieving credentials...";
@@ -388,208 +425,85 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
 
         try
             {
-            // Step 2: Establish PowerShell connection
-            _logger.LogInformation("STEP 2: Starting persistent connection to {Server}", 
+            // Step 2: Establish unified connection 
+            _logger.LogInformation("STEP 2: Establishing unified connection to {Server}", 
                 SelectedSourceProfile.ServerAddress);
             SourceConnectionStatus = $"🔗 Connecting to {SelectedSourceProfile.ServerAddress}...";
             await Task.Delay(100); // Allow UI to update
 
-            _logger.LogInformation("STEP 2: Using VSphereApiService for simple connection validation");
-            
-            // Create connection info for VSphere API
-            var connectionInfo = new VCenterConnectionInfo
-            {
-                ServerAddress = SelectedSourceProfile.ServerAddress,
-                Username = SelectedSourceProfile.Username
-            };
-            
-            // Test connection using VSphere API first
-            var (apiSuccess, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
-            string apiMessage = apiSuccess ? "Connection successful via VSphere API" : sessionToken; // Use actual error message from service
-            string apiSessionId = apiSuccess ? sessionToken : null;
-            
-            _logger.LogInformation("STEP 2A: VSphereApiService returned - Success: {Success} | Message: {Message} | HasSessionToken: {HasToken}", 
-                apiSuccess, apiMessage, !string.IsNullOrEmpty(sessionToken));
-            
-            // Show API connection result before proceeding to PowerCLI
-            SourceConnectionStatus = $"API Connection: {(apiSuccess ? "✅ Success" : "❌ Failed")} - Now attempting PowerCLI...";
-            await Task.Delay(1000); // Give user time to see API result
+            // Use unified connection service for streamlined connection
+            var (success, message, sessionId) = await _unifiedConnectionService.ConnectAsync(
+                SelectedSourceProfile, finalPassword, isSource: true, bypassModuleCheck: false);
 
-            // Always establish PowerCLI connection alongside API for admin operations
-            // This ensures admin configuration functionality works regardless of API SSL issues
-            bool powerCLISuccess = false;
-            string powerCLISessionId = null;
-            
-            _logger.LogInformation("STEP 2B: Establishing PowerCLI connection for admin operations alongside API");
-            SourceConnectionStatus = $"🔗 Attempting PowerCLI connection to {SelectedSourceProfile.ServerAddress}...";
-            await Task.Delay(500); // Allow UI to update and be visible
-
-            try
-            {
-                // Establish persistent PowerCLI connection using PersistantVcenterConnectionService
-                _logger.LogInformation("STEP 2B: Establishing persistent PowerCLI connection for admin operations");
-                
-                // First try with PowerCLI modules (bypassModuleCheck: false)
-                var (pcliSuccess, pcliMessage, pcliSessionId) = await _persistentConnectionService.ConnectAsync(
-                    SelectedSourceProfile, finalPassword, isSource: true, bypassModuleCheck: false);
-                
-                // If PowerCLI import fails, try bypass mode for basic PowerShell functionality
-                if (!pcliSuccess && pcliMessage.Contains("Failed to load PowerCLI modules"))
+            if (success)
                 {
-                    _logger.LogWarning("PowerCLI import failed, attempting bypass mode for basic PowerShell functionality");
-                    var (bypassSuccess, bypassMessage, bypassSessionId) = await _persistentConnectionService.ConnectAsync(
-                        SelectedSourceProfile, finalPassword, isSource: true, bypassModuleCheck: true);
-                    
-                    pcliSuccess = bypassSuccess;
-                    pcliMessage = bypassSuccess ? "Connected in PowerShell bypass mode (limited functionality)" : bypassMessage;
-                    pcliSessionId = bypassSessionId;
-                }
+                _logger.LogInformation("✅ Source connection established successfully: {Message}", message);
                 
-                powerCLISuccess = pcliSuccess;
-                powerCLISessionId = pcliSessionId;
-                
-                if (pcliSuccess)
-                {
-                    _logger.LogInformation("STEP 2B: Persistent PowerCLI connection established - SessionId: {SessionId}", pcliSessionId);
-                    
-                    // Allow PowerShell process to stabilize after connection before testing
-                    _logger.LogDebug("STEP 2B: Allowing PowerShell process to stabilize...");
-                    await Task.Delay(2000); // 2 second stabilization delay
-                    
-                    try
-                    {
-                        // Test the connection with a simple, safe command
-                        var testResult = await _persistentConnectionService.ExecuteCommandAsync("source", 
-                            "if ($global:DefaultVIServers -and $global:DefaultVIServers.Count -gt 0) { $global:DefaultVIServers[0] | Select-Object Name, IsConnected | ConvertTo-Json } else { 'No connections found' }");
-                        
-                        if (!string.IsNullOrEmpty(testResult) && !testResult.Contains("ERROR"))
-                        {
-                            _logger.LogInformation("STEP 2B: Connection test successful: {Result}", testResult.Trim());
-                        }
-                        else
-                        {
-                            _logger.LogWarning("STEP 2B: Connection test returned unexpected result: {Result}", testResult);
-                        }
-                    }
-                    catch (Exception testEx)
-                    {
-                        _logger.LogWarning(testEx, "STEP 2B: Connection test failed, but connection may still be functional");
-                        // Don't fail the entire process if just the test fails
-                    }
-                }
-                else
-                {
-                    _logger.LogError("STEP 2B: Persistent PowerCLI connection failed: {Message}", pcliMessage);
-                }
-            }
-            catch (Exception pcliEx)
-            {
-                _logger.LogError(pcliEx, "STEP 2B: Exception during PowerCLI connection");
-            }
-
-            // Update status to show PowerCLI result for source
-            SourceConnectionStatus = $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success" : "❌ Failed")} - Finalizing setup...";
-            await Task.Delay(500); // Allow user to see PowerCLI result
-
-            // Evaluate overall connection success - need at least one working connection
-            bool overallSuccess = apiSuccess || powerCLISuccess;
-            
-            if (overallSuccess)
-                {
-                _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service (API: {ApiStatus}, PowerCLI: {PowerCLIStatus})", 
-                    apiSuccess, powerCLISuccess);
-                
-                // Step 3: Set connection status for both API and PowerCLI
-                _sharedConnectionService.SourceConnection = SelectedSourceProfile;
-                _sharedConnectionService.SourceApiConnected = apiSuccess;
-                _sharedConnectionService.SourceUsingPowerCLI = powerCLISuccess;
-                _sharedConnectionService.SourcePowerCLISessionId = powerCLISuccess ? powerCLISessionId : null;
-
-                string version = "Unknown";
-                
-                if (powerCLISuccess)
-                {
-                    // Get version from persistent connection
-                    try 
-                    {
-                        var versionResult = await _persistentConnectionService.ExecuteCommandAsync("source", 
-                            "$global:DefaultVIServers | Select-Object -First 1 | Select-Object -ExpandProperty Version");
-                        if (!string.IsNullOrEmpty(versionResult))
-                        {
-                            version = versionResult.Trim();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Could not get vCenter version from PowerCLI connection");
-                    }
-                    
-                    _logger.LogInformation("STEP 3: PowerCLI connection active - Version: {Version}", version);
-                }
-                else if (apiSuccess)
-                {
-                    // Get basic vCenter info using API
-                    _logger.LogInformation("STEP 3: Getting vCenter version info via API");
-                    var (isConnected, apiVersion, build) = await _vSphereApiService.GetConnectionStatusAsync(connectionInfo, finalPassword);
-                    version = isConnected ? apiVersion : "Unknown";
-                    _logger.LogInformation("STEP 3: vCenter info retrieved - Version: {Version}", version);
-                }
-
+                // Update connection state
                 IsSourceConnected = true;
+                SourceConnectionStatus = $"✅ Connected to {SelectedSourceProfile.ServerAddress}";
                 
-                // Create connection status that reflects both connections
-                string connectionTypes = "";
-                if (apiSuccess && powerCLISuccess) connectionTypes = "API+PowerCLI";
-                else if (powerCLISuccess) connectionTypes = "PowerCLI";
-                else if (apiSuccess) connectionTypes = "API";
+                // Update shared connection service for backward compatibility
+                _sharedConnectionService.SourceConnection = SelectedSourceProfile;
                 
-                SourceConnectionStatus = $"✅ Connected - {SelectedSourceProfile.ServerAddress} (v{version})";
-                SourceConnectionDetails = $"API Connection: {(apiSuccess ? "Active" : "Failed")}\n" +
-                                        $"PowerCLI Connection: {(powerCLISuccess ? "Active" : "Failed")}\n" +
-                                        $"Version: {version}";
-                
-                ScriptOutput = $"Dual connection established to {SelectedSourceProfile.ServerAddress}!\n\n" +
-                              $"API Connection: {(apiSuccess ? "✅ Success" : "❌ Failed")}\n" +
-                              $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success (SSL bypassed)" : "❌ Failed")}\n" +
+                // Log success and update UI
+                LogMessage($"✅ Source connection established - {SelectedSourceProfile.ServerAddress} (Session: {sessionId})", "SUCCESS");
+                ScriptOutput = $"✅ Connection Success!\n" +
                               $"Server: {SelectedSourceProfile.ServerAddress}\n" +
-                              $"Version: {version}\n\n" +
-                              $"Connection capabilities:\n" +
-                              $"• Standard operations: {(apiSuccess ? "API + PowerCLI fallback" : "PowerCLI only")}\n" +
-                              $"• Admin configuration: {(powerCLISuccess ? "Available" : "Not available")}\n\n" +
-                              $"Use 'Disconnect' button to close the connection.";
+                              $"Session ID: {sessionId}\n" +
+                              $"Message: {message}\n" +
+                              $"Connected at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
 
-                _logger.LogInformation("✅ Source vCenter dual connection established successfully - API: {ApiStatus}, PowerCLI: {PowerCLIStatus}, Version: {Version}", 
-                    apiSuccess, powerCLISuccess, version);
-                LogMessage($"✅ Source connection successful: {SelectedSourceProfile.ServerAddress} ({connectionTypes})", "INFO");
-
-                // Update inventory summary
-                _logger.LogInformation("STEP 3: Starting inventory summary update task");
-                _ = Task.Run(UpdateInventorySummaries);
-
-                // Notify property changes
-                OnPropertyChanged(nameof(IsSourceDisconnected));
-                OnPropertyChanged(nameof(CanConnectSource));
+                // Load initial inventory summary
+                await Task.Run(() => UpdateInventorySummaries());
                 }
             else
                 {
-                _logger.LogError("STEP 2: Both connections FAILED - API: {ApiSuccess}, PowerCLI: {PowerCLISuccess}", 
-                    apiSuccess, powerCLISuccess);
+                _logger.LogError("❌ Source connection failed: {Message}", message);
                 
-                string failureMessage = $"API: {(apiSuccess ? "Success" : apiMessage)} | PowerCLI: {(powerCLISuccess ? "Success" : "Failed")}";
-                
-                LogMessage($"❌ Source connection failed: {failureMessage}", "ERROR");
+                // Update connection state
                 IsSourceConnected = false;
-                SourceConnectionStatus = $"❌ Connection failed - both API and PowerCLI failed";
-                SourceConnectionDetails = $"API Connection: {(apiSuccess ? "Success" : "Failed")}\n" +
-                                        $"PowerCLI Connection: {(powerCLISuccess ? "Success" : "Failed")}\n" +
-                                        $"Details: {failureMessage}";
-                ScriptOutput = $"Connection failed to {SelectedSourceProfile.ServerAddress}:\n\n" +
-                              $"API Connection: {(apiSuccess ? "✅ Success" : $"❌ Failed - {apiMessage}")}\n" +
-                              $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success" : "❌ Failed")}\n\n" +
-                              $"At least one connection method must succeed to proceed.";
-                _sharedConnectionService.SourceConnection = null;
+                SourceConnectionStatus = $"❌ Connection failed: {message}";
+                
+                // Log failure and update UI
+                LogMessage($"❌ Source connection failed: {message}", "ERROR");
+                ScriptOutput = $"❌ Connection Failed!\n" +
+                              $"Server: {SelectedSourceProfile.ServerAddress}\n" +
+                              $"Error: {message}\n" +
+                              $"Failed at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+                }
+                
+                if (success)
+                {
+                    _logger.LogInformation("Source connection established successfully using UnifiedConnectionService - SessionId: {SessionId}", sessionId);
+                
+                    IsSourceConnected = true;
+                    
+                    // Get version information from the connection context
+                    var context = _unifiedConnectionService.GetConnectionContext(sessionId);
+                    string version = context?.CachedInventory?.VCenterVersion ?? "Unknown";
+                    
+                    SourceConnectionStatus = $"✅ Connected - {SelectedSourceProfile.ServerAddress}";
+                    SourceConnectionDetails = $"Connection: Active (Session: {sessionId})\n" +
+                                            $"Server: {SelectedSourceProfile.ServerAddress}\n" +
+                                            $"Version: {version}";
+                    
+                    ScriptOutput = $"✅ Connection established to {SelectedSourceProfile.ServerAddress}!\n\n" +
+                                  $"Server: {SelectedSourceProfile.ServerAddress}\n" +
+                                  $"Session ID: {sessionId}\n" +
+                                  $"Version: {version}\n\n" +
+                                  $"Connection is ready for operations.\n" +
+                                  $"Use 'Disconnect' button to close the connection.";
 
-                _logger.LogError("❌ Failed to establish any persistent connection");
+                    _logger.LogInformation("✅ Source vCenter connection established successfully - Version: {Version}", version);
+                    LogMessage($"✅ Source connection successful: {SelectedSourceProfile.ServerAddress}", "INFO");
+
+                    // Update inventory summary in background
+                    _ = Task.Run(UpdateInventorySummaries);
+
+                    // Notify property changes
+                    OnPropertyChanged(nameof(IsSourceDisconnected));
+                    OnPropertyChanged(nameof(CanConnectSource));
                 }
             }
         catch (Exception ex)
@@ -617,8 +531,8 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         }
 
     [RelayCommand]
-    private async Task OnConnectTarget ()
-        {
+    private async Task OnConnectTarget()
+    {
         if (SelectedTargetProfile is null) return;
 
         IsJobRunning = true;
@@ -626,24 +540,21 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
         ScriptOutput = string.Empty;
         LogMessage($"Initiating target connection to {SelectedTargetProfile.ServerAddress}", "INFO");
 
-        _logger.LogInformation("=== ESTABLISHING PERSISTENT TARGET CONNECTION ===");
+        _logger.LogInformation("=== ESTABLISHING TARGET CONNECTION ===");
         _logger.LogInformation("Selected Target Profile: {Server} | User: {Username}", 
             SelectedTargetProfile.ServerAddress, SelectedTargetProfile.Username);
-        _logger.LogInformation("PowerCLI Bypass Status: {PowerCliStatus}", 
-            HybridPowerShellService.PowerCliConfirmedInstalled);
 
-        // Step 1: Get credentials
+        // Get credentials
         TargetConnectionStatus = "🔐 Retrieving credentials...";
-        await Task.Delay(100); // Allow UI to update
+        await Task.Delay(100);
 
-        _logger.LogInformation("STEP 1: Retrieving stored credentials for profile: {ProfileName}", 
-            SelectedTargetProfile.Name);
+        _logger.LogInformation("Retrieving stored credentials for profile: {ProfileName}", SelectedTargetProfile.Name);
         string? password = _credentialService.GetPassword(SelectedTargetProfile);
         string finalPassword;
 
         if (string.IsNullOrEmpty(password))
-            {
-            _logger.LogInformation("STEP 1: No stored credentials found - prompting user for password");
+        {
+            _logger.LogInformation("No stored credentials found - prompting user for password");
             TargetConnectionStatus = "🔑 Password required - please enter credentials";
             var (dialogResult, promptedPassword) = _dialogService.ShowPasswordDialog(
                 "Password Required",
@@ -651,251 +562,95 @@ public partial class DashboardViewModel : ObservableObject, INavigationAware
             );
 
             if (dialogResult != true || string.IsNullOrEmpty(promptedPassword))
-                {
-                _logger.LogWarning("STEP 1: User cancelled password prompt");
+            {
+                _logger.LogWarning("User cancelled password prompt");
                 TargetConnectionStatus = "❌ Connection cancelled by user";
                 IsJobRunning = false;
                 return;
-                }
+            }
 
-            _logger.LogInformation("STEP 1: User provided password successfully");
+            _logger.LogInformation("User provided password successfully");
             finalPassword = promptedPassword;
-            }
+        }
         else
-            {
-            _logger.LogInformation("STEP 1: Using stored credentials");
+        {
+            _logger.LogInformation("Using stored credentials");
             finalPassword = password;
-            }
+        }
 
         try
-            {
-            // Step 2: Establish connection using VSphere API
-            _logger.LogInformation("STEP 2: Starting target connection to {Server}", 
-                SelectedTargetProfile.ServerAddress);
+        {
+            // Use unified connection service for target connection
             TargetConnectionStatus = $"🔗 Connecting to {SelectedTargetProfile.ServerAddress}...";
-            await Task.Delay(100); // Allow UI to update
-
-            _logger.LogInformation("STEP 2: Using VSphereApiService for simple connection validation");
+            await Task.Delay(100);
             
-            // Create connection info for VSphere API
-            var connectionInfo = new VCenterConnectionInfo
+            _logger.LogInformation("Establishing target connection using UnifiedConnectionService");
+            
+            var (success, message, sessionId) = await _unifiedConnectionService.ConnectAsync(
+                SelectedTargetProfile, finalPassword, isSource: false, bypassModuleCheck: false);
+            
+            if (!success)
             {
-                ServerAddress = SelectedTargetProfile.ServerAddress,
-                Username = SelectedTargetProfile.Username
-            };
-            
-            // Test connection using VSphere API first
-            var (apiSuccess, sessionToken) = await _vSphereApiService.AuthenticateAsync(connectionInfo, finalPassword);
-            string apiMessage = apiSuccess ? "Connection successful via VSphere API" : sessionToken; // Use actual error message from service
-            string apiSessionId = apiSuccess ? sessionToken : null;
-            
-            _logger.LogInformation("STEP 2A: VSphereApiService returned - Success: {Success} | Message: {Message} | HasSessionToken: {HasToken}", 
-                apiSuccess, apiMessage, !string.IsNullOrEmpty(sessionToken));
-            
-            // Show API connection result before proceeding to PowerCLI
-            TargetConnectionStatus = $"API Connection: {(apiSuccess ? "✅ Success" : "❌ Failed")} - Now attempting PowerCLI...";
-            await Task.Delay(1000); // Give user time to see API result
-
-            // Always establish PowerCLI connection alongside API for admin operations
-            // This ensures admin configuration functionality works regardless of API SSL issues
-            bool powerCLISuccess = false;
-            string powerCLISessionId = null;
-            
-            _logger.LogInformation("STEP 2B: Establishing PowerCLI connection for admin operations alongside API");
-            TargetConnectionStatus = $"🔗 Attempting PowerCLI connection to {SelectedTargetProfile.ServerAddress}...";
-            await Task.Delay(500); // Allow UI to update and be visible
-
-            try
-            {
-                // Establish persistent PowerCLI connection using PersistantVcenterConnectionService
-                _logger.LogInformation("STEP 2B: Establishing persistent PowerCLI connection for admin operations");
+                _logger.LogError("Target connection failed: {Message}", message);
+                IsTargetConnected = false;
+                TargetConnectionStatus = "❌ Connection failed";
+                TargetConnectionDetails = "";
                 
-                // First try with PowerCLI modules (bypassModuleCheck: false)
-                var (pcliSuccess, pcliMessage, pcliSessionId) = await _persistentConnectionService.ConnectAsync(
-                    SelectedTargetProfile, finalPassword, isSource: false, bypassModuleCheck: false);
-                
-                // If PowerCLI import fails, try bypass mode for basic PowerShell functionality
-                if (!pcliSuccess && pcliMessage.Contains("Failed to load PowerCLI modules"))
-                {
-                    _logger.LogWarning("PowerCLI import failed for target, attempting bypass mode for basic PowerShell functionality");
-                    var (bypassSuccess, bypassMessage, bypassSessionId) = await _persistentConnectionService.ConnectAsync(
-                        SelectedTargetProfile, finalPassword, isSource: false, bypassModuleCheck: true);
-                    
-                    pcliSuccess = bypassSuccess;
-                    pcliMessage = bypassSuccess ? "Connected in PowerShell bypass mode (limited functionality)" : bypassMessage;
-                    pcliSessionId = bypassSessionId;
-                }
-                
-                powerCLISuccess = pcliSuccess;
-                powerCLISessionId = pcliSessionId;
-                
-                if (pcliSuccess)
-                {
-                    _logger.LogInformation("STEP 2B: Persistent PowerCLI connection established - SessionId: {SessionId}", pcliSessionId);
-                    
-                    // Allow PowerShell process to stabilize after connection before testing
-                    _logger.LogDebug("STEP 2B: Allowing target PowerShell process to stabilize...");
-                    await Task.Delay(2000); // 2 second stabilization delay
-                    
-                    try
-                    {
-                        // Test the connection with a simple, safe command
-                        var testResult = await _persistentConnectionService.ExecuteCommandAsync("target", 
-                            "if ($global:DefaultVIServers -and $global:DefaultVIServers.Count -gt 0) { $global:DefaultVIServers[0] | Select-Object Name, IsConnected | ConvertTo-Json } else { 'No connections found' }");
-                        
-                        if (!string.IsNullOrEmpty(testResult) && !testResult.Contains("ERROR"))
-                        {
-                            _logger.LogInformation("STEP 2B: Target connection test successful: {Result}", testResult.Trim());
-                        }
-                        else
-                        {
-                            _logger.LogWarning("STEP 2B: Target connection test returned unexpected result: {Result}", testResult);
-                        }
-                    }
-                    catch (Exception testEx)
-                    {
-                        _logger.LogWarning(testEx, "STEP 2B: Target connection test failed, but connection may still be functional");
-                        // Don't fail the entire process if just the test fails
-                    }
-                }
-                else
-                {
-                    _logger.LogError("STEP 2B: Persistent PowerCLI connection failed: {Message}", pcliMessage);
-                }
+                ScriptOutput = $"❌ Connection Failed!\n" +
+                              $"Server: {SelectedTargetProfile.ServerAddress}\n" +
+                              $"Error: {message}\n" +
+                              $"Failed at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
             }
-            catch (Exception pcliEx)
-            {
-                _logger.LogError(pcliEx, "STEP 2B: Exception during PowerCLI connection");
-            }
-
-            // Update status to show PowerCLI result for target
-            TargetConnectionStatus = $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success" : "❌ Failed")} - Finalizing setup...";
-            await Task.Delay(500); // Allow user to see PowerCLI result
-
-            // Evaluate overall connection success - need at least one working connection
-            bool overallSuccess = apiSuccess || powerCLISuccess;
             
-            if (overallSuccess)
-                {
-                _logger.LogInformation("STEP 3: Connection successful - setting up shared connection service (API: {ApiStatus}, PowerCLI: {PowerCLIStatus})", 
-                    apiSuccess, powerCLISuccess);
-                
-                // Step 3: Set connection status for both API and PowerCLI
-                _sharedConnectionService.TargetConnection = SelectedTargetProfile;
-                _sharedConnectionService.TargetApiConnected = apiSuccess;
-                _sharedConnectionService.TargetUsingPowerCLI = powerCLISuccess;
-                _sharedConnectionService.TargetPowerCLISessionId = powerCLISuccess ? powerCLISessionId : null;
-
-                string version = "Unknown";
-                
-                if (powerCLISuccess)
-                {
-                    // Get version from persistent connection
-                    try 
-                    {
-                        var versionResult = await _persistentConnectionService.ExecuteCommandAsync("target", 
-                            "$global:DefaultVIServers | Select-Object -First 1 | Select-Object -ExpandProperty Version");
-                        if (!string.IsNullOrEmpty(versionResult))
-                        {
-                            version = versionResult.Trim();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Could not get vCenter version from PowerCLI connection");
-                    }
-                    
-                    _logger.LogInformation("STEP 3: PowerCLI connection active - Version: {Version}", version);
-                }
-                else if (apiSuccess)
-                {
-                    // Get basic vCenter info using API
-                    _logger.LogInformation("STEP 3: Getting vCenter version info via API");
-                    var (isConnected, apiVersion, build) = await _vSphereApiService.GetConnectionStatusAsync(connectionInfo, finalPassword);
-                    version = isConnected ? apiVersion : "Unknown";
-                    _logger.LogInformation("STEP 3: vCenter info retrieved - Version: {Version}", version);
-                }
-
+            if (success)
+            {
+                _logger.LogInformation("Target connection established successfully using UnifiedConnectionService - SessionId: {SessionId}", sessionId);
+            
                 IsTargetConnected = true;
                 
-                // Create connection status that reflects both connections
-                string connectionTypes = "";
-                if (apiSuccess && powerCLISuccess) connectionTypes = "API+PowerCLI";
-                else if (powerCLISuccess) connectionTypes = "PowerCLI";
-                else if (apiSuccess) connectionTypes = "API";
+                // Get version information from the connection context
+                var context = _unifiedConnectionService.GetConnectionContext(sessionId);
+                string version = context?.CachedInventory?.VCenterVersion ?? "Unknown";
                 
-                TargetConnectionStatus = $"✅ Connected - {SelectedTargetProfile.ServerAddress} (v{version})";
-                TargetConnectionDetails = $"API Connection: {(apiSuccess ? "Active" : "Failed")}\n" +
-                                        $"PowerCLI Connection: {(powerCLISuccess ? "Active" : "Failed")}\n" +
+                TargetConnectionStatus = $"✅ Connected - {SelectedTargetProfile.ServerAddress}";
+                TargetConnectionDetails = $"Connection: Active (Session: {sessionId})\n" +
+                                        $"Server: {SelectedTargetProfile.ServerAddress}\n" +
                                         $"Version: {version}";
                 
-                ScriptOutput = $"Dual connection established to {SelectedTargetProfile.ServerAddress}!\n\n" +
-                              $"API Connection: {(apiSuccess ? "✅ Success" : "❌ Failed")}\n" +
-                              $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success (SSL bypassed)" : "❌ Failed")}\n" +
+                ScriptOutput = $"✅ Connection established to {SelectedTargetProfile.ServerAddress}!\n\n" +
                               $"Server: {SelectedTargetProfile.ServerAddress}\n" +
+                              $"Session ID: {sessionId}\n" +
                               $"Version: {version}\n\n" +
-                              $"Connection capabilities:\n" +
-                              $"• Standard operations: {(apiSuccess ? "API + PowerCLI fallback" : "PowerCLI only")}\n" +
-                              $"• Admin configuration: {(powerCLISuccess ? "Available" : "Not available")}\n\n" +
+                              $"Connection is ready for operations.\n" +
                               $"Use 'Disconnect' button to close the connection.";
 
-                _logger.LogInformation("✅ Target vCenter dual connection established successfully - API: {ApiStatus}, PowerCLI: {PowerCLIStatus}, Version: {Version}", 
-                    apiSuccess, powerCLISuccess, version);
-                LogMessage($"✅ Target connection successful: {SelectedTargetProfile.ServerAddress} ({connectionTypes})", "INFO");
+                _logger.LogInformation("✅ Target vCenter connection established successfully - Version: {Version}", version);
+                LogMessage($"✅ Target connection successful: {SelectedTargetProfile.ServerAddress}", "INFO");
 
-                // Update inventory summary
-                _logger.LogInformation("STEP 3: Starting inventory summary update task");
+                // Update inventory summary in background
                 _ = Task.Run(UpdateInventorySummaries);
 
                 // Notify property changes
                 OnPropertyChanged(nameof(IsTargetDisconnected));
                 OnPropertyChanged(nameof(CanConnectTarget));
-                }
-            else
-                {
-                _logger.LogError("STEP 2: Both connections FAILED - API: {ApiSuccess}, PowerCLI: {PowerCLISuccess}", 
-                    apiSuccess, powerCLISuccess);
-                
-                string failureMessage = $"API: {(apiSuccess ? "Success" : apiMessage)} | PowerCLI: {(powerCLISuccess ? "Success" : "Failed")}";
-                
-                LogMessage($"❌ Target connection failed: {failureMessage}", "ERROR");
-                IsTargetConnected = false;
-                TargetConnectionStatus = $"❌ Connection failed - both API and PowerCLI failed";
-                TargetConnectionDetails = $"API Connection: {(apiSuccess ? "Success" : "Failed")}\n" +
-                                        $"PowerCLI Connection: {(powerCLISuccess ? "Success" : "Failed")}\n" +
-                                        $"Details: {failureMessage}";
-                ScriptOutput = $"Connection failed to {SelectedTargetProfile.ServerAddress}:\n\n" +
-                              $"API Connection: {(apiSuccess ? "✅ Success" : $"❌ Failed - {apiMessage}")}\n" +
-                              $"PowerCLI Connection: {(powerCLISuccess ? "✅ Success" : "❌ Failed")}\n\n" +
-                              $"At least one connection method must succeed to proceed.";
-                _sharedConnectionService.TargetConnection = null;
-
-                _logger.LogError("❌ Failed to establish any target connection");
-                }
             }
+        }
         catch (Exception ex)
-            {
-            _logger.LogError(ex, "EXCEPTION: Error establishing target connection - Type: {ExceptionType} | Message: {Message}", 
-                ex.GetType().Name, ex.Message);
-            if (ex.InnerException != null)
-                {
-                _logger.LogError("EXCEPTION: Inner Exception - Type: {InnerType} | Message: {InnerMessage}", 
-                    ex.InnerException.GetType().Name, ex.InnerException.Message);
-                }
-            _logger.LogError("EXCEPTION: Stack Trace: {StackTrace}", ex.StackTrace);
+        {
+            _logger.LogError(ex, "Error establishing target connection: {Message}", ex.Message);
             IsTargetConnected = false;
             TargetConnectionStatus = $"❌ Connection error: {ex.Message}";
             TargetConnectionDetails = "";
             ScriptOutput = $"Error: {ex.Message}";
             LogMessage($"❌ Target connection error: {ex.Message}", "ERROR");
-            }
+        }
         finally
-            {
+        {
             IsJobRunning = false;
             OnPropertyChanged(nameof(CanConnectSource));
             OnPropertyChanged(nameof(CanConnectTarget));
-            }
         }
+    }
 
     [RelayCommand]
     private async Task OnDisconnectSource ()
