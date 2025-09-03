@@ -1431,11 +1431,11 @@ namespace VCenterMigrationTool.ViewModels
                 )
                 
                 try {
-                    # Connect to vCenter (reuse existing connection if available)
+                    # Use existing vCenter connection managed by PersistantVcenterConnectionService
+                    # Connection should already be established - verify it exists
                     $existingConnection = $global:DefaultVIServers | Where-Object { $_.Name -eq $VCenterServer }
                     if (-not $existingConnection -or -not $existingConnection.IsConnected) {
-                        $credential = New-Object System.Management.Automation.PSCredential($Username, $Password)
-                        Connect-VIServer -Server $VCenterServer -Credential $credential -Force | Out-Null
+                        throw ""vCenter connection to '$VCenterServer' not found or not active. Please ensure connection is established first.""
                     }
                     
                     # Get target datacenter
@@ -1674,21 +1674,19 @@ namespace VCenterMigrationTool.ViewModels
                     # DO NOT DISCONNECT - Using persistent connections managed by application
                     # Existing connections should be preserved for other operations
                     
-                    # Attempt new connection
+                    # Use existing connection established by PersistantVcenterConnectionService
                     try {{
-                        $credential = New-Object System.Management.Automation.PSCredential('{connectionProfile.Username}', (ConvertTo-SecureString '{password}' -AsPlainText -Force))
-                        Connect-VIServer -Server '{connectionProfile.ServerAddress}' -Credential $credential -Force
-                        
-                        # Test connection with a simple command
+                        # Verify connection exists and is active
                         $server = Get-VIServer -Server '{connectionProfile.ServerAddress}' -ErrorAction Stop
                         if ($server.IsConnected) {{
-                            Write-Output 'SUCCESS: PowerCLI connection established'
+                            Write-Output 'SUCCESS: Using existing PowerCLI connection'
                             Write-Output ""Version: $($server.Version)""
                         }} else {{
-                            Write-Output 'ERROR: Connection not active'
+                            Write-Output 'ERROR: Existing connection not active'
                         }}
                     }} catch {{
-                        Write-Output ""ERROR: $($_.Exception.Message)""
+                        Write-Output ""ERROR: No active connection found for {connectionProfile.ServerAddress}. Connection should be established through main UI first.""
+                        Write-Output ""Details: $($_.Exception.Message)""
                     }}
                 ";
 
