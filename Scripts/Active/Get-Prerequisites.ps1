@@ -99,28 +99,9 @@ try {
         }
     }
     
-    # Method 3: Try Import-Module test
+    # Method 3: Skip import testing - modules are managed by service layer
     if (-not $powerCliFound) {
-        try {
-            Write-LogDebug "Testing module import..."
-            $importTest = Import-Module -Name "VMware.PowerCLI" -PassThru -ErrorAction SilentlyContinue
-            
-            if ($importTest) {
-                $powerCliFound = $true
-                $powerCliVersion = $importTest.Version.ToString()
-                Write-LogSuccess "PowerCLI successfully imported for testing. Version: $powerCliVersion"
-                
-                # Remove the module since we just wanted to test
-                Remove-Module -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
-                Write-LogDebug "Test module removed"
-            }
-            else {
-                Write-LogDebug "Could not import VMware.PowerCLI module"
-            }
-        }
-        catch {
-            Write-LogWarning "Error testing module import: $($_.Exception.Message)"
-        }
+        Write-LogDebug "Module import testing skipped - modules are managed by service layer"
     }
     
     # Set final result

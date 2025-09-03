@@ -34,7 +34,9 @@
       "Bash(pwsh:*)",
       "Bash(taskkill:*)",
       "WebFetch(domain:github.com)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(for script in Get-*.ps1)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

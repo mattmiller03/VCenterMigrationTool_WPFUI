@@ -182,11 +182,7 @@ try {
     Write-LogInfo "Migration Mode: $PrivilegeMode, Validate Only: $ValidateOnly" -Category "Initialization"
     
     # Import required modules
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
-        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
-        Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
-    }
+    # PowerCLI module management handled by service layer
     
     # Configure PowerCLI settings
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null

@@ -32,31 +32,9 @@ $scriptSuccess = $true
 try {
     Write-LogInfo "Starting cluster discovery" -Category "Initialization"
     
-    # Handle PowerCLI module loading based on bypass setting
-    if ($BypassModuleCheck) {
-        Write-LogInfo "BypassModuleCheck is enabled - skipping PowerCLI module import" -Category "Module"
-        
-        # Quick check if PowerCLI commands are available
-        if (-not (Get-Command "Get-VIServer" -ErrorAction SilentlyContinue)) {
-            Write-LogError "PowerCLI commands not available but BypassModuleCheck is enabled" -Category "Module"
-            throw "PowerCLI commands are required. Either import PowerCLI modules first or set BypassModuleCheck to false."
-        }
-        
-        Write-LogSuccess "PowerCLI commands are available" -Category "Module"
-    }
-    else {
-        Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
-        try {
-            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
-            Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
-            Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
-        }
-        catch {
-            Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)" -Category "Module"
-            throw "PowerCLI modules are required but could not be imported: $($_.Exception.Message)"
-        }
-    }
+    # PowerCLI module management handled by service layer
+    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+    Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
     
     # Connect to vCenter (scripts run in isolated sessions, so no existing connections available)
     Write-LogInfo "Establishing vCenter connection..." -Category "Connection"

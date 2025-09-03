@@ -98,9 +98,8 @@ $ssoData = @{
 try {
     Write-LogInfo "Starting admin configuration discovery (SDK Version)" -Category "Initialization"
     
-    # Import PowerCLI modules
-    Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
-    Import-Module VMware.PowerCLI -Force -ErrorAction Stop
+    # PowerCLI modules are managed by the service layer
+    Write-LogInfo "PowerCLI modules are managed by the service layer" -Category "Module"
     
     # Configure PowerCLI settings
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null

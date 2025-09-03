@@ -143,12 +143,7 @@ $exportStats = @{
 try {
     Write-LogInfo "Starting vDS export process using native Export-VDSwitch cmdlet" -Category "Initialization"
     
-    # Import PowerCLI if needed
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-        Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
-    }
+    # PowerCLI module management handled by service layer
     
     # Configure PowerCLI settings
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null

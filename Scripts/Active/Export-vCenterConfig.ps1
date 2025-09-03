@@ -28,22 +28,8 @@ try {
     Write-LogInfo "Export path: $ExportPath" -Category "Export"
     Write-LogInfo "User: $Username" -Category "Connection"
     
-    # Import PowerCLI modules if not bypassing module check
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI modules..."
-        try {
-            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-            Write-LogSuccess "PowerCLI modules imported successfully"
-        }
-        catch {
-            Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)"
-            throw $_
-        }
-    }
-    else {
-        Write-LogInfo "Bypassing PowerCLI module check (already confirmed installed)"
-    }
+    # PowerCLI configuration (module management handled by service layer)
+    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     
     # Create secure credential
     Write-LogDebug "Creating secure credentials..."

@@ -31,22 +31,11 @@ $scriptSuccess = $true
 try {
     Write-LogInfo "Starting VM discovery from vCenter: $VCenterServer" -Category "Initialization"
     
-    # Import PowerCLI modules if not bypassing module check
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
-        try {
-            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-            Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
-        }
-        catch {
-            Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)" -Category "Module"
-            throw $_
-        }
-    }
-    else {
-        Write-LogInfo "Bypassing PowerCLI module check" -Category "Module"
-    }
+    # PowerCLI modules are managed by the service layer
+    Write-LogInfo "PowerCLI modules are managed by the service layer" -Category "Module"
+    
+    # Configure PowerCLI settings
+    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     
     # Connect to vCenter using PSCredential
     Write-LogInfo "Connecting to vCenter server: $VCenterServer" -Category "Connection"

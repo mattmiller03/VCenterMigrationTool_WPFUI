@@ -38,11 +38,7 @@ $stats = @{
 try {
     Write-LogInfo "Starting network configuration migration..." -Category "Initialization"
     
-    # Import and configure PowerCLI
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI modules..." -Category "Setup"
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-    }
+    # PowerCLI module management handled by service layer
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     
     # Check vCenter connections

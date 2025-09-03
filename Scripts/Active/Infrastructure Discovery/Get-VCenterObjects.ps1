@@ -36,19 +36,18 @@ $totalCount = 0
 try {
     Write-LogInfo "Starting vCenter objects discovery" -Category "Initialization"
     
-    # Check for and import SSO Admin module if available
+    # Check for SSO Admin module availability (modules are managed by service layer)
     $ssoModuleAvailable = $false
     try {
         $ssoModule = Get-Module -ListAvailable -Name VMware.vSphere.SsoAdmin
         if ($ssoModule) {
-            Import-Module VMware.vSphere.SsoAdmin -Force -ErrorAction Stop
             $ssoModuleAvailable = $true
-            Write-LogInfo "SSO Admin module imported successfully" -Category "Module"
+            Write-LogInfo "SSO Admin module available - modules are managed by service layer" -Category "Module"
         } else {
             Write-LogInfo "VMware.vSphere.SsoAdmin module not found - SSO data will be limited" -Category "Module"
         }
     } catch {
-        Write-LogWarning "Could not import SSO Admin module: $($_.Exception.Message)" -Category "Module"
+        Write-LogWarning "Could not check SSO Admin module availability: $($_.Exception.Message)" -Category "Module"
     }
     
     # Check for existing connection or discover active connections

@@ -30,11 +30,7 @@ $stats = @{ "HostsProcessed" = 0; "TotalVSwitches" = 0; "TotalVmKernelPorts" = 0
 try {
     Write-LogInfo "Starting network topology discovery..." -Category "Initialization"
     
-    # Import PowerCLI
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI modules..." -Category "Setup"
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-    }
+    # PowerCLI modules managed by service layer
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     
     # Connect to vCenter

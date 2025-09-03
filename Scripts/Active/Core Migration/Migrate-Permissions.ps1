@@ -158,22 +158,7 @@ $migrationStats = @{
 try {
     Write-LogInfo "Starting permissions migration process" -Category "Initialization"
     
-    # Import required modules
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-        
-        # Check for and import SSO Admin module
-        Write-LogInfo "Checking for VMware.vSphere.SsoAdmin module..." -Category "Module"
-        $ssoModule = Get-Module -ListAvailable -Name VMware.vSphere.SsoAdmin
-        if ($ssoModule) {
-            Import-Module VMware.vSphere.SsoAdmin -Force -ErrorAction Stop
-            Write-LogSuccess "SSO Admin module imported successfully" -Category "Module"
-        } else {
-            Write-LogWarning "VMware.vSphere.SsoAdmin module not found. Some SSO permissions may be unavailable." -Category "Module"
-        }
-        Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
-    }
+    # PowerCLI module management handled by service layer
     
     # Configure PowerCLI settings
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null

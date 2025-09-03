@@ -186,12 +186,7 @@ try {
         Write-LogInfo "VALIDATION MODE: No changes will be made to the target vCenter" -Category "Validation"
     }
     
-    # Import PowerCLI if needed
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-        Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
-    }
+    # PowerCLI module management handled by service layer
     
     # Configure PowerCLI settings
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null

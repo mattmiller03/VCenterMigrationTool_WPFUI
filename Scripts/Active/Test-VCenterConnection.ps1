@@ -16,22 +16,6 @@ $connectionInfo = @{}
 try {
     Write-LogInfo "Starting vCenter connection diagnostics" -Category "Diagnostics"
     
-    # Check PowerCLI module
-    Write-LogInfo "Checking PowerCLI modules..." -Category "Module"
-    $powerCLIModules = Get-Module -Name "VMware.*" -ListAvailable
-    if ($powerCLIModules) {
-        Write-LogSuccess "PowerCLI modules found: $($powerCLIModules.Count)" -Category "Module"
-        $connectionInfo["PowerCLIAvailable"] = $true
-        $connectionInfo["PowerCLIModules"] = $powerCLIModules.Count
-    } else {
-        Write-LogWarning "No PowerCLI modules found" -Category "Module"
-        $connectionInfo["PowerCLIAvailable"] = $false
-    }
-    
-    # Check loaded modules
-    $loadedModules = Get-Module -Name "VMware.*"
-    Write-LogInfo "Loaded PowerCLI modules: $($loadedModules.Count)" -Category "Module"
-    $connectionInfo["PowerCLILoaded"] = $loadedModules.Count
     
     # Check global DefaultVIServer
     Write-LogInfo "Checking global DefaultVIServer..." -Category "Connection"
@@ -124,7 +108,6 @@ catch {
 }
 finally {
     $finalStats = @{
-        "PowerCLIAvailable" = $connectionInfo.ContainsKey("PowerCLIAvailable")
         "TotalConnections" = $connectionInfo.GetValue("TotalConnections", 0)
         "ActiveConnections" = $connectionInfo.GetValue("ActiveConnections", 0)
     }

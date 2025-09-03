@@ -42,14 +42,8 @@ $jsonOutput = "[]"
 $poolCount = 0
 
 try {
-    # Import PowerCLI
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI modules..." -Category "Initialization"
-        Import-Module VMware.VimAutomation.Core -ErrorAction Stop
-        Write-LogSuccess "PowerCLI modules imported successfully." -Category "Initialization"
-    } else {
-        Write-LogInfo "Bypassing PowerCLI module check." -Category "Initialization"
-    }
+    # PowerCLI modules are managed by the service layer
+    Write-LogInfo "PowerCLI modules are managed by the service layer" -Category "Initialization"
 
     # Connect to vCenter
     Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"

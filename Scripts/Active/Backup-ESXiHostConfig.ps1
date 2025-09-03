@@ -41,22 +41,8 @@ try {
     Write-LogInfo "Backup destination: $($BackupPath)"
     Write-LogInfo "Options: AdvancedSettings=$($IncludeAdvancedSettings), Network=$($IncludeNetworkConfig), Storage=$($IncludeStorageConfig), Services=$($IncludeServices)"
     
-    # Import PowerCLI modules if not bypassing module check
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI modules..."
-        try {
-            Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-            Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-            Write-LogSuccess "PowerCLI modules imported successfully"
-        }
-        catch {
-            Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)"
-            throw $_
-        }
-    }
-    else {
-        Write-LogInfo "Bypassing PowerCLI module check (already confirmed installed)"
-    }
+    # PowerCLI configuration (module management handled by service layer)
+    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     
     # Check vCenter connection
     if (-not $global:DefaultVIServer -or $global:DefaultVIServer.IsConnected -eq $false) {

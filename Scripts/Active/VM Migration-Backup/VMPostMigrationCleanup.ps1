@@ -101,9 +101,7 @@ try {
     # Cluster name mapping
     $clusterNameMap = @{ "DLA_Dayton_Dev" = "DLA_Dayton_Dev"; "ETC_Dev-Test" = "ETC_Dev-Compute" }
     
-    Write-LogInfo "Importing PowerCLI module..." -Category "Initialization"
-    Import-Module VMware.PowerCLI -ErrorAction Stop
-    Write-LogSuccess "PowerCLI module imported." -Category "Initialization"
+    # PowerCLI module management handled by service layer
 
     Write-LogInfo "Connecting to vCenter server: $NewVCenterServer" -Category "Connection"
     Connect-VIServer -Server $NewVCenterServer -Credential $Credential -ErrorAction Stop

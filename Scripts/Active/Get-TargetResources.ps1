@@ -37,11 +37,7 @@ $stats = @{ "HostsFound" = 0; "DatastoresFound" = 0 }
 try {
     Write-LogInfo "Starting target resources script for vCenter: $VCenterServer" -Category "Initialization"
 
-    # Import PowerCLI
-    if (-not $BypassModuleCheck) {
-        Write-LogInfo "Importing PowerCLI module..." -Category "Initialization"
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-    } else { Write-LogInfo "Bypassing PowerCLI module check." -Category "Initialization" }
+    # PowerCLI modules managed by service layer
     
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -ParticipateInCEIP $false -Scope Session -Confirm:$false | Out-Null
     

@@ -46,17 +46,8 @@ try {
     Write-LogInfo "Starting vCenter object migration" -Category "Initialization"
     Write-LogInfo "Object Type: $ObjectType, Name: $ObjectName" -Category "Initialization"
     
-    # Import PowerCLI
-    Write-LogInfo "Importing PowerCLI modules..." -Category "Module"
-    try {
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-        Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-        Write-LogSuccess "PowerCLI modules imported successfully" -Category "Module"
-    }
-    catch {
-        Write-LogCritical "Failed to import PowerCLI modules: $($_.Exception.Message)" -Category "Module"
-        throw $_
-    }
+    # PowerCLI module management handled by service layer
+    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     
     # Connect to source vCenter
     Write-LogInfo "Connecting to source vCenter: $SourceVCenter" -Category "Connection"
