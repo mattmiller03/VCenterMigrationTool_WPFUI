@@ -36,19 +36,9 @@ $totalCount = 0
 try {
     Write-LogInfo "Starting vCenter objects discovery" -Category "Initialization"
     
-    # Check for SSO Admin module availability (modules are managed by service layer)
-    $ssoModuleAvailable = $false
-    try {
-        $ssoModule = Get-Module -ListAvailable -Name VMware.vSphere.SsoAdmin
-        if ($ssoModule) {
-            $ssoModuleAvailable = $true
-            Write-LogInfo "SSO Admin module available - modules are managed by service layer" -Category "Module"
-        } else {
-            Write-LogInfo "VMware.vSphere.SsoAdmin module not found - SSO data will be limited" -Category "Module"
-        }
-    } catch {
-        Write-LogWarning "Could not check SSO Admin module availability: $($_.Exception.Message)" -Category "Module"
-    }
+    # SSO Admin module managed by service layer
+    $ssoModuleAvailable = $false  # SSO Admin not used in current implementation
+    Write-LogInfo "SSO Admin module functionality managed by service layer" -Category "Module"
     
     # Check for existing connection or discover active connections
     $connectionEstablished = $false
@@ -80,18 +70,8 @@ try {
     
     Write-LogInfo "Using vCenter connection: $($global:DefaultVIServer.Name)" -Category "Connection"
     
-    # Connect to SSO Admin if module is available and connection is established
-    $ssoConnected = $false
-    if ($ssoModuleAvailable -and (Get-Command Connect-SsoAdminServer -ErrorAction SilentlyContinue)) {
-        try {
-            Write-LogInfo "Attempting to connect to SSO Admin Server..." -Category "Connection"
-            # Note: SSO connection would require credentials that aren't available in this context
-            # In the application context, the SSO connection should be established separately
-            Write-LogInfo "SSO Admin module available for enhanced discovery" -Category "Connection"
-        } catch {
-            Write-LogWarning "Could not connect to SSO Admin Server: $($_.Exception.Message)" -Category "Connection"
-        }
-    }
+    # SSO connection handled through service layer if needed
+    $ssoConnected = $false  # Not used in current implementation
     
     # Get cluster if specified
     $cluster = $null
@@ -135,16 +115,12 @@ try {
                         Privileges = $rolePrivileges
                         IsSystem = $role.IsSystem
                         AssignmentCount = $assignmentCount
-                        SSOAware = $ssoModuleAvailable
+                        StandardDiscovery = $true
                     }
                 }
             }
             
-            if ($ssoModuleAvailable) {
-                Write-LogSuccess "Found $($roles.Count) custom roles (SSO-enhanced discovery)" -Category "Roles"
-            } else {
-                Write-LogSuccess "Found $($roles.Count) custom roles" -Category "Roles"
-            }
+            Write-LogSuccess "Found $($roles.Count) custom roles" -Category "Roles"
         }
         catch {
             Write-LogError "Failed to retrieve roles: $($_.Exception.Message)" -Category "Roles"
@@ -276,17 +252,13 @@ try {
                         PermissionCount = $_.Count
                         Principals = ($_.Group.Principal | Sort-Object -Unique) -join ", "
                         IncludesGlobal = ($globalPermissions.Count -gt 0)
-                        SSOAware = $ssoModuleAvailable
+                        StandardDiscovery = $true
                     }
                 }
             }
             $objects += $groupedPermissions
             
-            if ($ssoModuleAvailable) {
-                Write-LogSuccess "Found $($allPermissions.Count) permissions on $($groupedPermissions.Count) entities (SSO-enhanced discovery)" -Category "Permissions"
-            } else {
-                Write-LogSuccess "Found $($allPermissions.Count) permissions on $($groupedPermissions.Count) entities" -Category "Permissions"
-            }
+            Write-LogSuccess "Found $($allPermissions.Count) permissions on $($groupedPermissions.Count) entities" -Category "Permissions"
         }
         catch {
             Write-LogError "Failed to retrieve permissions: $($_.Exception.Message)" -Category "Permissions"

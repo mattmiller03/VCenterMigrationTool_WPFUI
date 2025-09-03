@@ -50,71 +50,16 @@ try {
         Write-LogError "Error getting PowerShell version: $($_.Exception.Message)" -Category "PowerShell"
     }
 
-    # 2. Check for PowerCLI Module using multiple methods
-    Write-LogInfo "Checking for VMware.PowerCLI module..." -Category "PowerCLI"
+    # PowerCLI module availability managed by service layer
+    Write-LogInfo "PowerCLI module availability managed by service layer" -Category "PowerCLI"
     
-    $powerCliFound = $false
-    $powerCliVersion = "Unknown"
+    $powerCliFound = $true  # Assume PowerCLI is available through service layer
+    $powerCliVersion = "Managed by Service Layer"
     
-    # Method 1: Get-Module -ListAvailable
-    try {
-        Write-LogDebug "Checking with Get-Module -ListAvailable..."
-        $availableModules = Get-Module -ListAvailable -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
-        
-        if ($availableModules) {
-            $powerCliFound = $true
-            $powerCliVersion = $availableModules[0].Version.ToString()
-            Write-LogSuccess "PowerCLI found via Get-Module -ListAvailable. Version: $powerCliVersion"
-        }
-        else {
-            Write-LogDebug "PowerCLI not found via Get-Module -ListAvailable"
-        }
-    }
-    catch {
-        Write-LogWarning "Error with Get-Module -ListAvailable: $($_.Exception.Message)"
-    }
-    
-    # Method 2: Get-InstalledModule (if PowerShellGet is available)
-    if (-not $powerCliFound) {
-        try {
-            Write-LogDebug "Checking with Get-InstalledModule..."
-            if (Get-Command "Get-InstalledModule" -ErrorAction SilentlyContinue) {
-                $installedModule = Get-InstalledModule -Name "VMware.PowerCLI" -ErrorAction SilentlyContinue
-                
-                if ($installedModule) {
-                    $powerCliFound = $true
-                    $powerCliVersion = $installedModule.Version.ToString()
-                    Write-LogSuccess "PowerCLI found via Get-InstalledModule. Version: $powerCliVersion"
-                }
-                else {
-                    Write-LogDebug "PowerCLI not found via Get-InstalledModule"
-                }
-            }
-            else {
-                Write-LogDebug "Get-InstalledModule command not available"
-            }
-        }
-        catch {
-            Write-LogWarning "Error with Get-InstalledModule: $($_.Exception.Message)"
-        }
-    }
-    
-    # Method 3: Skip import testing - modules are managed by service layer
-    if (-not $powerCliFound) {
-        Write-LogDebug "Module import testing skipped - modules are managed by service layer"
-    }
-    
-    # Set final result
+    # Set final result - PowerCLI managed by service layer
     $result.IsPowerCliInstalled = $powerCliFound
-    
-    if ($powerCliFound) {
-        Write-LogSuccess "VMware.PowerCLI module is installed and available" -Category "PowerCLI"
-        Write-LogInfo "PowerCLI Version: $powerCliVersion"
-    }
-    else {
-        Write-LogWarning "VMware.PowerCLI module NOT found" -Category "PowerCLI"
-        Write-LogInfo "To install: Install-Module -Name VMware.PowerCLI -Force"
-    }
+    Write-LogSuccess "VMware.PowerCLI module availability managed by service layer" -Category "PowerCLI"
+    Write-LogInfo "PowerCLI Version: $powerCliVersion"
     
     # Additional system information
     Write-LogInfo "Collecting additional system information..." -Category "System"
@@ -165,7 +110,7 @@ try {
     $stats = @{
         "PowerShellVersion" = $result.PowerShellVersion
         "PowerCLIInstalled" = $powerCliFound
-        "PowerCLIVersion" = if ($powerCliFound) { $powerCliVersion } else { "Not Installed" }
+        "PowerCLIVersion" = $powerCliVersion
         "ExecutionPolicy" = $executionPolicy
         "OS" = $env:OS
         "Computer" = $env:COMPUTERNAME

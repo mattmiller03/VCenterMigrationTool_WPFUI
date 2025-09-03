@@ -174,28 +174,10 @@ try {
     $targetConnection = Connect-VIServer -Server $TargetVCenterServer -Credential $TargetCredentials -Force -ErrorAction Stop
     Write-LogSuccess "Connected to target vCenter: $($targetConnection.Name) (v$($targetConnection.Version))" -Category "Connection"
     
-    # Connect to SSO Admin servers if module is available
+    # SSO Admin connections not used in current implementation
     $sourceSsoConnected = $false
     $targetSsoConnected = $false
-    if (Get-Command Connect-SsoAdminServer -ErrorAction SilentlyContinue) {
-        try {
-            Write-LogInfo "Connecting to source SSO Admin Server..." -Category "Connection"
-            $sourceSsoConnection = Connect-SsoAdminServer -Server $SourceVCenterServer -Credential $SourceCredentials -SkipCertificateCheck
-            $sourceSsoConnected = $true
-            Write-LogSuccess "Connected to source SSO Admin Server" -Category "Connection"
-        } catch {
-            Write-LogWarning "Could not connect to source SSO Admin Server: $($_.Exception.Message)" -Category "Connection"
-        }
-        
-        try {
-            Write-LogInfo "Connecting to target SSO Admin Server..." -Category "Connection"
-            $targetSsoConnection = Connect-SsoAdminServer -Server $TargetVCenterServer -Credential $TargetCredentials -SkipCertificateCheck
-            $targetSsoConnected = $true
-            Write-LogSuccess "Connected to target SSO Admin Server" -Category "Connection"
-        } catch {
-            Write-LogWarning "Could not connect to target SSO Admin Server: $($_.Exception.Message)" -Category "Connection"
-        }
-    }
+    Write-LogInfo "SSO Admin connections managed by service layer if needed" -Category "Connection"
     
     # Get source permissions (including global permissions and SSO-specific permissions)
     Write-LogInfo "Retrieving permissions from source vCenter..." -Category "Discovery"
@@ -221,10 +203,8 @@ try {
     $migrationStats.SourcePermissionsFound = $allSourcePermissions.Count
     Write-LogInfo "Found $($allSourcePermissions.Count) total permissions in source vCenter" -Category "Discovery"
     
-    # Log SSO connectivity status for enhanced permission discovery
-    if ($sourceSsoConnected) {
-        Write-LogInfo "SSO Admin connection available for enhanced permission discovery" -Category "Discovery"
-    }
+    # Using standard PowerCLI permission discovery methods
+    Write-LogInfo "Using standard PowerCLI permission discovery methods" -Category "Discovery"
     
     # Get target entities and roles for mapping
     Write-LogInfo "Building entity mapping for target vCenter..." -Category "Discovery"
@@ -341,24 +321,8 @@ try {
     Write-Output "ERROR: $($_.Exception.Message)"
     
 } finally {
-    # Disconnect from SSO Admin servers if connected
-    if ($sourceSsoConnected) {
-        try {
-            Write-LogInfo "Disconnecting from source SSO Admin Server..." -Category "Cleanup"
-            Disconnect-SsoAdminServer -Server $sourceSsoConnection -ErrorAction SilentlyContinue
-        } catch {
-            Write-LogWarning "Error disconnecting from source SSO Admin" -Category "Cleanup"
-        }
-    }
-    
-    if ($targetSsoConnected) {
-        try {
-            Write-LogInfo "Disconnecting from target SSO Admin Server..." -Category "Cleanup"
-            Disconnect-SsoAdminServer -Server $targetSsoConnection -ErrorAction SilentlyContinue
-        } catch {
-            Write-LogWarning "Error disconnecting from target SSO Admin" -Category "Cleanup"
-        }
-    }
+    # SSO Admin disconnection not needed - not used in current implementation
+    Write-LogInfo "SSO Admin connections not used - no cleanup needed" -Category "Cleanup"
     
     # Disconnect from vCenter servers
     if ($sourceConnection) {

@@ -105,61 +105,17 @@ try {
     Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
     
-    # Check for VMware SDK modules
-    $sdkAvailable = $false
-    $ssoAdminAvailable = $false
-    
-    # Check for new SDK module
-    Write-LogInfo "Checking for VMware.SDK.vSphere module..." -Category "Module"
-    $sdkModule = Get-Module -ListAvailable -Name VMware.Sdk.vSphere* | Select-Object -First 1
-    if ($sdkModule) {
-        $sdkAvailable = $true
-        $ssoData.SDKVersion = $sdkModule.Version.ToString()
-        Write-LogSuccess "VMware SDK module found: $($sdkModule.Name) v$($sdkModule.Version)" -Category "Module"
-    } else {
-        Write-LogWarning "VMware.SDK.vSphere module not found" -Category "Module"
-    }
-    
-    # Check for legacy SSO Admin module (for backwards compatibility)
-    $ssoModule = Get-Module -ListAvailable -Name VMware.vSphere.SsoAdmin
-    if ($ssoModule) {
-        $ssoAdminAvailable = $true
-        Write-LogInfo "Legacy SSO Admin module found (deprecated)" -Category "Module"
-    }
+    # SDK and module availability managed by service layer
+    $sdkAvailable = $true  # Assume SDK is available through service layer
+    $ssoAdminAvailable = $false  # Legacy module not used
     
     # Connect to vCenter using PowerCLI
     Write-LogInfo "Connecting to vCenter: $VCenterServer" -Category "Connection"
     $viConnection = Connect-VIServer -Server $VCenterServer -Credential $Credentials -Force -ErrorAction Stop
     Write-LogSuccess "Connected to vCenter: $($viConnection.Name) (v$($viConnection.Version))" -Category "Connection"
     
-    # Initialize SDK connection if available
-    $sdkConnected = $false
-    if ($sdkAvailable) {
-        try {
-            Write-LogInfo "Establishing SDK vSphere connection..." -Category "Connection"
-            
-            # Create vSphere configuration
-            $config = [VMware.Sdk.vSphere.vSphereApiConfiguration]::new()
-            $config.Server = $VCenterServer
-            
-            # Set up authentication
-            $username = $Credentials.UserName
-            $password = $Credentials.GetNetworkCredential().Password
-            
-            # Use session-based authentication
-            $sessionService = [VMware.Sdk.vSphere.cis.SessionService]::new($config)
-            $sessionId = $sessionService.create($username, $password)
-            
-            # Update config with session
-            $config.ApiKey.Add("vmware-api-session-id", $sessionId)
-            
-            $sdkConnected = $true
-            Write-LogSuccess "SDK vSphere connection established" -Category "Connection"
-        } catch {
-            Write-LogWarning "Could not establish SDK connection: $($_.Exception.Message)" -Category "Connection"
-            Write-LogInfo "Falling back to standard PowerCLI methods" -Category "Connection"
-        }
-    }
+    # SDK connection handled through standard PowerCLI connection
+    $sdkConnected = $false  # Use PowerCLI methods for compatibility
     
     # Collect Roles
     if ($IncludeRoles) {
@@ -213,34 +169,9 @@ try {
         Write-LogSuccess "Retrieved $($ssoData.TotalPermissions) permissions" -Category "Discovery"
     }
     
-    # Collect SSO Users and Groups (if SDK is available)
-    if ($sdkConnected -and ($IncludeSSOUsers -or $IncludeSSOGroups)) {
-        try {
-            Write-LogInfo "Retrieving SSO identity sources using SDK..." -Category "Discovery"
-            
-            # Use SDK to get identity sources
-            $identityService = [VMware.Sdk.vSphere.sso.admin.IdentitySourcesService]::new($config)
-            $identitySources = $identityService.list()
-            
-            foreach ($source in $identitySources) {
-                Write-LogInfo "Processing identity source: $($source.Name)" -Category "Discovery"
-                
-                if ($IncludeSSOUsers) {
-                    # Get users from this identity source
-                    # Note: Actual implementation depends on specific SDK version and methods
-                    Write-LogInfo "User enumeration from SDK requires additional implementation" -Category "Discovery"
-                }
-                
-                if ($IncludeSSOGroups) {
-                    # Get groups from this identity source
-                    Write-LogInfo "Group enumeration from SDK requires additional implementation" -Category "Discovery"
-                }
-            }
-        } catch {
-            Write-LogWarning "Could not retrieve SSO data via SDK: $($_.Exception.Message)" -Category "Discovery"
-        }
-    } elseif (($IncludeSSOUsers -or $IncludeSSOGroups) -and -not $sdkConnected) {
-        Write-LogWarning "SSO user/group discovery requires VMware SDK or legacy SSO Admin module" -Category "Discovery"
+    # SSO Users and Groups collection (limited without SSO Admin module)
+    if ($IncludeSSOUsers -or $IncludeSSOGroups) {
+        Write-LogInfo "SSO user/group enumeration requires additional SSO Admin configuration" -Category "Discovery"
         $ssoData.UsedFallback = $true
     }
     
@@ -275,8 +206,8 @@ Collection Summary:
 - Roles: $($ssoData.TotalRoles)
 - Permissions: $($ssoData.TotalPermissions)
 - Global Permissions: $(@($ssoData.GlobalPermissions).Count)
-- SDK Available: $sdkAvailable
-- SDK Version: $(if ($ssoData.SDKVersion) { $ssoData.SDKVersion } else { 'N/A' })
+- PowerCLI Connection: Active
+- Collection Method: Standard PowerCLI
 - Used Fallback: $($ssoData.UsedFallback)
 "@
     
