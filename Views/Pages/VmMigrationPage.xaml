@@ -45,69 +45,14 @@
                       Text="Virtual Machine Migration" 
                       Margin="0,0,0,20" />
 
-            <!-- Connection Status Section -->
+            <!-- Refresh Data Button -->
             <ui:CardControl Grid.Row="1" Margin="0,0,0,20">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" 
-                               Text="Connection Status" 
-                               FontWeight="Medium" 
-                               FontSize="16" 
-                               Margin="0,0,0,10"/>
-
-                    <!-- Source Connection -->
-                    <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                        <ui:SymbolIcon Symbol="Server24" 
-                                       Foreground="{Binding IsSourceConnected, Converter={StaticResource BoolToColorConverter}}" 
-                                       FontSize="16" 
-                                       Margin="0,0,8,0"/>
-                        <StackPanel>
-                            <TextBlock Text="Source vCenter" FontWeight="Medium" FontSize="14"/>
-                            <TextBlock Text="{Binding SourceConnectionStatus}" 
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                       FontSize="12"/>
-                            <TextBlock Text="{Binding SourceDataStatus}" 
-                                       FontSize="11" 
-                                       Opacity="0.8"/>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- Target Connection -->
-                    <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <ui:SymbolIcon Symbol="Server24" 
-                                       Foreground="{Binding IsTargetConnected, Converter={StaticResource BoolToColorConverter}}" 
-                                       FontSize="16" 
-                                       Margin="0,0,8,0"/>
-                        <StackPanel>
-                            <TextBlock Text="Target vCenter" FontWeight="Medium" FontSize="14"/>
-                            <TextBlock Text="{Binding TargetConnectionStatus}" 
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                       FontSize="12"/>
-                            <TextBlock Text="{Binding TargetDataStatus}" 
-                                       FontSize="11" 
-                                       Opacity="0.8"/>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- Refresh Button -->
-                    <ui:Button Grid.Row="1" Grid.Column="4" 
-                               Content="Refresh" 
+                    <ui:Button Content="Refresh Data" 
                                Command="{Binding RefreshDataCommand}"
                                Icon="{ui:SymbolIcon ArrowClockwise24}"
                                Appearance="Secondary"
-                               VerticalAlignment="Center"/>
+                               HorizontalAlignment="Right"/>
                 </Grid>
             </ui:CardControl>
 

@@ -37,29 +37,11 @@
                    Style="{StaticResource TitleLargeTextBlockStyle}" 
                    Margin="0,0,0,10"/>
 
-        <!-- Connection Status Bar -->
+        <!-- Refresh Button -->
         <ui:Card Grid.Row="1" Margin="0,0,0,10">
             <Grid Margin="10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <ui:SymbolIcon Symbol="Server24" Margin="0,0,10,0"/>
-                    <TextBlock Text="Source: " FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding ViewModel.SourceConnectionStatus}" Margin="5,0,0,0"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <ui:SymbolIcon Symbol="ServerMultiple20" Margin="0,0,10,0"/>
-                    <TextBlock Text="Target: " FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding ViewModel.TargetConnectionStatus}" Margin="5,0,0,0"/>
-                </StackPanel>
-
-                <ui:Button Grid.Column="2" 
-                          Content="Refresh" 
+                <ui:Button HorizontalAlignment="Right"
+                          Content="Refresh Data" 
                           Icon="{ui:SymbolIcon ArrowSync24}"
                           Command="{Binding ViewModel.RefreshDataCommand}"
                           Appearance="Secondary"/>
