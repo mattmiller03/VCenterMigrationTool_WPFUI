@@ -19,6 +19,7 @@ namespace VCenterMigrationTool.ViewModels
         private readonly ConnectionProfileService _profileService;
         private readonly CredentialService _credentialService;
         private readonly HybridPowerShellService _powerShellService;
+        private readonly PersistantVcenterConnectionService _persistantConnectionService;
         private readonly IDialogService _dialogService;
         private readonly ILogger<MainWindowViewModel> _logger;
 
@@ -96,6 +97,7 @@ namespace VCenterMigrationTool.ViewModels
             ConnectionProfileService profileService,
             CredentialService credentialService,
             HybridPowerShellService powerShellService,
+            PersistantVcenterConnectionService persistantConnectionService,
             IDialogService dialogService,
             ILogger<MainWindowViewModel> logger)
         {
@@ -103,6 +105,7 @@ namespace VCenterMigrationTool.ViewModels
             _profileService = profileService;
             _credentialService = credentialService;
             _powerShellService = powerShellService;
+            _persistantConnectionService = persistantConnectionService;
             _dialogService = dialogService;
             _logger = logger;
 
@@ -121,6 +124,7 @@ namespace VCenterMigrationTool.ViewModels
                 new NavigationViewItem("Network", SymbolRegular.NetworkCheck24, typeof(Views.Pages.NetworkMigrationPage))
             };
             var vCenterObjectsItem = new NavigationViewItem("vCenter Objects", SymbolRegular.Box24, typeof(Views.Pages.VCenterMigrationPage), vCenterObjectsChildItems);
+            vCenterObjectsItem.IsExpanded = true; // Expand the vCenter Objects submenu by default
 
             NavigationItems = new ObservableCollection<object>
             {
@@ -169,19 +173,21 @@ namespace VCenterMigrationTool.ViewModels
                     password = promptedPassword;
                 }
 
-                // Attempt connection using test script
-                var scriptPath = "Scripts\\Active\\Test-VCenterConnection.ps1";
-                var result = await _powerShellService.RunVCenterScriptAsync(scriptPath, SelectedSourceProfile, password);
+                // Establish persistent connection
+                var (success, message, sessionId) = await _persistantConnectionService.ConnectAsync(
+                    SelectedSourceProfile, password, isSource: true);
                 
-                if (result.Contains("Successfully connected"))
+                if (success)
                 {
                     IsSourceConnected = true;
                     SourceConnectionStatus = $"✅ Connected to {SelectedSourceProfile.ServerAddress}";
+                    _logger.LogInformation("Source vCenter connected successfully. Session ID: {SessionId}", sessionId);
                 }
                 else
                 {
                     IsSourceConnected = false;
-                    SourceConnectionStatus = "❌ Connection failed";
+                    SourceConnectionStatus = $"❌ Connection failed: {message}";
+                    _logger.LogWarning("Source connection failed: {Message}", message);
                 }
             }
             catch (Exception ex)
@@ -225,19 +231,21 @@ namespace VCenterMigrationTool.ViewModels
                     password = promptedPassword;
                 }
 
-                // Attempt connection using test script
-                var scriptPath = "Scripts\\Active\\Test-VCenterConnection.ps1";
-                var result = await _powerShellService.RunVCenterScriptAsync(scriptPath, SelectedTargetProfile, password);
+                // Establish persistent connection
+                var (success, message, sessionId) = await _persistantConnectionService.ConnectAsync(
+                    SelectedTargetProfile, password, isSource: false);
                 
-                if (result.Contains("Successfully connected"))
+                if (success)
                 {
                     IsTargetConnected = true;
                     TargetConnectionStatus = $"✅ Connected to {SelectedTargetProfile.ServerAddress}";
+                    _logger.LogInformation("Target vCenter connected successfully. Session ID: {SessionId}", sessionId);
                 }
                 else
                 {
                     IsTargetConnected = false;
-                    TargetConnectionStatus = "❌ Connection failed";
+                    TargetConnectionStatus = $"❌ Connection failed: {message}";
+                    _logger.LogWarning("Target connection failed: {Message}", message);
                 }
             }
             catch (Exception ex)
@@ -258,16 +266,22 @@ namespace VCenterMigrationTool.ViewModels
         {
             try
             {
+                // Disconnect using persistent connection service
+                await _persistantConnectionService.DisconnectAsync("source");
+                
                 IsSourceConnected = false;
                 SourceConnectionStatus = "⭕ Disconnected";
                 NotifyConnectionPropertiesChanged();
                 
-                // Add disconnection logic here if needed
                 _logger.LogInformation("Source vCenter disconnected");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error disconnecting source");
+                // Update UI even if disconnect fails
+                IsSourceConnected = false;
+                SourceConnectionStatus = "❌ Disconnect error";
+                NotifyConnectionPropertiesChanged();
             }
         }
 
@@ -276,16 +290,22 @@ namespace VCenterMigrationTool.ViewModels
         {
             try
             {
+                // Disconnect using persistent connection service
+                await _persistantConnectionService.DisconnectAsync("target");
+                
                 IsTargetConnected = false;
                 TargetConnectionStatus = "⭕ Disconnected";
                 NotifyConnectionPropertiesChanged();
                 
-                // Add disconnection logic here if needed
                 _logger.LogInformation("Target vCenter disconnected");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error disconnecting target");
+                // Update UI even if disconnect fails
+                IsTargetConnected = false;
+                TargetConnectionStatus = "❌ Disconnect error";
+                NotifyConnectionPropertiesChanged();
             }
         }
 

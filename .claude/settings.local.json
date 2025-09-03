@@ -32,7 +32,8 @@
       "Bash(dotnet restore:*)",
       "Bash(dotnet list package:*)",
       "Bash(pwsh:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []
