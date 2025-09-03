@@ -86,6 +86,7 @@ public partial class App
             services.AddSingleton<CredentialService>();
             services.AddSingleton<ConfigurationService>();
             services.AddSingleton<PowerShellPathService>();
+            services.AddSingleton<ScriptPathService>();
             services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
 

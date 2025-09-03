@@ -15,8 +15,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- Ensure all scripts are copied to output directory -->
-		<None Update="Scripts\*.ps1">
+		<!-- Ensure all scripts and subdirectories are copied to output directory -->
+		<None Update="Scripts\**\*.ps1">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<!-- Copy Scripts directory structure -->
+		<None Update="Scripts\**\*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>

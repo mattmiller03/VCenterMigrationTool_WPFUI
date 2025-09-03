@@ -24,6 +24,7 @@ public class HybridPowerShellService : IDisposable
     private readonly PowerShellLoggingService _psLoggingService;
     private readonly SharedConnectionService _sharedConnectionService;
     private readonly PersistantVcenterConnectionService _persistentConnectionService;
+    private readonly ScriptPathService _scriptPathService;
     private readonly ConcurrentDictionary<int, Process> _activeProcesses = new();
     private readonly Timer _cleanupTimer;
     private IErrorHandlingService? _errorHandlingService;
@@ -113,7 +114,8 @@ public class HybridPowerShellService : IDisposable
         PowerShellLoggingService psLoggingService,
         SharedConnectionService sharedConnectionService,
         PersistantVcenterConnectionService persistentConnectionService,
-        IErrorHandlingService errorHandlingService)
+        IErrorHandlingService errorHandlingService,
+        ScriptPathService scriptPathService)
         {
         _logger = logger;
         _configurationService = configurationService;
@@ -121,6 +123,7 @@ public class HybridPowerShellService : IDisposable
         _sharedConnectionService = sharedConnectionService;
         _persistentConnectionService = persistentConnectionService;
         _errorHandlingService = errorHandlingService;
+        _scriptPathService = scriptPathService;
 
         // FIXED: Load PowerCLI status from persistent storage on startup
         LoadPowerCliStatus();
@@ -241,16 +244,22 @@ public class HybridPowerShellService : IDisposable
         
         try
         {
-            _logger.LogInformation("Executing script with PowerShell SDK: {ScriptPath}", scriptPath);
+            // Resolve script path - handle both relative and absolute paths
+            var resolvedScriptPath = ResolveScriptPath(scriptPath);
+            
+            _logger.LogInformation("Executing script with PowerShell SDK: {ScriptPath} (resolved to: {ResolvedPath})", scriptPath, resolvedScriptPath);
             _psLoggingService.LogParameters(sessionId, scriptName, parameters);
 
-            if (!File.Exists(scriptPath))
+            if (!File.Exists(resolvedScriptPath))
             {
-                var error = $"Script not found: {scriptPath}";
+                var error = $"Script not found: {scriptPath} (resolved path: {resolvedScriptPath})";
                 _logger.LogError(error);
                 _psLoggingService.LogScriptError(sessionId, scriptName, error);
                 return $"ERROR: {error}";
             }
+            
+            // Use the resolved path for script execution
+            scriptPath = resolvedScriptPath;
 
             // Create PowerShell instance with runspace
             using var powerShell = PowerShell.Create();
@@ -265,8 +274,8 @@ public class HybridPowerShellService : IDisposable
                 powerShell.Runspace.SessionStateProxy.SetVariable("PSScriptRoot", scriptDirectory);
                 _logger.LogDebug("Set PSScriptRoot to: {Directory}", scriptDirectory);
                 
-                // Pre-load Write-ScriptLog.ps1 if it exists in the same directory
-                var logScriptPath = Path.Combine(scriptDirectory, "Active", "Write-ScriptLog.ps1");
+                // Pre-load Write-ScriptLog.ps1 if it exists
+                var logScriptPath = _scriptPathService.GetActiveScriptPath("Write-ScriptLog.ps1");
                 if (File.Exists(logScriptPath))
                 {
                     var logScriptContent = await File.ReadAllTextAsync(logScriptPath);
@@ -556,9 +565,8 @@ public class HybridPowerShellService : IDisposable
                         continue;
                         }
 
-                    // Create PowerShell process with logging script integration
-                    var scriptsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts");
-                    var loggingScriptPath = Path.Combine(scriptsDirectory, "Active", "Write-ScriptLog.ps1");
+                    // Create PowerShell process with logging script integration  
+                    var loggingScriptPath = _scriptPathService.GetActiveScriptPath("Write-ScriptLog.ps1");
 
                     var psi = new ProcessStartInfo
                         {
@@ -852,7 +860,7 @@ public class HybridPowerShellService : IDisposable
 
     public async Task<string> CheckPrerequisitesAsync (string? logPath = null)
     {
-        var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Active", "Get-Prerequisites.ps1");
+        var scriptPath = _scriptPathService.GetActiveScriptPath("Get-Prerequisites.ps1");
         var parameters = new Dictionary<string, object>();
 
         // Use the configured log path if not provided
@@ -2054,7 +2062,7 @@ public class HybridPowerShellService : IDisposable
     {
         try
         {
-            var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "Active", "Core Migration", "Migrate-VCenterObject.ps1");
+            var scriptPath = _scriptPathService.GetScriptPath("Active", "Core Migration", "Migrate-VCenterObject.ps1");
 
             // Ensure required parameters are present
             if (!parameters.ContainsKey("SourceVCenter") || !parameters.ContainsKey("TargetVCenter") ||
@@ -2131,6 +2139,69 @@ public class HybridPowerShellService : IDisposable
                 ObjectType = parameters.GetValueOrDefault("ObjectType", "Unknown"),
                 ObjectName = parameters.GetValueOrDefault("ObjectName", "Unknown")
             });
+        }
+    }
+
+    /// <summary>
+    /// Resolves a script path to an absolute path, handling both relative and absolute paths
+    /// </summary>
+    /// <param name="scriptPath">The input script path (relative or absolute)</param>
+    /// <returns>An absolute path to the script file</returns>
+    private string ResolveScriptPath(string scriptPath)
+    {
+        try
+        {
+            // If it's already an absolute path, return as-is
+            if (Path.IsPathRooted(scriptPath))
+            {
+                return scriptPath;
+            }
+
+            // Handle common relative path patterns
+            string cleanedPath = scriptPath;
+            
+            // Remove leading ".\" or "./"
+            if (cleanedPath.StartsWith(".\\") || cleanedPath.StartsWith("./"))
+            {
+                cleanedPath = cleanedPath.Substring(2);
+            }
+            
+            // Try multiple base directory strategies
+            var basePaths = new[]
+            {
+                AppDomain.CurrentDomain.BaseDirectory,  // Most common for deployed applications
+                Environment.CurrentDirectory,           // Current working directory
+                AppContext.BaseDirectory,              // Alternative base directory
+                Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? ""  // Assembly location
+            };
+
+            foreach (var basePath in basePaths)
+            {
+                if (string.IsNullOrEmpty(basePath)) continue;
+                
+                var fullPath = Path.Combine(basePath, cleanedPath);
+                
+                if (File.Exists(fullPath))
+                {
+                    _logger.LogDebug("Script resolved using base path {BasePath}: {ScriptPath} -> {FullPath}", 
+                        basePath, scriptPath, fullPath);
+                    return fullPath;
+                }
+            }
+
+            // If no absolute path worked, return the path combined with the base directory
+            // This allows the File.Exists check to provide the accurate error message
+            var defaultPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, cleanedPath);
+            _logger.LogDebug("Script path resolution failed, using default: {ScriptPath} -> {DefaultPath}", 
+                scriptPath, defaultPath);
+            
+            return defaultPath;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resolving script path: {ScriptPath}", scriptPath);
+            // Return the original path if resolution fails
+            return scriptPath;
         }
     }
 
