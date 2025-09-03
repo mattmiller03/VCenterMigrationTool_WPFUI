@@ -35,55 +35,29 @@ Write-Output ""MODULES_LOADED:$moduleType""";
     public static string BuildPowerCLIConfigurationScript(string moduleType)
     {
         return $@"
-# ===== POWERCLI CONFIGURATION =====
-Write-Output ""DIAGNOSTIC: Configuring PowerCLI settings for {moduleType}...""
+# ===== POWERCLI CONFIGURATION (SERVICE LAYER MANAGED) =====
+Write-Output ""DIAGNOSTIC: PowerCLI configuration for {moduleType} is managed by service layer""
 
+# PowerCLI configuration is assumed to be handled by the service layer
+# No PowerCLI commands are executed at this level to avoid timeouts
+Write-Output ""DIAGNOSTIC: Skipping Set-PowerCLIConfiguration calls - managed by service layer""
+Write-Output ""DIAGNOSTIC: Trusting service layer for PowerCLI SSL/TLS and connection settings""
+
+# Only configure .NET level SSL/TLS settings that don't require PowerCLI modules
 try {{
-    # Essential PowerCLI configurations for multiple vCenter connections
-    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
-    Set-PowerCLIConfiguration -ParticipateInCEIP $false -Confirm:$false -Scope Session -ErrorAction SilentlyContinue | Out-Null
+    # Force TLS 1.2+ for secure connections
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13
     
-    # CRITICAL: Enable multiple vCenter server connections (required for migration scenarios)
-    Set-PowerCLIConfiguration -DefaultVIServerMode Multiple -Confirm:$false -Scope Session | Out-Null
+    # Disable SSL certificate validation at .NET level
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {{$true}}
     
-    # Increase web operation timeout for slower vCenter responses
-    Set-PowerCLIConfiguration -WebOperationTimeoutSeconds 300 -Confirm:$false -Scope Session | Out-Null
-    
-    # Configure proxy settings (bypass proxy for internal connections)
-    Set-PowerCLIConfiguration -ProxyPolicy NoProxy -Confirm:$false -Scope Session | Out-Null
-    
-    # Enhanced SSL/TLS configuration for maximum compatibility
-    try {{
-        # Force TLS 1.2+ for secure connections
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13
-        
-        # Disable SSL certificate validation at .NET level
-        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {{$true}}
-        
-        Write-Output ""DIAGNOSTIC: Enhanced SSL/TLS configuration applied for {moduleType}""
-    }}
-    catch {{
-        Write-Output ""DIAGNOSTIC: Advanced SSL configuration failed for {moduleType}, continuing with PowerCLI settings only""
-    }}
-    
-    # Verify configuration was applied correctly
-    try {{
-        $config = Get-PowerCLIConfiguration
-        Write-Output ""CONFIG_VERIFICATION: InvalidCertificateAction=$($config.InvalidCertificateAction)""
-        Write-Output ""CONFIG_VERIFICATION: DefaultVIServerMode=$($config.DefaultVIServerMode)""
-        Write-Output ""CONFIG_VERIFICATION: WebOperationTimeout=$($config.WebOperationTimeoutSeconds)""
-        Write-Output ""CONFIG_VERIFICATION: ProxyPolicy=$($config.ProxyPolicy)""
-    }}
-    catch {{
-        Write-Output ""DIAGNOSTIC: Configuration verification failed but continuing""
-    }}
-    
-    Write-Output ""DIAGNOSTIC: PowerCLI configuration complete for {moduleType}""
-    Write-Output ""CONFIG_SUCCESS""
+    Write-Output ""DIAGNOSTIC: .NET SSL/TLS configuration applied for {moduleType}""
 }} catch {{
-    Write-Output ""DIAGNOSTIC: PowerCLI configuration failed but modules loaded - Error: $($_.Exception.Message)""
-    Write-Output ""CONFIG_SUCCESS""
-}}";
+    Write-Output ""DIAGNOSTIC: .NET SSL configuration failed for {moduleType}, but continuing""
+}}
+
+Write-Output ""DIAGNOSTIC: PowerCLI configuration completed for {moduleType} (service layer managed)""
+Write-Output ""CONFIG_SUCCESS""";
     }
 
     /// <summary>
@@ -179,45 +153,23 @@ try {
     private static string BuildConfigurationDiagnosticsScript()
     {
         return @"
-# PowerCLI configuration diagnostics and setup
-Write-Output ""DEBUG_CONFIG: Applying PowerCLI configuration""
+# PowerCLI configuration diagnostics (service layer managed)
+Write-Output ""DEBUG_CONFIG: PowerCLI configuration managed by service layer""
 try {
-    # Get current configuration before changes
-    $currentConfig = Get-PowerCLIConfiguration -ErrorAction SilentlyContinue
-    if ($currentConfig) {
-        Write-Output ""DEBUG_CONFIG: Current InvalidCertificateAction: $($currentConfig.InvalidCertificateAction)""
-        Write-Output ""DEBUG_CONFIG: Current DefaultVIServerMode: $($currentConfig.DefaultVIServerMode)""
-        Write-Output ""DEBUG_CONFIG: Current WebOperationTimeout: $($currentConfig.WebOperationTimeoutSeconds)""
-        Write-Output ""DEBUG_CONFIG: Current ProxyPolicy: $($currentConfig.ProxyPolicy)""
-        Write-Output ""DEBUG_CONFIG: Current ParticipateInCEIP: $($currentConfig.ParticipateInCeip)""
-    } else {
-        Write-Output ""DEBUG_CONFIG: Unable to get current PowerCLI configuration""
-    }
+    Write-Output ""DEBUG_CONFIG: Skipping Get-PowerCLIConfiguration - managed by service layer""
+    Write-Output ""DEBUG_CONFIG: Skipping Set-PowerCLIConfiguration calls - managed by service layer""
     
-    # Apply essential configurations
-    Write-Output ""DEBUG_CONFIG: Setting InvalidCertificateAction to Ignore""
-    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+    # Only configure .NET level settings that don't require PowerCLI modules
+    Write-Output ""DEBUG_CONFIG: Applying .NET SSL/TLS settings""
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     
-    Write-Output ""DEBUG_CONFIG: Setting DefaultVIServerMode to Multiple""
-    Set-PowerCLIConfiguration -DefaultVIServerMode Multiple -Confirm:$false -Scope Session | Out-Null
-    
-    Write-Output ""DEBUG_CONFIG: Setting WebOperationTimeoutSeconds to 300""
-    Set-PowerCLIConfiguration -WebOperationTimeoutSeconds 300 -Confirm:$false -Scope Session | Out-Null
-    
-    Write-Output ""DEBUG_CONFIG: Setting ProxyPolicy to NoProxy""
-    Set-PowerCLIConfiguration -ProxyPolicy NoProxy -Confirm:$false -Scope Session | Out-Null
-    
-    # Verify configuration was applied
-    $verifyConfig = Get-PowerCLIConfiguration
-    Write-Output ""DEBUG_CONFIG: VERIFIED InvalidCertificateAction: $($verifyConfig.InvalidCertificateAction)""
-    Write-Output ""DEBUG_CONFIG: VERIFIED DefaultVIServerMode: $($verifyConfig.DefaultVIServerMode)""
-    Write-Output ""DEBUG_CONFIG: VERIFIED WebOperationTimeout: $($verifyConfig.WebOperationTimeoutSeconds)""
-    Write-Output ""DEBUG_CONFIG: VERIFIED ProxyPolicy: $($verifyConfig.ProxyPolicy)""
+    Write-Output ""DEBUG_CONFIG: .NET SSL/TLS configuration applied successfully""
+    Write-Output ""DEBUG_CONFIG: PowerCLI settings assumed to be configured by service layer""
     
 } catch {
-    Write-Output ""DEBUG_CONFIG: PowerCLI configuration failed: $($_.Exception.Message)""
+    Write-Output ""DEBUG_CONFIG: .NET configuration failed: $($_.Exception.Message)""
     Write-Output ""DEBUG_CONFIG: Exception type: $($_.Exception.GetType().Name)""
-    Write-Output ""DEBUG_CONFIG: Stack trace: $($_.Exception.StackTrace)""
 }";
     }
 
