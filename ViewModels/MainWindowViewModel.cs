@@ -303,5 +303,33 @@ namespace VCenterMigrationTool.ViewModels
             OnPropertyChanged(nameof(TargetConnectionBorderBrush));
             OnPropertyChanged(nameof(TargetConnectionTextBrush));
         }
+
+        // Property change handlers for CommunityToolkit.Mvvm - these are called automatically when ObservableProperty values change
+        partial void OnSelectedSourceProfileChanged(VCenterConnection? value)
+        {
+            OnPropertyChanged(nameof(CanConnectSource));
+            OnPropertyChanged(nameof(CanDisconnectSource));
+        }
+
+        partial void OnSelectedTargetProfileChanged(VCenterConnection? value)
+        {
+            OnPropertyChanged(nameof(CanConnectTarget));
+            OnPropertyChanged(nameof(CanDisconnectTarget));
+        }
+
+        partial void OnIsJobRunningChanged(bool value)
+        {
+            NotifyConnectionPropertiesChanged();
+        }
+
+        partial void OnIsSourceConnectedChanged(bool value)
+        {
+            NotifyConnectionPropertiesChanged();
+        }
+
+        partial void OnIsTargetConnectedChanged(bool value)
+        {
+            NotifyConnectionPropertiesChanged();
+        }
     }
 }
