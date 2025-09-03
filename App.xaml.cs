@@ -88,7 +88,11 @@ public partial class App
             services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
 
-            // Phase 2 Refactored Services
+            // Phase 3 Unified Services (Consolidation)
+            services.AddSingleton<UnifiedPowerShellService>();
+            services.AddSingleton<UnifiedConnectionService>();
+            
+            // Phase 2 Refactored Services (Legacy - to be deprecated)
             services.AddSingleton<PowerShellProcessManager>();
             services.AddSingleton<ConnectionStateManager>();
             services.AddSingleton<PowerCLIConfigurationService>();
