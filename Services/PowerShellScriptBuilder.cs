@@ -10,127 +10,23 @@ namespace VCenterMigrationTool.Services;
 public class PowerShellScriptBuilder
 {
     /// <summary>
-    /// Creates a script for importing PowerCLI modules with multiple fallback strategies
+    /// Creates a script that assumes PowerCLI modules are managed by service layer
     /// </summary>
     public static string BuildPowerCLIImportScript()
     {
         return @"
-# ===== POWERCLI MODULE IMPORT WITH MULTIPLE STRATEGIES =====
-Write-Output 'DIAGNOSTIC: Starting PowerCLI module import...'
-Write-Output 'PROGRESS: PowerCLI import - Scanning available modules...'
+# ===== POWERCLI MODULES MANAGED BY SERVICE LAYER =====
+Write-Output 'DIAGNOSTIC: PowerCLI modules are managed by service layer'
+Write-Output 'PROGRESS: PowerCLI import - Assuming modules are available'
 
-# Check for both current and future PowerCLI modules
-$legacyPowerCLI = Get-Module -Name VMware.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
-$vcfPowerCLI = Get-Module -Name VCF.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
-$anyVMwareModules = Get-Module -Name VMware* -ListAvailable -ErrorAction SilentlyContinue
-$anyVCFModules = Get-Module -Name VCF* -ListAvailable -ErrorAction SilentlyContinue
+# PowerCLI modules are managed by the application service layer
+# No module import/installation attempts are made at this level
+$moduleType = 'Service Layer Managed'
+$importSuccess = $true
 
-Write-Output ""DIAGNOSTIC: Legacy PowerCLI (VMware.PowerCLI) found: $(if ($legacyPowerCLI) { $legacyPowerCLI.Version -join ', ' } else { 'None' })""
-Write-Output ""DIAGNOSTIC: VCF PowerCLI (VCF.PowerCLI) found: $(if ($vcfPowerCLI) { $vcfPowerCLI.Version -join ', ' } else { 'None' })""
-
-if (-not $legacyPowerCLI -and -not $vcfPowerCLI) {
-    Write-Output 'DIAGNOSTIC: No PowerCLI modules found in available modules'
-    Write-Output 'DIAGNOSTIC: Available VMware modules:'
-    $anyVMwareModules | ForEach-Object { 
-        Write-Output ""DIAGNOSTIC: - $($_.Name) (Version: $($_.Version))""
-    }
-    Write-Output 'DIAGNOSTIC: Available VCF modules:'
-    $anyVCFModules | ForEach-Object { 
-        Write-Output ""DIAGNOSTIC: - $($_.Name) (Version: $($_.Version))""
-    }
-}
-
-# Multiple strategies to handle both legacy and VCF modules
-$importSuccess = $false
-$importError = $null
-$moduleType = 'Unknown'
-
-# Strategy 1: Try VCF.PowerCLI (future-proof for vSphere 9+)
-if ($vcfPowerCLI) {
-    try {
-        Write-Output 'DIAGNOSTIC: Strategy 1 - Attempting VCF.PowerCLI import (vSphere 9+)...'
-        Write-Output 'PROGRESS: PowerCLI import - Loading VCF.PowerCLI modules...'
-        Import-Module VCF.PowerCLI -Force -ErrorAction Stop
-        Write-Output 'DIAGNOSTIC: Strategy 1 - VCF.PowerCLI import successful'
-        $importSuccess = $true
-        $moduleType = 'VCF.PowerCLI'
-    } catch {
-        $importError = $_.Exception.Message
-        Write-Output ""DIAGNOSTIC: Strategy 1 failed - Error: $importError""
-    }
-}
-
-# Strategy 2: Try legacy VMware.PowerCLI if VCF failed or not available
-if (-not $importSuccess -and $legacyPowerCLI) {
-    try {
-        Write-Output 'DIAGNOSTIC: Strategy 2 - Attempting legacy VMware.PowerCLI import...'
-        Write-Output 'PROGRESS: PowerCLI import - Loading legacy VMware.PowerCLI modules...'
-        Import-Module VMware.PowerCLI -Force -ErrorAction Stop
-        Write-Output 'DIAGNOSTIC: Strategy 2 - Legacy PowerCLI import successful'
-        $importSuccess = $true
-        $moduleType = 'VMware.PowerCLI'
-    } catch {
-        $importError = $_.Exception.Message
-        Write-Output ""DIAGNOSTIC: Strategy 2 failed - Error: $importError""
-        
-        # Strategy 3: Try importing legacy core modules individually
-        try {
-            Write-Output 'DIAGNOSTIC: Strategy 3 - Attempting legacy core module imports individually...'
-            Write-Output 'PROGRESS: PowerCLI import - Loading core modules individually...'
-            Import-Module VMware.VimAutomation.Core -Force -ErrorAction Stop
-            Import-Module VMware.VimAutomation.Common -Force -ErrorAction SilentlyContinue
-            Write-Output 'DIAGNOSTIC: Strategy 3 - Legacy core modules imported successfully'
-            $importSuccess = $true
-            $moduleType = 'VMware.VimAutomation.Core'
-        } catch {
-            Write-Output ""DIAGNOSTIC: Strategy 3 failed - Error: $($_.Exception.Message)""
-            
-            # Strategy 4: Try with specific legacy version selection
-            try {
-                Write-Output 'DIAGNOSTIC: Strategy 4 - Attempting newest legacy version import...'
-                $newestModule = Get-Module -Name VMware.PowerCLI -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
-                if ($newestModule) {
-                    Import-Module $newestModule.ModuleBase -Force -ErrorAction Stop
-                    Write-Output ""DIAGNOSTIC: Strategy 4 - Successfully imported PowerCLI version: $($newestModule.Version)""
-                    $importSuccess = $true
-                    $moduleType = ""VMware.PowerCLI v$($newestModule.Version)""
-                } else {
-                    Write-Output 'DIAGNOSTIC: Strategy 4 - No suitable PowerCLI module found'
-                }
-            } catch {
-                Write-Output ""DIAGNOSTIC: Strategy 4 failed - Error: $($_.Exception.Message)""
-            }
-        }
-    }
-}
-
-# Strategy 5: Try VCF core modules if available (future VCF module structure)
-if (-not $importSuccess -and $anyVCFModules) {
-    try {
-        Write-Output 'DIAGNOSTIC: Strategy 5 - Attempting VCF core modules import...'
-        $vcfCoreModules = $anyVCFModules | Where-Object { $_.Name -like '*Core*' -or $_.Name -like '*Common*' }
-        foreach ($module in $vcfCoreModules) {
-            Import-Module $module.Name -Force -ErrorAction SilentlyContinue
-            Write-Output ""DIAGNOSTIC: - Imported $($module.Name)""
-        }
-        if ($vcfCoreModules) {
-            Write-Output 'DIAGNOSTIC: Strategy 5 - VCF core modules imported successfully'
-            $importSuccess = $true
-            $moduleType = 'VCF Core Modules'
-        }
-    } catch {
-        Write-Output ""DIAGNOSTIC: Strategy 5 failed - Error: $($_.Exception.Message)""
-    }
-}
-
-if ($importSuccess) {
-    Write-Output ""DIAGNOSTIC: PowerCLI module import successful using: $moduleType""
-    Write-Output ""MODULES_LOADED:$moduleType""
-} else {
-    Write-Output ""DIAGNOSTIC: All import strategies failed. Last error: $importError""
-    Write-Output 'DIAGNOSTIC: Consider upgrading to VCF.PowerCLI for vSphere 9+ compatibility'
-    throw ""Failed to import PowerCLI modules after trying multiple strategies: $importError""
-}";
+Write-Output 'DIAGNOSTIC: Trusting service layer module management'
+Write-Output ""DIAGNOSTIC: PowerCLI module management delegated to service layer""
+Write-Output ""MODULES_LOADED:$moduleType""";
     }
 
     /// <summary>
@@ -235,15 +131,7 @@ Write-Output ""DEBUG_END: PowerCLI connection sequence completed for {connection
 # Check PowerCLI module availability and status
 Write-Output ""DEBUG_MODULES: Checking PowerCLI module availability""
 try {
-    $powerCLIModule = Get-Module -Name VMware.PowerCLI -ListAvailable -ErrorAction SilentlyContinue
     $loadedModules = Get-Module -Name VMware* -ErrorAction SilentlyContinue
-    
-    if ($powerCLIModule) {
-        Write-Output ""DEBUG_MODULES: PowerCLI module found - version: $($powerCLIModule.Version -join ', ')""
-        Write-Output ""DEBUG_MODULES: Module base path: $($powerCLIModule[0].ModuleBase)""
-    } else {
-        Write-Output ""DEBUG_MODULES: PowerCLI module not found in available modules""
-    }
     
     if ($loadedModules) {
         Write-Output ""DEBUG_MODULES: Currently loaded VMware modules: $($loadedModules.Name -join ', ')""
@@ -252,13 +140,7 @@ try {
         }
     } else {
         Write-Output ""DEBUG_MODULES: No VMware modules currently loaded""
-        Write-Output ""DEBUG_MODULES: Attempting to import core PowerCLI module""
-        try {
-            Import-Module VMware.VimAutomation.Core -Force -ErrorAction Stop
-            Write-Output ""DEBUG_MODULES: Successfully imported VMware.VimAutomation.Core""
-        } catch {
-            Write-Output ""DEBUG_MODULES: Failed to import VMware.VimAutomation.Core: $($_.Exception.Message)""
-        }
+        Write-Output ""DEBUG_MODULES: PowerCLI modules assumed to be managed by service layer""
     }
 } catch {
     Write-Output ""DEBUG_MODULES: Module check failed: $($_.Exception.Message)""

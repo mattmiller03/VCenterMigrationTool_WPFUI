@@ -74,21 +74,12 @@ public class PowerCLIConfigurationService
                 return result;
             }
 
-            // Step 1: Import PowerCLI modules
-            var importResult = await ImportPowerCLIModulesAsync(process);
-            if (!importResult.Success)
-            {
-                result.Success = false;
-                result.Message = importResult.Message;
-                result.Errors.AddRange(importResult.Errors);
-                return result;
-            }
-
-            result.ModuleType = importResult.ModuleType;
-            result.Warnings.AddRange(importResult.Warnings);
+            // PowerCLI modules assumed to be managed by service layer - skip import
+            _logger.LogInformation("PowerCLI modules managed by service layer - skipping import phase");
+            result.ModuleType = "Service Layer Managed";
 
             // Step 2: Configure PowerCLI settings
-            var configResult = await ApplyPowerCLIConfigurationAsync(process, importResult.ModuleType);
+            var configResult = await ApplyPowerCLIConfigurationAsync(process, result.ModuleType);
             if (!configResult.Success)
             {
                 result.Success = false;
