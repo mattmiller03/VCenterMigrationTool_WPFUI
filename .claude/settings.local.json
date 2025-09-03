@@ -28,7 +28,11 @@
       "WebFetch(domain:www.nuget.org)",
       "Bash(dotnet tool restore:*)",
       "Bash(dotnet tool list:*)",
-      "Bash(dotnet tool run pwsh:*)"
+      "Bash(dotnet tool run pwsh:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet list package:*)",
+      "Bash(pwsh:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

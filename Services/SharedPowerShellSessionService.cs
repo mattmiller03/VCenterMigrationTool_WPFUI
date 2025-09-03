@@ -39,33 +39,82 @@ namespace VCenterMigrationTool.Services
             {
                 _logger.LogInformation("Initializing shared PowerShell session with PowerCLI support");
 
-                // Create initial session state with PowerCLI modules
+                // Create initial session state with unrestricted execution policy
                 var initialSessionState = InitialSessionState.CreateDefault();
                 
-                // Import PowerCLI modules - try both new and legacy approaches
-                var powerCLIModules = new[]
-                {
-                    "VMware.PowerCLI",
-                    "VMware.VimAutomation.Core",
-                    "VMware.VimAutomation.Common"
-                };
-
-                foreach (var module in powerCLIModules)
-                {
-                    try
-                    {
-                        initialSessionState.ImportPSModule(new[] { module });
-                        _logger.LogDebug("Successfully imported module: {Module}", module);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning("Could not import module {Module}: {Error}", module, ex.Message);
-                    }
-                }
-
-                // Create the runspace with initial session state
+                // Set execution policy to bypass for this session to avoid module loading issues
+                initialSessionState.ExecutionPolicy = Microsoft.PowerShell.ExecutionPolicy.Bypass;
+                
+                // Create the runspace with execution policy bypassed
                 _runspace = RunspaceFactory.CreateRunspace(initialSessionState);
                 _runspace.Open();
+
+                // Now try to import PowerCLI modules after runspace is open with comprehensive execution policy handling
+                var moduleImportScript = @"
+                    try {
+                        # Diagnostic: Check current execution policy in the runspace
+                        $currentPolicy = Get-ExecutionPolicy
+                        $currentScope = Get-ExecutionPolicy -List
+                        Write-Output ""DIAGNOSTIC: Current execution policy in runspace: $currentPolicy""
+                        Write-Output ""DIAGNOSTIC: Execution policy scope details:""
+                        $currentScope | ForEach-Object { Write-Output ""DIAGNOSTIC: $($_.Scope): $($_.ExecutionPolicy)"" }
+                        
+                        # Multiple approaches to ensure execution policy allows module loading
+                        try {
+                            Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -ErrorAction SilentlyContinue
+                            Write-Output ""DIAGNOSTIC: Successfully set execution policy to Bypass for Process scope""
+                        }
+                        catch {
+                            Write-Output ""DIAGNOSTIC: Could not set execution policy - $($_.Exception.Message)""
+                        }
+                        
+                        # Additional execution policy override attempts
+                        try {
+                            $ExecutionContext.SessionState.LanguageMode = 'FullLanguage'
+                        }
+                        catch {
+                            # Ignore language mode setting errors
+                        }
+                        
+                        # Try to import PowerCLI modules with comprehensive error handling
+                        $modules = @('VMware.PowerCLI', 'VMware.VimAutomation.Core', 'VMware.VimAutomation.Common', 'VMware.VimAutomation.Sdk')
+                        $successCount = 0
+                        
+                        foreach ($module in $modules) {
+                            try {
+                                # First try to find the module
+                                $moduleInfo = Get-Module -ListAvailable -Name $module -ErrorAction SilentlyContinue
+                                if ($moduleInfo) {
+                                    # Try to import with multiple approaches
+                                    Import-Module $module -Force -DisableNameChecking -ErrorAction Stop
+                                    Write-Output ""MODULE_IMPORTED: $module""
+                                    $successCount++
+                                } else {
+                                    Write-Output ""MODULE_WARNING: Module $module not found in available modules""
+                                }
+                            }
+                            catch {
+                                # Try alternative import method
+                                try {
+                                    Import-Module $module -Force -SkipEditionCheck -ErrorAction SilentlyContinue
+                                    Write-Output ""MODULE_FALLBACK_IMPORTED: $module""
+                                    $successCount++
+                                }
+                                catch {
+                                    Write-Output ""MODULE_WARNING: Could not import $module - $($_.Exception.Message)""
+                                }
+                            }
+                        }
+                        
+                        Write-Output ""MODULES_PROCESSED: PowerCLI module import completed ($successCount/$($modules.Count) successful)""
+                    }
+                    catch {
+                        Write-Output ""MODULE_ERROR: $($_.Exception.Message)""
+                    }
+                ";
+
+                var moduleResult = ExecuteScriptInternal(moduleImportScript);
+                _logger.LogDebug("Module import result: {Result}", moduleResult);
 
                 // Configure PowerCLI settings
                 var initScript = @"

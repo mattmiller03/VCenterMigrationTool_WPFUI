@@ -7,836 +7,264 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:helpers="clr-namespace:VCenterMigrationTool.Helpers"
       mc:Ignorable="d"
-      d:DesignHeight="1000" d:DesignWidth="1400">
+      d:DesignHeight="800" d:DesignWidth="1400">
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
-        <helpers:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
-        <helpers:BoolToColorConverter x:Key="BoolToColorConverter"/>
-        <helpers:BoolToAppearanceConverter x:Key="BoolToAppearanceConverter"/>
         
-        <!-- Transparent Button Style for Navigation Cards -->
-        <Style x:Key="TransparentButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <!-- TreeView Item Template -->
+        <HierarchicalDataTemplate x:Key="InventoryNodeTemplate" ItemsSource="{Binding Children}">
+            <StackPanel Orientation="Horizontal" Margin="2">
+                <ui:SymbolIcon Symbol="{Binding IconSymbol}" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="13"/>
+                <TextBlock Text="{Binding Details}" 
+                          FontSize="11" 
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                          Margin="8,0,0,0" 
+                          VerticalAlignment="Center"/>
+            </StackPanel>
+        </HierarchicalDataTemplate>
+        
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Grid Margin="20">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*" MinHeight="400"/>
-                <RowDefinition Height="200"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-            <!-- Header -->
-            <Grid Grid.Row="0" Margin="0,0,0,20">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="vCenter Objects Migration" 
-                               FontSize="28" 
-                               FontWeight="SemiBold"/>
-                    <TextBlock Text="Migrate roles, permissions, folders, tags, and other vCenter objects between clusters" 
-                               Opacity="0.7"
-                               FontSize="14"
-                               Margin="0,5,0,0"
-                               TextWrapping="Wrap"/>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="vCenter Inventory" 
+                           FontSize="28" 
+                           FontWeight="SemiBold"/>
+                <TextBlock Text="Explore and compare your source and target vCenter environments" 
+                           Opacity="0.7"
+                           FontSize="14"
+                           Margin="0,5,0,0"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+            
+            <!-- Refresh Button -->
+            <ui:Button Grid.Column="1" 
+                      Content="Refresh Inventory" 
+                      Icon="{ui:SymbolIcon ArrowSync24}"
+                      Command="{Binding RefreshInventoryTreesCommand}"
+                      Appearance="Secondary"
+                      VerticalAlignment="Top"/>
+        </Grid>
+
+        <!-- Loading Indicator -->
+        <ui:Card Grid.Row="1" 
+                Margin="0,0,0,15"
+                Visibility="{Binding IsLoadingInventory, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="15">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <ui:ProgressRing IsIndeterminate="True" Width="20" Height="20" Margin="0,0,10,0"/>
+                    <TextBlock Text="Loading vCenter inventory data..." 
+                              FontSize="14"
+                              VerticalAlignment="Center"/>
                 </StackPanel>
-
-                <StackPanel Grid.Column="1" 
-                           Orientation="Horizontal"
-                           VerticalAlignment="Center"
-                           Margin="0,0,15,0">
-                    <ui:Button Content="Export Objects" 
-                              Icon="{ui:SymbolIcon ArrowExport24}"
-                              Command="{Binding ExportObjectsCommand}"
-                              Appearance="Secondary"
-                              Margin="0,0,10,0"
-                              Padding="12,8"
-                              ToolTip="Export current objects to file"/>
-                    
-                    <ui:Button Content="Import Objects" 
-                              Icon="{ui:SymbolIcon ArrowImport24}"
-                              Command="{Binding ImportObjectsCommand}"
-                              Appearance="Secondary"
-                              Margin="0,0,10,0"
-                              Padding="12,8"
-                              ToolTip="Import objects from file"/>
-                    
-                    <ui:Button Content="Refresh" 
-                              Icon="{ui:SymbolIcon ArrowSync24}"
-                              Command="{Binding RefreshConnectionsCommand}"
-                              Appearance="Secondary"
-                              Padding="12,8"
-                              ToolTip="Refresh connections and data"/>
-                </StackPanel>
-
-                <ui:Button Grid.Column="2" 
-                          Content="Start Migration" 
-                          Icon="{ui:SymbolIcon Play24}"
-                          Command="{Binding StartMigrationCommand}"
-                          Appearance="Primary"
-                          VerticalAlignment="Center"
-                          Padding="20,10"
-                          FontSize="14"
-                          IsEnabled="{Binding CanStartMigration}"/>
             </Grid>
+        </ui:Card>
 
+        <!-- Dual Inventory Trees -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-            <!-- Migration Categories -->
-            <ui:Card Grid.Row="2" Margin="0,0,0,20">
-                <Grid Margin="20,15">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    
-                    <TextBlock Grid.Row="0" 
-                              Text="Migration Categories" 
-                              FontSize="16" 
-                              FontWeight="SemiBold"
-                              Margin="0,0,0,15"/>
-                    
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <!-- Infrastructure Migration Card -->
-                        <ui:Card Grid.Column="0" 
-                                 Margin="0,0,10,0"
-                                 Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                 BorderThickness="1">
-                            <Button Style="{StaticResource TransparentButtonStyle}"
-                                    Padding="20"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    Click="NavigateToInfrastructureMigration">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                        <ui:SymbolIcon Symbol="Server24" 
-                                                      FontSize="24"
-                                                      Margin="0,0,15,0"/>
-                                        <TextBlock Text="Infrastructure Migration" 
-                                                  FontSize="16" 
-                                                  FontWeight="SemiBold"
-                                                  VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                    <TextBlock Text="Migrate datacenters, clusters, ESXi hosts, and datastores between vCenter environments"
-                                              FontSize="12"
-                                              Opacity="0.7"
-                                              TextWrapping="Wrap"/>
-                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                        <TextBlock Text="Click to access →" 
-                                                  FontSize="11" 
-                                                  Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Button>
-                        </ui:Card>
-                        
-                        <!-- Virtual Machines Migration Card -->
-                        <ui:Card Grid.Column="1" 
-                                 Margin="5,0"
-                                 Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                 BorderThickness="1">
-                            <Button Style="{StaticResource TransparentButtonStyle}"
-                                    Padding="20"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    Click="NavigateToVirtualMachinesMigration">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                        <ui:SymbolIcon Symbol="Desktop24" 
-                                                      FontSize="24"
-                                                      Margin="0,0,15,0"/>
-                                        <TextBlock Text="Virtual Machines Migration" 
-                                                  FontSize="16" 
-                                                  FontWeight="SemiBold"
-                                                  VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                    <TextBlock Text="Migrate virtual machines, resource pools, and VM configurations between environments"
-                                              FontSize="12"
-                                              Opacity="0.7"
-                                              TextWrapping="Wrap"/>
-                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                        <TextBlock Text="Click to access →" 
-                                                  FontSize="11" 
-                                                  Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Button>
-                        </ui:Card>
-                        
-                        <!-- Admin Configuration Migration Card -->
-                        <ui:Card Grid.Column="2" 
-                                 Margin="10,0,0,0"
-                                 Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                 BorderThickness="1">
-                            <Button Style="{StaticResource TransparentButtonStyle}"
-                                    Padding="20"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    Click="NavigateToAdminConfigMigration">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                        <ui:SymbolIcon Symbol="Settings24" 
-                                                      FontSize="24"
-                                                      Margin="0,0,15,0"/>
-                                        <TextBlock Text="Admin Configuration Migration" 
-                                                  FontSize="16" 
-                                                  FontWeight="SemiBold"
-                                                  VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                    <TextBlock Text="Migrate roles, permissions, folders, tags, certificates, and administrative settings"
-                                              FontSize="12"
-                                              Opacity="0.7"
-                                              TextWrapping="Wrap"/>
-                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                        <TextBlock Text="Click to access →" 
-                                                  FontSize="11" 
-                                                  Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Button>
-                        </ui:Card>
-                    </Grid>
-                </Grid>
-            </ui:Card>
-
-            <!-- Migration Options -->
-            <ui:Card Grid.Row="3" Margin="0,0,0,20">
-                <Grid Margin="20,15">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Grid.Row="0" 
-                              Text="Migration Options" 
-                              FontSize="16" 
-                              FontWeight="SemiBold"
-                              Margin="0,0,0,15"/>
-
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Left Column -->
-                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
-                            <CheckBox IsChecked="{Binding MigrateRoles}" Margin="0,0,0,12">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="People24" Margin="0,0,8,0" FontSize="16"/>
-                                    <StackPanel>
-                                        <TextBlock Text="Roles &amp; Permissions" FontWeight="Medium"/>
-                                        <TextBlock Text="Migrate user roles and their permissions" FontSize="11" Opacity="0.7"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </CheckBox>
-
-                            <CheckBox IsChecked="{Binding MigrateFolders}" Margin="0,0,0,12">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="Folder24" Margin="0,0,8,0" FontSize="16"/>
-                                    <StackPanel>
-                                        <TextBlock Text="Folder Structure" FontWeight="Medium"/>
-                                        <TextBlock Text="Migrate VM and host folder organization" FontSize="11" Opacity="0.7"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </CheckBox>
-
-                            <CheckBox IsChecked="{Binding MigrateTags}" Margin="0,0,0,12">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="Tag24" Margin="0,0,8,0" FontSize="16"/>
-                                    <StackPanel>
-                                        <TextBlock Text="Tags &amp; Categories" FontWeight="Medium"/>
-                                        <TextBlock Text="Migrate custom tags and their categories" FontSize="11" Opacity="0.7"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </CheckBox>
-                        </StackPanel>
-
-                        <!-- Right Column -->
-                        <StackPanel Grid.Column="1">
-                            <CheckBox IsChecked="{Binding MigratePermissions}" Margin="0,0,0,12">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="Shield24" Margin="0,0,8,0" FontSize="16"/>
-                                    <StackPanel>
-                                        <TextBlock Text="Permissions" FontWeight="Medium"/>
-                                        <TextBlock Text="Migrate object-level permissions" FontSize="11" Opacity="0.7"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </CheckBox>
-
-                            <CheckBox IsChecked="{Binding MigrateResourcePools}" Margin="0,0,0,12">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="DataArea24" Margin="0,0,8,0" FontSize="16"/>
-                                    <StackPanel>
-                                        <TextBlock Text="Resource Pools" FontWeight="Medium"/>
-                                        <TextBlock Text="Migrate resource pool configurations" FontSize="11" Opacity="0.7"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </CheckBox>
-
-                            <CheckBox IsChecked="{Binding MigrateCustomAttributes}" Margin="0,0,0,12">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="Settings24" Margin="0,0,8,0" FontSize="16"/>
-                                    <StackPanel>
-                                        <TextBlock Text="Custom Attributes" FontWeight="Medium"/>
-                                        <TextBlock Text="Migrate custom field definitions" FontSize="11" Opacity="0.7"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </CheckBox>
-                        </StackPanel>
-                    </Grid>
-                </Grid>
-            </ui:Card>
-
-            <!-- Cluster Selection -->
-            <ui:Card Grid.Row="4" Margin="0,0,0,20">
-                <Grid Margin="20,15">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
-                        <ui:SymbolIcon Symbol="Storage24" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Cluster Selection" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <ui:ProgressRing Grid.Column="1" 
-                                         IsIndeterminate="True" 
-                                         Width="20" Height="20"
-                                         Margin="15,0,0,0"
-                                         Visibility="{Binding IsLoadingClusters, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    </StackPanel>
-
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Source Cluster -->
-                        <StackPanel Grid.Column="0" Margin="0,0,15,0">
-                            <TextBlock Text="Source Cluster" FontWeight="Medium" Margin="0,0,0,8"/>
-                            <ComboBox ItemsSource="{Binding SourceClusters}"
-                                     SelectedItem="{Binding SelectedSourceCluster}"
-                                     MinHeight="40"
-                                     IsEnabled="{Binding IsSourceConnected}">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding DisplayName}" FontWeight="Medium"/>
-                                            <TextBlock Text="{Binding DatacenterInfo}" FontSize="10" Opacity="0.6" Margin="0,1,0,0"/>
-                                            <TextBlock FontSize="11" Opacity="0.7">
-                                                <TextBlock.Text>
-                                                    <MultiBinding StringFormat="\{0\} hosts • \{1\} VMs • \{2\} datastores">
-                                                        <Binding Path="HostCount"/>
-                                                        <Binding Path="VmCount"/>
-                                                        <Binding Path="DatastoreCount"/>
-                                                    </MultiBinding>
-                                                </TextBlock.Text>
-                                            </TextBlock>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </StackPanel>
-
-                        <ui:SymbolIcon Grid.Column="1" 
-                                      Symbol="ArrowRight24" 
-                                      FontSize="20"
-                                      VerticalAlignment="Center"
-                                      Margin="0,20,0,0"
-                                      Opacity="0.6"/>
-
-                        <!-- Target Cluster -->
-                        <StackPanel Grid.Column="2" Margin="15,0,0,0">
-                            <TextBlock Text="Target Cluster" FontWeight="Medium" Margin="0,0,0,8"/>
-                            <ComboBox ItemsSource="{Binding TargetClusters}"
-                                     SelectedItem="{Binding SelectedTargetCluster}"
-                                     MinHeight="40"
-                                     IsEnabled="{Binding IsTargetConnected}">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding DisplayName}" FontWeight="Medium"/>
-                                            <TextBlock Text="{Binding DatacenterInfo}" FontSize="10" Opacity="0.6" Margin="0,1,0,0"/>
-                                            <TextBlock FontSize="11" Opacity="0.7">
-                                                <TextBlock.Text>
-                                                    <MultiBinding StringFormat="\{0\} hosts • \{1\} VMs • \{2\} datastores">
-                                                        <Binding Path="HostCount"/>
-                                                        <Binding Path="VmCount"/>
-                                                        <Binding Path="DatastoreCount"/>
-                                                    </MultiBinding>
-                                                </TextBlock.Text>
-                                            </TextBlock>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </StackPanel>
-                    </Grid>
-                </Grid>
-            </ui:Card>
-
-            <!-- Cluster Items -->
-            <ui:Card Grid.Row="5" Margin="0,0,0,20">
+            <!-- Source vCenter Inventory -->
+            <ui:Card Grid.Column="0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Header -->
+                    <!-- Source Header -->
                     <Border Grid.Row="0" 
-                           Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                           Padding="20,15">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            
-                            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Database24" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Objects to Migrate" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                           Background="{DynamicResource ControlFillColorInputActiveBrush}"
+                           BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
+                           BorderThickness="0,0,0,1"
+                           Padding="15,12">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                <ui:SymbolIcon Symbol="Server24" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Source vCenter" 
+                                          FontWeight="SemiBold"
+                                          FontSize="16"
+                                          VerticalAlignment="Center"/>
+                                <Border Background="{Binding SourceConnectionBackgroundBrush}"
+                                       BorderBrush="{Binding SourceConnectionBorderBrush}"
+                                       BorderThickness="1"
+                                       CornerRadius="10"
+                                       Padding="6,2"
+                                       Margin="10,0,0,0">
+                                    <TextBlock Text="{Binding SourceConnectionStatusShort}"
+                                              FontSize="10"
+                                              Foreground="{Binding SourceConnectionTextBrush}"/>
+                                </Border>
                             </StackPanel>
-                            
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="15,0">
-                                <TextBlock Text="{Binding ClusterItems.Count, StringFormat=Total: \{0\}}" 
-                                          Margin="0,0,15,0" FontSize="12" Opacity="0.7" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding TotalItemsToMigrate, StringFormat=Selected: \{0\}}" 
-                                          FontSize="12" Opacity="0.7" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            
-                            <ui:Button Grid.Column="2" 
-                                      Content="Refresh Items" 
-                                      Icon="{ui:SymbolIcon ArrowSync20}"
-                                      Command="{Binding LoadClusterItemsCommand}"
-                                      Appearance="Secondary"
+                            <TextBlock Text="{Binding SourceVCenterInfo}" 
                                       FontSize="12"
-                                      Padding="12,6"/>
-                        </Grid>
+                                      Opacity="0.8"/>
+                        </StackPanel>
                     </Border>
 
-                    <!-- Loading indicator -->
-                    <StackPanel Grid.Row="1" 
-                               Visibility="{Binding IsLoadingClusterItems, Converter={StaticResource BooleanToVisibilityConverter}}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               Margin="0,50">
-                        <ui:ProgressRing IsIndeterminate="True" Width="50" Height="50"/>
-                        <TextBlock Text="Loading cluster objects..." 
-                                  Margin="0,15,0,0"
-                                  FontSize="14"
-                                  Opacity="0.7"
-                                  HorizontalAlignment="Center"/>
-                    </StackPanel>
-
-                    <!-- Empty State -->
-                    <StackPanel Grid.Row="1"
-                               Visibility="{Binding ClusterItems.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=true}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               Margin="0,50">
-                        <ui:SymbolIcon Symbol="Database24" 
-                                      FontSize="64" 
-                                      Opacity="0.3"
-                                      Margin="0,0,0,20"/>
-                        <TextBlock Text="No objects to display" 
-                                  FontSize="18" 
-                                  FontWeight="Medium"
-                                  Opacity="0.6"
-                                  HorizontalAlignment="Center"
-                                  Margin="0,0,0,8"/>
-                        <TextBlock Text="Select a source cluster and configure migration options" 
-                                  FontSize="14" 
-                                  Opacity="0.5"
-                                  HorizontalAlignment="Center"
-                                  TextWrapping="Wrap"
-                                  TextAlignment="Center"/>
-                    </StackPanel>
-
-                    <!-- Items List -->
-                    <ScrollViewer Grid.Row="1" 
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Disabled"
-                                 Visibility="{Binding ClusterItems.Count, Converter={StaticResource CountToVisibilityConverter}}">
-                        <ItemsControl ItemsSource="{Binding ClusterItems}" Margin="0,1,0,0">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-                                           BorderThickness="0,0,0,1"
-                                           Padding="20,12"
-                                           Background="Transparent">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Style.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
-                                                    </Trigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <CheckBox Grid.Column="0" 
-                                                     IsChecked="{Binding IsSelected}"
-                                                     VerticalAlignment="Center"
-                                                     Margin="0,0,15,0"/>
-
-                                            <ui:SymbolIcon Grid.Column="1" 
-                                                          Symbol="{Binding TypeIcon}" 
-                                                          FontSize="18"
-                                                          Margin="0,0,12,0"
-                                                          VerticalAlignment="Center"
-                                                          Foreground="{Binding TypeColor}"/>
-
-                                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" 
-                                                          FontWeight="Medium"
-                                                          FontSize="14"/>
-                                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                                    <TextBlock Text="{Binding Type}" 
-                                                              FontSize="12"
-                                                              Opacity="0.6"
-                                                              Margin="0,0,15,0"/>
-                                                    <TextBlock Text="{Binding Path}" 
-                                                              FontSize="11"
-                                                              Opacity="0.5"
-                                                              FontFamily="Consolas"/>
-                                                </StackPanel>
-                                            </StackPanel>
-
-                                            <TextBlock Grid.Column="3" 
-                                                      Text="{Binding ItemCount, StringFormat=\{0\} items}"
-                                                      VerticalAlignment="Center"
-                                                      FontSize="12"
-                                                      Opacity="0.6"
-                                                      Margin="15,0"/>
-
-                                            <Border Grid.Column="4" 
-                                                   Background="{Binding StatusColor}"
-                                                   CornerRadius="12"
-                                                   Padding="8,4"
-                                                   Margin="15,0">
-                                                <TextBlock Text="{Binding Status}" 
-                                                          Foreground="White"
-                                                          FontSize="11"
-                                                          FontWeight="Medium"/>
-                                            </Border>
-
-                                            <ui:SymbolIcon Grid.Column="5" 
-                                                          Symbol="ChevronRight20"
-                                                          FontSize="16"
-                                                          Opacity="0.4"
-                                                          Margin="10,0,0,0"
-                                                          VerticalAlignment="Center"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Grid>
-            </ui:Card>
-
-            <!-- Migration Progress -->
-            <ui:Card Grid.Row="6" 
-                    Margin="0,0,0,20"
-                    Visibility="{Binding IsMigrating, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <Grid Margin="20,15">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
-                        <ui:SymbolIcon Symbol="ArrowSync24" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Migration Progress" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding OverallProgress, StringFormat=\{0:F1\}%}" 
-                                  FontSize="14" 
-                                  FontWeight="Medium"
-                                  Margin="15,0,0,0"
-                                  VerticalAlignment="Center"
-                                  Opacity="0.8"/>
-                    </StackPanel>
-
-                    <ProgressBar Grid.Row="1" 
-                                Value="{Binding OverallProgress}"
-                                Maximum="100"
-                                Height="12"
-                                Margin="0,0,0,15"/>
-
-                    <TextBlock Grid.Row="2" 
-                              Text="{Binding CurrentTaskDetails}"
-                              FontSize="13"
-                              Margin="0,0,0,15"
-                              TextWrapping="Wrap"/>
-
-                    <!-- Migration Statistics -->
-                    <Grid Grid.Row="4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding TotalItemsToMigrate}" 
-                                      FontSize="24" 
-                                      FontWeight="Bold"
-                                      HorizontalAlignment="Center"/>
-                            <TextBlock Text="Total" 
-                                      FontSize="12" 
-                                      Opacity="0.6"
-                                      HorizontalAlignment="Center"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding SuccessfulMigrations}" 
-                                      FontSize="24" 
-                                      FontWeight="Bold"
-                                      Foreground="#4CAF50"
-                                      HorizontalAlignment="Center"/>
-                            <TextBlock Text="Success" 
-                                      FontSize="12" 
-                                      Opacity="0.6"
-                                      HorizontalAlignment="Center"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding FailedMigrations}" 
-                                      FontSize="24" 
-                                      FontWeight="Bold"
-                                      Foreground="#F44336"
-                                      HorizontalAlignment="Center"/>
-                            <TextBlock Text="Failed" 
-                                      FontSize="12" 
-                                      Opacity="0.6"
-                                      HorizontalAlignment="Center"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="3" HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding SkippedMigrations}" 
-                                      FontSize="24" 
-                                      FontWeight="Bold"
-                                      Foreground="#FF9800"
-                                      HorizontalAlignment="Center"/>
-                            <TextBlock Text="Skipped" 
-                                      FontSize="12" 
-                                      Opacity="0.6"
-                                      HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Grid>
-                </Grid>
-            </ui:Card>
-
-            <!-- Activity Log Terminal Panel - Dashboard Style -->
-            <ui:CardControl Grid.Row="7" Margin="0,20,0,20">
-                <ui:CardControl.Header>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <StackPanel Grid.Column="0" Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="WindowConsole20" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Activity Log" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        </StackPanel>
-                        
-                        <ui:Button Grid.Column="1" 
-                                  Content="Auto Scroll"
-                                  Margin="0,0,8,0"
-                                  Appearance="{Binding IsAutoScrollEnabled, Converter={StaticResource BoolToAppearanceConverter}}"
-                                  Command="{Binding ToggleAutoScrollCommand}"/>
-                        
-                        <ui:Button Grid.Column="2" 
-                                  Content="Clear"
-                                  Appearance="Secondary"
-                                  Command="{Binding ClearLogCommand}"/>
-                    </Grid>
-                </ui:CardControl.Header>
-                
-                <Border Background="#1E1E1E" 
-                        BorderBrush="#404040" 
-                        BorderThickness="1" 
-                        CornerRadius="4">
-                    <ScrollViewer Name="ActivityLogScrollViewer" 
-                                  VerticalScrollBarVisibility="Auto" 
-                                  HorizontalScrollBarVisibility="Auto"
-                                  Padding="12">
-                        <TextBlock Name="ActivityLogTextBlock"
-                                  Text="{Binding ActivityLog}"
-                                  FontFamily="Consolas"
-                                  FontSize="12"
-                                  Foreground="#00FF00"
-                                  Background="Transparent"
-                                  TextWrapping="NoWrap"/>
-                    </ScrollViewer>
-                </Border>
-            </ui:CardControl>
-
-            <!-- Quick Access to Sub-Pages -->
-            <ui:Card Grid.Row="8" Margin="0,0,0,20"
-                     Visibility="{Binding IsSourceConnected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <Grid Margin="20,15">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    
-                    <TextBlock Grid.Row="0"
-                              Text="Specialized Object Management"
-                              FontSize="16"
-                              FontWeight="SemiBold"
-                              Margin="0,0,0,15"/>
-                    
+                    <!-- Source Tree -->
                     <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <!-- Resource Pools Card -->
-                        <ui:Card Grid.Column="0" 
-                                 Margin="0,0,10,0"
-                                 Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                 BorderThickness="1">
-                            <Button Style="{StaticResource TransparentButtonStyle}"
-                                    Padding="20"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    Click="NavigateToResourcePools">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="DatabaseStack16" 
-                                                  FontSize="24"
-                                                  Margin="0,0,15,0"/>
-                                    <StackPanel>
-                                        <TextBlock Text="Resource Pools"
-                                                  FontSize="14"
-                                                  FontWeight="SemiBold"/>
-                                        <TextBlock Text="Manage cluster resource allocation and VM organization"
-                                                  FontSize="12"
-                                                  Opacity="0.7"
-                                                  TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Button>
-                        </ui:Card>
-                        
-                        <!-- Network Card -->
-                        <ui:Card Grid.Column="1" 
-                                 Margin="10,0,0,0"
-                                 Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                 BorderThickness="1">
-                            <Button Style="{StaticResource TransparentButtonStyle}"
-                                    Padding="20"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    Click="NavigateToNetwork">
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:SymbolIcon Symbol="NetworkCheck24" 
-                                                  FontSize="24"
-                                                  Margin="0,0,15,0"/>
-                                    <StackPanel>
-                                        <TextBlock Text="Network"
-                                                  FontSize="14"
-                                                  FontWeight="SemiBold"/>
-                                        <TextBlock Text="Configure virtual switches, port groups, and network settings"
-                                                  FontSize="12"
-                                                  Opacity="0.7"
-                                                  TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Button>
-                        </ui:Card>
+                        <!-- Tree Content -->
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                                     HorizontalScrollBarVisibility="Auto"
+                                     Visibility="{Binding HasSourceInventory, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TreeView x:Name="SourceTreeView"
+                                     ItemsSource="{Binding SourceInventoryTree}"
+                                     ItemTemplate="{StaticResource InventoryNodeTemplate}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Padding="10">
+                                <TreeView.ItemContainerStyle>
+                                    <Style TargetType="TreeViewItem">
+                                        <Setter Property="IsExpanded" Value="True"/>
+                                        <Setter Property="Padding" Value="2"/>
+                                    </Style>
+                                </TreeView.ItemContainerStyle>
+                            </TreeView>
+                        </ScrollViewer>
+
+                        <!-- No Data Message -->
+                        <StackPanel HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center"
+                                   Visibility="{Binding HasSourceInventory, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                            <ui:SymbolIcon Symbol="Database24" 
+                                          FontSize="48" 
+                                          Opacity="0.3"
+                                          Margin="0,0,0,10"/>
+                            <TextBlock Text="No inventory data available" 
+                                      FontSize="14"
+                                      Opacity="0.6"
+                                      HorizontalAlignment="Center"/>
+                            <TextBlock Text="Connect to source vCenter to load inventory" 
+                                      FontSize="12"
+                                      Opacity="0.5"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,5,0,0"/>
+                        </StackPanel>
+
+                        <!-- Loading Overlay -->
+                        <Grid Background="{DynamicResource ApplicationBackgroundBrush}" 
+                             Opacity="0.9"
+                             Visibility="{Binding IsLoadingSourceInventory, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal" Margin="20" HorizontalAlignment="Center">
+                                <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0"/>
+                                <TextBlock Text="Loading inventory..." FontSize="12" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
                     </Grid>
                 </Grid>
             </ui:Card>
 
-            <!-- Status Bar -->
-            <ui:Card Grid.Row="9">
-                <Grid Margin="15,12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+            <!-- Target vCenter Inventory -->
+            <ui:Card Grid.Column="2">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                    <ui:SymbolIcon Symbol="Info24" 
-                                  Margin="0,0,12,0"
-                                  VerticalAlignment="Center"/>
+                    <!-- Target Header -->
+                    <Border Grid.Row="0" 
+                           Background="{DynamicResource ControlFillColorInputActiveBrush}"
+                           BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
+                           BorderThickness="0,0,0,1"
+                           Padding="15,12">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                <ui:SymbolIcon Symbol="ServerMultiple20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Target vCenter" 
+                                          FontWeight="SemiBold"
+                                          FontSize="16"
+                                          VerticalAlignment="Center"/>
+                                <Border Background="{Binding TargetConnectionBackgroundBrush}"
+                                       BorderBrush="{Binding TargetConnectionBorderBrush}"
+                                       BorderThickness="1"
+                                       CornerRadius="10"
+                                       Padding="6,2"
+                                       Margin="10,0,0,0">
+                                    <TextBlock Text="{Binding TargetConnectionStatusShort}"
+                                              FontSize="10"
+                                              Foreground="{Binding TargetConnectionTextBrush}"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding TargetVCenterInfo}" 
+                                      FontSize="12"
+                                      Opacity="0.8"/>
+                        </StackPanel>
+                    </Border>
 
-                    <TextBlock Grid.Column="1" 
-                              Text="{Binding OverallStatus}"
-                              VerticalAlignment="Center"
-                              TextWrapping="Wrap"/>
+                    <!-- Target Tree -->
+                    <Grid Grid.Row="1">
+                        <!-- Tree Content -->
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                                     HorizontalScrollBarVisibility="Auto"
+                                     Visibility="{Binding HasTargetInventory, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TreeView x:Name="TargetTreeView"
+                                     ItemsSource="{Binding TargetInventoryTree}"
+                                     ItemTemplate="{StaticResource InventoryNodeTemplate}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Padding="10">
+                                <TreeView.ItemContainerStyle>
+                                    <Style TargetType="TreeViewItem">
+                                        <Setter Property="IsExpanded" Value="True"/>
+                                        <Setter Property="Padding" Value="2"/>
+                                    </Style>
+                                </TreeView.ItemContainerStyle>
+                            </TreeView>
+                        </ScrollViewer>
 
-                    <TextBlock Grid.Column="2"
-                              Text="{Binding MigrationSummary}"
-                              FontSize="12"
-                              Opacity="0.6"
-                              VerticalAlignment="Center"
-                              Visibility="{Binding MigrationEndTime, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <!-- No Data Message -->
+                        <StackPanel HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center"
+                                   Visibility="{Binding HasTargetInventory, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                            <ui:SymbolIcon Symbol="Database24" 
+                                          FontSize="48" 
+                                          Opacity="0.3"
+                                          Margin="0,0,0,10"/>
+                            <TextBlock Text="No inventory data available" 
+                                      FontSize="14"
+                                      Opacity="0.6"
+                                      HorizontalAlignment="Center"/>
+                            <TextBlock Text="Connect to target vCenter to load inventory" 
+                                      FontSize="12"
+                                      Opacity="0.5"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,5,0,0"/>
+                        </StackPanel>
+
+                        <!-- Loading Overlay -->
+                        <Grid Background="{DynamicResource ApplicationBackgroundBrush}" 
+                             Opacity="0.9"
+                             Visibility="{Binding IsLoadingTargetInventory, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal" Margin="20" HorizontalAlignment="Center">
+                                <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0"/>
+                                <TextBlock Text="Loading inventory..." FontSize="12" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
                 </Grid>
             </ui:Card>
         </Grid>
-    </ScrollViewer>
+    </Grid>
 </Page>

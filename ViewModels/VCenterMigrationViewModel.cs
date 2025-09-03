@@ -10,10 +10,12 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using VCenterMigrationTool.Models;
 using VCenterMigrationTool.Services;
 using VCenterMigrationTool.ViewModels.Base;
 using Wpf.Ui.Abstractions.Controls;
+using Wpf.Ui.Controls;
 
 namespace VCenterMigrationTool.ViewModels;
 
@@ -79,6 +81,44 @@ public partial class VCenterMigrationViewModel : ActivityLogViewModelBase, INavi
     [ObservableProperty] private int _failedMigrations;
     [ObservableProperty] private int _skippedMigrations;
 
+    // Inventory Trees
+    [ObservableProperty] private ObservableCollection<InventoryTreeNode> _sourceInventoryTree = new();
+    [ObservableProperty] private ObservableCollection<InventoryTreeNode> _targetInventoryTree = new();
+    [ObservableProperty] private bool _isLoadingInventory;
+    [ObservableProperty] private bool _isLoadingSourceInventory;
+    [ObservableProperty] private bool _isLoadingTargetInventory;
+    [ObservableProperty] private bool _hasSourceInventory;
+    [ObservableProperty] private bool _hasTargetInventory;
+    
+    // Connection Status Brushes (for tree headers)
+    public Brush SourceConnectionBackgroundBrush => IsSourceConnected 
+        ? new SolidColorBrush(Color.FromRgb(220, 255, 220)) // Light green
+        : new SolidColorBrush(Color.FromRgb(255, 245, 245)); // Light red
+
+    public Brush SourceConnectionBorderBrush => IsSourceConnected 
+        ? new SolidColorBrush(Color.FromRgb(144, 238, 144)) // Light green border
+        : new SolidColorBrush(Color.FromRgb(255, 182, 193)); // Light pink border
+
+    public Brush SourceConnectionTextBrush => IsSourceConnected 
+        ? new SolidColorBrush(Color.FromRgb(0, 100, 0)) // Dark green text
+        : new SolidColorBrush(Color.FromRgb(139, 69, 19)); // Brown text
+
+    public Brush TargetConnectionBackgroundBrush => IsTargetConnected 
+        ? new SolidColorBrush(Color.FromRgb(220, 255, 220)) // Light green
+        : new SolidColorBrush(Color.FromRgb(255, 245, 245)); // Light red
+
+    public Brush TargetConnectionBorderBrush => IsTargetConnected 
+        ? new SolidColorBrush(Color.FromRgb(144, 238, 144)) // Light green border
+        : new SolidColorBrush(Color.FromRgb(255, 182, 193)); // Light pink border
+
+    public Brush TargetConnectionTextBrush => IsTargetConnected 
+        ? new SolidColorBrush(Color.FromRgb(0, 100, 0)) // Dark green text
+        : new SolidColorBrush(Color.FromRgb(139, 69, 19)); // Brown text
+
+    // Short connection status for tree headers
+    public string SourceConnectionStatusShort => IsSourceConnected ? "Connected" : "Not Connected";
+    public string TargetConnectionStatusShort => IsTargetConnected ? "Connected" : "Not Connected";
+
     public VCenterMigrationViewModel(
         ILogger<VCenterMigrationViewModel> logger,
         HybridPowerShellService powerShellService, 
@@ -102,6 +142,7 @@ public partial class VCenterMigrationViewModel : ActivityLogViewModelBase, INavi
         {
             await LoadConnectionStatusAsync();
             await LoadClustersAsync();
+            await LoadInventoryTrees();
         }
         catch (Exception ex)
         {
@@ -839,5 +880,285 @@ public partial class VCenterMigrationViewModel : ActivityLogViewModelBase, INavi
         {
             IsLoadingTargetAdminConfig = false;
         }
+    }
+
+    [RelayCommand]
+    private async Task RefreshInventoryTrees()
+    {
+        try
+        {
+            IsLoadingInventory = true;
+            await LoadInventoryTrees();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing inventory");
+            LogMessage($"❌ Error refreshing inventory: {ex.Message}", "ERROR");
+        }
+        finally
+        {
+            IsLoadingInventory = false;
+        }
+    }
+
+    private async Task LoadInventoryTrees()
+    {
+        // Load both source and target inventories in parallel
+        var sourceTask = LoadSourceInventoryTree();
+        var targetTask = LoadTargetInventoryTree();
+        
+        await Task.WhenAll(sourceTask, targetTask);
+    }
+
+    private async Task LoadSourceInventoryTree()
+    {
+        try
+        {
+            IsLoadingSourceInventory = true;
+            SourceInventoryTree.Clear();
+            
+            if (!IsSourceConnected)
+            {
+                HasSourceInventory = false;
+                return;
+            }
+
+            // Get inventory from shared connection service
+            var sourceInventory = _sharedConnectionService.GetSourceInventory();
+            if (sourceInventory?.Datacenters?.Any() == true)
+            {
+                var rootNode = new InventoryTreeNode(
+                    "vCenter Server",
+                    $"{sourceInventory.Datacenters.Count} datacenters",
+                    SymbolRegular.Server24,
+                    InventoryNodeType.vCenter
+                );
+
+                foreach (var datacenter in sourceInventory.Datacenters)
+                {
+                    var dcNode = InventoryTreeNode.CreateDatacenterNode(datacenter);
+                    
+                    // Add clusters from the inventory's Clusters list that belong to this datacenter
+                    var dcClusters = sourceInventory.GetClustersInDatacenter(datacenter.Name);
+                    if (dcClusters?.Any() == true)
+                    {
+                        foreach (var cluster in dcClusters)
+                        {
+                            var clusterNode = InventoryTreeNode.CreateClusterNode(cluster);
+                            
+                            // Add hosts to cluster
+                            var clusterHosts = sourceInventory.Hosts?.Where(h => h.ClusterName == cluster.Name).ToList();
+                            if (clusterHosts?.Any() == true)
+                            {
+                                foreach (var host in clusterHosts)
+                                {
+                                    var hostNode = InventoryTreeNode.CreateHostNode(
+                                        host.Name,
+                                        $"{host.ConnectionState} • {host.PowerState} • {host.CpuCores} cores, {host.MemoryGB:F0} GB",
+                                        host.Id
+                                    );
+                                    clusterNode.Children.Add(hostNode);
+                                }
+                            }
+
+                            // Add VMs to cluster
+                            var clusterVMs = sourceInventory.VirtualMachines?.Where(vm => vm.ClusterName == cluster.Name).ToList();
+                            if (clusterVMs?.Any() == true)
+                            {
+                                var vmsFolder = new InventoryTreeNode(
+                                    "Virtual Machines", 
+                                    $"{clusterVMs.Count} VMs", 
+                                    SymbolRegular.Folder24,
+                                    InventoryNodeType.Folder
+                                );
+                                
+                                foreach (var vm in clusterVMs.Take(50)) // Limit for performance
+                                {
+                                    var vmNode = InventoryTreeNode.CreateVmNode(vm);
+                                    vmsFolder.Children.Add(vmNode);
+                                }
+                                
+                                clusterNode.Children.Add(vmsFolder);
+                            }
+
+                            dcNode.Children.Add(clusterNode);
+                        }
+                    }
+
+                    // Add datastores for this datacenter
+                    var dcDatastores = sourceInventory.Datastores?.Where(ds => ds.ConnectedHosts.Any(hostName => 
+                        sourceInventory.Hosts.Any(h => h.Name == hostName && h.ClusterName != null && sourceInventory.Clusters.Any(c => c.Name == h.ClusterName && c.DatacenterName == datacenter.Name)))).ToList();
+                    if (dcDatastores?.Any() == true)
+                    {
+                        var datastoresFolder = new InventoryTreeNode(
+                            "Datastores", 
+                            $"{dcDatastores.Count} datastores", 
+                            SymbolRegular.Folder24,
+                            InventoryNodeType.Folder
+                        );
+                        
+                        foreach (var datastore in dcDatastores)
+                        {
+                            var dsNode = InventoryTreeNode.CreateDatastoreNode(datastore);
+                            datastoresFolder.Children.Add(dsNode);
+                        }
+                        
+                        dcNode.Children.Add(datastoresFolder);
+                    }
+
+                    rootNode.Children.Add(dcNode);
+                }
+
+                SourceInventoryTree.Add(rootNode);
+                HasSourceInventory = true;
+            }
+            else
+            {
+                HasSourceInventory = false;
+                LogMessage("No source inventory data available. Please ensure source connection is established.", "WARNING");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading source inventory tree");
+            HasSourceInventory = false;
+            LogMessage($"❌ Error loading source inventory: {ex.Message}", "ERROR");
+        }
+        finally
+        {
+            IsLoadingSourceInventory = false;
+        }
+    }
+
+    private async Task LoadTargetInventoryTree()
+    {
+        try
+        {
+            IsLoadingTargetInventory = true;
+            TargetInventoryTree.Clear();
+            
+            if (!IsTargetConnected)
+            {
+                HasTargetInventory = false;
+                return;
+            }
+
+            // Get inventory from shared connection service
+            var targetInventory = _sharedConnectionService.GetTargetInventory();
+            if (targetInventory?.Datacenters?.Any() == true)
+            {
+                var rootNode = new InventoryTreeNode(
+                    "vCenter Server",
+                    $"{targetInventory.Datacenters.Count} datacenters",
+                    SymbolRegular.Server24,
+                    InventoryNodeType.vCenter
+                );
+
+                foreach (var datacenter in targetInventory.Datacenters)
+                {
+                    var dcNode = InventoryTreeNode.CreateDatacenterNode(datacenter);
+                    
+                    // Add clusters from the inventory's Clusters list that belong to this datacenter
+                    var dcClusters = targetInventory.GetClustersInDatacenter(datacenter.Name);
+                    if (dcClusters?.Any() == true)
+                    {
+                        foreach (var cluster in dcClusters)
+                        {
+                            var clusterNode = InventoryTreeNode.CreateClusterNode(cluster);
+                            
+                            // Add hosts to cluster
+                            var clusterHosts = targetInventory.Hosts?.Where(h => h.ClusterName == cluster.Name).ToList();
+                            if (clusterHosts?.Any() == true)
+                            {
+                                foreach (var host in clusterHosts)
+                                {
+                                    var hostNode = InventoryTreeNode.CreateHostNode(
+                                        host.Name,
+                                        $"{host.ConnectionState} • {host.PowerState} • {host.CpuCores} cores, {host.MemoryGB:F0} GB",
+                                        host.Id
+                                    );
+                                    clusterNode.Children.Add(hostNode);
+                                }
+                            }
+
+                            // Add VMs to cluster  
+                            var clusterVMs = targetInventory.VirtualMachines?.Where(vm => vm.ClusterName == cluster.Name).ToList();
+                            if (clusterVMs?.Any() == true)
+                            {
+                                var vmsFolder = new InventoryTreeNode(
+                                    "Virtual Machines", 
+                                    $"{clusterVMs.Count} VMs", 
+                                    SymbolRegular.Folder24,
+                                    InventoryNodeType.Folder
+                                );
+                                
+                                foreach (var vm in clusterVMs.Take(50)) // Limit for performance
+                                {
+                                    var vmNode = InventoryTreeNode.CreateVmNode(vm);
+                                    vmsFolder.Children.Add(vmNode);
+                                }
+                                
+                                clusterNode.Children.Add(vmsFolder);
+                            }
+
+                            dcNode.Children.Add(clusterNode);
+                        }
+                    }
+
+                    // Add datastores for this datacenter
+                    var dcDatastores = targetInventory.Datastores?.Where(ds => ds.ConnectedHosts.Any(hostName => 
+                        targetInventory.Hosts.Any(h => h.Name == hostName && h.ClusterName != null && targetInventory.Clusters.Any(c => c.Name == h.ClusterName && c.DatacenterName == datacenter.Name)))).ToList();
+                    if (dcDatastores?.Any() == true)
+                    {
+                        var datastoresFolder = new InventoryTreeNode(
+                            "Datastores", 
+                            $"{dcDatastores.Count} datastores", 
+                            SymbolRegular.Folder24,
+                            InventoryNodeType.Folder
+                        );
+                        
+                        foreach (var datastore in dcDatastores)
+                        {
+                            var dsNode = InventoryTreeNode.CreateDatastoreNode(datastore);
+                            datastoresFolder.Children.Add(dsNode);
+                        }
+                        
+                        dcNode.Children.Add(datastoresFolder);
+                    }
+
+                    rootNode.Children.Add(dcNode);
+                }
+
+                TargetInventoryTree.Add(rootNode);
+                HasTargetInventory = true;
+            }
+            else
+            {
+                HasTargetInventory = false;
+                LogMessage("No target inventory data available. Please ensure target connection is established.", "WARNING");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading target inventory tree");
+            HasTargetInventory = false;
+            LogMessage($"❌ Error loading target inventory: {ex.Message}", "ERROR");
+        }
+        finally
+        {
+            IsLoadingTargetInventory = false;
+        }
+    }
+
+    private void NotifyConnectionPropertiesChanged()
+    {
+        OnPropertyChanged(nameof(SourceConnectionBackgroundBrush));
+        OnPropertyChanged(nameof(SourceConnectionBorderBrush));
+        OnPropertyChanged(nameof(SourceConnectionTextBrush));
+        OnPropertyChanged(nameof(TargetConnectionBackgroundBrush));
+        OnPropertyChanged(nameof(TargetConnectionBorderBrush));
+        OnPropertyChanged(nameof(TargetConnectionTextBrush));
+        OnPropertyChanged(nameof(SourceConnectionStatusShort));
+        OnPropertyChanged(nameof(TargetConnectionStatusShort));
     }
 }
