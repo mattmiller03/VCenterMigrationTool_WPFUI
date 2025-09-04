@@ -8,6 +8,17 @@ This document outlines the structure and development guide for the vCenter Migra
 
 ### 2.1 Latest Updates in v1.4 ✅
 
+**Unified Connection and Script Execution Architecture (January 2025):**
+- **Process Isolation Fix**: Resolved critical architecture issue where vCenter connections established in main UI weren't accessible to scripts running in different PowerShell processes
+- **PersistantVcenterConnectionService Enhancement**: Added `ExecuteScriptAsync`, `ExecuteDualVCenterScriptAsync`, and `ExecuteCommandAsync` methods to run scripts in same process as persistent connections
+- **HybridPowerShellService Elimination**: Removed HybridPowerShellService dependency from migration ViewModels to prevent process separation conflicts
+- **Unified Script Execution**: All PowerShell operations now execute within persistent connection service ensuring connection accessibility
+- **Direct Module Checking**: Updated PowerShell settings to use direct PowerShell commands instead of script-based prerequisite checking
+- **ModuleInfo Collection**: Transformed single PowerCLI status to collection of required modules (PowerCLI, ExecutionPolicy, .NET Framework) with individual tracking
+- **Credential Management Simplification**: Eliminated redundant credential passing between services by using established connections
+
+### 2.2 Previous Updates in v1.4 ✅
+
 **Dual Connection Architecture Implementation:**
 - **Simultaneous API + PowerCLI Connections**: Dashboard now establishes both API and PowerCLI connections simultaneously for maximum compatibility
 - **Enhanced Connection Status**: Connection details now show status of both API and PowerCLI connections with clear capability indicators
@@ -472,19 +483,26 @@ The application now provides a comprehensive migration suite with professional-g
 ## 14. Recent Code Changes Summary (v1.4)
 
 **Latest Changes in v1.4:**
+- `PersistantVcenterConnectionService.cs`: Added script execution methods (`ExecuteScriptAsync`, `ExecuteDualVCenterScriptAsync`, `ExecuteCommandAsync`) to unify connection and execution in single process
+- `AdminConfigMigrationViewModel.cs`: Removed HybridPowerShellService dependency, updated all script calls to use persistent connection service
+- `PowerShellSettingsViewModel.cs`: Implemented direct module checking with `ModuleInfo` collection instead of script-based prerequisite validation
+- `ModuleInfo.cs`: New observable model for tracking individual PowerShell module requirements (PowerCLI, ExecutionPolicy, .NET Framework)
 - `DashboardViewModel.cs`: Complete dual connection rewrite with simultaneous API + PowerCLI connection establishment
 - `SharedConnectionService.cs`: Enhanced with `SourceApiConnected`/`TargetApiConnected` properties and improved `GetConnectionStatusAsync()` logic
 - `VCenterInventoryService.cs`: Enhanced SSO Admin module error handling with informative fallback messages
-- `AdminConfigMigrationViewModel.cs`: Complete folder migration implementation with actual folder creation, export/import functionality, and Copy-VMFolderStructure.ps1 integration
 - `AppearanceSettingsView.xaml`: Fixed DataTrigger binding error using MultiBinding approach
 - `AccentColorSelectionConverter.cs`: New custom converter for proper accent color selection in settings
 
 **Key Technical Improvements:**
+- **Unified Architecture**: Single service handles both vCenter connections and script execution, eliminating process isolation issues
+- **Simplified Credential Management**: Connections established once through UI are used by all scripts without re-authentication
+- **Enhanced Module Tracking**: Individual status tracking for PowerCLI, ExecutionPolicy, and .NET Framework requirements
+- **Direct PowerShell Integration**: Module checking uses direct commands instead of external scripts for better reliability
+- **Process Consolidation**: All PowerShell operations run in persistent connection processes ensuring connection accessibility
 - **Dual Connection Architecture**: Always attempts both API and PowerCLI connections for maximum compatibility
 - **Complete Folder Migration**: Functional export/import system with actual folder creation using PowerShell integration
 - **Enhanced Error Communication**: Clear, user-friendly messages explaining SSO module limitations
 - **Proper XAML Binding**: Resolved DataTrigger binding issues using WPF-compliant patterns
-- **Connection State Tracking**: Independent tracking of API and PowerCLI connection success/failure
 
 ## 15. Known Issues & Solutions
 
@@ -515,3 +533,7 @@ The application now provides a comprehensive migration suite with professional-g
 ### 15.7 Inappropriate Disconnect Commands (v1.4) ✅ RESOLVED
 **Issue**: Disconnect-VIServer errors appearing in logs during PowerCLI cleanup when modules weren't loaded
 **Solution**: Added conditional checks to only attempt VIServer disconnection when PowerCLI is loaded and has active connections
+
+### 15.8 Process Isolation Architecture (v1.4) ✅ RESOLVED
+**Issue**: vCenter connections established through main UI Connect buttons weren't accessible to scripts running in different PowerShell processes via HybridPowerShellService
+**Solution**: Unified all PowerShell operations in PersistantVcenterConnectionService, ensuring connections and script execution occur in the same process. Eliminated HybridPowerShellService dependency from migration ViewModels.
