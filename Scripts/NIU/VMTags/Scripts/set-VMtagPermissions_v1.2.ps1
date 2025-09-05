@@ -65,22 +65,34 @@ Param(
 
 #region A) Credential Loading and Configs
 # Add this credential loading logic at the beginning of your script
-if ($CredentialPath -and (Test-Path $CredentialPath)) {
-    Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Loading credentials from launcher..." -ForegroundColor Green
-    try {
-        $credentialMetadata = Import-Csv -Path $CredentialPath
-        $credentialFile = $credentialMetadata.CredentialFile
-        
-        if (Test-Path $credentialFile) {
-            $Credential = Import-Clixml -Path $credentialFile
-            Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Credentials loaded successfully for user: $($Credential.UserName)" -ForegroundColor Green
-        } else {
-            throw "Credential file not found: $credentialFile"
+if ($CredentialPath) {
+    # Handle special dry run mode
+    if ($CredentialPath -eq "DRYRUN_MODE") {
+        Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Running in dry run mode - skipping credential loading" -ForegroundColor Yellow
+        # Create a dummy credential for dry run mode
+        $securePassword = ConvertTo-SecureString "DryRunPassword" -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential("DryRunUser", $securePassword)
+    }
+    elseif (Test-Path $CredentialPath) {
+        Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Loading credentials from launcher..." -ForegroundColor Green
+        try {
+            $credentialMetadata = Import-Csv -Path $CredentialPath
+            $credentialFile = $credentialMetadata.CredentialFile
+            
+            if (Test-Path $credentialFile) {
+                $Credential = Import-Clixml -Path $credentialFile
+                Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Credentials loaded successfully for user: $($Credential.UserName)" -ForegroundColor Green
+            } else {
+                throw "Credential file not found: $credentialFile"
+            }
+        }
+        catch {
+            Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [ERROR] Failed to load credentials from file: $_" -ForegroundColor Red
+            throw
         }
     }
-    catch {
-        Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [ERROR] Failed to load credentials from file: $_" -ForegroundColor Red
-        throw
+    else {
+        throw "Credential file path does not exist: $CredentialPath"
     }
 }
 

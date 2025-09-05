@@ -192,7 +192,10 @@ param(
     [switch]$CleanupExpiredCredentials,
 
     [Parameter(Mandatory = $false, HelpMessage = "Remove all stored credentials")]
-    [switch]$ClearAllCredentials
+    [switch]$ClearAllCredentials,
+
+    [Parameter(Mandatory = $false, HelpMessage = "Skip network connectivity tests (for development)")]
+    [switch]$SkipNetworkTests
 )
 
 #region Initialization
@@ -1241,8 +1244,8 @@ function Test-Prerequisites {
             }
         }
         
-        # Test network connectivity (skip in dry run)
-        if (-not $DryRun -and $script:Config -and $script:Config.vCenterServer) {
+        # Test network connectivity (skip in dry run or if explicitly disabled)
+        if (-not $DryRun -and -not $SkipNetworkTests -and $script:Config -and $script:Config.vCenterServer) {
             Write-Log "Testing connectivity to vCenter: $($script:Config.vCenterServer)" -Level Debug
             try {
                 $connection = Test-NetConnection -ComputerName $script:Config.vCenterServer -Port 443 -InformationLevel Quiet -WarningAction SilentlyContinue -ErrorAction Stop
@@ -1593,13 +1596,20 @@ function Start-MainScript {
             }
         }
         
-        # Build process arguments with careful null checking
+        # Create temp files for capturing stdout and stderr
+        $stdoutFile = Join-Path $script:Config.DefaultPaths.TempDirectory "MainScript_$($script:ExecutionId)_stdout.txt"
+        $stderrFile = Join-Path $script:Config.DefaultPaths.TempDirectory "MainScript_$($script:ExecutionId)_stderr.txt"
+        $script:TempFiles += @($stdoutFile, $stderrFile)
+        
+        # Build process arguments with output redirection
         $processArgs = @{
             FilePath = $script:Config.DefaultPaths.PowerShell7Path
             ArgumentList = $ps7Arguments
             Wait = $true
             PassThru = $true
             NoNewWindow = $true
+            RedirectStandardOutput = $stdoutFile
+            RedirectStandardError = $stderrFile
         }
         
         # Only add WorkingDirectory if we have a valid, non-null path
@@ -1707,6 +1717,30 @@ function Start-MainScript {
         $executionTime = $stopwatch.Elapsed.ToString("hh\:mm\:ss")
         
         $exitCode = if ($process.ExitCode -ne $null) { $process.ExitCode } else { 1 }
+        
+        # Capture and log process output
+        try {
+            if (Test-Path $stdoutFile) {
+                $stdout = Get-Content $stdoutFile -Raw -ErrorAction SilentlyContinue
+                if (-not [string]::IsNullOrWhiteSpace($stdout)) {
+                    Write-Log "=== MAIN SCRIPT STDOUT ===" -Level Info
+                    Write-Log $stdout -Level Info
+                    Write-Log "=== END STDOUT ===" -Level Info
+                }
+            }
+            
+            if (Test-Path $stderrFile) {
+                $stderr = Get-Content $stderrFile -Raw -ErrorAction SilentlyContinue
+                if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+                    Write-Log "=== MAIN SCRIPT STDERR ===" -Level Error
+                    Write-Log $stderr -Level Error
+                    Write-Log "=== END STDERR ===" -Level Error
+                }
+            }
+        }
+        catch {
+            Write-Log "Failed to read process output files: $($_.Exception.Message)" -Level Warning
+        }
         
         Write-Log "Process completed with exit code: $($exitCode)" -Level Info
         Write-Log "Execution time: $($executionTime)" -Level Info
