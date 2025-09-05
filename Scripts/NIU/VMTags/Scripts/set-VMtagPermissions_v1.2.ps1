@@ -382,7 +382,7 @@ function Test-VMOSDetection {
     param([string]$VMName = "*")
     
     Write-Log "=== VM OS Detection Diagnostic ===" "INFO"
-    $vms = Get-VM -Name $VMName | Where-Object Name -notmatch '^(vCLS|VLC)' | Select-Object -First 10
+    $vms = Get-VM -Name $VMName | Where-Object Name -notmatch '^(vCLS|VLC|stCtlVM)' | Select-Object -First 10
     
     foreach ($vm in $vms) {
         $osInfo = Get-VMOSInformation -VM $vm
@@ -823,8 +823,15 @@ try {
     Write-Log "Ensuring tag categories exist..." "INFO"
     
     $appCat = Ensure-TagCategory -CategoryName $AppCategoryName
-    $functionCat = Ensure-TagCategory -CategoryName $FunctionCategoryName
     $osCat = Ensure-TagCategory -CategoryName $OsCategoryName
+    
+    # For Function category - use existing instead of creating
+    $functionCat = Get-TagCategory -Name $FunctionCategoryName -ErrorAction SilentlyContinue
+    if (-not $functionCat) {
+        Write-Log "Function category '$($FunctionCategoryName)' not found - this is expected as we reference existing Function tags" "INFO"
+    } else {
+        Write-Log "Using existing Function category '$($FunctionCategoryName)' for domain controller references" "INFO"
+    }
     
     if (-not $appCat) { 
         throw "FATAL: Could not create App category '$($AppCategoryName)'." 
@@ -872,7 +879,7 @@ try {
                 }
                 
                 # Find VMs with this tag
-                $vms = Get-VM -Tag $tagObj -ErrorAction SilentlyContinue | Where-Object Name -notmatch '^(vCLS|VLC)'
+                $vms = Get-VM -Tag $tagObj -ErrorAction SilentlyContinue | Where-Object Name -notmatch '^(vCLS|VLC|stCtlVM)'
                 Write-Log "Found $($vms.Count) VMs with tag '$($row.TagName)'" "DEBUG"
                 
                 if ($vms.Count -eq 0) { 
@@ -935,10 +942,10 @@ try {
     
     Write-Log "Pre-created $osTagsCreated OS tags" "INFO"
     
-    # Get all VMs for OS processing
-    Write-Log "Getting all VMs for OS processing..." "DEBUG"
-    $allVms = Get-VM | Where-Object Name -notmatch '^(vCLS|VLC)'
-    Write-Log "Found $($allVms.Count) VMs to check for OS patterns." "INFO"
+    # Get all VMs for OS processing - excluding system and control VMs
+    Write-Log "Getting all VMs for OS processing (excluding vCLS*, VLC*, stCtlVM* VMs)..." "DEBUG"
+    $allVms = Get-VM | Where-Object Name -notmatch '^(vCLS|VLC|stCtlVM)'
+    Write-Log "Found $($allVms.Count) VMs to check for OS patterns (after filtering system VMs)." "INFO"
     
     $osProcessedCount = 0
     $osSkippedCount = 0
