@@ -947,6 +947,74 @@ function Initialize-Configuration {
         
         $script:Config = Get-VMTagsConfig @loadParams
         
+        # Convert relative paths to absolute paths based on script location
+        if ($script:Config) {
+            $baseDirectory = $scriptRoot
+            Write-Host "Converting relative paths to absolute using base: $baseDirectory" -ForegroundColor Cyan
+            
+            # Function to resolve relative paths
+            function Resolve-RelativePath {
+                param($Path, $BasePath)
+                if ([System.IO.Path]::IsPathRooted($Path)) {
+                    return $Path  # Already absolute
+                } else {
+                    return [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($BasePath, $Path))
+                }
+            }
+            
+            # Update DefaultPaths
+            if ($script:Config.DefaultPaths) {
+                if ($script:Config.DefaultPaths.TempDirectory) {
+                    $script:Config.DefaultPaths.TempDirectory = Resolve-RelativePath $script:Config.DefaultPaths.TempDirectory $baseDirectory
+                }
+                if ($script:Config.DefaultPaths.MainScriptPath) {
+                    $script:Config.DefaultPaths.MainScriptPath = Resolve-RelativePath $script:Config.DefaultPaths.MainScriptPath $baseDirectory
+                }
+                if ($script:Config.DefaultPaths.ConfigDirectory) {
+                    $script:Config.DefaultPaths.ConfigDirectory = Resolve-RelativePath $script:Config.DefaultPaths.ConfigDirectory $baseDirectory
+                }
+                if ($script:Config.DefaultPaths.CredentialStorePath) {
+                    $script:Config.DefaultPaths.CredentialStorePath = Resolve-RelativePath $script:Config.DefaultPaths.CredentialStorePath $baseDirectory
+                }
+                if ($script:Config.DefaultPaths.ModulePath) {
+                    $script:Config.DefaultPaths.ModulePath = Resolve-RelativePath $script:Config.DefaultPaths.ModulePath $baseDirectory
+                }
+            }
+            
+            # Update PowerShell7 WorkingDirectory
+            if ($script:Config.PowerShell7 -and $script:Config.PowerShell7.WorkingDirectory) {
+                $script:Config.PowerShell7.WorkingDirectory = Resolve-RelativePath $script:Config.PowerShell7.WorkingDirectory $baseDirectory
+            }
+            
+            # Update Security CredentialStorePath
+            if ($script:Config.Security -and $script:Config.Security.CredentialStorePath) {
+                $script:Config.Security.CredentialStorePath = Resolve-RelativePath $script:Config.Security.CredentialStorePath $baseDirectory
+            }
+            
+            # Update environment-specific DataPaths
+            foreach ($envName in $script:Config.Environments.Keys) {
+                $env = $script:Config.Environments[$envName]
+                if ($env.DataPaths) {
+                    if ($env.DataPaths.AppPermissionsCSV) {
+                        $env.DataPaths.AppPermissionsCSV = Resolve-RelativePath $env.DataPaths.AppPermissionsCSV $baseDirectory
+                    }
+                    if ($env.DataPaths.OSMappingCSV) {
+                        $env.DataPaths.OSMappingCSV = Resolve-RelativePath $env.DataPaths.OSMappingCSV $baseDirectory
+                    }
+                    if ($env.DataPaths.LogDirectory) {
+                        $env.DataPaths.LogDirectory = Resolve-RelativePath $env.DataPaths.LogDirectory $baseDirectory
+                    }
+                    if ($env.DataPaths.BackupDirectory) {
+                        $env.DataPaths.BackupDirectory = Resolve-RelativePath $env.DataPaths.BackupDirectory $baseDirectory
+                    }
+                }
+            }
+            
+            Write-Host "Path resolution completed" -ForegroundColor Green
+            Write-Host "Main Script Path: $($script:Config.DefaultPaths.MainScriptPath)" -ForegroundColor Cyan
+            Write-Host "Temp Directory: $($script:Config.DefaultPaths.TempDirectory)" -ForegroundColor Cyan
+        }
+        
         if (-not $script:Config) {
             throw "Failed to load configuration"
         }

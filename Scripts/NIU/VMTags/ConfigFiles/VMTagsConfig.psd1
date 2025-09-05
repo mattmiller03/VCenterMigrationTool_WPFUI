@@ -25,10 +25,10 @@
             
             # File paths for DEV
             DataPaths = @{
-                AppPermissionsCSV           =   "C:\Temp\Scripts\VMTags\Data\DEV\AppTagPermissions_DEV.csv"
-                OSMappingCSV                =   "C:\Temp\Scripts\VMTags\Data\DEV\OS-Mappings_DEV.csv"
-                LogDirectory                =   "C:\Temp\Scripts\VMTags\Logs\DEV"
-                BackupDirectory             =   "C:\Temp\Scripts\VMTags\Backup\DEV"
+                AppPermissionsCSV           =   ".\Data\DEV\AppTagPermissions_DEV.csv"
+                OSMappingCSV                =   ".\Data\DEV\OS-Mappings_DEV.csv"
+                LogDirectory                =   ".\Logs\DEV"
+                BackupDirectory             =   ".\Backup\DEV"
             }
             
             # DEV-specific settings
@@ -54,10 +54,10 @@
             }
             
             DataPaths = @{
-                AppPermissionsCSV   =       "C:\Temp\Scripts\VMTags\Data\PROD\App-Permissions-PROD.csv"
-                OSMappingCSV        =       "C:\Temp\Scripts\VMTags\Data\PROD\OS-Mappings-PROD.csv"
-                LogDirectory        =       "C:\Temp\Scripts\VMTags\Logs\PROD"
-                BackupDirectory     =       "C:\Temp\Scripts\VMTags\Backup\PROD"
+                AppPermissionsCSV   =       ".\Data\PROD\App-Permissions-PROD.csv"
+                OSMappingCSV        =       ".\Data\PROD\OS-Mappings-PROD.csv"
+                LogDirectory        =       ".\Logs\PROD"
+                BackupDirectory     =       ".\Backup\PROD"
             }
             
             Settings = @{
@@ -82,10 +82,10 @@
             }
             
             DataPaths = @{
-                AppPermissionsCSV       =   "C:\Temp\Scripts\VMTags\Data\KLEB\AppTagPermissions_KLE.csv"
-                OSMappingCSV            =   "C:\Temp\Scripts\VMTags\Data\KLEB\OS-Mappings_KLE.csv"
-                LogDirectory            =   "C:\Temp\Scripts\VMTags\Logs\KLEB"
-                BackupDirectory         =   "C:\Temp\Scripts\VMTags\Backup\KLEB"
+                AppPermissionsCSV       =   ".\Data\KLEB\AppTagPermissions_KLE.csv"
+                OSMappingCSV            =   ".\Data\KLEB\OS-Mappings_KLE.csv"
+                LogDirectory            =   ".\Logs\KLEB"
+                BackupDirectory         =   ".\Backup\KLEB"
             }
             
             Settings = @{
@@ -110,10 +110,10 @@
             }
             
             DataPaths = @{
-                AppPermissionsCSV       =   "C:\VMTags\Data\OT\App-Permissions-OT.csv"
-                OSMappingCSV            =   "C:\VMTags\Data\OT\OS-Mappings-OT.csv"
-                LogDirectory            =   "C:\VMTags\Logs\OT"
-                BackupDirectory         =   "C:\VMTags\Backup\OT"
+                AppPermissionsCSV       =   ".\Data\OT\App-Permissions-OT.csv"
+                OSMappingCSV            =   ".\Data\OT\OS-Mappings-OT.csv"
+                LogDirectory            =   ".\Logs\OT"
+                BackupDirectory         =   ".\Backup\OT"
             }
             
             Settings = @{
@@ -127,14 +127,14 @@
         }
     }
     
-    # Global Default Paths
+    # Global Default Paths - Use relative paths that work with script location
     DefaultPaths = @{
-        TempDirectory               =   "C:\Temp\Scripts\VMTags\Temp"
+        TempDirectory               =   ".\Temp"
         PowerShell7Path             =   "C:\Program Files\PowerShell\7\pwsh.exe"
-        MainScriptPath              =   "C:\Temp\Scripts\VMTags\Scripts\set-VMtagPermissions_v1.2.ps1"
-        ConfigDirectory             =   "C:\Temp\Scripts\VMTags\ConfigFiles"
-        CredentialStorePath         =   "C:\Temp\Scripts\VMTags\ConfigFiles\Credentials"
-        ModulePath                  =   "C:\VMTags\Modules"
+        MainScriptPath              =   ".\Scripts\set-VMtagPermissions_v1.2.ps1"
+        ConfigDirectory             =   ".\ConfigFiles"
+        CredentialStorePath         =   ".\ConfigFiles\Credentials"
+        ModulePath                  =   ".\Modules"
     }
     
     # CSV Structure Validation
@@ -158,7 +158,7 @@
     PowerShell7 = @{
         ExecutionPolicy = "Bypass"
         TimeoutMinutes = 60
-        WorkingDirectory = "C:\Temp\Scripts\VMTags"
+        WorkingDirectory = "."
         
         StandardArguments = @(
             "-NoProfile"
@@ -205,7 +205,7 @@
     # Enhanced Security Settings
     Security = @{
         # Credential storage settings
-        CredentialStorePath = "C:\Temp\Scripts\VMTags\ConfigFiles\Credentials"  # Updated to match your path structure
+        CredentialStorePath = ".\ConfigFiles\Credentials"  # Updated to use relative path
         StoredCredentialMaxAgeDays = 30
         ValidateStoredCredentials = $true
         AutoStoreCredentials = $false

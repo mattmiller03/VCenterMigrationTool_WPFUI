@@ -100,12 +100,15 @@ function Write-AriaResult {
 #region Main Execution
 $script:Environment = $Environment
 
+# Get script directory for relative path calculations
+$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+
 # Aria Operations specific settings
 $AriaConfig = @{
-    LauncherScript = "C:\Temp\Scripts\VMTags\VM_TagPermissions_Launcher_v2.ps1"
-    ConfigPath = "C:\Temp\Scripts\VMTags\ConfigFiles"
-    LogPath = "C:\Temp\Scripts\VMTags\Logs\Aria"
-    TempPath = "C:\Temp\Scripts\VMTags\Temp"
+    LauncherScript = Join-Path $scriptRoot "VM_TagPermissions_Launcher_v2.ps1"
+    ConfigPath = Join-Path $scriptRoot "ConfigFiles"
+    LogPath = Join-Path $scriptRoot "Logs\Aria"
+    TempPath = Join-Path $scriptRoot "Temp"
 }
 
 try {
