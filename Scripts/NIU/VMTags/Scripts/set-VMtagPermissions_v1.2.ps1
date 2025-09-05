@@ -172,6 +172,25 @@ $script:ExecutionTimestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $script:LogFileName = "VMTags_$($Environment)_$($script:ExecutionTimestamp).log"
 $script:LogFilePath = Join-Path $script:logFolder $script:LogFileName
 
+# Determine Reports folder - should be sibling to Logs folder
+$script:reportsFolder = $null
+if ($LogDirectory -and -not [string]::IsNullOrEmpty($LogDirectory)) {
+    # If launcher provided log directory, create reports folder alongside it
+    $parentDir = Split-Path $LogDirectory -Parent
+    $script:reportsFolder = Join-Path $parentDir "Reports"
+} else {
+    # Fallback: create Reports folder relative to script location
+    if ($script:logFolder) {
+        $parentDir = Split-Path $script:logFolder -Parent
+        $script:reportsFolder = Join-Path $parentDir "Reports"
+    } else {
+        $script:reportsFolder = Join-Path (Get-Location) "Reports"
+    }
+}
+
+# Add environment subdirectory to reports folder
+$script:reportsFolder = Join-Path $script:reportsFolder $Environment
+
 # Ensure log directory exists
 if (-not (Test-Path $script:logFolder)) {
     try {
@@ -184,6 +203,20 @@ if (-not (Test-Path $script:logFolder)) {
         $script:logFolder = $env:TEMP
         $script:LogFilePath = Join-Path $script:logFolder $script:LogFileName
         Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [WARN ] Using temp directory for logs: $($script:logFolder)" -ForegroundColor Yellow
+    }
+}
+
+# Ensure reports directory exists
+if (-not (Test-Path $script:reportsFolder)) {
+    try {
+        New-Item -Path $script:reportsFolder -ItemType Directory -Force | Out-Null
+        Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Reports folder created: $($script:reportsFolder)" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [ERROR] Failed to create reports folder $($script:reportsFolder): $($_.Exception.Message)" -ForegroundColor Red
+        # Fallback to using log folder for reports
+        $script:reportsFolder = $script:logFolder
+        Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [WARN ] Using log directory for reports: $($script:reportsFolder)" -ForegroundColor Yellow
     }
 }
 
@@ -261,7 +294,7 @@ function Save-ExecutionLog {
     # Save the complete log at the end of execution
     try {
         $csvLogFileName = "VMTags_$($Environment)_Complete_$($script:ExecutionTimestamp).csv"
-        $csvLogFilePath = Join-Path $script:logFolder $csvLogFileName
+        $csvLogFilePath = Join-Path $script:reportsFolder $csvLogFileName
         
         $script:outputLog | Export-Csv -Path $csvLogFilePath -NoTypeInformation
         Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Complete execution log saved: $($csvLogFilePath)" -ForegroundColor Green
@@ -669,19 +702,19 @@ function Find-VMsWithoutExplicitPermissions {
         $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
         
         if ($vmsWithOnlyInherited.Count -gt 0) {
-            $inheritedOnlyReport = Join-Path $script:logFolder "VMsWithOnlyInheritedPermissions_$($Environment)_$timestamp.csv"
+            $inheritedOnlyReport = Join-Path $script:reportsFolder "VMsWithOnlyInheritedPermissions_$($Environment)_$timestamp.csv"
             $vmsWithOnlyInherited | Export-Csv -Path $inheritedOnlyReport -NoTypeInformation
             Write-Log "VMs with only inherited permissions saved to: $inheritedOnlyReport" "INFO"
         }
         
         if ($vmsWithoutPermissions.Count -gt 0) {
-            $noPermissionsReport = Join-Path $script:logFolder "VMsWithNoPermissions_$($Environment)_$timestamp.csv"
+            $noPermissionsReport = Join-Path $script:reportsFolder "VMsWithNoPermissions_$($Environment)_$timestamp.csv"
             $vmsWithoutPermissions | Export-Csv -Path $noPermissionsReport -NoTypeInformation
             Write-Log "VMs with no permissions saved to: $noPermissionsReport" "INFO"
         }
         
         if ($vmsWithExplicit.Count -gt 0) {
-            $explicitPermissionsReport = Join-Path $script:logFolder "VMsWithExplicitPermissions_$($Environment)_$timestamp.csv"
+            $explicitPermissionsReport = Join-Path $script:reportsFolder "VMsWithExplicitPermissions_$($Environment)_$timestamp.csv"
             $vmsWithExplicit | Export-Csv -Path $explicitPermissionsReport -NoTypeInformation
             Write-Log "VMs with explicit permissions saved to: $explicitPermissionsReport" "INFO"
         }
@@ -1133,13 +1166,13 @@ try {
     
     # Save permission assignment results
     if ($script:PermissionResults.Count -gt 0) {
-        $permissionResultsReport = Join-Path $script:logFolder "PermissionAssignmentResults_$($Environment)_$timestamp.csv"
+        $permissionResultsReport = Join-Path $script:reportsFolder "PermissionAssignmentResults_$($Environment)_$timestamp.csv"
         $script:PermissionResults | Export-Csv -Path $permissionResultsReport -NoTypeInformation
         Write-Log "Permission assignment results saved to: $permissionResultsReport" "INFO"
     }
     
     # Save execution summary
-    $summaryReport = Join-Path $script:logFolder "ExecutionSummary_$($Environment)_$timestamp.csv"
+    $summaryReport = Join-Path $script:reportsFolder "ExecutionSummary_$($Environment)_$timestamp.csv"
     $summaryData = [PSCustomObject]@{
         Environment = $Environment
         vCenterServer = $vCenterServer
@@ -1174,7 +1207,7 @@ try {
     }
     
     if ($vmsNeedingAttention.Count -gt 0) {
-        $attentionReport = Join-Path $script:logFolder "VMsNeedingAttention_$($Environment)_$timestamp.csv"
+        $attentionReport = Join-Path $script:reportsFolder "VMsNeedingAttention_$($Environment)_$timestamp.csv"
         $vmsNeedingAttention | Export-Csv -Path $attentionReport -NoTypeInformation
         Write-Log "VMs needing attention saved to: $attentionReport" "INFO"
         Write-Log "ATTENTION: $($vmsNeedingAttention.Count) VMs require manual review for permissions" "WARN"
@@ -1242,6 +1275,7 @@ finally {
     
     Write-Log "Script execution finished." "INFO"
     Write-Log "Log files saved to: $script:logFolder" "INFO"
+    Write-Log "Report files saved to: $script:reportsFolder" "INFO"
     
     # Display quick summary to console
     Write-Host "`n=== QUICK SUMMARY ===" -ForegroundColor Cyan
@@ -1250,5 +1284,6 @@ finally {
     Write-Host "Permission Failures: $totalPermissionsFailed" -ForegroundColor Red
     Write-Host "VMs Needing Attention: $($vmsNeedingAttention.Count)" -ForegroundColor Yellow
     Write-Host "Check logs for detailed results: $script:logFolder" -ForegroundColor White
+    Write-Host "Check reports for CSV exports: $script:reportsFolder" -ForegroundColor White
 }
 #endregion
