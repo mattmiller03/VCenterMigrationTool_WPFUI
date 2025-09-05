@@ -508,14 +508,36 @@ function Ensure-TagCategory {
 }
 function Ensure-Tag {
     param([string]$TagName, [VMware.VimAutomation.ViCore.Types.V1.Tagging.TagCategory]$Category)
+    
+    # First, try to get the tag in the specific category
     $existingTag = Get-Tag -Name $TagName -Category $Category -ErrorAction SilentlyContinue
-    if ($existingTag) { return $existingTag }
+    if ($existingTag) { 
+        Write-Log "Tag '$($TagName)' already exists in category '$($Category.Name)'" "DEBUG"
+        return $existingTag 
+    }
+    
     Write-Log "Tag '$($TagName)' not found in category '$($Category.Name)', creating..." "INFO"
     try {
-        return New-Tag -Name $TagName -Category $Category -Description "Managed by script" -ErrorAction Stop
+        $newTag = New-Tag -Name $TagName -Category $Category -Description "Managed by script" -ErrorAction Stop
+        Write-Log "Successfully created tag '$($TagName)' in category '$($Category.Name)'" "INFO"
+        return $newTag
     }
     catch {
-        Write-Log "Failed to create tag '$($TagName)' in category '$($Category.Name)': $_" "ERROR"
+        # If creation fails, check if tag was created by another process (race condition)
+        Write-Log "Tag creation failed, checking if tag now exists: $_" "WARN"
+        $existingTagAfterError = Get-Tag -Name $TagName -Category $Category -ErrorAction SilentlyContinue
+        if ($existingTagAfterError) {
+            Write-Log "Tag '$($TagName)' found after creation error - using existing tag" "INFO"
+            return $existingTagAfterError
+        }
+        
+        # Check if tag exists in a different category (common issue)
+        $tagInOtherCategory = Get-Tag -Name $TagName -ErrorAction SilentlyContinue | Where-Object { $_.Category.Name -ne $Category.Name }
+        if ($tagInOtherCategory) {
+            Write-Log "Tag '$($TagName)' exists in different category: '$($tagInOtherCategory.Category.Name)' - cannot create in '$($Category.Name)'" "ERROR"
+        } else {
+            Write-Log "Failed to create tag '$($TagName)' in category '$($Category.Name)': $_" "ERROR"
+        }
         return $null
     }
 }
