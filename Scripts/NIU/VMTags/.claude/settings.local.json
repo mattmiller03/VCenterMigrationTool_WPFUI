@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(\"C:\\Program Files\\PowerShell\\7\\pwsh.exe\" -ExecutionPolicy Bypass -File \".\\VM_TagPermissions_Launcher_v2.ps1\" -Environment KLEB -ForceDebug -UseStoredCredentials)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

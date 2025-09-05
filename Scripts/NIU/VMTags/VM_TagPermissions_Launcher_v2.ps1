@@ -595,23 +595,153 @@ function Get-VMCredentials {
     param()
     try {
         Write-Log "Collecting vCenter credentials..." -Level Info
+        
+        $credential = $null
+        $useStoredCreds = $false
+        
         if ($UseStoredCredentials) {
             Write-Log "Attempting to retrieve stored credentials..." -Level Info
-            # Placeholder for stored credential logic
-            Write-Log "Stored credential retrieval not implemented, falling back to prompt" -Level Warning
+            
+            try {
+                # Get credential store path
+                $credentialStorePath = if ($script:Config -and $script:Config.Security.CredentialStorePath) {
+                    $script:Config.Security.CredentialStorePath
+                } else {
+                    Join-Path $env:USERPROFILE ".vmtags\credentials"
+                }
+                
+                # Look for credential file for current environment and user
+                $credentialFileName = "vcenter_$($script:Config.CurrentEnvironment.ToLower())_$($env:USERNAME).credential"
+                $fullCredentialPath = Join-Path $credentialStorePath $credentialFileName
+                $metadataPath = "$fullCredentialPath.metadata"
+                
+                Write-Log "Looking for stored credential: $fullCredentialPath" -Level Debug
+                
+                if (Test-Path $fullCredentialPath -and Test-Path $metadataPath) {
+                    Write-Log "Found stored credential files" -Level Debug
+                    
+                    # Load and validate metadata
+                    $metadata = Import-Clixml -Path $metadataPath -ErrorAction Stop
+                    
+                    # Check if credential is expired
+                    $maxAgeDays = if ($script:Config.Security.StoredCredentialMaxAgeDays) {
+                        $script:Config.Security.StoredCredentialMaxAgeDays
+                    } else {
+                        30
+                    }
+                    
+                    $isExpired = (Get-Date) -gt $metadata.CreatedDate.AddDays($maxAgeDays)
+                    
+                    if ($isExpired) {
+                        Write-Log "Stored credential has expired (age: $((Get-Date) - $metadata.CreatedDate).Days days)" -Level Warning
+                        
+                        # Clean up expired credential
+                        Remove-StoredCredential -CredentialPath $fullCredentialPath
+                        Write-Log "Removed expired credential" -Level Info
+                    } else {
+                        # Load the credential
+                        $credential = Import-Clixml -Path $fullCredentialPath -ErrorAction Stop
+                        Write-Log "Loaded stored credential for user: $($credential.UserName)" -Level Success
+                        
+                        # Validate credential if configured to do so
+                        if ($script:Config.Security.ValidateStoredCredentials -and -not $DryRun) {
+                            Write-Log "Validating stored credentials against vCenter..." -Level Debug
+                            
+                            if (Test-StoredCredential -Credential $credential) {
+                                Write-Log "Stored credential validation successful" -Level Success
+                                $useStoredCreds = $true
+                            } else {
+                                Write-Log "Stored credential validation failed, will prompt for new credentials" -Level Warning
+                                Remove-StoredCredential -CredentialPath $fullCredentialPath
+                                $credential = $null
+                            }
+                        } else {
+                            Write-Log "Skipping credential validation (disabled or dry run)" -Level Debug
+                            $useStoredCreds = $true
+                        }
+                    }
+                } else {
+                    Write-Log "No stored credential found for environment $($script:Config.CurrentEnvironment) and user $($env:USERNAME)" -Level Info
+                }
+            }
+            catch {
+                Write-Log "Error retrieving stored credentials: $($_.Exception.Message)" -Level Warning
+                Write-Log "Will prompt for credentials instead" -Level Info
+            }
         }
-        # Interactive credential prompt
-        Write-Host "`n" -NoNewline
-        Write-Host "=== vCenter Authentication Required ===" -ForegroundColor Yellow
-        Write-Host "Environment: $($script:Config.CurrentEnvironment)" -ForegroundColor Cyan
-        Write-Host "vCenter Server: $($script:Config.vCenterServer)" -ForegroundColor Cyan
-        Write-Host "SSO Domain: $($script:Config.SSODomain)" -ForegroundColor Cyan
-        Write-Host ""
-        $credential = Get-Credential -Message "Enter vCenter credentials for $($script:Config.CurrentEnvironment) environment" -UserName $script:Config.DefaultCredentialUser
+        
+        # If we don't have valid stored credentials, prompt interactively
+        if (-not $useStoredCreds) {
+            Write-Host "`n" -NoNewline
+            Write-Host "=== vCenter Authentication Required ===" -ForegroundColor Yellow
+            Write-Host "Environment: $($script:Config.CurrentEnvironment)" -ForegroundColor Cyan
+            Write-Host "vCenter Server: $($script:Config.vCenterServer)" -ForegroundColor Cyan
+            Write-Host "SSO Domain: $($script:Config.SSODomain)" -ForegroundColor Cyan
+            Write-Host ""
+            
+            $credential = Get-Credential -Message "Enter vCenter credentials for $($script:Config.CurrentEnvironment) environment" -UserName $script:Config.DefaultCredentialUser
+            if (-not $credential) {
+                throw "vCenter credentials are required"
+            }
+            
+            Write-Log "Credentials collected for user: $($credential.UserName)" -Level Success
+            
+            # Ask user if they want to store credentials for future use
+            if ($script:Config.Security -and $script:Config.Security.AllowStoredCredentials -ne $false) {
+                $envPolicy = $null
+                if ($script:Config.Security.EnvironmentPolicies -and $script:Config.Security.EnvironmentPolicies[$script:Config.CurrentEnvironment]) {
+                    $envPolicy = $script:Config.Security.EnvironmentPolicies[$script:Config.CurrentEnvironment]
+                }
+                
+                $allowStore = if ($envPolicy -and $envPolicy.AllowStoredCredentials -ne $null) {
+                    $envPolicy.AllowStoredCredentials
+                } else {
+                    $script:Config.Security.AllowStoredCredentials -ne $false
+                }
+                
+                $autoStore = if ($envPolicy -and $envPolicy.AutoStoreCredentials -ne $null) {
+                    $envPolicy.AutoStoreCredentials
+                } else {
+                    $script:Config.Security.AutoStoreCredentials
+                }
+                
+                if ($allowStore) {
+                    $shouldStore = $false
+                    
+                    if ($autoStore) {
+                        $shouldStore = $true
+                        Write-Log "Auto-storing credentials as configured for $($script:Config.CurrentEnvironment) environment" -Level Info
+                    } else {
+                        $response = Read-Host "Would you like to store these credentials securely for future use? (Y/N)"
+                        $shouldStore = $response -match '^[Yy]'
+                    }
+                    
+                    if ($shouldStore) {
+                        try {
+                            $credentialStorePath = if ($script:Config.Security.CredentialStorePath) {
+                                $script:Config.Security.CredentialStorePath
+                            } else {
+                                Join-Path $env:USERPROFILE ".vmtags\credentials"
+                            }
+                            
+                            Save-VMCredential -Credential $credential -Environment $script:Config.CurrentEnvironment -CredentialStorePath $credentialStorePath
+                            Write-Log "Credentials stored successfully for future use" -Level Success
+                        }
+                        catch {
+                            Write-Log "Failed to store credentials: $($_.Exception.Message)" -Level Warning
+                            Write-Log "Continuing with current session credentials only" -Level Info
+                        }
+                    }
+                } else {
+                    Write-Log "Credential storage is disabled for $($script:Config.CurrentEnvironment) environment" -Level Debug
+                }
+            }
+        }
+        
         if (-not $credential) {
             throw "vCenter credentials are required"
         }
-        Write-Log "Credentials collected for user: $($credential.UserName)" -Level Success
+        
         return $credential
     }
     catch {
@@ -920,15 +1050,26 @@ function Initialize-Configuration {
         
         # If still not found, try relative to the module we loaded
         if (-not $configFilePath -or -not (Test-Path $configFilePath)) {
-            if ($script:ActualConfigPath) {
+            if ($script:ActualConfigPath -and -not [string]::IsNullOrEmpty($script:ActualConfigPath)) {
                 $configFilePath = Join-Path $script:ActualConfigPath "VMTagsConfig.psd1"
+                Write-Host "Trying config path from ActualConfigPath: $configFilePath" -ForegroundColor Yellow
+            }
+        }
+        
+        # Try ConfigFiles subdirectory from script root
+        if (-not $configFilePath -or -not (Test-Path $configFilePath)) {
+            if ($scriptRoot -and -not [string]::IsNullOrEmpty($scriptRoot)) {
+                $configFilePath = Join-Path (Join-Path $scriptRoot "ConfigFiles") "VMTagsConfig.psd1"
+                Write-Host "Trying config path from script root ConfigFiles: $configFilePath" -ForegroundColor Yellow
             }
         }
         
         # Last resort: try same directory as script
         if (-not $configFilePath -or -not (Test-Path $configFilePath)) {
-            $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-            $configFilePath = Join-Path $scriptRoot "VMTagsConfig.psd1"
+            if ($scriptRoot -and -not [string]::IsNullOrEmpty($scriptRoot)) {
+                $configFilePath = Join-Path $scriptRoot "VMTagsConfig.psd1"
+                Write-Host "Trying config path from script root: $configFilePath" -ForegroundColor Yellow
+            }
         }
         
         Write-Host "Config file path: $configFilePath" -ForegroundColor Cyan
