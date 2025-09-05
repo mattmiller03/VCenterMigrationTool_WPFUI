@@ -439,7 +439,7 @@ catch {
     Write-LogMessage -Message "Stack Trace: $($_.ScriptStackTrace)" -Level Error
     
     # Still try to export any collected permissions before exiting
-    if ($permissionsBackupList -and $permissionsBackupList.Count -gt 0) {
+    if ($null -ne $permissionsBackupList -and $permissionsBackupList.Count -gt 0) {
         Write-LogMessage -Message "Attempting to export partial backup before exit..." -Level Warning
         Export-PermissionBackup -PermissionsList $permissionsBackupList -FilePath $BackupPath
     }
