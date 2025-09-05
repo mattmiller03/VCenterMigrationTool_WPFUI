@@ -493,9 +493,18 @@ try {
     # Initialize backup list using Generic List (more efficient in PS7)
     $permissionsBackupList = [System.Collections.Generic.List[object]]::new()
     
-    # Get all datacenters
-    $datacenters = Get-Datacenter -Server $vcConnection
-    Write-LogMessage -Message "Found $($datacenters.Count) datacenter(s)" -Level Info
+    # Get datacenters (filtered by name if specified)
+    if ($DatacenterName) {
+        $datacenters = Get-Datacenter -Name $DatacenterName -Server $vcConnection -ErrorAction SilentlyContinue
+        if (-not $datacenters) {
+            throw "Datacenter '$DatacenterName' not found in vCenter '$VCenterServer'"
+        }
+        Write-LogMessage -Message "Found datacenter: $($DatacenterName)" -Level Info
+    }
+    else {
+        $datacenters = Get-Datacenter -Server $vcConnection
+        Write-LogMessage -Message "Found $($datacenters.Count) datacenter(s)" -Level Info
+    }
     
     $totalFoldersProcessed = 0
     $totalPermissionsRemoved = 0
