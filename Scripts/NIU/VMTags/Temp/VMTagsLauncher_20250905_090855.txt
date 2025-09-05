@@ -1,0 +1,334 @@
+**********************
+PowerShell transcript start
+Start time: 20250905090855
+Username: DIR\DMM0090
+RunAs User: DIR\DMM0090
+Configuration Name: 
+Machine: DAYL6Y3K504 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll
+Process ID: 34168
+PSVersion: 7.5.2
+PSEdition: Core
+GitCommitId: 7.5.2
+OS: Microsoft Windows 10.0.26100
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250905_090855.txt
+[2025-09-05 09:08:55] [INFO   ] Transcript started: C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250905_090855.txt
+[2025-09-05 09:08:55] [SUCCESS] === VM Tags and Permissions Launcher v2.0 Started ===
+[2025-09-05 09:08:55] [INFO   ] Configuration Version: 2.1.0
+[2025-09-05 09:08:55] [INFO   ] PowerShell Version: 7.5.2
+[2025-09-05 09:08:55] [INFO   ] Machine: DAYL6Y3K504
+[2025-09-05 09:08:55] [INFO   ] User: DMM0090
+[2025-09-05 09:08:55] [INFO   ] Execution ID: 20250905_090855
+[2025-09-05 09:08:55] [INFO   ] Environment: KLEB
+[2025-09-05 09:08:55] [INFO   ] vCenter Server: klisv0pp251.dir.ad.dla.mil
+[2025-09-05 09:08:55] [INFO   ] SSO Domain: DLA-Kleber.local
+[2025-09-05 09:08:55] [INFO   ] App Permissions CSV: .\Data\KLEB\AppTagPermissions_KLE.csv
+[2025-09-05 09:08:55] [INFO   ] OS Mapping CSV: .\Data\KLEB\OS-Mappings_KLE.csv
+[2025-09-05 09:08:55] [INFO   ] Debug Logging: False
+[2025-09-05 09:08:55] [INFO   ] Dry Run Mode: False
+[2025-09-05 09:08:55] [INFO   ] Running comprehensive prerequisites check...
+[2025-09-05 09:08:55] [SUCCESS] PowerShell 7 path validated: C:\Program Files\PowerShell\7\pwsh.exe
+[2025-09-05 09:08:55] [SUCCESS] Main script path validated: C:\Temp\Scripts\VMTags\Scripts\set-VMtagPermissions_v1.2.ps1
+[2025-09-05 09:08:56] [SUCCESS] Working directory validated: C:\Temp\Scripts\VMTags
+[2025-09-05 09:08:56] [SUCCESS] Temp directory validated: C:\Temp\Scripts\VMTags\Temp
+[2025-09-05 09:08:56] [SUCCESS] Configuration paths validation completed
+[2025-09-05 09:08:56] [SUCCESS] Found VMware PowerCLI version: 13.3.0.24145083
+[2025-09-05 09:08:56] [SUCCESS] Network connectivity to vCenter confirmed
+[2025-09-05 09:08:56] [SUCCESS] App Permissions CSV found
+[2025-09-05 09:08:56] [SUCCESS] OS Mapping CSV found
+[2025-09-05 09:08:56] [SUCCESS] Prerequisites check passed
+[2025-09-05 09:08:56] [INFO   ] Collecting vCenter credentials...
+[2025-09-05 09:08:56] [INFO   ] Attempting to retrieve stored credentials...
+[2025-09-05 09:08:56] [INFO   ] No stored credential found for environment KLEB and user DMM0090
+
+=== vCenter Authentication Required ===
+Environment: KLEB
+vCenter Server: klisv0pp251.dir.ad.dla.mil
+SSO Domain: DLA-Kleber.local
+
+[2025-09-05 09:09:06] [SUCCESS] Credentials collected for user: administrator@DLA-KLEBER.local
+[2025-09-05 09:09:08] [SUCCESS] Credentials stored successfully at: C:\Temp\Scripts\VMTags\ConfigFiles\Credentials\vcenter_kleb_DMM0090.credential
+[2025-09-05 09:09:08] [SUCCESS] Credentials stored successfully for future use
+[2025-09-05 09:09:08] [SUCCESS] Credential file created successfully
+[2025-09-05 09:09:08] [SUCCESS] Credential files validated successfully
+[2025-09-05 09:09:08] [INFO   ] Starting main script execution...
+[2025-09-05 09:09:08] [INFO   ] Preparing to execute main script...
+[2025-09-05 09:09:09] [INFO   ] Selected working directory: C:\Temp\Scripts\VMTags
+[2025-09-05 09:09:09] [INFO   ] Starting PowerShell 7 execution...
+[2025-09-05 09:13:26] [INFO   ] Process started successfully with PID: 4952
+[2025-09-05 09:13:26] [INFO   ] === MAIN SCRIPT STDOUT ===
+[2025-09-05 09:13:26] [INFO   ] 2025-09-05 09:09:10 [INFO ] Loading credentials from launcher...
+2025-09-05 09:09:10 [INFO ] Credentials loaded successfully for user: administrator@DLA-KLEBER.local
+2025-09-05 09:09:10 [INFO ] Using launcher log directory: .\Logs\KLEB
+2025-09-05 09:09:10 [INFO ] Script started.
+2025-09-05 09:09:10 [INFO ] Log directory: .\Logs\KLEB
+2025-09-05 09:09:10 [INFO ] Log file: VMTags_KLEB_20250905_090910.log
+2025-09-05 09:09:10 [INFO ] Environment: KLEB
+2025-09-05 09:09:10 [INFO ] vCenter Server: klisv0pp251.dir.ad.dla.mil
+2025-09-05 09:09:10 [INFO ] Script Debug Enabled: False
+2025-09-05 09:09:10 [INFO ] Starting preflight checks...
+2025-09-05 09:09:10 [INFO ] Environment set to 'KLEB'. Using categories: App='vCenter-KLEB-App-team', OS='vCenter-KLEB-OS'
+2025-09-05 09:09:10 [INFO ] Using SSO domain 'DLA-Kleber.local' for OS permission assignments in this environment.
+2025-09-05 09:09:10 [INFO ] Testing connectivity to vCenter 'klisv0pp251.dir.ad.dla.mil'...
+2025-09-05 09:09:12 [INFO ] Network connectivity confirmed.
+2025-09-05 09:09:12 [INFO ] Connecting to vCenter 'klisv0pp251.dir.ad.dla.mil'...
+2025-09-05 09:09:50 [INFO ] Connected to vCenter klisv0pp251.dir.ad.dla.mil (v8.0.3).
+2025-09-05 09:09:53 [INFO ] Successfully connected to SSO Admin server.
+True
+2025-09-05 09:09:53 [INFO ] Importing and validating CSV data...
+2025-09-05 09:09:53 [INFO ] Imported 10 rows from App Permissions CSV.
+2025-09-05 09:09:53 [INFO ] Imported 53 rows from OS Mapping CSV.
+2025-09-05 09:09:53 [INFO ] CSV data validation completed successfully.
+2025-09-05 09:09:53 [INFO ] Ensuring tag categories exist...
+2025-09-05 09:09:56 [INFO ] Tag categories verified/created successfully.
+2025-09-05 09:09:56 [INFO ] === Processing Application Permissions from .\Data\KLEB\AppTagPermissions_KLE.csv ===
+2025-09-05 09:09:56 [INFO ] App permissions progress: 10/10 rows processed
+2025-09-05 09:09:56 [INFO ] App Permissions Summary: 10 rows processed, 0 tags created, 0 permissions assigned
+2025-09-05 09:09:56 [INFO ] === Processing OS Tagging and Permissions from .\Data\KLEB\OS-Mappings_KLE.csv ===
+2025-09-05 09:10:13 [INFO ] Pre-created 0 OS tags
+2025-09-05 09:10:14 [INFO ] Found 93 VMs to check for OS patterns.
+2025-09-05 09:10:15 [INFO ] VM 'KL-ISIS-PXG-01' matches OS pattern 'Red Hat Enterprise Linux 8.*' using Guest OS (VMware Tools): 'Red Hat Enterprise Linux 8 (64-bit)'
+2025-09-05 09:10:17 [INFO ] VM 'KECVVWPP005' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:18 [INFO ] VM 'KECEVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:10:20 [INFO ] VM 'KECDVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:10:22 [INFO ] VM 'KECSFVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:10:23 [INFO ] VM 'KECVVWPPT01' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:25 [INFO ] VM 'KECSVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:10:27 [INFO ] VM 'KECVVWPP009' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:28 [INFO ] VM 'KECVVWPP008' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:30 [INFO ] VM 'KECTVWPP006' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:10:31 [INFO ] VM 'KECVVWPP007' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:33 [INFO ] VM 'KECSFVWPP002' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:10:35 [INFO ] VM 'KECVVWPP003' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:36 [INFO ] VM 'KECTVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:10:38 [INFO ] VM 'KECVVWPP010' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:39 [INFO ] VM 'KECDVWPP002' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:10:41 [INFO ] VM 'KECVVWPP004' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:43 [INFO ] VM 'KECVVWPP002' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:44 [INFO ] VM 'KECVVWPP006' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:46 [INFO ] VM 'KECTVWPP004' matches OS pattern 'Microsoft Windows 11.*' using Guest OS (VMware Tools): 'Microsoft Windows 11 (64-bit)'
+2025-09-05 09:10:47 [ERROR] Template role 'SupportAdmin' not found. Cannot clone role.
+2025-09-05 09:10:47 [ERROR] Failed to assign permission for 'DLA-Kleber.local\Windows Desktop Admins' on VM 'KECTVWPP004': Could not find or create role 'Windows Desktop Admins'.
+2025-09-05 09:10:47 [INFO ] VM 'KECTVWPP005' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:49 [INFO ] VM 'KECVVWPP001' matches OS pattern 'Microsoft Windows Server.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2025 (64-bit)'
+2025-09-05 09:10:51 [INFO ] VM 'KECVVWPPT02' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:10:52 [INFO ] VM 'stCtlVM-WZP232810JV' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:10:54 [INFO ] VM 'stCtlVM-WZP23280PZL' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:10:55 [INFO ] OS processing progress: 25/93 VMs (Tagged: 0, Permissions: 0, Skipped: 0)
+2025-09-05 09:10:56 [INFO ] VM 'stCtlVM-WZP2329044A' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:10:57 [INFO ] VM 'stCtlVM-WZP232810GY' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:10:59 [INFO ] VM 'stCtlVM-WZP23501CET' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:01 [INFO ] VM 'stCtlVM-WZP232810FN' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:02 [INFO ] VM 'KEPRVWPP002' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:04 [INFO ] VM 'KEASVWPP010' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:11:05 [INFO ] VM 'KEASVWPP004' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:07 [INFO ] VM 'KEDBVWPP000' matches OS pattern 'Microsoft Windows Server 2016.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2016 (64-bit)'
+2025-09-05 09:11:09 [INFO ] VM 'KEDBVWPP002' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:10 [INFO ] VM 'KEDBVWPP001' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:11:12 [INFO ] VM 'CMSa' matches OS pattern '.*Linux.*' using Guest OS (VMware Tools): 'Other 5.x Linux (64-bit)'
+2025-09-05 09:11:13 [INFO ] VM 'CMSb' matches OS pattern '.*Linux.*' using Guest OS (VMware Tools): 'Other 5.x Linux (64-bit)'
+2025-09-05 09:11:15 [INFO ] VM 'stCtlVM-WMP243000SS' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:17 [INFO ] VM 'stCtlVM-WMP2432006G' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:18 [INFO ] VM 'stCtlVM-WMP2431009X' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:20 [INFO ] VM 'stCtlVM-WMP242700D1' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:21 [INFO ] VM 'SIVPMtest210' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:23 [INFO ] VM 'SIBUV0PP002' matches OS pattern 'Red Hat Enterprise Linux 7.*' using Guest OS (VMware Tools): 'Red Hat Enterprise Linux 7 (64-bit)'
+2025-09-05 09:11:25 [INFO ] VM 'stCtlVM-WMP2432006M' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:26 [INFO ] VM 'stCtlVM-WMP2432006Z' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:28 [INFO ] VM 'stCtlVM-WMP2432006U' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:30 [INFO ] VM 'stCtlVM-WMP24320027' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:31 [INFO ] VM 'GEDBVWPP001' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:11:33 [INFO ] VM 'GEVPMtest025' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:34 [INFO ] VM 'GEFLVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:36 [INFO ] OS processing progress: 50/93 VMs (Tagged: 0, Permissions: 0, Skipped: 0)
+2025-09-05 09:11:36 [INFO ] VM 'GEPRVWPP002' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:38 [INFO ] VM 'GEASVWP0004' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:39 [INFO ] VM 'GEASVWP0003' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:41 [INFO ] VM 'stCtlVM-WZP232903W7' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:42 [INFO ] VM 'stCtlVM-WZP2329046Y' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:44 [INFO ] VM 'stCtlVM-WZP2329044C' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:46 [INFO ] VM 'stCtlVM-WZP2329044F' matches OS pattern 'Debian GNU/Linux 12.*' using Guest OS (VMware Tools): 'Debian GNU/Linux 12 (64-bit)'
+2025-09-05 09:11:47 [INFO ] VM 'BABUV0PP002' matches OS pattern 'Red Hat Enterprise Linux 7.*' using Guest OS (VMware Tools): 'Red Hat Enterprise Linux 7 (64-bit)'
+2025-09-05 09:11:49 [INFO ] VM 'BAASVWPP004' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:51 [INFO ] VM 'KEASVWPP005' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:11:52 [INFO ] VM 'KEASVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:11:54 [INFO ] VM 'KEISV0PP006' matches OS pattern 'VMware Photon OS.*' using Guest OS (VMware Tools): 'VMware Photon OS (64-bit)'
+2025-09-05 09:11:56 [INFO ] VM 'KLISV0PP212.dir.ad.dla.mil' matches OS pattern 'VMware Photon OS.*' using Guest OS (VMware Tools): 'VMware Photon OS (64-bit)'
+2025-09-05 09:11:57 [INFO ] VM 'KLISV0PP251.dir.ad.dla.mil' matches OS pattern 'VMware Photon OS.*' using Guest OS (VMware Tools): 'VMware Photon OS (64-bit)'
+2025-09-05 09:11:59 [INFO ] VM 'KEFTVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:01 [INFO ] VM 'KEVPMTest131' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:02 [INFO ] VM 'KEVPMTest030' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:04 [INFO ] VM 'KEVPMTest141' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:05 [INFO ] VM 'KEVPMtest020' matches OS pattern 'Red Hat Enterprise Linux 8.*' using Guest OS (VMware Tools): 'Red Hat Enterprise Linux 8 (64-bit)'
+2025-09-05 09:12:07 [INFO ] VM 'KEASVWPP006' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:09 [INFO ] VM 'KLBRK-LTM-1' matches OS pattern 'CentOS 7.*' using Guest OS (VMware Tools): 'CentOS 7 (64-bit)'
+2025-09-05 09:12:10 [INFO ] VM 'KEISVWPP001' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:12:12 [INFO ] VM 'KEASV0PP601' matches OS pattern 'Ubuntu Linux.*' using VM Configuration: 'Ubuntu Linux (64-bit)'
+2025-09-05 09:12:13 [INFO ] VM 'KEASV0PP001' matches OS pattern 'Red Hat Enterprise Linux 7.*' using Guest OS (VMware Tools): 'Red Hat Enterprise Linux 7 (64-bit)'
+2025-09-05 09:12:15 [INFO ] VM 'KEISVWPP002' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:17 [INFO ] OS processing progress: 75/93 VMs (Tagged: 0, Permissions: 0, Skipped: 0)
+2025-09-05 09:12:17 [INFO ] VM 'ke-etn-MSV-agt09.dir.ad.dla.mil' matches OS pattern 'Rocky Linux.*' using Guest OS (VMware Tools): 'Rocky Linux (64-bit)'
+2025-09-05 09:12:18 [INFO ] VM 'KEISV0PP002' matches OS pattern 'VMware Photon OS.*' using Guest OS (VMware Tools): 'VMware Photon OS (64-bit)'
+2025-09-05 09:12:20 [INFO ] VM 'KEDCVWPPD01' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:12:21 [WARN ] WARNING: Conflicting permission found for VM='KEDCVWPPD01', Principal='DLA-Kleber.local\Windows Server Team'. Existing Role='ReadOnly', New Role='Windows Server Team'
+2025-09-05 09:12:22 [INFO ] VM 'KEDCVWPPD02' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:12:23 [WARN ] WARNING: Conflicting permission found for VM='KEDCVWPPD02', Principal='DLA-Kleber.local\Windows Server Team'. Existing Role='ReadOnly', New Role='Windows Server Team'
+2025-09-05 09:12:23 [INFO ] VM 'KEDSVWPP001' matches OS pattern 'Microsoft Windows Server 2016.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2016 or later (64-bit)'
+2025-09-05 09:12:25 [WARN ] WARNING: Conflicting permission found for VM='KEDSVWPP001', Principal='DLA-Kleber.local\Windows Server Team'. Existing Role='ReadOnly', New Role='Windows Server Team'
+2025-09-05 09:12:25 [INFO ] VM 'KEDCVWPPD03' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:12:26 [WARN ] WARNING: Conflicting permission found for VM='KEDCVWPPD03', Principal='DLA-Kleber.local\Windows Server Team'. Existing Role='ReadOnly', New Role='Windows Server Team'
+2025-09-05 09:12:27 [INFO ] VM 'SIASVWPP001' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:12:28 [INFO ] VM 'SIPRVWPP002' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:30 [INFO ] VM 'SIFLVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:31 [INFO ] VM 'GEASV0PP001' matches OS pattern 'Red Hat Enterprise Linux 7.*' using Guest OS (VMware Tools): 'Red Hat Enterprise Linux 7 (64-bit)'
+2025-09-05 09:12:33 [INFO ] VM 'GEASV0PP601' matches OS pattern 'Ubuntu Linux.*' using VM Configuration: 'Ubuntu Linux (64-bit)'
+2025-09-05 09:12:35 [INFO ] VM 'BAASVWPP001' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:12:36 [INFO ] VM 'BAFLVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:38 [INFO ] VM 'BAISVWPP001' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:40 [INFO ] VM 'BAPRVWPP002' matches OS pattern 'Microsoft Windows Server 2022.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:41 [INFO ] VM 'BAVPMtest020 - Leave off Russ' matches OS pattern 'Microsoft Windows Server 2022.*' using VM Configuration: 'Microsoft Windows Server 2022 (64-bit)'
+2025-09-05 09:12:43 [INFO ] VM 'BADCVWPPD01' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:12:44 [WARN ] WARNING: Conflicting permission found for VM='BADCVWPPD01', Principal='DLA-Kleber.local\Windows Server Team'. Existing Role='ReadOnly', New Role='Windows Server Team'
+2025-09-05 09:12:45 [INFO ] VM 'BADCVWPPD02' matches OS pattern 'Microsoft Windows Server 2019.*' using Guest OS (VMware Tools): 'Microsoft Windows Server 2019 (64-bit)'
+2025-09-05 09:12:46 [WARN ] WARNING: Conflicting permission found for VM='BADCVWPPD02', Principal='DLA-Kleber.local\Windows Server Team'. Existing Role='ReadOnly', New Role='Windows Server Team'
+2025-09-05 09:12:46 [INFO ] OS Processing Complete - Total VMs: 93, Processed: 93, Tagged: 0, Permissions Assigned: 0, Skipped: 0
+2025-09-05 09:12:46 [INFO ] === Starting Comprehensive Permission Analysis ===
+2025-09-05 09:12:46 [INFO ] === Analyzing VMs for Missing Explicit Permissions ===
+2025-09-05 09:12:47 [WARN ] VM 'KECVVWPP005' has only inherited permissions (53 inherited)
+2025-09-05 09:12:47 [WARN ] VM 'KECEVWPP001' has only inherited permissions (53 inherited)
+2025-09-05 09:12:48 [WARN ] VM 'KECDVWPP001' has only inherited permissions (53 inherited)
+2025-09-05 09:12:48 [WARN ] VM 'KECSFVWPP001' has only inherited permissions (53 inherited)
+2025-09-05 09:12:49 [WARN ] VM 'KECVVWPPT01' has only inherited permissions (53 inherited)
+2025-09-05 09:12:49 [WARN ] VM 'KECSVWPP001' has only inherited permissions (53 inherited)
+2025-09-05 09:12:50 [WARN ] VM 'KECVVWPP009' has only inherited permissions (53 inherited)
+2025-09-05 09:12:50 [WARN ] VM 'KECVVWPP008' has only inherited permissions (53 inherited)
+2025-09-05 09:12:51 [WARN ] VM 'KECTVWPP006' has only inherited permissions (53 inherited)
+2025-09-05 09:12:51 [WARN ] VM 'KECVVWPP007' has only inherited permissions (53 inherited)
+2025-09-05 09:12:52 [WARN ] VM 'KECSFVWPP002' has only inherited permissions (53 inherited)
+2025-09-05 09:12:52 [WARN ] VM 'KECVVWPP003' has only inherited permissions (53 inherited)
+2025-09-05 09:12:53 [WARN ] VM 'KECTVWPP001' has only inherited permissions (53 inherited)
+2025-09-05 09:12:53 [WARN ] VM 'KECVVWPP010' has only inherited permissions (53 inherited)
+2025-09-05 09:12:54 [WARN ] VM 'KECDVWPP002' has only inherited permissions (53 inherited)
+2025-09-05 09:12:54 [WARN ] VM 'KECVVWPP004' has only inherited permissions (53 inherited)
+2025-09-05 09:12:55 [WARN ] VM 'KECVVWPP002' has only inherited permissions (53 inherited)
+2025-09-05 09:12:56 [WARN ] VM 'KECVVWPP006' has only inherited permissions (53 inherited)
+2025-09-05 09:12:56 [WARN ] VM 'KECTVWPP004' has only inherited permissions (53 inherited)
+2025-09-05 09:12:57 [WARN ] VM 'KECTVWPP005' has only inherited permissions (53 inherited)
+2025-09-05 09:12:57 [WARN ] VM 'KECVVWPP001' has only inherited permissions (53 inherited)
+2025-09-05 09:12:57 [WARN ] VM 'KECVVWPPT02' has only inherited permissions (53 inherited)
+2025-09-05 09:13:00 [WARN ] VM 'KEPRVWPP002' has only inherited permissions (61 inherited)
+2025-09-05 09:13:00 [WARN ] VM 'KEASVWPP010' has only inherited permissions (61 inherited)
+2025-09-05 09:13:01 [WARN ] VM 'KEASVWPP004' has only inherited permissions (61 inherited)
+2025-09-05 09:13:01 [WARN ] VM 'KEDBVWPP000' has only inherited permissions (52 inherited)
+2025-09-05 09:13:02 [WARN ] VM 'KEDBVWPP002' has only inherited permissions (52 inherited)
+2025-09-05 09:13:02 [WARN ] VM 'KEDBVWPP001' has only inherited permissions (52 inherited)
+2025-09-05 09:13:07 [WARN ] VM 'GEDBVWPP001' has only inherited permissions (35 inherited)
+2025-09-05 09:13:08 [INFO ] Permission analysis progress: 50/93 VMs checked
+2025-09-05 09:13:11 [WARN ] VM 'BAASVWPP004' has only inherited permissions (34 inherited)
+2025-09-05 09:13:11 [WARN ] VM 'KEASVWPP005' has only inherited permissions (55 inherited)
+2025-09-05 09:13:12 [WARN ] VM 'KEASVWPP001' has only inherited permissions (52 inherited)
+2025-09-05 09:13:13 [WARN ] VM 'KEFTVWPP001' has only inherited permissions (52 inherited)
+2025-09-05 09:13:14 [WARN ] VM 'KEVPMTest131' has only inherited permissions (52 inherited)
+2025-09-05 09:13:14 [WARN ] VM 'KEVPMTest030' has only inherited permissions (52 inherited)
+2025-09-05 09:13:15 [WARN ] VM 'KEVPMTest141' has only inherited permissions (52 inherited)
+2025-09-05 09:13:15 [WARN ] VM 'KEASVWPP006' has only inherited permissions (53 inherited)
+2025-09-05 09:13:16 [WARN ] VM 'KEISVWPP001' has only inherited permissions (55 inherited)
+2025-09-05 09:13:17 [WARN ] VM 'KEISVWPP002' has only inherited permissions (53 inherited)
+2025-09-05 09:13:19 [WARN ] VM 'KEDCVWPPD01' has only inherited permissions (54 inherited)
+2025-09-05 09:13:19 [WARN ] VM 'KEDCVWPPD02' has only inherited permissions (54 inherited)
+2025-09-05 09:13:20 [WARN ] VM 'KEDSVWPP001' has only inherited permissions (54 inherited)
+2025-09-05 09:13:20 [WARN ] VM 'KEDCVWPPD03' has only inherited permissions (54 inherited)
+2025-09-05 09:13:21 [WARN ] VM 'SIASVWPP001' has only inherited permissions (35 inherited)
+2025-09-05 09:13:23 [WARN ] VM 'BAASVWPP001' has only inherited permissions (35 inherited)
+2025-09-05 09:13:24 [WARN ] VM 'BADCVWPPD01' has only inherited permissions (38 inherited)
+2025-09-05 09:13:25 [WARN ] VM 'BADCVWPPD02' has only inherited permissions (38 inherited)
+2025-09-05 09:13:25 [INFO ] === Permission Analysis Summary ===
+2025-09-05 09:13:25 [INFO ] Total VMs Analyzed: 93
+2025-09-05 09:13:25 [INFO ] VMs with explicit permissions: 46
+2025-09-05 09:13:25 [INFO ] VMs with only inherited permissions: 47
+2025-09-05 09:13:25 [INFO ] VMs with no permissions: 0
+2025-09-05 09:13:25 [INFO ] VMs with only inherited permissions saved to: .\Logs\KLEB\VMsWithOnlyInheritedPermissions_KLEB_20250905_091325.csv
+2025-09-05 09:13:25 [INFO ] VMs with explicit permissions saved to: .\Logs\KLEB\VMsWithExplicitPermissions_KLEB_20250905_091325.csv
+2025-09-05 09:13:25 [INFO ] === Generating Final Reports and Summary ===
+2025-09-05 09:13:25 [INFO ] === FINAL EXECUTION SUMMARY ===
+2025-09-05 09:13:25 [INFO ] Environment: KLEB
+2025-09-05 09:13:25 [INFO ] vCenter Server: klisv0pp251.dir.ad.dla.mil
+2025-09-05 09:13:25 [INFO ] Execution Start Time: 09/05/2025 09:13:25
+2025-09-05 09:13:25 [INFO ] === CSV Data Processing ===
+2025-09-05 09:13:25 [INFO ] App Permission Rows: 10
+2025-09-05 09:13:25 [INFO ] OS Mapping Rows: 53
+2025-09-05 09:13:25 [INFO ] === Tag Management ===
+2025-09-05 09:13:25 [INFO ] Tags Created: 0
+2025-09-05 09:13:25 [INFO ] Tag Assignments: 0
+2025-09-05 09:13:25 [INFO ] === VM Processing ===
+2025-09-05 09:13:25 [INFO ] Total VMs Found: 93
+2025-09-05 09:13:25 [INFO ] VMs Successfully Processed: 0
+2025-09-05 09:13:25 [INFO ] VMs Skipped: 0
+2025-09-05 09:13:25 [INFO ] === Permission Assignment Results ===
+2025-09-05 09:13:25 [INFO ] Permissions Successfully Assigned: 0
+2025-09-05 09:13:25 [INFO ] Permissions Skipped (duplicates/conflicts): 92
+2025-09-05 09:13:25 [INFO ] Permission Assignment Failures: 1
+2025-09-05 09:13:25 [INFO ] === Permission Analysis Results ===
+2025-09-05 09:13:25 [INFO ] VMs with Explicit Permissions: 46
+2025-09-05 09:13:25 [INFO ] VMs with Only Inherited Permissions: 47
+2025-09-05 09:13:25 [INFO ] VMs with No Permissions: 0
+2025-09-05 09:13:25 [INFO ] === Error Summary ===
+2025-09-05 09:13:25 [INFO ] Total Errors Encountered: 1
+2025-09-05 09:13:25 [INFO ] === OVERALL STATUS: FAILED ===
+2025-09-05 09:13:25 [INFO ] === Saving Detailed Reports ===
+2025-09-05 09:13:25 [INFO ] Permission assignment results saved to: .\Logs\KLEB\PermissionAssignmentResults_KLEB_20250905_091325.csv
+2025-09-05 09:13:25 [INFO ] Execution summary saved to: .\Logs\KLEB\ExecutionSummary_KLEB_20250905_091325.csv
+2025-09-05 09:13:25 [INFO ] VMs needing attention saved to: .\Logs\KLEB\VMsNeedingAttention_KLEB_20250905_091325.csv
+2025-09-05 09:13:25 [WARN ] ATTENTION: 47 VMs require manual review for permissions
+2025-09-05 09:13:25 [INFO ] All reports saved successfully to: .\Logs\KLEB
+2025-09-05 09:13:25 [ERROR] Script execution completed with significant errors.
+2025-09-05 09:13:25 [INFO ] === Starting Cleanup ===
+2025-09-05 09:13:25 [INFO ] Complete execution log saved: .\Logs\KLEB\VMTags_KLEB_Complete_20250905_090910.csv
+2025-09-05 09:13:25 [INFO ] Text log file: .\Logs\KLEB\VMTags_KLEB_20250905_090910.log
+2025-09-05 09:13:25 [INFO ] SSO disconnected.
+2025-09-05 09:13:25 [INFO ] vCenter disconnected.
+2025-09-05 09:13:25 [INFO ] PowerCLI certificate policy reset to Warn.
+2025-09-05 09:13:25 [INFO ] Script execution finished.
+2025-09-05 09:13:25 [INFO ] Log files saved to: .\Logs\KLEB
+
+=== QUICK SUMMARY ===
+Permissions Assigned: 0
+Permissions Skipped: 92
+Permission Failures: 1
+VMs Needing Attention: 47
+Check logs for detailed results: .\Logs\KLEB
+[2025-09-05 09:13:26] [INFO   ] === END STDOUT ===
+[2025-09-05 09:13:26] [INFO   ] Process completed with exit code: 0
+[2025-09-05 09:13:26] [INFO   ] Execution time: 00:04:17
+[2025-09-05 09:13:26] [INFO   ] Starting log cleanup in directory: .\Logs\KLEB
+[2025-09-05 09:13:26] [INFO   ] Keeping most recent 5 log files
+[2025-09-05 09:13:26] [INFO   ] Found 5 total log file(s)
+[2025-09-05 09:13:26] [INFO   ] Log cleanup completed: No files removed
+[2025-09-05 09:13:26] [INFO   ] Log directory status: 11 files, 0.42 MB total
+
+=== EXECUTION SUMMARY ===
+Environment: KLEB
+vCenter Server: klisv0pp251.dir.ad.dla.mil
+Execution ID: 20250905_090855
+Execution Time: 00:04:17
+Exit Code: 0
+Launcher Log: C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250905_090855.txt
+Script Logs: C:\Temp\Scripts\VMTags\Logs\KLEB\VMTagsLauncher_20250905_090855.log
+Status: SUCCESS
+
+Check the logs above for detailed execution results.
+[2025-09-05 09:13:26] [SUCCESS] === VM Tags and Permissions Launcher Completed Successfully ===
+
+Press any key to exit...
+[2025-09-05 09:49:22] [INFO   ] Checking for expired stored credentials...
+[2025-09-05 09:49:22] [INFO   ] No expired credentials found
+**********************
+PowerShell transcript end
+End time: 20250905094922
+**********************

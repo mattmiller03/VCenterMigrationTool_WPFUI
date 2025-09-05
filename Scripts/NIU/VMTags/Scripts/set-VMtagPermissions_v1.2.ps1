@@ -109,7 +109,7 @@ $script:ScriptDebugEnabled = $EnableScriptDebug.IsPresent
 $EnvironmentCategoryConfig = @{
     'DEV'  = @{ App = 'vCenter-DEV-App-team'; Function = 'vCenter-DEV-Function'; OS = 'vCenter-DEV-OS' };
     'PROD' = @{ App = 'vCenter-PROD-App-team'; Function = 'vCenter-PROD-Function'; OS = 'vCenter-PROD-OS' };
-    'KLEB' = @{ App = 'vCenter-KLEB-App-team'; Function = 'vCenter-KLEB-Function'; OS = 'vCenter-KLEB-OS' };
+    'KLEB' = @{ App = 'vCenter-Kleber-App-team'; Function = 'vCenter-Kleber-Function'; OS = 'vCenter-Kleber-OS' };
     'OT'   = @{ App = 'vCenter-OT-App-team'; Function = 'vCenter-OT-Function'; OS = 'vCenter-OT-OS' };
 }
 
