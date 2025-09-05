@@ -356,7 +356,7 @@ try {
     Import-Module -Name VMware.PowerCLI -ErrorAction Stop
     
     # Set PowerCLI configuration to ignore certificate warnings (optional, remove if not needed)
-    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
+    $null = Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -WhatIf:$false
     
     # Connect to vCenter
     Write-LogMessage -Message "Connecting to vCenter server: $VCenterServer" -Level Info
