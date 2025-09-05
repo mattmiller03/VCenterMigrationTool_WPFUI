@@ -440,7 +440,7 @@ try {
 }
 catch {
     # Try to display error even if logging isn't working
-    $errorMessage = "Critical error occurred: $_"
+    $errorMessage = "Critical error occurred: $($_)"
     $stackTrace = "Stack Trace: $($_.ScriptStackTrace)"
     
     # Try to log if possible
