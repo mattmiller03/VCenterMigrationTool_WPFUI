@@ -17,8 +17,8 @@
 .PARAMETER Credential
     PSCredential object for vCenter authentication. If not provided, will prompt.
 
-.PARAMETER WhatIf
-    Performs a dry run without making actual changes.
+.PARAMETER DryRun
+    Performs a dry run without making actual changes. Logs and backups are still created.
 
 .PARAMETER LogPath
     Path to save the log file. Default is current directory with timestamp.
@@ -31,16 +31,17 @@
 
 .EXAMPLE
     $cred = Get-Credential
-    .\Reset-VMFolderPermissions.ps1 -VCenterServer "vcenter.domain.com" -Credential $cred -WhatIf
+    .\Reset-VMFolderPermissions.ps1 -VCenterServer "vcenter.domain.com" -Credential $cred -DryRun
 
 .NOTES
     Author: Cloud Operations Team
     Date: September 2025
-    Version: 1.1
+    Version: 2.0
     PSScriptAnalyzer: Compliant
+    PowerShell: Version 7.0+
 #>
 
-[CmdletBinding(SupportsShouldProcess)]
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
@@ -52,6 +53,9 @@ param(
     $Credential,
     
     [Parameter(Mandatory = $false)]
+    [switch]$DryRun,
+    
+    [Parameter(Mandatory = $false)]
     [string]$LogPath = ".\VMFolderPermissions_Reset_$(Get-Date -Format 'yyyyMMdd_HHmmss').log",
     
     [Parameter(Mandatory = $false)]
@@ -59,6 +63,55 @@ param(
 )
 
 #region Functions
+
+function Initialize-LogFile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$LogPath
+    )
+    
+    try {
+        # Get the directory path
+        $logDirectory = Split-Path -Path $LogPath -Parent
+        
+        # If no directory specified (just filename), use current directory
+        if ([string]::IsNullOrEmpty($logDirectory)) {
+            $logDirectory = Get-Location
+            $script:LogPath = Join-Path -Path $logDirectory -ChildPath $LogPath
+        }
+        
+        # Create directory if it doesn't exist
+        if (-not (Test-Path -Path $logDirectory)) {
+            [System.IO.Directory]::CreateDirectory($logDirectory) | Out-Null
+            Write-Host "Created log directory: $($logDirectory)" -ForegroundColor Yellow
+        }
+        
+        # Test if we can write to the log file using .NET methods
+        $testMessage = "=== Log Initialized at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ==="
+        [System.IO.File]::AppendAllText($script:LogPath, "$($testMessage)`n")
+        
+        Write-Host "Log file initialized: $($script:LogPath)" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "ERROR: Failed to initialize log file at '$($LogPath)'" -ForegroundColor Red
+        Write-Host "Error details: $($_)" -ForegroundColor Red
+        
+        # Try to fall back to temp directory
+        try {
+            $tempLog = Join-Path -Path $env:TEMP -ChildPath "VMFolderPermissions_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+            $script:LogPath = $tempLog
+            [System.IO.File]::AppendAllText($script:LogPath, "=== Fallback Log Location ===`n")
+            Write-Host "Using fallback log location: $($script:LogPath)" -ForegroundColor Yellow
+            return $true
+        }
+        catch {
+            Write-Host "CRITICAL: Cannot create log file even in temp directory" -ForegroundColor Red
+            return $false
+        }
+    }
+}
 
 function Write-LogMessage {
     [CmdletBinding()]
@@ -75,7 +128,7 @@ function Write-LogMessage {
     )
     
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $logEntry = "[$timestamp] [$Level] $Message"
+    $logEntry = "[$($timestamp)] [$($Level)] $($Message)"
     
     # Write to console with appropriate color
     switch ($Level) {
@@ -85,12 +138,16 @@ function Write-LogMessage {
         'Success' { Write-Host $logEntry -ForegroundColor Green }
     }
     
-    # Write to log file
-    try {
-        Add-Content -Path $LogFile -Value $logEntry -ErrorAction Stop
-    }
-    catch {
-        Write-Warning "Failed to write to log file: $_"
+    # Write to log file using .NET method (not affected by WhatIf)
+    if (-not [string]::IsNullOrEmpty($LogFile)) {
+        try {
+            # Use .NET File class to bypass WhatIf
+            [System.IO.File]::AppendAllText($LogFile, "$($logEntry)`n")
+        }
+        catch {
+            # If we can't write to log, at least show in console
+            Write-Host "Warning: Failed to write to log file: $($_)" -ForegroundColor Yellow
+        }
     }
 }
 
@@ -106,7 +163,7 @@ function Get-VMFolderPermissions {
         return $permissions
     }
     catch {
-        Write-LogMessage -Message "Failed to get permissions for folder '$($Folder.Name)': $_" -Level Error
+        Write-LogMessage -Message "Failed to get permissions for folder '$($Folder.Name)': $($_)" -Level Error
         return $null
     }
 }
@@ -114,24 +171,27 @@ function Get-VMFolderPermissions {
 function Export-PermissionBackup {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
-        [System.Collections.ArrayList]$PermissionsList,
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyCollection()]
+        [System.Collections.Generic.List[object]]$PermissionsList,
         
         [Parameter(Mandatory = $true)]
         [string]$FilePath
     )
     
     try {
-        if ($PermissionsList.Count -gt 0) {
-            $PermissionsList | Export-Csv -Path $FilePath -NoTypeInformation -Force
-            Write-LogMessage -Message "Successfully exported $($PermissionsList.Count) permission record(s) to: $FilePath" -Level Success
+        if ($null -ne $PermissionsList -and $PermissionsList.Count -gt 0) {
+            # Use .NET methods to export CSV (not affected by WhatIf)
+            $csvContent = $PermissionsList | ConvertTo-Csv -NoTypeInformation
+            [System.IO.File]::WriteAllLines($FilePath, $csvContent)
+            Write-LogMessage -Message "Successfully exported $($PermissionsList.Count) permission record(s) to: $($FilePath)" -Level Success
         }
         else {
             Write-LogMessage -Message "No permissions to export" -Level Info
         }
     }
     catch {
-        Write-LogMessage -Message "Failed to export permissions backup: $_" -Level Error
+        Write-LogMessage -Message "Failed to export permissions backup: $($_)" -Level Error
     }
 }
 
@@ -172,7 +232,7 @@ function New-PermissionBackupObject {
 }
 
 function Reset-FolderPermissions {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [VMware.VimAutomation.ViCore.Types.V1.Inventory.Folder]$Folder,
@@ -180,19 +240,23 @@ function Reset-FolderPermissions {
         [Parameter(Mandatory = $true)]
         [string]$DatacenterName,
         
-        [Parameter(Mandatory = $true)]
-        [System.Collections.ArrayList]$BackupList
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyCollection()]
+        [System.Collections.Generic.List[object]]$BackupList,
+        
+        [Parameter(Mandatory = $false)]
+        [switch]$DryRun
     )
     
     $folderPath = Get-FolderPath -Folder $Folder
     $folderId = $Folder.Id
-    Write-LogMessage -Message "Processing folder: $folderPath (ID: $folderId)"
+    Write-LogMessage -Message "Processing folder: $($folderPath) (ID: $($folderId))"
     
     # Get current permissions
     $permissions = Get-VMFolderPermissions -Folder $Folder
     
     if ($null -eq $permissions) {
-        Write-LogMessage -Message "Could not retrieve permissions for folder: $folderPath" -Level Warning
+        Write-LogMessage -Message "Could not retrieve permissions for folder: $($folderPath)" -Level Warning
         return
     }
     
@@ -200,33 +264,36 @@ function Reset-FolderPermissions {
     $explicitPermissions = $permissions | Where-Object { -not $_.IsGroup -or $_.Propagate -eq $false }
     
     if ($explicitPermissions.Count -eq 0) {
-        Write-LogMessage -Message "No explicit permissions found on folder: $folderPath" -Level Info
+        Write-LogMessage -Message "No explicit permissions found on folder: $($folderPath)" -Level Info
         return
     }
     
-    Write-LogMessage -Message "Found $($explicitPermissions.Count) explicit permission(s) on folder: $folderPath" -Level Warning
+    Write-LogMessage -Message "Found $($explicitPermissions.Count) explicit permission(s) on folder: $($folderPath)" -Level Warning
     
     foreach ($permission in $explicitPermissions) {
         # Create backup object for this permission
         $backupObject = New-PermissionBackupObject -Permission $permission -FolderPath $folderPath -FolderId $folderId -DatacenterName $DatacenterName
-        [void]$BackupList.Add($backupObject)
+        
+        if ($null -ne $BackupList) {
+            $BackupList.Add($backupObject)
+        }
         
         $permissionDetails = "Principal: $($permission.Principal), Role: $($permission.Role), Propagate: $($permission.Propagate)"
         
         # Log the permission details that will be removed
-        Write-LogMessage -Message "Permission to be removed from '$folderPath': $permissionDetails" -Level Info
+        Write-LogMessage -Message "Permission to be removed from '$($folderPath)': $($permissionDetails)" -Level Info
         
-        if ($PSCmdlet.ShouldProcess($folderPath, "Remove permission: $permissionDetails")) {
+        if (-not $DryRun) {
             try {
                 Remove-VIPermission -Permission $permission -Confirm:$false -ErrorAction Stop
-                Write-LogMessage -Message "Successfully removed permission from folder '$folderPath': $permissionDetails" -Level Success
+                Write-LogMessage -Message "Successfully removed permission from folder '$($folderPath)': $($permissionDetails)" -Level Success
                 
                 # Add removal status to backup object
                 $backupObject | Add-Member -NotePropertyName "RemovalStatus" -NotePropertyValue "Success" -Force
                 $backupObject | Add-Member -NotePropertyName "RemovalTime" -NotePropertyValue (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') -Force
             }
             catch {
-                Write-LogMessage -Message "Failed to remove permission from folder '$folderPath': $_" -Level Error
+                Write-LogMessage -Message "Failed to remove permission from folder '$($folderPath)': $($_)" -Level Error
                 
                 # Add removal status to backup object
                 $backupObject | Add-Member -NotePropertyName "RemovalStatus" -NotePropertyValue "Failed" -Force
@@ -234,10 +301,10 @@ function Reset-FolderPermissions {
             }
         }
         else {
-            Write-LogMessage -Message "[WhatIf] Would remove permission from folder '$folderPath': $permissionDetails" -Level Info
+            Write-LogMessage -Message "[DryRun] Would remove permission from folder '$($folderPath)': $($permissionDetails)" -Level Info
             
-            # Add removal status to backup object for WhatIf
-            $backupObject | Add-Member -NotePropertyName "RemovalStatus" -NotePropertyValue "WhatIf" -Force
+            # Add removal status to backup object for DryRun
+            $backupObject | Add-Member -NotePropertyName "RemovalStatus" -NotePropertyValue "DryRun" -Force
             $backupObject | Add-Member -NotePropertyName "RemovalTime" -NotePropertyValue "N/A" -Force
         }
     }
@@ -255,13 +322,13 @@ function Get-FolderPath {
     
     while ($parent -and $parent -isnot [VMware.VimAutomation.ViCore.Types.V1.Inventory.Datacenter]) {
         if ($parent.Name -ne "vm") {
-            $path = "$($parent.Name)\$path"
+            $path = "$($parent.Name)\$($path)"
         }
         $parent = $parent.Parent
     }
     
     if ($parent) {
-        $path = "$($parent.Name)\$path"
+        $path = "$($parent.Name)\$($path)"
     }
     
     return $path
@@ -274,12 +341,12 @@ function Get-AllVMFolders {
         [VMware.VimAutomation.ViCore.Types.V1.Inventory.Folder]$StartFolder,
         
         [Parameter(Mandatory = $false)]
-        [System.Collections.ArrayList]$FolderList = (New-Object System.Collections.ArrayList)
+        [System.Collections.Generic.List[object]]$FolderList = [System.Collections.Generic.List[object]]::new()
     )
     
     # Add current folder to list (except for root 'vm' folder)
     if ($StartFolder.Name -ne "vm" -or $StartFolder.Parent -isnot [VMware.VimAutomation.ViCore.Types.V1.Inventory.Datacenter]) {
-        [void]$FolderList.Add($StartFolder)
+        $FolderList.Add($StartFolder)
     }
     
     # Get child folders
@@ -296,11 +363,12 @@ function Get-AllVMFolders {
 function Show-PermissionSummary {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
-        [System.Collections.ArrayList]$BackupList
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyCollection()]
+        [System.Collections.Generic.List[object]]$BackupList
     )
     
-    if ($BackupList.Count -eq 0) {
+    if ($null -eq $BackupList -or $BackupList.Count -eq 0) {
         Write-LogMessage -Message "No permissions were found to remove" -Level Info
         return
     }
@@ -335,15 +403,28 @@ function Show-PermissionSummary {
 
 #region Main Script
 
+# Initialize script-scoped variables
+$script:LogPath = $LogPath
+
 try {
+    # Initialize log file first
+    if (-not (Initialize-LogFile -LogPath $LogPath)) {
+        Write-Host "Failed to initialize logging. Continue anyway? (Y/N)" -ForegroundColor Yellow
+        $response = Read-Host
+        if ($response -ne 'Y') {
+            Write-Host "Script execution cancelled by user" -ForegroundColor Red
+            exit 1
+        }
+    }
+    
     # Initialize log
     Write-LogMessage -Message "=== Starting VM Folder Permissions Reset Script ===" -Level Info
-    Write-LogMessage -Message "Target vCenter: $VCenterServer" -Level Info
-    Write-LogMessage -Message "Log file: $LogPath" -Level Info
-    Write-LogMessage -Message "Backup file: $BackupPath" -Level Info
+    Write-LogMessage -Message "Target vCenter: $($VCenterServer)" -Level Info
+    Write-LogMessage -Message "Log file: $($script:LogPath)" -Level Info
+    Write-LogMessage -Message "Backup file: $($BackupPath)" -Level Info
     
-    if ($PSCmdlet.MyInvocation.BoundParameters["WhatIf"]) {
-        Write-LogMessage -Message "Running in WhatIf mode - no changes will be made" -Level Warning
+    if ($DryRun) {
+        Write-LogMessage -Message "Running in DryRun mode - no changes will be made" -Level Warning
     }
     
     # Check for VMware PowerCLI module
@@ -356,14 +437,10 @@ try {
     Import-Module -Name VMware.PowerCLI -ErrorAction Stop
     
     # Set PowerCLI configuration to ignore certificate warnings (optional, remove if not needed)
-    # Using $WhatIfPreference = $false to ensure this always executes
-    $originalWhatIf = $WhatIfPreference
-    $WhatIfPreference = $false
-    $null = Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session
-    $WhatIfPreference = $originalWhatIf
+    Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session | Out-Null
     
     # Connect to vCenter
-    Write-LogMessage -Message "Connecting to vCenter server: $VCenterServer" -Level Info
+    Write-LogMessage -Message "Connecting to vCenter server: $($VCenterServer)" -Level Info
     
     $connectParams = @{
         Server      = $VCenterServer
@@ -405,13 +482,13 @@ try {
         
         # Process each folder
         foreach ($folder in $allFolders) {
-            Reset-FolderPermissions -Folder $folder -DatacenterName $datacenter.Name -BackupList $permissionsBackupList
+            Reset-FolderPermissions -Folder $folder -DatacenterName $datacenter.Name -BackupList $permissionsBackupList -DryRun:$DryRun
             $totalFoldersProcessed++
         }
     }
     
     # Export backup to CSV
-    if ($permissionsBackupList.Count -gt 0) {
+    if ($null -ne $permissionsBackupList -and $permissionsBackupList.Count -gt 0) {
         Write-LogMessage -Message "`nExporting permissions backup..." -Level Info
         Export-PermissionBackup -PermissionsList $permissionsBackupList -FilePath $BackupPath
         
@@ -419,22 +496,27 @@ try {
         Show-PermissionSummary -BackupList $permissionsBackupList
     }
     else {
-        Write-LogMessage -Message "No permissions were collected for backup" -Level Info
+        Write-LogMessage -Message "No explicit permissions found that need to be removed" -Level Info
     }
     
     Write-LogMessage -Message "`n=== Script Execution Complete ===" -Level Success
-    Write-LogMessage -Message "Total folders processed: $totalFoldersProcessed" -Level Info
+    Write-LogMessage -Message "Total folders processed: $($totalFoldersProcessed)" -Level Info
     Write-LogMessage -Message "Total permissions collected: $($permissionsBackupList.Count)" -Level Info
     
-    if (-not $PSCmdlet.MyInvocation.BoundParameters["WhatIf"]) {
-        $successfulRemovals = ($permissionsBackupList | Where-Object { $_.RemovalStatus -eq "Success" }).Count
-        Write-LogMessage -Message "Total permissions removed: $successfulRemovals" -Level Info
+    if (-not $DryRun) {
+        if ($null -ne $permissionsBackupList -and $permissionsBackupList.Count -gt 0) {
+            $successfulRemovals = ($permissionsBackupList | Where-Object { $_.RemovalStatus -eq "Success" }).Count
+            Write-LogMessage -Message "Total permissions removed: $($successfulRemovals)" -Level Info
+        }
+        else {
+            Write-LogMessage -Message "No permissions were removed (none found)" -Level Info
+        }
     }
     
-    Write-LogMessage -Message "Review the log file for details: $LogPath" -Level Info
+    Write-LogMessage -Message "Review the log file for details: $($LogPath)" -Level Info
     
-    if ($permissionsBackupList.Count -gt 0) {
-        Write-LogMessage -Message "Permissions backup saved to: $BackupPath" -Level Info
+    if ($null -ne $permissionsBackupList -and $permissionsBackupList.Count -gt 0) {
+        Write-LogMessage -Message "Permissions backup saved to: $($BackupPath)" -Level Info
         Write-LogMessage -Message "IMPORTANT: Keep this backup file for potential rollback operations" -Level Warning
     }
 }
