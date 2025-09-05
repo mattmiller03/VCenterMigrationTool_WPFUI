@@ -123,35 +123,42 @@ $EnvironmentDomainMap = @{
 #endregion
 
 #region B) LOGGING - FIXED VERSION
-# Determine log folder - prioritize launcher config, fallback to script directory
+# Determine log folder - prioritize launcher LogDirectory parameter, fallback to script directory
 $script:logFolder = $null
 
-# Try multiple methods to determine the script location
-try {
-    # Method 1: Try $MyInvocation.MyCommand.Path
-    if ($MyInvocation.MyCommand.Path -and -not [string]::IsNullOrEmpty($MyInvocation.MyCommand.Path)) {
-        $scriptDirectory = Split-Path $MyInvocation.MyCommand.Path -Parent
-        if (-not [string]::IsNullOrEmpty($scriptDirectory)) {
-            $script:logFolder = Join-Path $scriptDirectory "Logs"
-            Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Using MyInvocation path for logs: $($script:logFolder)" -ForegroundColor Cyan
-        }
-    }
-    # Method 2: Try $PSScriptRoot (PowerShell 3.0+)
-    elseif ($PSScriptRoot -and -not [string]::IsNullOrEmpty($PSScriptRoot)) {
-        $script:logFolder = Join-Path $PSScriptRoot "Logs"
-        Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Using PSScriptRoot for logs: $($script:logFolder)" -ForegroundColor Cyan
-    }
-    # Method 3: Use current location
-    else {
-        $currentLocation = Get-Location
-        if ($currentLocation -and $currentLocation.Path) {
-            $script:logFolder = Join-Path $currentLocation.Path "Logs"
-            Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Using current location for logs: $($script:logFolder)" -ForegroundColor Yellow
-        }
-    }
+# Method 1: Use LogDirectory parameter if provided by launcher
+if ($LogDirectory -and -not [string]::IsNullOrEmpty($LogDirectory)) {
+    $script:logFolder = $LogDirectory
+    Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Using launcher log directory: $($script:logFolder)" -ForegroundColor Green
 }
-catch {
-    Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [WARN ] Error determining script location: $($_.Exception.Message)" -ForegroundColor Yellow
+else {
+    # Fallback: Try multiple methods to determine the script location
+    try {
+        # Method 2: Try $MyInvocation.MyCommand.Path
+        if ($MyInvocation.MyCommand.Path -and -not [string]::IsNullOrEmpty($MyInvocation.MyCommand.Path)) {
+            $scriptDirectory = Split-Path $MyInvocation.MyCommand.Path -Parent
+            if (-not [string]::IsNullOrEmpty($scriptDirectory)) {
+                $script:logFolder = Join-Path $scriptDirectory "Logs"
+                Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Using MyInvocation path for logs: $($script:logFolder)" -ForegroundColor Cyan
+            }
+        }
+        # Method 3: Try $PSScriptRoot (PowerShell 3.0+)
+        elseif ($PSScriptRoot -and -not [string]::IsNullOrEmpty($PSScriptRoot)) {
+            $script:logFolder = Join-Path $PSScriptRoot "Logs"
+            Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Using PSScriptRoot for logs: $($script:logFolder)" -ForegroundColor Cyan
+        }
+        # Method 4: Use current location
+        else {
+            $currentLocation = Get-Location
+            if ($currentLocation -and $currentLocation.Path) {
+                $script:logFolder = Join-Path $currentLocation.Path "Logs"
+                Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [INFO ] Using current location for logs: $($script:logFolder)" -ForegroundColor Yellow
+            }
+        }
+    }
+    catch {
+        Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [WARN ] Error determining script location: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
 }
 
 # Final fallback to temp directory if all methods failed

@@ -1495,6 +1495,12 @@ function Start-MainScript {
         $scriptArgs += '-Environment'
         $scriptArgs += $currentEnvironment
         
+        # Add log directory parameter
+        if ($script:Config -and $script:Config.DataPaths.LogDirectory) {
+            $scriptArgs += '-LogDirectory'
+            $scriptArgs += "`"$($script:Config.DataPaths.LogDirectory)`""
+        }
+        
         # Add debug parameter if enabled
         if ($script:Config.EnvironmentSettings -and $script:Config.EnvironmentSettings.EnableDebugLogging) {
             $scriptArgs += '-EnableScriptDebug'
