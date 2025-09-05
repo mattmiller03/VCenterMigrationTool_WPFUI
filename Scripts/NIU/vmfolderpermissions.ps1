@@ -435,12 +435,29 @@ try {
     }
 }
 catch {
-    Write-LogMessage -Message "Critical error occurred: $_" -Level Error
-    Write-LogMessage -Message "Stack Trace: $($_.ScriptStackTrace)" -Level Error
+    # Try to display error even if logging isn't working
+    $errorMessage = "Critical error occurred: $_"
+    $stackTrace = "Stack Trace: $($_.ScriptStackTrace)"
+    
+    # Try to log if possible
+    if ($script:LogPath) {
+        Write-LogMessage -Message $errorMessage -Level Error
+        Write-LogMessage -Message $stackTrace -Level Error
+    }
+    else {
+        # Fallback to console only
+        Write-Host $errorMessage -ForegroundColor Red
+        Write-Host $stackTrace -ForegroundColor Red
+    }
     
     # Still try to export any collected permissions before exiting
     if ($null -ne $permissionsBackupList -and $permissionsBackupList.Count -gt 0) {
-        Write-LogMessage -Message "Attempting to export partial backup before exit..." -Level Warning
+        if ($script:LogPath) {
+            Write-LogMessage -Message "Attempting to export partial backup before exit..." -Level Warning
+        }
+        else {
+            Write-Host "Attempting to export partial backup before exit..." -ForegroundColor Yellow
+        }
         Export-PermissionBackup -PermissionsList $permissionsBackupList -FilePath $BackupPath
     }
     
@@ -449,7 +466,12 @@ catch {
 finally {
     # Disconnect from vCenter
     if ($vcConnection) {
-        Write-LogMessage -Message "Disconnecting from vCenter..." -Level Info
+        if ($script:LogPath) {
+            Write-LogMessage -Message "Disconnecting from vCenter..." -Level Info
+        }
+        else {
+            Write-Host "Disconnecting from vCenter..." -ForegroundColor Yellow
+        }
         Disconnect-VIServer -Server $vcConnection -Confirm:$false -ErrorAction SilentlyContinue
     }
 }
