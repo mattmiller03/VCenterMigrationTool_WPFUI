@@ -356,7 +356,11 @@ try {
     Import-Module -Name VMware.PowerCLI -ErrorAction Stop
     
     # Set PowerCLI configuration to ignore certificate warnings (optional, remove if not needed)
-    $null = Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session -WhatIf:$false
+    # Using $WhatIfPreference = $false to ensure this always executes
+    $originalWhatIf = $WhatIfPreference
+    $WhatIfPreference = $false
+    $null = Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false -Scope Session
+    $WhatIfPreference = $originalWhatIf
     
     # Connect to vCenter
     Write-LogMessage -Message "Connecting to vCenter server: $VCenterServer" -Level Info
@@ -373,8 +377,8 @@ try {
     $vcConnection = Connect-VIServer @connectParams
     Write-LogMessage -Message "Successfully connected to vCenter: $($vcConnection.Name)" -Level Success
     
-    # Initialize backup list
-    $permissionsBackupList = New-Object System.Collections.ArrayList
+    # Initialize backup list using Generic List (more efficient in PS7)
+    $permissionsBackupList = [System.Collections.Generic.List[object]]::new()
     
     # Get all datacenters
     $datacenters = Get-Datacenter -Server $vcConnection
