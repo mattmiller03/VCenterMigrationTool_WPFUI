@@ -697,6 +697,98 @@ function Find-VMsWithoutExplicitPermissions {
     Write-Log "VMs with only inherited permissions: $($vmsWithOnlyInherited.Count)" "INFO"
     Write-Log "VMs with no permissions: $($vmsWithoutPermissions.Count)" "INFO"
     
+    # Process OS tagging for VMs with only inherited permissions
+    if ($vmsWithOnlyInherited.Count -gt 0) {
+        Write-Log "=== Processing OS Tags for VMs with Only Inherited Permissions ===" "INFO"
+        
+        try {
+            # Get OS mapping data
+            $osMappingData = Import-Csv -Path $OsMappingCsvPath
+            if (-not $osMappingData -or $osMappingData.Count -eq 0) {
+                Write-Log "No OS mapping data found in $OsMappingCsvPath - skipping OS tag assignment for inherited VMs" "WARN"
+            } else {
+                $inheritedVMsOSTagged = 0
+                $inheritedVMsOSSkipped = 0
+                
+                foreach ($vmRecord in $vmsWithOnlyInherited) {
+                    try {
+                        # Get the actual VM object
+                        $vm = Get-VM -Name $vmRecord.VMName -ErrorAction SilentlyContinue
+                        if (-not $vm) {
+                            Write-Log "VM '$($vmRecord.VMName)' not found - skipping OS tag assignment" "WARN"
+                            $inheritedVMsOSSkipped++
+                            continue
+                        }
+                        
+                        # Get OS information for this VM
+                        $osInfo = Get-VMOSInformation -VM $vm
+                        $osToCheck = @($osInfo.Guest, $osInfo.Config) | Where-Object { $_.OSName -and $_.OSName -ne "Unknown" -and $_.OSName -ne "" }
+                        
+                        if ($osToCheck.Count -eq 0) {
+                            Write-Log "No valid OS information found for VM '$($vm.Name)' - skipping OS tag assignment" "WARN"
+                            $inheritedVMsOSSkipped++
+                            continue
+                        }
+                        
+                        $vmMatched = $false
+                        
+                        # Try each OS source against the mapping patterns
+                        foreach ($osSource in $osToCheck) {
+                            if ($vmMatched) { break }
+                            
+                            foreach ($osMapRow in $osMappingData) {
+                                try {
+                                    if ($osSource.OSName -match $osMapRow.GuestOSPattern) {
+                                        Write-Log "Inherited VM '$($vm.Name)' matches OS pattern '$($osMapRow.GuestOSPattern)' using $($osSource.Source): '$($osSource.OSName)'" "INFO"
+                                        
+                                        $targetTagName = $osMapRow.TargetTagName
+                                        $osTagObj = Get-Tag -Category $osCat -Name $targetTagName -ErrorAction SilentlyContinue
+                                        if (-not $osTagObj) { 
+                                            Write-Log "Target OS tag '$($targetTagName)' not found in category '$($osCat.Name)' - skipping" "ERROR"
+                                            break
+                                        }
+                                        
+                                        # Check if VM already has this OS tag
+                                        $existingOSTags = Get-TagAssignment -Entity $vm -Category $osCat -ErrorAction SilentlyContinue
+                                        if ($existingOSTags | Where-Object { $_.Tag.Name -eq $targetTagName }) {
+                                            Write-Log "Inherited VM '$($vm.Name)' already has OS tag '$($targetTagName)' - skipping" "DEBUG"
+                                        } else {
+                                            # Assign the OS tag
+                                            New-TagAssignment -Tag $osTagObj -Entity $vm -ErrorAction Stop
+                                            Write-Log "Assigned OS tag '$($targetTagName)' to inherited VM '$($vm.Name)'" "INFO"
+                                            $inheritedVMsOSTagged++
+                                        }
+                                        
+                                        $vmMatched = $true
+                                        break
+                                    }
+                                }
+                                catch {
+                                    Write-Log "Error processing OS pattern '$($osMapRow.GuestOSPattern)' for inherited VM '$($vm.Name)': $_" "ERROR"
+                                }
+                            }
+                        }
+                        
+                        if (-not $vmMatched) {
+                            $osNames = ($osToCheck | ForEach-Object { "$($_.Source): '$($_.OSName)'" }) -join "; "
+                            Write-Log "Inherited VM '$($vm.Name)' did not match any OS patterns. Available OS info: $osNames" "WARN"
+                            $inheritedVMsOSSkipped++
+                        }
+                    }
+                    catch {
+                        Write-Log "Error processing inherited VM '$($vmRecord.VMName)' for OS tagging: $_" "ERROR"
+                        $inheritedVMsOSSkipped++
+                    }
+                }
+                
+                Write-Log "OS tag processing for inherited VMs completed: $inheritedVMsOSTagged tagged, $inheritedVMsOSSkipped skipped" "INFO"
+            }
+        }
+        catch {
+            Write-Log "Error during OS tag processing for inherited VMs: $_" "ERROR"
+        }
+    }
+    
     # Save detailed reports - FIXED FILE NAMING
     try {
         $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -1062,11 +1154,33 @@ try {
                             Write-Log "VM '$($vm.Name)' already has OS tag '$($targetTagName)'" "DEBUG"
                         }
                         
-                        # Apply Permissions
+                        # Apply Permissions - check for Domain Controller special case
                         $osPrincipal = "$($currentSsoDomain)\$($osMapRow.SecurityGroupName)"
-                        Write-Log "Processing permissions for VM '$($vm.Name)': Principal='$($osPrincipal)', Role='$($osMapRow.RoleName)'" "DEBUG"
+                        $roleToAssign = $osMapRow.RoleName
                         
-                        $result = Assign-PermissionIfNeeded -VM $vm -Principal $osPrincipal -RoleName $osMapRow.RoleName
+                        # Check if this is a Domain Controller for Windows OS admin permissions override
+                        if ($osMapRow.SecurityGroupName -eq "Windows Server Team") {
+                            try {
+                                # Check for Domain Controller function tag
+                                $functionTags = Get-TagAssignment -Entity $vm -Category $functionCat -ErrorAction SilentlyContinue
+                                $isDomainController = $functionTags | Where-Object { $_.Tag.Name -eq "Domain Controller" }
+                                
+                                if ($isDomainController) {
+                                    $roleToAssign = "ReadOnly"
+                                    Write-Log "VM '$($vm.Name)' is a Domain Controller - overriding Windows Server Team permissions with ReadOnly role" "INFO"
+                                } else {
+                                    Write-Log "VM '$($vm.Name)' is a Windows Server (not Domain Controller) - applying full Windows Server Team permissions" "DEBUG"
+                                }
+                            }
+                            catch {
+                                Write-Log "Error checking Domain Controller function tag for VM '$($vm.Name)': $_" "WARN"
+                                # Continue with original role if function tag check fails
+                            }
+                        }
+                        
+                        Write-Log "Processing permissions for VM '$($vm.Name)': Principal='$($osPrincipal)', Role='$($roleToAssign)'" "DEBUG"
+                        
+                        $result = Assign-PermissionIfNeeded -VM $vm -Principal $osPrincipal -RoleName $roleToAssign
                         Track-PermissionAssignment -Result $result -VM $vm -Source "OSMapping"
                         
                         switch ($result.Action) {
@@ -1112,6 +1226,123 @@ try {
     # --- Permission Analysis ---
     Write-Log "=== Starting Comprehensive Permission Analysis ===" "INFO"
     $permissionAnalysis = Find-VMsWithoutExplicitPermissions -VMs $allVms -Environment $Environment
+    
+    # --- Process OS Tags for VMs with Only Inherited Permissions ---
+    if ($permissionAnalysis.OnlyInherited.Count -gt 0) {
+        Write-Log "=== Processing OS Tags for VMs with Only Inherited Permissions ===" "INFO"
+        Write-Log "Found $($permissionAnalysis.OnlyInherited.Count) VMs with only inherited permissions - applying OS tags..." "INFO"
+        
+        $inheritedVMsOSTagged = 0
+        $inheritedVMsOSSkipped = 0
+        
+        foreach ($vmRecord in $permissionAnalysis.OnlyInherited) {
+            try {
+                # Get the VM object
+                $vm = Get-VM -Name $vmRecord.VMName -ErrorAction SilentlyContinue
+                if (-not $vm) {
+                    Write-Log "Could not find VM '$($vmRecord.VMName)' for OS tag processing" "WARN"
+                    $inheritedVMsOSSkipped++
+                    continue
+                }
+                
+                # Try multiple sources for OS information (same logic as main OS processing)
+                $osToCheck = @()
+                
+                # 1. First try Guest OS (from VMware Tools - only available when VM is running)
+                if (-not [string]::IsNullOrWhiteSpace($vm.Guest.OSFullName)) {
+                    $osToCheck += @{
+                        Source = "Guest OS (VMware Tools)"
+                        OSName = $vm.Guest.OSFullName
+                    }
+                    Write-Log "VM '$($vm.Name)' - Guest OS from Tools: '$($vm.Guest.OSFullName)'" "DEBUG"
+                }
+                
+                # 2. Fallback to configured Guest OS (from VM settings - always available)
+                if (-not [string]::IsNullOrWhiteSpace($vm.ExtensionData.Config.GuestFullName)) {
+                    $osToCheck += @{
+                        Source = "VM Configuration"
+                        OSName = $vm.ExtensionData.Config.GuestFullName
+                    }
+                    Write-Log "VM '$($vm.Name)' - Configured Guest OS: '$($vm.ExtensionData.Config.GuestFullName)'" "DEBUG"
+                }
+                
+                # 3. Last resort - use Guest ID
+                if (-not [string]::IsNullOrWhiteSpace($vm.ExtensionData.Config.GuestId)) {
+                    $osToCheck += @{
+                        Source = "Guest ID"
+                        OSName = $vm.ExtensionData.Config.GuestId
+                    }
+                    Write-Log "VM '$($vm.Name)' - Guest ID: '$($vm.ExtensionData.Config.GuestId)'" "DEBUG"
+                }
+                
+                # If no OS information available
+                if ($osToCheck.Count -eq 0) {
+                    Write-Log "VM '$($vm.Name)' - No OS information available for inherited VM (PowerState: $($vm.PowerState))" "WARN"
+                    $inheritedVMsOSSkipped++
+                    continue
+                }
+                
+                $vmMatched = $false
+                
+                # Try each OS source against the mapping patterns
+                foreach ($osInfo in $osToCheck) {
+                    if ($vmMatched) { break }
+                    
+                    foreach ($osMapRow in $osMappingData) {
+                        try {
+                            if ($osInfo.OSName -match $osMapRow.GuestOSPattern) {
+                                Write-Log "Inherited VM '$($vm.Name)' matches OS pattern '$($osMapRow.GuestOSPattern)' using $($osInfo.Source): '$($osInfo.OSName)'" "INFO"
+                                
+                                $targetTagName = $osMapRow.TargetTagName
+                                $osTagObj = Get-Tag -Category $osCat -Name $targetTagName -ErrorAction SilentlyContinue
+                                if (-not $osTagObj) { 
+                                    Write-Log "Target tag '$($targetTagName)' not found in category '$($osCat.Name)' for inherited VM processing" "ERROR"
+                                    break 
+                                }
+                                
+                                # Apply OS Tag only (no permissions since they only have inherited)
+                                $existingTag = Get-TagAssignment -Entity $vm -Tag $osTagObj -ErrorAction SilentlyContinue
+                                if (-not $existingTag) {
+                                    Write-Log "Applying OS tag '$($targetTagName)' to inherited VM '$($vm.Name)'" "INFO"
+                                    try { 
+                                        New-TagAssignment -Entity $vm -Tag $osTagObj -ErrorAction Stop 
+                                        $inheritedVMsOSTagged++
+                                        $script:ExecutionSummary.TagsAssigned++
+                                    }
+                                    catch { 
+                                        Write-Log "Failed to apply OS tag '$($targetTagName)' to inherited VM '$($vm.Name)': $_" "ERROR" 
+                                        $script:ExecutionSummary.ErrorsEncountered++
+                                    }
+                                } else {
+                                    Write-Log "Inherited VM '$($vm.Name)' already has OS tag '$($targetTagName)'" "DEBUG"
+                                }
+                                
+                                $vmMatched = $true
+                                break # Match found, move to next VM
+                            }
+                        }
+                        catch {
+                            Write-Log "Error processing OS pattern '$($osMapRow.GuestOSPattern)' for inherited VM '$($vm.Name)': $_" "ERROR"
+                            $script:ExecutionSummary.ErrorsEncountered++
+                        }
+                    }
+                }
+                
+                if (-not $vmMatched) {
+                    $osNames = ($osToCheck | ForEach-Object { "$($_.Source): '$($_.OSName)'" }) -join "; "
+                    Write-Log "Inherited VM '$($vm.Name)' did not match any OS patterns. Available OS info: $osNames" "WARN"
+                    $inheritedVMsOSSkipped++
+                }
+            }
+            catch {
+                Write-Log "Error processing inherited VM '$($vmRecord.VMName)' for OS tagging: $_" "ERROR"
+                $inheritedVMsOSSkipped++
+                $script:ExecutionSummary.ErrorsEncountered++
+            }
+        }
+        
+        Write-Log "OS tag processing for inherited VMs completed: $inheritedVMsOSTagged tagged, $inheritedVMsOSSkipped skipped" "INFO"
+    }
     
     # --- Generate Final Reports and Summary ---
     Write-Log "=== Generating Final Reports and Summary ===" "INFO"
