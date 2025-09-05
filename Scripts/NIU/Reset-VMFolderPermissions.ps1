@@ -82,13 +82,39 @@ function Initialize-LogFile {
     )
     
     try {
-        # Get the directory path
-        $logDirectory = Split-Path -Path $LogPath -Parent
-        
-        # If no directory specified (just filename), use current directory
-        if ([string]::IsNullOrEmpty($logDirectory)) {
-            $logDirectory = Get-Location
-            $script:LogPath = Join-Path -Path $logDirectory -ChildPath $LogPath
+        # Check if LogPath is a directory or a file path
+        if (Test-Path -Path $LogPath -PathType Container) {
+            # LogPath is an existing directory, create default filename
+            $defaultFileName = "VMFolderPermissions_Reset_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+            $script:LogPath = Join-Path -Path $LogPath -ChildPath $defaultFileName
+            $logDirectory = $LogPath
+        }
+        elseif ([System.IO.Path]::HasExtension($LogPath)) {
+            # LogPath appears to be a file path (has extension)
+            $logDirectory = Split-Path -Path $LogPath -Parent
+            $script:LogPath = $LogPath
+            
+            # If no directory specified (just filename), use current directory
+            if ([string]::IsNullOrEmpty($logDirectory)) {
+                $logDirectory = Get-Location
+                $script:LogPath = Join-Path -Path $logDirectory -ChildPath $LogPath
+            }
+        }
+        else {
+            # LogPath might be a directory path that doesn't exist yet
+            # Check if it looks like a directory (no extension and path separator logic)
+            if ($LogPath.EndsWith('\') -or $LogPath.EndsWith('/') -or 
+                (-not [System.IO.Path]::HasExtension($LogPath) -and $LogPath.Contains('\'))) {
+                # Treat as directory path, create default filename
+                $defaultFileName = "VMFolderPermissions_Reset_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+                $script:LogPath = Join-Path -Path $LogPath -ChildPath $defaultFileName
+                $logDirectory = $LogPath
+            }
+            else {
+                # Treat as filename in current directory
+                $logDirectory = Get-Location
+                $script:LogPath = Join-Path -Path $logDirectory -ChildPath $LogPath
+            }
         }
         
         # Create directory if it doesn't exist
