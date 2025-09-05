@@ -500,7 +500,7 @@ try {
     }
     
     Write-LogMessage -Message "`n=== Script Execution Complete ===" -Level Success
-    Write-LogMessage -Message "Total folders processed: $($totalFoldersProcessed)" -Level Info
+    Write-LogMessage -Message "Total folders processed: $($script:totalFoldersProcessed)" -Level Info
     Write-LogMessage -Message "Total permissions collected: $($permissionsBackupList.Count)" -Level Info
     
     if (-not $DryRun) {
