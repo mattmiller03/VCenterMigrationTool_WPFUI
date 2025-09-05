@@ -617,7 +617,7 @@ function Get-VMCredentials {
                 
                 Write-Log "Looking for stored credential: $fullCredentialPath" -Level Debug
                 
-                if (Test-Path $fullCredentialPath -and Test-Path $metadataPath) {
+                if ((Test-Path $fullCredentialPath) -and (Test-Path $metadataPath)) {
                     Write-Log "Found stored credential files" -Level Debug
                     
                     # Load and validate metadata
@@ -1437,8 +1437,15 @@ function Start-MainScript {
             throw "OS Mapping CSV file not found: $($osCsvPath)"
         }
         
-        if ([string]::IsNullOrEmpty($script:CredentialPath) -or -not (Test-Path $script:CredentialPath)) {
-            throw "Credential file not found or path is null: $($script:CredentialPath)"
+        # Skip credential file validation in dry run mode
+        if (-not $DryRun) {
+            if ([string]::IsNullOrEmpty($script:CredentialPath) -or -not (Test-Path $script:CredentialPath)) {
+                throw "Credential file not found or path is null: $($script:CredentialPath)"
+            }
+        } else {
+            Write-Log "Skipping credential file validation in dry run mode" -Level Debug
+            # Create a dummy credential path for dry run mode
+            $script:CredentialPath = "DRYRUN_MODE"
         }
         
         # Build PowerShell 7 arguments step by step

@@ -1,0 +1,72 @@
+**********************
+PowerShell transcript start
+Start time: 20250905080610
+Username: DESKTOP-PC\mille
+RunAs User: DESKTOP-PC\mille
+Configuration Name: 
+Machine: DESKTOP-PC (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -ExecutionPolicy Bypass -File .\VM_TagPermissions_Launcher_v2.ps1 -Environment KLEB -UseStoredCredentials -DryRun
+Process ID: 39920
+PSVersion: 7.5.2
+PSEdition: Core
+GitCommitId: 7.5.2
+OS: Microsoft Windows 10.0.26100
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Temp\VMTagsLauncher_20250905_080610.txt
+[2025-09-05 08:06:10] [INFO   ] Transcript started: C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Temp\VMTagsLauncher_20250905_080610.txt
+[2025-09-05 08:06:10] [SUCCESS] === VM Tags and Permissions Launcher v2.0 Started ===
+[2025-09-05 08:06:10] [INFO   ] Configuration Version: 2.1.0
+[2025-09-05 08:06:10] [INFO   ] PowerShell Version: 7.5.2
+[2025-09-05 08:06:10] [INFO   ] Machine: DESKTOP-PC
+[2025-09-05 08:06:10] [INFO   ] User: mille
+[2025-09-05 08:06:10] [INFO   ] Execution ID: 20250905_080610
+[2025-09-05 08:06:10] [INFO   ] Environment: KLEB
+[2025-09-05 08:06:10] [INFO   ] vCenter Server: klisv0pp251.dir.ad.dla.mil
+[2025-09-05 08:06:10] [INFO   ] SSO Domain: DLA-Kleber.local
+[2025-09-05 08:06:10] [INFO   ] App Permissions CSV: .\Data\KLEB\AppTagPermissions_KLE.csv
+[2025-09-05 08:06:10] [INFO   ] OS Mapping CSV: .\Data\KLEB\OS-Mappings_KLE.csv
+[2025-09-05 08:06:10] [INFO   ] Debug Logging: False
+[2025-09-05 08:06:10] [INFO   ] Dry Run Mode: True
+[2025-09-05 08:06:10] [INFO   ] Running comprehensive prerequisites check...
+[2025-09-05 08:06:10] [SUCCESS] PowerShell 7 path validated: C:\Program Files\PowerShell\7\pwsh.exe
+[2025-09-05 08:06:10] [SUCCESS] Main script path validated: C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Scripts\set-VMtagPermissions_v1.2.ps1
+[2025-09-05 08:06:10] [SUCCESS] Working directory validated: C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags
+[2025-09-05 08:06:10] [SUCCESS] Temp directory validated: C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Temp
+[2025-09-05 08:06:10] [SUCCESS] Configuration paths validation completed
+[2025-09-05 08:06:10] [SUCCESS] App Permissions CSV found
+[2025-09-05 08:06:10] [SUCCESS] OS Mapping CSV found
+[2025-09-05 08:06:10] [SUCCESS] Prerequisites check passed
+[2025-09-05 08:06:10] [INFO   ] Starting main script execution...
+[2025-09-05 08:06:10] [INFO   ] Preparing to execute main script...
+[2025-09-05 08:06:10] [INFO   ] DRY RUN MODE: Would execute the following command:
+[2025-09-05 08:06:10] [INFO   ] C:\Program Files\PowerShell\7\pwsh.exe -File "C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Scripts\set-VMtagPermissions_v1.2.ps1" -vCenterServer "klisv0pp251.dir.ad.dla.mil" -CredentialPath "DRYRUN_MODE" -AppPermissionsCsvPath ".\Data\KLEB\AppTagPermissions_KLE.csv" -OsMappingCsvPath ".\Data\KLEB\OS-Mappings_KLE.csv" -Environment KLEB -NoProfile -NonInteractive
+[2025-09-05 08:06:10] [INFO   ] Starting log cleanup in directory: .\Logs\KLEB
+[2025-09-05 08:06:10] [INFO   ] Keeping most recent 5 log files
+[2025-09-05 08:06:10] [INFO   ] Found 3 total log file(s)
+[2025-09-05 08:06:10] [INFO   ] Log cleanup completed: No files removed
+[2025-09-05 08:06:10] [INFO   ] Log directory status: 3 files, 0.01 MB total
+
+=== EXECUTION SUMMARY ===
+Environment: KLEB
+vCenter Server: klisv0pp251.dir.ad.dla.mil
+Execution ID: 20250905_080610
+Execution Time: 00:00:00
+Exit Code: 0
+Launcher Log: C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Temp\VMTagsLauncher_20250905_080610.txt
+Script Logs: C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Logs\KLEB\VMTagsLauncher_20250905_080610.log
+Status: SUCCESS
+
+Check the logs above for detailed execution results.
+[2025-09-05 08:06:10] [SUCCESS] === VM Tags and Permissions Launcher Completed Successfully ===
+[2025-09-05 08:06:10] [INFO   ] Checking for expired stored credentials...
+[2025-09-05 08:06:10] [INFO   ] No credential store directory found
+[2025-09-05 08:06:10] [INFO   ] No expired credentials found
+**********************
+PowerShell transcript end
+End time: 20250905080610
+**********************
