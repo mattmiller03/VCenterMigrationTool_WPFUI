@@ -1,0 +1,11 @@
+TagCategory,TagType,TagName,RoleName,SecurityGroupDomain,SecurityGroupName
+vCenter-Dev-App-team,App-team,Exchange-admins,Enterprise Exchange Team,DLA-Test-Dev.local,Directory Services Exchange Team
+vCenter-Dev-App-team,App-team,ACAS-Admins,ACAS-Admin-Team,DLA-Test-Dev.local,ACAS Administrators
+vCenter-Dev-App-team,App-Team,Storage-Admins,NetBackup Management,DLA-Test-Dev.local,Storage and Backup Team
+vCenter-Dev-App-team,App-Team,IO-Test-Center,Enterprise Test Center IO Admins,DLA-Test-Dev.local,Enterprise Test Center IO Admins
+vCenter-Dev-App-team,App-Team,NTS-WAN-Admins,NTS WAN Management,DLA-Test-Dev.local,Enterprise - NTS WAN Management
+vCenter-Dev-App-team,App-Team,SCOM-admins,SCOM Team,DLA-Test-Dev.local,Enterprise SCOM Team
+vCenter-Dev-App-team,App-Team,Backup-admins,NetBackup Management,DLA-Test-Dev.local,NetBackup Management
+vCenter-Dev-App-team,App-Team,Cert-Response,Database Administrators,DLA-Test-Dev.local,Database Administrators
+vCenter-Dev-App-team,App-Team,Domain-Admins,DC Admin Team-temp,DLA-Test-Dev.local,Directory Services AD Team
+vCenter-Dev-App-team,App-team,ArcSight-Admins,Enterprise ArcSight Admins,DLA-Test-Dev.local,Enterprise ArcSight Admins

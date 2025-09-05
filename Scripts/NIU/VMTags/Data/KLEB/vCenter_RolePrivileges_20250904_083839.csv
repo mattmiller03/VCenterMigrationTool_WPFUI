@@ -1,0 +1,3375 @@
+RoleName,RoleId,Privilege,IsSystemRole
+NTS LAN Management Team,-1997829147,ContentLibrary.ReadStorage,FALSE
+NTS LAN Management Team,-1997829147,Datastore.Browse,FALSE
+NTS LAN Management Team,-1997829147,InventoryService.Tagging.ObjectAttachable,FALSE
+NTS LAN Management Team,-1997829147,Network.Assign,FALSE
+NTS LAN Management Team,-1997829147,System.Anonymous,FALSE
+NTS LAN Management Team,-1997829147,System.Read,FALSE
+NTS LAN Management Team,-1997829147,System.View,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Config.Annotation,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Config.EditDevice,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Config.MksControl,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Config.Settings,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Interact.AnswerQuestion,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Interact.ConsoleInteract,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Interact.DeviceConnection,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Interact.PowerOff,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Interact.PowerOn,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Interact.Reset,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Interact.SetCDMedia,FALSE
+NTS LAN Management Team,-1997829147,VirtualMachine.Interact.ToolsInstall,FALSE
+VMServicesAdministrator,-1942550507,Namespaces.Configure,FALSE
+VMServicesAdministrator,-1942550507,Namespaces.Manage,FALSE
+VMServicesAdministrator,-1942550507,System.Anonymous,FALSE
+VMServicesAdministrator,-1942550507,System.Read,FALSE
+VMServicesAdministrator,-1942550507,System.View,FALSE
+VMServicesAdministrator,-1942550507,VirtualMachineClasses.Manage,FALSE
+Unix Server Team,-1892729631,InventoryService.Tagging.ObjectAttachable,FALSE
+Unix Server Team,-1892729631,Network.Assign,FALSE
+Unix Server Team,-1892729631,System.Anonymous,FALSE
+Unix Server Team,-1892729631,System.Read,FALSE
+Unix Server Team,-1892729631,System.View,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Config.Annotation,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Config.Settings,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Interact.AnswerQuestion,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Interact.ConsoleInteract,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Interact.DeviceConnection,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Interact.PowerOff,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Interact.PowerOn,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Interact.Reset,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Interact.SetCDMedia,FALSE
+Unix Server Team,-1892729631,VirtualMachine.Interact.ToolsInstall,FALSE
+ACAS Administrators,-1603805735,InventoryService.Tagging.ObjectAttachable,FALSE
+ACAS Administrators,-1603805735,Network.Assign,FALSE
+ACAS Administrators,-1603805735,System.Anonymous,FALSE
+ACAS Administrators,-1603805735,System.Read,FALSE
+ACAS Administrators,-1603805735,System.View,FALSE
+ACAS Administrators,-1603805735,VirtualMachine.Config.Annotation,FALSE
+ACAS Administrators,-1603805735,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+ACAS Administrators,-1603805735,VirtualMachine.Interact.AnswerQuestion,FALSE
+ACAS Administrators,-1603805735,VirtualMachine.Interact.ConsoleInteract,FALSE
+ACAS Administrators,-1603805735,VirtualMachine.Interact.DeviceConnection,FALSE
+ACAS Administrators,-1603805735,VirtualMachine.Interact.PowerOff,FALSE
+ACAS Administrators,-1603805735,VirtualMachine.Interact.PowerOn,FALSE
+ACAS Administrators,-1603805735,VirtualMachine.Interact.Reset,FALSE
+ACAS Administrators,-1603805735,VirtualMachine.Interact.SetCDMedia,FALSE
+ACAS Administrators,-1603805735,VirtualMachine.Interact.ToolsInstall,FALSE
+Storage and Backup Team,-1356242146,Datastore.AllocateSpace,FALSE
+Storage and Backup Team,-1356242146,Datastore.Browse,FALSE
+Storage and Backup Team,-1356242146,Datastore.Config,FALSE
+Storage and Backup Team,-1356242146,Datastore.ConfigIOManagement,FALSE
+Storage and Backup Team,-1356242146,Datastore.DeleteFile,FALSE
+Storage and Backup Team,-1356242146,Datastore.FileManagement,FALSE
+Storage and Backup Team,-1356242146,Datastore.UpdateVirtualMachineFiles,FALSE
+Storage and Backup Team,-1356242146,Datastore.UpdateVirtualMachineMetadata,FALSE
+Storage and Backup Team,-1356242146,Global.CancelTask,FALSE
+Storage and Backup Team,-1356242146,Global.DisableMethods,FALSE
+Storage and Backup Team,-1356242146,Global.EnableMethods,FALSE
+Storage and Backup Team,-1356242146,Global.GlobalTag,FALSE
+Storage and Backup Team,-1356242146,Global.Licenses,FALSE
+Storage and Backup Team,-1356242146,Global.LogEvent,FALSE
+Storage and Backup Team,-1356242146,Global.ManageCustomFields,FALSE
+Storage and Backup Team,-1356242146,Global.SetCustomField,FALSE
+Storage and Backup Team,-1356242146,Global.Settings,FALSE
+Storage and Backup Team,-1356242146,Host.Config.AdvancedConfig,FALSE
+Storage and Backup Team,-1356242146,Host.Config.Storage,FALSE
+Storage and Backup Team,-1356242146,InventoryService.Tagging.AttachTag,FALSE
+Storage and Backup Team,-1356242146,InventoryService.Tagging.CreateCategory,FALSE
+Storage and Backup Team,-1356242146,InventoryService.Tagging.CreateTag,FALSE
+Storage and Backup Team,-1356242146,InventoryService.Tagging.DeleteCategory,FALSE
+Storage and Backup Team,-1356242146,InventoryService.Tagging.DeleteTag,FALSE
+Storage and Backup Team,-1356242146,InventoryService.Tagging.EditCategory,FALSE
+Storage and Backup Team,-1356242146,InventoryService.Tagging.EditTag,FALSE
+Storage and Backup Team,-1356242146,InventoryService.Tagging.ObjectAttachable,FALSE
+Storage and Backup Team,-1356242146,NetBackup.AddRemoveServer,FALSE
+Storage and Backup Team,-1356242146,NetBackup.VMRecovery,FALSE
+Storage and Backup Team,-1356242146,Network.Assign,FALSE
+Storage and Backup Team,-1356242146,Resource.AssignVAppToPool,FALSE
+Storage and Backup Team,-1356242146,Resource.AssignVMToPool,FALSE
+Storage and Backup Team,-1356242146,ScheduledTask.Create,FALSE
+Storage and Backup Team,-1356242146,ScheduledTask.Delete,FALSE
+Storage and Backup Team,-1356242146,ScheduledTask.Edit,FALSE
+Storage and Backup Team,-1356242146,ScheduledTask.Run,FALSE
+Storage and Backup Team,-1356242146,StoragePod.Config,FALSE
+Storage and Backup Team,-1356242146,StorageViews.ConfigureService,FALSE
+Storage and Backup Team,-1356242146,StorageViews.View,FALSE
+Storage and Backup Team,-1356242146,System.Anonymous,FALSE
+Storage and Backup Team,-1356242146,System.Read,FALSE
+Storage and Backup Team,-1356242146,System.View,FALSE
+Storage and Backup Team,-1356242146,Task.Create,FALSE
+Storage and Backup Team,-1356242146,Task.Update,FALSE
+Storage and Backup Team,-1356242146,VApp.AssignResourcePool,FALSE
+Storage and Backup Team,-1356242146,VApp.AssignVApp,FALSE
+Storage and Backup Team,-1356242146,VApp.AssignVM,FALSE
+Storage and Backup Team,-1356242146,VApp.Create,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.AddExistingDisk,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.AddNewDisk,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.AddRemoveDevice,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.AdvancedConfig,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.Annotation,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.ChangeTracking,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.DiskLease,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.EditDevice,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.RawDevice,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.RemoveDisk,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.Rename,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.Resource,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.Settings,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Config.SwapPlacement,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Interact.AnswerQuestion,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Interact.Backup,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Interact.ConsoleInteract,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Interact.PowerOff,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Interact.PowerOn,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Interact.Reset,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Interact.SetCDMedia,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Interact.Suspend,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Interact.ToolsInstall,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Inventory.Create,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Inventory.CreateFromExisting,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Inventory.Delete,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Inventory.Register,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Inventory.Unregister,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Provisioning.DiskRandomAccess,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Provisioning.DiskRandomRead,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.Provisioning.GetVmFiles,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.State.CreateSnapshot,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.State.RemoveSnapshot,FALSE
+Storage and Backup Team,-1356242146,VirtualMachine.State.RevertToSnapshot,FALSE
+Usage Meter Read-Only,-1322332125,InventoryService.Tagging.ObjectAttachable,FALSE
+Usage Meter Read-Only,-1322332125,StorageProfile.View,FALSE
+Usage Meter Read-Only,-1322332125,System.Anonymous,FALSE
+Usage Meter Read-Only,-1322332125,System.Read,FALSE
+Usage Meter Read-Only,-1322332125,System.View,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,ContentLibrary.ReadStorage,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,Datastore.Browse,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,InventoryService.Tagging.ObjectAttachable,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,Network.Assign,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,System.Anonymous,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,System.Read,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,System.View,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Config.Annotation,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Config.EditDevice,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Config.MksControl,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Config.Settings,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Interact.AnswerQuestion,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Interact.ConsoleInteract,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Interact.DeviceConnection,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Interact.PowerOff,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Interact.PowerOn,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Interact.Reset,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Interact.SetCDMedia,FALSE
+J61 CS ELM-CyberSWAT,-1194542151,VirtualMachine.Interact.ToolsInstall,FALSE
+J62DAA AIT Server App Admins,-1174666160,Cryptographer.Access,FALSE
+J62DAA AIT Server App Admins,-1174666160,Cryptographer.Encrypt,FALSE
+J62DAA AIT Server App Admins,-1174666160,Cryptographer.EncryptNew,FALSE
+J62DAA AIT Server App Admins,-1174666160,Cryptographer.Migrate,FALSE
+J62DAA AIT Server App Admins,-1174666160,Cryptographer.ReadKeyServersInfo,FALSE
+J62DAA AIT Server App Admins,-1174666160,Cryptographer.RegisterVM,FALSE
+J62DAA AIT Server App Admins,-1174666160,InventoryService.Tagging.ObjectAttachable,FALSE
+J62DAA AIT Server App Admins,-1174666160,Network.Assign,FALSE
+J62DAA AIT Server App Admins,-1174666160,System.Anonymous,FALSE
+J62DAA AIT Server App Admins,-1174666160,System.Read,FALSE
+J62DAA AIT Server App Admins,-1174666160,System.View,FALSE
+J62DAA AIT Server App Admins,-1174666160,VirtualMachine.Config.Annotation,FALSE
+J62DAA AIT Server App Admins,-1174666160,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+J62DAA AIT Server App Admins,-1174666160,VirtualMachine.Interact.AnswerQuestion,FALSE
+J62DAA AIT Server App Admins,-1174666160,VirtualMachine.Interact.ConsoleInteract,FALSE
+J62DAA AIT Server App Admins,-1174666160,VirtualMachine.Interact.DeviceConnection,FALSE
+J62DAA AIT Server App Admins,-1174666160,VirtualMachine.Interact.PowerOff,FALSE
+J62DAA AIT Server App Admins,-1174666160,VirtualMachine.Interact.PowerOn,FALSE
+J62DAA AIT Server App Admins,-1174666160,VirtualMachine.Interact.Reset,FALSE
+J62DAA AIT Server App Admins,-1174666160,VirtualMachine.Interact.SetCDMedia,FALSE
+J62DAA AIT Server App Admins,-1174666160,VirtualMachine.Interact.ToolsInstall,FALSE
+Remote Virtual Machine user,-1120693397,InventoryService.Tagging.ObjectAttachable,FALSE
+Remote Virtual Machine user,-1120693397,System.Anonymous,FALSE
+Remote Virtual Machine user,-1120693397,System.Read,FALSE
+Remote Virtual Machine user,-1120693397,System.View,FALSE
+Remote Virtual Machine user,-1120693397,VirtualMachine.Interact.AnswerQuestion,FALSE
+Remote Virtual Machine user,-1120693397,VirtualMachine.Interact.ConsoleInteract,FALSE
+Remote Virtual Machine user,-1120693397,VirtualMachine.Interact.DeviceConnection,FALSE
+Remote Virtual Machine user,-1120693397,VirtualMachine.Interact.PowerOff,FALSE
+Remote Virtual Machine user,-1120693397,VirtualMachine.Interact.PowerOn,FALSE
+Remote Virtual Machine user,-1120693397,VirtualMachine.Interact.Reset,FALSE
+Remote Virtual Machine user,-1120693397,VirtualMachine.Interact.SetCDMedia,FALSE
+Remote Virtual Machine user,-1120693397,VirtualMachine.Interact.SetFloppyMedia,FALSE
+Remote Virtual Machine user,-1120693397,VirtualMachine.Interact.Suspend,FALSE
+Remote Virtual Machine user,-1120693397,VirtualMachine.Interact.ToolsInstall,FALSE
+Enterprise DC Admin Team-temp,-911430357,ContentLibrary.ReadStorage,FALSE
+Enterprise DC Admin Team-temp,-911430357,Cryptographer.Access,FALSE
+Enterprise DC Admin Team-temp,-911430357,Cryptographer.Clone,FALSE
+Enterprise DC Admin Team-temp,-911430357,Cryptographer.Encrypt,FALSE
+Enterprise DC Admin Team-temp,-911430357,Cryptographer.EncryptNew,FALSE
+Enterprise DC Admin Team-temp,-911430357,Cryptographer.Migrate,FALSE
+Enterprise DC Admin Team-temp,-911430357,Cryptographer.RegisterHost,FALSE
+Enterprise DC Admin Team-temp,-911430357,Cryptographer.RegisterVM,FALSE
+Enterprise DC Admin Team-temp,-911430357,Datastore.Browse,FALSE
+Enterprise DC Admin Team-temp,-911430357,InventoryService.Tagging.AttachTag,FALSE
+Enterprise DC Admin Team-temp,-911430357,InventoryService.Tagging.ObjectAttachable,FALSE
+Enterprise DC Admin Team-temp,-911430357,Network.Assign,FALSE
+Enterprise DC Admin Team-temp,-911430357,System.Anonymous,FALSE
+Enterprise DC Admin Team-temp,-911430357,System.Read,FALSE
+Enterprise DC Admin Team-temp,-911430357,System.View,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.ConfigureHostCertificates,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.ConfigureHostMetadata,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.ConfigureTokenConversionPolicy,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.ManageAttestingSSO,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.ManageKMSTrust,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.ManageTrustedHosts,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.ReadAttestingSSO,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.ReadKMSTrust,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.ReadStsInfo,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.ReadTrustedHosts,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.RetrieveHostMetadata,FALSE
+Enterprise DC Admin Team-temp,-911430357,TrustedAdmin.RetrieveTPMHostCertificates,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Config.AddRemoveDevice,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Config.AdvancedConfig,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Config.Annotation,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Config.CPUCount,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Config.Memory,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Config.MksControl,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Config.Settings,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Interact.AnswerQuestion,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Interact.ConsoleInteract,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Interact.CreateScreenshot,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Interact.DeviceConnection,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Interact.PowerOff,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Interact.PowerOn,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Interact.Reset,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Interact.SetCDMedia,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.Interact.ToolsInstall,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.State.CreateSnapshot,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.State.RemoveSnapshot,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.State.RenameSnapshot,FALSE
+Enterprise DC Admin Team-temp,-911430357,VirtualMachine.State.RevertToSnapshot,FALSE
+Enterprise DC Admin Team-temp,-911430357,vService.CreateDependency,FALSE
+Enterprise DC Admin Team-temp,-911430357,vService.UpdateDependency,FALSE
+Enterprise DC Admin Team-temp,-911430357,vStats.CollectAny,FALSE
+Enterprise DC Admin Team-temp,-911430357,vStats.QueryAny,FALSE
+Database Administrators,-713358904,InventoryService.Tagging.ObjectAttachable,FALSE
+Database Administrators,-713358904,Network.Assign,FALSE
+Database Administrators,-713358904,System.Anonymous,FALSE
+Database Administrators,-713358904,System.Read,FALSE
+Database Administrators,-713358904,System.View,FALSE
+Database Administrators,-713358904,VirtualMachine.Config.Annotation,FALSE
+Database Administrators,-713358904,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Database Administrators,-713358904,VirtualMachine.Interact.AnswerQuestion,FALSE
+Database Administrators,-713358904,VirtualMachine.Interact.ConsoleInteract,FALSE
+Database Administrators,-713358904,VirtualMachine.Interact.DeviceConnection,FALSE
+Database Administrators,-713358904,VirtualMachine.Interact.PowerOff,FALSE
+Database Administrators,-713358904,VirtualMachine.Interact.PowerOn,FALSE
+Database Administrators,-713358904,VirtualMachine.Interact.Reset,FALSE
+Database Administrators,-713358904,VirtualMachine.Interact.SetCDMedia,FALSE
+Database Administrators,-713358904,VirtualMachine.Interact.ToolsInstall,FALSE
+HBSS Server Team,-519831830,InventoryService.Tagging.ObjectAttachable,FALSE
+HBSS Server Team,-519831830,Network.Assign,FALSE
+HBSS Server Team,-519831830,System.Anonymous,FALSE
+HBSS Server Team,-519831830,System.Read,FALSE
+HBSS Server Team,-519831830,System.View,FALSE
+HBSS Server Team,-519831830,VirtualMachine.Config.Annotation,FALSE
+HBSS Server Team,-519831830,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+HBSS Server Team,-519831830,VirtualMachine.Interact.AnswerQuestion,FALSE
+HBSS Server Team,-519831830,VirtualMachine.Interact.ConsoleInteract,FALSE
+HBSS Server Team,-519831830,VirtualMachine.Interact.DeviceConnection,FALSE
+HBSS Server Team,-519831830,VirtualMachine.Interact.PowerOff,FALSE
+HBSS Server Team,-519831830,VirtualMachine.Interact.PowerOn,FALSE
+HBSS Server Team,-519831830,VirtualMachine.Interact.Reset,FALSE
+HBSS Server Team,-519831830,VirtualMachine.Interact.SetCDMedia,FALSE
+HBSS Server Team,-519831830,VirtualMachine.Interact.ToolsInstall,FALSE
+NsxAuditor,-169717597,Nsx.Read,FALSE
+NsxAuditor,-169717597,System.Anonymous,FALSE
+NsxAuditor,-169717597,System.Read,FALSE
+NsxAuditor,-169717597,System.View,FALSE
+Enterprise SCCM Team,-43887062,InventoryService.Tagging.ObjectAttachable,FALSE
+Enterprise SCCM Team,-43887062,Network.Assign,FALSE
+Enterprise SCCM Team,-43887062,System.Anonymous,FALSE
+Enterprise SCCM Team,-43887062,System.Read,FALSE
+Enterprise SCCM Team,-43887062,System.View,FALSE
+Enterprise SCCM Team,-43887062,VirtualMachine.Config.Annotation,FALSE
+Enterprise SCCM Team,-43887062,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Enterprise SCCM Team,-43887062,VirtualMachine.Interact.AnswerQuestion,FALSE
+Enterprise SCCM Team,-43887062,VirtualMachine.Interact.ConsoleInteract,FALSE
+Enterprise SCCM Team,-43887062,VirtualMachine.Interact.DeviceConnection,FALSE
+Enterprise SCCM Team,-43887062,VirtualMachine.Interact.PowerOff,FALSE
+Enterprise SCCM Team,-43887062,VirtualMachine.Interact.PowerOn,FALSE
+Enterprise SCCM Team,-43887062,VirtualMachine.Interact.Reset,FALSE
+Enterprise SCCM Team,-43887062,VirtualMachine.Interact.SetCDMedia,FALSE
+Enterprise SCCM Team,-43887062,VirtualMachine.Interact.ToolsInstall,FALSE
+F5 Admins Team,-41596846,ContentLibrary.ReadStorage,FALSE
+F5 Admins Team,-41596846,Datastore.Browse,FALSE
+F5 Admins Team,-41596846,InventoryService.Tagging.ObjectAttachable,FALSE
+F5 Admins Team,-41596846,Network.Assign,FALSE
+F5 Admins Team,-41596846,System.Anonymous,FALSE
+F5 Admins Team,-41596846,System.Read,FALSE
+F5 Admins Team,-41596846,System.View,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Config.Annotation,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Config.EditDevice,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Config.MksControl,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Config.Settings,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Interact.AnswerQuestion,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Interact.ConsoleInteract,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Interact.DeviceConnection,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Interact.PowerOff,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Interact.PowerOn,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Interact.Reset,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Interact.SetCDMedia,FALSE
+F5 Admins Team,-41596846,VirtualMachine.Interact.ToolsInstall,FALSE
+NoTrustedAdmin,-8,Alarm.Acknowledge,TRUE
+NoTrustedAdmin,-8,Alarm.Create,TRUE
+NoTrustedAdmin,-8,Alarm.Delete,TRUE
+NoTrustedAdmin,-8,Alarm.DisableActions,TRUE
+NoTrustedAdmin,-8,Alarm.Edit,TRUE
+NoTrustedAdmin,-8,Alarm.SetStatus,TRUE
+NoTrustedAdmin,-8,Alarm.ToggleEnableOnEntity,TRUE
+NoTrustedAdmin,-8,Authorization.ModifyPermissions,TRUE
+NoTrustedAdmin,-8,Authorization.ModifyPrivileges,TRUE
+NoTrustedAdmin,-8,Authorization.ModifyRoles,TRUE
+NoTrustedAdmin,-8,Authorization.ModifyVTContainerMappings,TRUE
+NoTrustedAdmin,-8,Authorization.ModifyVTContainers,TRUE
+NoTrustedAdmin,-8,Authorization.ReassignRolePermissions,TRUE
+NoTrustedAdmin,-8,AutoDeploy.Host.AssociateMachine,TRUE
+NoTrustedAdmin,-8,AutoDeploy.Profile.Create,TRUE
+NoTrustedAdmin,-8,AutoDeploy.Profile.Edit,TRUE
+NoTrustedAdmin,-8,AutoDeploy.Rule.Create,TRUE
+NoTrustedAdmin,-8,AutoDeploy.Rule.Delete,TRUE
+NoTrustedAdmin,-8,AutoDeploy.Rule.Edit,TRUE
+NoTrustedAdmin,-8,AutoDeploy.RuleSet.Activate,TRUE
+NoTrustedAdmin,-8,AutoDeploy.RuleSet.Edit,TRUE
+NoTrustedAdmin,-8,Certificate.Manage,TRUE
+NoTrustedAdmin,-8,CertificateAuthority.Administer,TRUE
+NoTrustedAdmin,-8,CertificateAuthority.Manage,TRUE
+NoTrustedAdmin,-8,CertificateManagement.Administer,TRUE
+NoTrustedAdmin,-8,CertificateManagement.Manage,TRUE
+NoTrustedAdmin,-8,CertificateManagementSubscriptions.Delete,TRUE
+NoTrustedAdmin,-8,Cns.Searchable,TRUE
+NoTrustedAdmin,-8,ComputePolicy.Manage,TRUE
+NoTrustedAdmin,-8,ContentLibrary.AddCertToTrustStore,TRUE
+NoTrustedAdmin,-8,ContentLibrary.AddLibraryItem,TRUE
+NoTrustedAdmin,-8,ContentLibrary.AddSubscription,TRUE
+NoTrustedAdmin,-8,ContentLibrary.CheckInTemplate,TRUE
+NoTrustedAdmin,-8,ContentLibrary.CheckOutTemplate,TRUE
+NoTrustedAdmin,-8,ContentLibrary.CreateLocalLibrary,TRUE
+NoTrustedAdmin,-8,ContentLibrary.CreateSubscribedLibrary,TRUE
+NoTrustedAdmin,-8,ContentLibrary.DeleteCertFromTrustStore,TRUE
+NoTrustedAdmin,-8,ContentLibrary.DeleteLibraryItem,TRUE
+NoTrustedAdmin,-8,ContentLibrary.DeleteLocalLibrary,TRUE
+NoTrustedAdmin,-8,ContentLibrary.DeleteSubscribedLibrary,TRUE
+NoTrustedAdmin,-8,ContentLibrary.DeleteSubscription,TRUE
+NoTrustedAdmin,-8,ContentLibrary.DownloadSession,TRUE
+NoTrustedAdmin,-8,ContentLibrary.EvictLibraryItem,TRUE
+NoTrustedAdmin,-8,ContentLibrary.EvictSubscribedLibrary,TRUE
+NoTrustedAdmin,-8,ContentLibrary.GetConfiguration,TRUE
+NoTrustedAdmin,-8,ContentLibrary.ImportStorage,TRUE
+NoTrustedAdmin,-8,ContentLibrary.ManageClusterRegistryResource,TRUE
+NoTrustedAdmin,-8,ContentLibrary.ManageRegistry,TRUE
+NoTrustedAdmin,-8,ContentLibrary.ManageRegistryProject,TRUE
+NoTrustedAdmin,-8,ContentLibrary.ProbeSubscription,TRUE
+NoTrustedAdmin,-8,ContentLibrary.PublishLibrary,TRUE
+NoTrustedAdmin,-8,ContentLibrary.PublishLibraryItem,TRUE
+NoTrustedAdmin,-8,ContentLibrary.ReadStorage,TRUE
+NoTrustedAdmin,-8,ContentLibrary.SyncLibrary,TRUE
+NoTrustedAdmin,-8,ContentLibrary.SyncLibraryItem,TRUE
+NoTrustedAdmin,-8,ContentLibrary.TypeIntrospection,TRUE
+NoTrustedAdmin,-8,ContentLibrary.UpdateConfiguration,TRUE
+NoTrustedAdmin,-8,ContentLibrary.UpdateLibrary,TRUE
+NoTrustedAdmin,-8,ContentLibrary.UpdateLibraryItem,TRUE
+NoTrustedAdmin,-8,ContentLibrary.UpdateLocalLibrary,TRUE
+NoTrustedAdmin,-8,ContentLibrary.UpdateSession,TRUE
+NoTrustedAdmin,-8,ContentLibrary.UpdateSubscribedLibrary,TRUE
+NoTrustedAdmin,-8,ContentLibrary.UpdateSubscription,TRUE
+NoTrustedAdmin,-8,Cryptographer.Access,TRUE
+NoTrustedAdmin,-8,Cryptographer.AddDisk,TRUE
+NoTrustedAdmin,-8,Cryptographer.Clone,TRUE
+NoTrustedAdmin,-8,Cryptographer.Decrypt,TRUE
+NoTrustedAdmin,-8,Cryptographer.Encrypt,TRUE
+NoTrustedAdmin,-8,Cryptographer.EncryptNew,TRUE
+NoTrustedAdmin,-8,Cryptographer.ManageEncryptionPolicy,TRUE
+NoTrustedAdmin,-8,Cryptographer.ManageKeyServers,TRUE
+NoTrustedAdmin,-8,Cryptographer.ManageKeys,TRUE
+NoTrustedAdmin,-8,Cryptographer.Migrate,TRUE
+NoTrustedAdmin,-8,Cryptographer.ReadKeyServersInfo,TRUE
+NoTrustedAdmin,-8,Cryptographer.Recrypt,TRUE
+NoTrustedAdmin,-8,Cryptographer.RegisterHost,TRUE
+NoTrustedAdmin,-8,Cryptographer.RegisterVM,TRUE
+NoTrustedAdmin,-8,DVPortgroup.Create,TRUE
+NoTrustedAdmin,-8,DVPortgroup.Delete,TRUE
+NoTrustedAdmin,-8,DVPortgroup.Ipfix,TRUE
+NoTrustedAdmin,-8,DVPortgroup.Modify,TRUE
+NoTrustedAdmin,-8,DVPortgroup.PolicyOp,TRUE
+NoTrustedAdmin,-8,DVPortgroup.ScopeOp,TRUE
+NoTrustedAdmin,-8,DVSwitch.Create,TRUE
+NoTrustedAdmin,-8,DVSwitch.Delete,TRUE
+NoTrustedAdmin,-8,DVSwitch.HostOp,TRUE
+NoTrustedAdmin,-8,DVSwitch.Ipfix,TRUE
+NoTrustedAdmin,-8,DVSwitch.Modify,TRUE
+NoTrustedAdmin,-8,DVSwitch.Move,TRUE
+NoTrustedAdmin,-8,DVSwitch.PolicyOp,TRUE
+NoTrustedAdmin,-8,DVSwitch.PortConfig,TRUE
+NoTrustedAdmin,-8,DVSwitch.PortSetting,TRUE
+NoTrustedAdmin,-8,DVSwitch.ResourceManagement,TRUE
+NoTrustedAdmin,-8,DVSwitch.Vspan,TRUE
+NoTrustedAdmin,-8,Datacenter.Create,TRUE
+NoTrustedAdmin,-8,Datacenter.Delete,TRUE
+NoTrustedAdmin,-8,Datacenter.IpPoolConfig,TRUE
+NoTrustedAdmin,-8,Datacenter.IpPoolQueryAllocations,TRUE
+NoTrustedAdmin,-8,Datacenter.IpPoolReleaseIp,TRUE
+NoTrustedAdmin,-8,Datacenter.Move,TRUE
+NoTrustedAdmin,-8,Datacenter.Reconfigure,TRUE
+NoTrustedAdmin,-8,Datacenter.Rename,TRUE
+NoTrustedAdmin,-8,Datacenter.UpdateCarbonInfo,TRUE
+NoTrustedAdmin,-8,Datastore.AllocateSpace,TRUE
+NoTrustedAdmin,-8,Datastore.Browse,TRUE
+NoTrustedAdmin,-8,Datastore.Config,TRUE
+NoTrustedAdmin,-8,Datastore.ConfigIOManagement,TRUE
+NoTrustedAdmin,-8,Datastore.Delete,TRUE
+NoTrustedAdmin,-8,Datastore.DeleteFile,TRUE
+NoTrustedAdmin,-8,Datastore.FileManagement,TRUE
+NoTrustedAdmin,-8,Datastore.Move,TRUE
+NoTrustedAdmin,-8,Datastore.Rename,TRUE
+NoTrustedAdmin,-8,Datastore.UpdateVirtualMachineFiles,TRUE
+NoTrustedAdmin,-8,Datastore.UpdateVirtualMachineMetadata,TRUE
+NoTrustedAdmin,-8,DrProxy.Host.Configure,TRUE
+NoTrustedAdmin,-8,DrProxy.Host.ManageService,TRUE
+NoTrustedAdmin,-8,DrProxy.Host.View,TRUE
+NoTrustedAdmin,-8,DrProxy.License.Update,TRUE
+NoTrustedAdmin,-8,DrProxy.License.View,TRUE
+NoTrustedAdmin,-8,DrProxy.Progress.Control,TRUE
+NoTrustedAdmin,-8,DrProxy.Vm.Configure,TRUE
+NoTrustedAdmin,-8,EAM.Config,TRUE
+NoTrustedAdmin,-8,EAM.Modify,TRUE
+NoTrustedAdmin,-8,EAM.View,TRUE
+NoTrustedAdmin,-8,Extension.Register,TRUE
+NoTrustedAdmin,-8,Extension.Unregister,TRUE
+NoTrustedAdmin,-8,Extension.Update,TRUE
+NoTrustedAdmin,-8,ExternalStatsProvider.Register,TRUE
+NoTrustedAdmin,-8,ExternalStatsProvider.Unregister,TRUE
+NoTrustedAdmin,-8,ExternalStatsProvider.Update,TRUE
+NoTrustedAdmin,-8,Folder.Create,TRUE
+NoTrustedAdmin,-8,Folder.Delete,TRUE
+NoTrustedAdmin,-8,Folder.Move,TRUE
+NoTrustedAdmin,-8,Folder.Rename,TRUE
+NoTrustedAdmin,-8,Global.CancelTask,TRUE
+NoTrustedAdmin,-8,Global.CapacityPlanning,TRUE
+NoTrustedAdmin,-8,Global.Diagnostics,TRUE
+NoTrustedAdmin,-8,Global.DisableMethods,TRUE
+NoTrustedAdmin,-8,Global.EnableMethods,TRUE
+NoTrustedAdmin,-8,Global.GlobalTag,TRUE
+NoTrustedAdmin,-8,Global.Health,TRUE
+NoTrustedAdmin,-8,Global.Licenses,TRUE
+NoTrustedAdmin,-8,Global.LogEvent,TRUE
+NoTrustedAdmin,-8,Global.ManageCustomFields,TRUE
+NoTrustedAdmin,-8,Global.Proxy,TRUE
+NoTrustedAdmin,-8,Global.ScriptAction,TRUE
+NoTrustedAdmin,-8,Global.ServiceManagers,TRUE
+NoTrustedAdmin,-8,Global.SetCustomField,TRUE
+NoTrustedAdmin,-8,Global.Settings,TRUE
+NoTrustedAdmin,-8,Global.SystemTag,TRUE
+NoTrustedAdmin,-8,Global.VCServer,TRUE
+NoTrustedAdmin,-8,Global.com.vmware.vcops,TRUE
+NoTrustedAdmin,-8,Global.com.vmware.vcops.ContentAdmin,TRUE
+NoTrustedAdmin,-8,Global.com.vmware.vcops.GeneralUser-1,TRUE
+NoTrustedAdmin,-8,Global.com.vmware.vcops.GeneralUser-2,TRUE
+NoTrustedAdmin,-8,Global.com.vmware.vcops.GeneralUser-3,TRUE
+NoTrustedAdmin,-8,Global.com.vmware.vcops.GeneralUser-4,TRUE
+NoTrustedAdmin,-8,Global.com.vmware.vcops.PowerUserMinusRemediation,TRUE
+NoTrustedAdmin,-8,Global.com.vmware.vcopsAdmin,TRUE
+NoTrustedAdmin,-8,GuestDataPublisher.GetData,TRUE
+NoTrustedAdmin,-8,HLM.Create,TRUE
+NoTrustedAdmin,-8,HLM.Manage,TRUE
+NoTrustedAdmin,-8,HealthUpdateProvider.Register,TRUE
+NoTrustedAdmin,-8,HealthUpdateProvider.Unregister,TRUE
+NoTrustedAdmin,-8,HealthUpdateProvider.Update,TRUE
+NoTrustedAdmin,-8,Host.Cim.CimInteraction,TRUE
+NoTrustedAdmin,-8,Host.Config.AdvancedConfig,TRUE
+NoTrustedAdmin,-8,Host.Config.AuthenticationStore,TRUE
+NoTrustedAdmin,-8,Host.Config.AutoStart,TRUE
+NoTrustedAdmin,-8,Host.Config.Connection,TRUE
+NoTrustedAdmin,-8,Host.Config.DateTime,TRUE
+NoTrustedAdmin,-8,Host.Config.Firmware,TRUE
+NoTrustedAdmin,-8,Host.Config.GuestStore,TRUE
+NoTrustedAdmin,-8,Host.Config.HyperThreading,TRUE
+NoTrustedAdmin,-8,Host.Config.Image,TRUE
+NoTrustedAdmin,-8,Host.Config.Maintenance,TRUE
+NoTrustedAdmin,-8,Host.Config.Memory,TRUE
+NoTrustedAdmin,-8,Host.Config.NetService,TRUE
+NoTrustedAdmin,-8,Host.Config.Network,TRUE
+NoTrustedAdmin,-8,Host.Config.Nvdimm,TRUE
+NoTrustedAdmin,-8,Host.Config.Patch,TRUE
+NoTrustedAdmin,-8,Host.Config.PciPassthru,TRUE
+NoTrustedAdmin,-8,Host.Config.Power,TRUE
+NoTrustedAdmin,-8,Host.Config.ProductLocker,TRUE
+NoTrustedAdmin,-8,Host.Config.Quarantine,TRUE
+NoTrustedAdmin,-8,Host.Config.Resources,TRUE
+NoTrustedAdmin,-8,Host.Config.Settings,TRUE
+NoTrustedAdmin,-8,Host.Config.Snmp,TRUE
+NoTrustedAdmin,-8,Host.Config.Storage,TRUE
+NoTrustedAdmin,-8,Host.Config.SystemFirewallRuleSet,TRUE
+NoTrustedAdmin,-8,Host.Config.SystemManagement,TRUE
+NoTrustedAdmin,-8,Host.Entropy.Read,TRUE
+NoTrustedAdmin,-8,Host.Entropy.Write,TRUE
+NoTrustedAdmin,-8,Host.Hbr.HbrDaemonManagement,TRUE
+NoTrustedAdmin,-8,Host.Hbr.HbrManagement,TRUE
+NoTrustedAdmin,-8,Host.Inventory.AddHostToCluster,TRUE
+NoTrustedAdmin,-8,Host.Inventory.AddStandaloneHost,TRUE
+NoTrustedAdmin,-8,Host.Inventory.CreateCluster,TRUE
+NoTrustedAdmin,-8,Host.Inventory.DeleteCluster,TRUE
+NoTrustedAdmin,-8,Host.Inventory.EditCluster,TRUE
+NoTrustedAdmin,-8,Host.Inventory.ManageClusterLifecyle,TRUE
+NoTrustedAdmin,-8,Host.Inventory.MoveCluster,TRUE
+NoTrustedAdmin,-8,Host.Inventory.MoveHost,TRUE
+NoTrustedAdmin,-8,Host.Inventory.RemoveHostFromCluster,TRUE
+NoTrustedAdmin,-8,Host.Inventory.RenameCluster,TRUE
+NoTrustedAdmin,-8,Host.Local.CreateVM,TRUE
+NoTrustedAdmin,-8,Host.Local.DeleteVM,TRUE
+NoTrustedAdmin,-8,Host.Local.InstallAgent,TRUE
+NoTrustedAdmin,-8,Host.Local.ManageUserGroups,TRUE
+NoTrustedAdmin,-8,Host.Local.ReconfigVM,TRUE
+NoTrustedAdmin,-8,Host.Sgx.Register,TRUE
+NoTrustedAdmin,-8,Host.Stats.Query,TRUE
+NoTrustedAdmin,-8,Host.Tpm.Read,TRUE
+NoTrustedAdmin,-8,Host.Tpm.Unseal,TRUE
+NoTrustedAdmin,-8,ImageBuilder.Depot.Create,TRUE
+NoTrustedAdmin,-8,ImageBuilder.Depot.Delete,TRUE
+NoTrustedAdmin,-8,ImageBuilder.Profile.Create,TRUE
+NoTrustedAdmin,-8,ImageBuilder.Profile.Delete,TRUE
+NoTrustedAdmin,-8,ImageBuilder.Profile.Export,TRUE
+NoTrustedAdmin,-8,Infraprofile.Read,TRUE
+NoTrustedAdmin,-8,Infraprofile.Write,TRUE
+NoTrustedAdmin,-8,IntercomNamespace.Read,TRUE
+NoTrustedAdmin,-8,IntercomNamespace.Write,TRUE
+NoTrustedAdmin,-8,InventoryService.Tagging.AttachTag,TRUE
+NoTrustedAdmin,-8,InventoryService.Tagging.CreateCategory,TRUE
+NoTrustedAdmin,-8,InventoryService.Tagging.CreateTag,TRUE
+NoTrustedAdmin,-8,InventoryService.Tagging.DeleteCategory,TRUE
+NoTrustedAdmin,-8,InventoryService.Tagging.DeleteTag,TRUE
+NoTrustedAdmin,-8,InventoryService.Tagging.EditCategory,TRUE
+NoTrustedAdmin,-8,InventoryService.Tagging.EditTag,TRUE
+NoTrustedAdmin,-8,InventoryService.Tagging.ModifyUsedByForCategory,TRUE
+NoTrustedAdmin,-8,InventoryService.Tagging.ModifyUsedByForTag,TRUE
+NoTrustedAdmin,-8,InventoryService.Tagging.ObjectAttachable,TRUE
+NoTrustedAdmin,-8,Namespaces.Backup,TRUE
+NoTrustedAdmin,-8,Namespaces.Configure,TRUE
+NoTrustedAdmin,-8,Namespaces.ListAccess,TRUE
+NoTrustedAdmin,-8,Namespaces.Manage,TRUE
+NoTrustedAdmin,-8,Namespaces.ManageCapabilities,TRUE
+NoTrustedAdmin,-8,Namespaces.ManageDisks,TRUE
+NoTrustedAdmin,-8,Namespaces.SelfServiceManage,TRUE
+NoTrustedAdmin,-8,Namespaces.Upgrade,TRUE
+NoTrustedAdmin,-8,NetBackup.AddRemoveServer,TRUE
+NoTrustedAdmin,-8,NetBackup.VMRecovery,TRUE
+NoTrustedAdmin,-8,Network.Assign,TRUE
+NoTrustedAdmin,-8,Network.Config,TRUE
+NoTrustedAdmin,-8,Network.Delete,TRUE
+NoTrustedAdmin,-8,Network.Move,TRUE
+NoTrustedAdmin,-8,Nsx.Manage,TRUE
+NoTrustedAdmin,-8,Nsx.ModifyAll,TRUE
+NoTrustedAdmin,-8,Nsx.Read,TRUE
+NoTrustedAdmin,-8,Observability.Admin,TRUE
+NoTrustedAdmin,-8,Observability.StatsProvider.Manage,TRUE
+NoTrustedAdmin,-8,OvfManager.OvfConsumerAccess,TRUE
+NoTrustedAdmin,-8,PartnerRestDaemon.Read,TRUE
+NoTrustedAdmin,-8,PartnerRestDaemon.Write,TRUE
+NoTrustedAdmin,-8,Performance.ModifyIntervals,TRUE
+NoTrustedAdmin,-8,Plugin.Management,TRUE
+NoTrustedAdmin,-8,Profile.Clear,TRUE
+NoTrustedAdmin,-8,Profile.Create,TRUE
+NoTrustedAdmin,-8,Profile.Delete,TRUE
+NoTrustedAdmin,-8,Profile.Edit,TRUE
+NoTrustedAdmin,-8,Profile.Export,TRUE
+NoTrustedAdmin,-8,Profile.View,TRUE
+NoTrustedAdmin,-8,ReplicationService.Administer,TRUE
+NoTrustedAdmin,-8,Resource.ApplyRecommendation,TRUE
+NoTrustedAdmin,-8,Resource.AssignVAppToPool,TRUE
+NoTrustedAdmin,-8,Resource.AssignVMToPool,TRUE
+NoTrustedAdmin,-8,Resource.ColdMigrate,TRUE
+NoTrustedAdmin,-8,Resource.CreatePool,TRUE
+NoTrustedAdmin,-8,Resource.DeletePool,TRUE
+NoTrustedAdmin,-8,Resource.EditPool,TRUE
+NoTrustedAdmin,-8,Resource.HotMigrate,TRUE
+NoTrustedAdmin,-8,Resource.MovePool,TRUE
+NoTrustedAdmin,-8,Resource.QueryVMotion,TRUE
+NoTrustedAdmin,-8,Resource.RenamePool,TRUE
+NoTrustedAdmin,-8,ScheduledTask.Create,TRUE
+NoTrustedAdmin,-8,ScheduledTask.Delete,TRUE
+NoTrustedAdmin,-8,ScheduledTask.Edit,TRUE
+NoTrustedAdmin,-8,ScheduledTask.Run,TRUE
+NoTrustedAdmin,-8,ServiceAccount.Administer,TRUE
+NoTrustedAdmin,-8,ServiceAccount.ManageAccount,TRUE
+NoTrustedAdmin,-8,ServiceAccount.ManagePassword,TRUE
+NoTrustedAdmin,-8,Sessions.CollectPrivilegeChecks,TRUE
+NoTrustedAdmin,-8,Sessions.GlobalMessage,TRUE
+NoTrustedAdmin,-8,Sessions.ImpersonateUser,TRUE
+NoTrustedAdmin,-8,Sessions.TerminateSession,TRUE
+NoTrustedAdmin,-8,Sessions.ValidateSession,TRUE
+NoTrustedAdmin,-8,SettingsStore.Manage,TRUE
+NoTrustedAdmin,-8,StoragePod.Config,TRUE
+NoTrustedAdmin,-8,StorageProfile.Apply,TRUE
+NoTrustedAdmin,-8,StorageProfile.Update,TRUE
+NoTrustedAdmin,-8,StorageProfile.View,TRUE
+NoTrustedAdmin,-8,StorageViews.ConfigureService,TRUE
+NoTrustedAdmin,-8,StorageViews.View,TRUE
+NoTrustedAdmin,-8,SupervisorServices.Install,TRUE
+NoTrustedAdmin,-8,SupervisorServices.Manage,TRUE
+NoTrustedAdmin,-8,System.Anonymous,TRUE
+NoTrustedAdmin,-8,System.Read,TRUE
+NoTrustedAdmin,-8,System.View,TRUE
+NoTrustedAdmin,-8,Task.Create,TRUE
+NoTrustedAdmin,-8,Task.Update,TRUE
+NoTrustedAdmin,-8,Task.Update.Task.Update,TRUE
+NoTrustedAdmin,-8,TenantManager.Query,TRUE
+NoTrustedAdmin,-8,TenantManager.Update,TRUE
+NoTrustedAdmin,-8,TokenService.PersistableTokenExchange,TRUE
+NoTrustedAdmin,-8,Topology.Manage,TRUE
+NoTrustedAdmin,-8,TransferService.Manage,TRUE
+NoTrustedAdmin,-8,TransferService.Monitor,TRUE
+NoTrustedAdmin,-8,Trust.Administer,TRUE
+NoTrustedAdmin,-8,Trust.Manage,TRUE
+NoTrustedAdmin,-8,VApp.ApplicationConfig,TRUE
+NoTrustedAdmin,-8,VApp.AssignResourcePool,TRUE
+NoTrustedAdmin,-8,VApp.AssignVApp,TRUE
+NoTrustedAdmin,-8,VApp.AssignVM,TRUE
+NoTrustedAdmin,-8,VApp.Clone,TRUE
+NoTrustedAdmin,-8,VApp.Create,TRUE
+NoTrustedAdmin,-8,VApp.Delete,TRUE
+NoTrustedAdmin,-8,VApp.Export,TRUE
+NoTrustedAdmin,-8,VApp.ExtractOvfEnvironment,TRUE
+NoTrustedAdmin,-8,VApp.Import,TRUE
+NoTrustedAdmin,-8,VApp.InstanceConfig,TRUE
+NoTrustedAdmin,-8,VApp.ManagedByConfig,TRUE
+NoTrustedAdmin,-8,VApp.Move,TRUE
+NoTrustedAdmin,-8,VApp.PowerOff,TRUE
+NoTrustedAdmin,-8,VApp.PowerOn,TRUE
+NoTrustedAdmin,-8,VApp.PullFromUrls,TRUE
+NoTrustedAdmin,-8,VApp.Rename,TRUE
+NoTrustedAdmin,-8,VApp.ResourceConfig,TRUE
+NoTrustedAdmin,-8,VApp.Suspend,TRUE
+NoTrustedAdmin,-8,VApp.Unregister,TRUE
+NoTrustedAdmin,-8,VcIdentityProviders.Create,TRUE
+NoTrustedAdmin,-8,VcIdentityProviders.Manage,TRUE
+NoTrustedAdmin,-8,VcIdentityProviders.Read,TRUE
+NoTrustedAdmin,-8,VcIntegrity.Baseline.com.vmware.vcIntegrity.AssignBaselines,TRUE
+NoTrustedAdmin,-8,VcIntegrity.Baseline.com.vmware.vcIntegrity.ManageBaselines,TRUE
+NoTrustedAdmin,-8,VcIntegrity.ClusterConfiguration.Export,TRUE
+NoTrustedAdmin,-8,VcIntegrity.ClusterConfiguration.Modify,TRUE
+NoTrustedAdmin,-8,VcIntegrity.ClusterConfiguration.Remediate,TRUE
+NoTrustedAdmin,-8,VcIntegrity.ClusterConfiguration.View,TRUE
+NoTrustedAdmin,-8,VcIntegrity.FileUpload.com.vmware.vcIntegrity.ImportFile,TRUE
+NoTrustedAdmin,-8,VcIntegrity.General.com.vmware.vcIntegrity.Configure,TRUE
+NoTrustedAdmin,-8,VcIntegrity.HardwareCompatibility.Read,TRUE
+NoTrustedAdmin,-8,VcIntegrity.HardwareCompatibility.Write,TRUE
+NoTrustedAdmin,-8,VcIntegrity.Updates.com.vmware.vcIntegrity.Remediate,TRUE
+NoTrustedAdmin,-8,VcIntegrity.Updates.com.vmware.vcIntegrity.Scan,TRUE
+NoTrustedAdmin,-8,VcIntegrity.Updates.com.vmware.vcIntegrity.Stage,TRUE
+NoTrustedAdmin,-8,VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleDepots.Delete,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleGeneral.Read,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleGeneral.Write,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleHealth.Read,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleHealth.Write,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleSettings.Read,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleSettings.Write,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleSoftwareRemediation.Read,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleSoftwareRemediation.Write,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleSoftwareSpecification.Read,TRUE
+NoTrustedAdmin,-8,VcIntegrity.lifecycleSoftwareSpecification.Write,TRUE
+NoTrustedAdmin,-8,VcLifecycle.Upgrade,TRUE
+NoTrustedAdmin,-8,VcLifecycle.View,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.AddExistingDisk,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.AddNewDisk,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.AddRemoveDevice,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.AdvancedConfig,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.Annotation,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.CPUCount,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.ChangeTracking,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.DiskExtend,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.DiskLease,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.EditDevice,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.HostUSBDevice,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.ManagedBy,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.Memory,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.MksControl,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.QueryFTCompatibility,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.QueryUnownedFiles,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.RawDevice,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.ReloadFromPath,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.RemoveDisk,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.Rename,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.ResetGuestInfo,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.Resource,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.Settings,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.SwapPlacement,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.ToggleForkParent,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Config.UpgradeVirtualHardware,TRUE
+NoTrustedAdmin,-8,VirtualMachine.DataSets.DataSetCreate,TRUE
+NoTrustedAdmin,-8,VirtualMachine.DataSets.DataSetDelete,TRUE
+NoTrustedAdmin,-8,VirtualMachine.DataSets.DataSetEntryDelete,TRUE
+NoTrustedAdmin,-8,VirtualMachine.DataSets.DataSetEntryGet,TRUE
+NoTrustedAdmin,-8,VirtualMachine.DataSets.DataSetEntryList,TRUE
+NoTrustedAdmin,-8,VirtualMachine.DataSets.DataSetEntrySet,TRUE
+NoTrustedAdmin,-8,VirtualMachine.DataSets.DataSetGet,TRUE
+NoTrustedAdmin,-8,VirtualMachine.DataSets.DataSetList,TRUE
+NoTrustedAdmin,-8,VirtualMachine.DataSets.DataSetUpdate,TRUE
+NoTrustedAdmin,-8,VirtualMachine.DataSets.Export,TRUE
+NoTrustedAdmin,-8,VirtualMachine.GuestOperations.Execute,TRUE
+NoTrustedAdmin,-8,VirtualMachine.GuestOperations.Modify,TRUE
+NoTrustedAdmin,-8,VirtualMachine.GuestOperations.ModifyAliases,TRUE
+NoTrustedAdmin,-8,VirtualMachine.GuestOperations.Query,TRUE
+NoTrustedAdmin,-8,VirtualMachine.GuestOperations.QueryAliases,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Hbr.ConfigureReplication,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Hbr.MonitorReplication,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Hbr.ReplicaManagement,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.AnswerQuestion,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.Backup,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.ConsoleInteract,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.CreateScreenshot,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.CreateSecondary,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.DefragmentAllDisks,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.DeviceConnection,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.DisableSecondary,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.DnD,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.EnableSecondary,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.GuestControl,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.MakePrimary,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.Pause,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.PowerOff,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.PowerOn,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.PutUsbScanCodes,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.Record,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.Replay,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.Reset,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.SESparseMaintenance,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.SetCDMedia,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.SetFloppyMedia,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.Suspend,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.SuspendToMemory,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.TerminateFaultTolerantVM,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.ToolsInstall,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Interact.TurnOffFaultTolerance,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Inventory.Create,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Inventory.CreateFromExisting,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Inventory.Delete,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Inventory.Move,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Inventory.Register,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Inventory.Unregister,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Namespace.Event,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Namespace.EventNotify,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Namespace.Management,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Namespace.ModifyContent,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Namespace.Query,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Namespace.ReadContent,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.Clone,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.CloneTemplate,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.CreateTemplateFromVM,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.Customize,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.DeployTemplate,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.DiskRandomAccess,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.DiskRandomRead,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.FileRandomAccess,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.GetVmFiles,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.MarkAsTemplate,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.MarkAsVM,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.ModifyCustSpecs,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.PromoteDisks,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.PutVmFiles,TRUE
+NoTrustedAdmin,-8,VirtualMachine.Provisioning.ReadCustSpecs,TRUE
+NoTrustedAdmin,-8,VirtualMachine.State.CreateSnapshot,TRUE
+NoTrustedAdmin,-8,VirtualMachine.State.RemoveSnapshot,TRUE
+NoTrustedAdmin,-8,VirtualMachine.State.RenameSnapshot,TRUE
+NoTrustedAdmin,-8,VirtualMachine.State.RevertToSnapshot,TRUE
+NoTrustedAdmin,-8,VirtualMachineClasses.Manage,TRUE
+NoTrustedAdmin,-8,VmCam.Administer,TRUE
+NoTrustedAdmin,-8,Vsan.Cluster.ShallowRekey,TRUE
+NoTrustedAdmin,-8,Vsan.DataProtection.Management,TRUE
+NoTrustedAdmin,-8,Vsan.Xvc.UpdateClientInfo,TRUE
+NoTrustedAdmin,-8,Zone.Manage,TRUE
+NoTrustedAdmin,-8,Zone.ObjectAttachable,TRUE
+NoTrustedAdmin,-8,vSANStats.Access,TRUE
+NoTrustedAdmin,-8,vService.CreateDependency,TRUE
+NoTrustedAdmin,-8,vService.DestroyDependency,TRUE
+NoTrustedAdmin,-8,vService.ReconfigureDependency,TRUE
+NoTrustedAdmin,-8,vService.UpdateDependency,TRUE
+NoTrustedAdmin,-8,vSphereClient.UtilizeVerificationCode,TRUE
+NoTrustedAdmin,-8,vSphereDataProtection.Protection,TRUE
+NoTrustedAdmin,-8,vSphereDataProtection.Recovery,TRUE
+NoTrustedAdmin,-8,vStats.CollectAny,TRUE
+NoTrustedAdmin,-8,vStats.QueryAny,TRUE
+NoTrustedAdmin,-8,vStats.Settings,TRUE
+TrustedAdmin,-7,System.Anonymous,TRUE
+TrustedAdmin,-7,System.Read,TRUE
+TrustedAdmin,-7,System.View,TRUE
+TrustedAdmin,-7,TrustedAdmin.ConfigureHostCertificates,TRUE
+TrustedAdmin,-7,TrustedAdmin.ConfigureHostMetadata,TRUE
+TrustedAdmin,-7,TrustedAdmin.ConfigureTokenConversionPolicy,TRUE
+TrustedAdmin,-7,TrustedAdmin.ManageAttestingSSO,TRUE
+TrustedAdmin,-7,TrustedAdmin.ManageKMSTrust,TRUE
+TrustedAdmin,-7,TrustedAdmin.ManageTrustedHosts,TRUE
+TrustedAdmin,-7,TrustedAdmin.ReadAttestingSSO,TRUE
+TrustedAdmin,-7,TrustedAdmin.ReadKMSTrust,TRUE
+TrustedAdmin,-7,TrustedAdmin.ReadStsInfo,TRUE
+TrustedAdmin,-7,TrustedAdmin.ReadTrustedHosts,TRUE
+TrustedAdmin,-7,TrustedAdmin.RetrieveHostMetadata,TRUE
+TrustedAdmin,-7,TrustedAdmin.RetrieveTPMHostCertificates,TRUE
+NoCryptoAdmin,-6,Alarm.Acknowledge,TRUE
+NoCryptoAdmin,-6,Alarm.Create,TRUE
+NoCryptoAdmin,-6,Alarm.Delete,TRUE
+NoCryptoAdmin,-6,Alarm.DisableActions,TRUE
+NoCryptoAdmin,-6,Alarm.Edit,TRUE
+NoCryptoAdmin,-6,Alarm.SetStatus,TRUE
+NoCryptoAdmin,-6,Alarm.ToggleEnableOnEntity,TRUE
+NoCryptoAdmin,-6,Authorization.ModifyPermissions,TRUE
+NoCryptoAdmin,-6,Authorization.ModifyPrivileges,TRUE
+NoCryptoAdmin,-6,Authorization.ModifyRoles,TRUE
+NoCryptoAdmin,-6,Authorization.ModifyVTContainerMappings,TRUE
+NoCryptoAdmin,-6,Authorization.ModifyVTContainers,TRUE
+NoCryptoAdmin,-6,Authorization.ReassignRolePermissions,TRUE
+NoCryptoAdmin,-6,AutoDeploy.Host.AssociateMachine,TRUE
+NoCryptoAdmin,-6,AutoDeploy.Profile.Create,TRUE
+NoCryptoAdmin,-6,AutoDeploy.Profile.Edit,TRUE
+NoCryptoAdmin,-6,AutoDeploy.Rule.Create,TRUE
+NoCryptoAdmin,-6,AutoDeploy.Rule.Delete,TRUE
+NoCryptoAdmin,-6,AutoDeploy.Rule.Edit,TRUE
+NoCryptoAdmin,-6,AutoDeploy.RuleSet.Activate,TRUE
+NoCryptoAdmin,-6,AutoDeploy.RuleSet.Edit,TRUE
+NoCryptoAdmin,-6,Certificate.Manage,TRUE
+NoCryptoAdmin,-6,CertificateAuthority.Administer,TRUE
+NoCryptoAdmin,-6,CertificateAuthority.Manage,TRUE
+NoCryptoAdmin,-6,CertificateManagement.Administer,TRUE
+NoCryptoAdmin,-6,CertificateManagement.Manage,TRUE
+NoCryptoAdmin,-6,CertificateManagementSubscriptions.Delete,TRUE
+NoCryptoAdmin,-6,Cns.Searchable,TRUE
+NoCryptoAdmin,-6,ComputePolicy.Manage,TRUE
+NoCryptoAdmin,-6,ContentLibrary.AddCertToTrustStore,TRUE
+NoCryptoAdmin,-6,ContentLibrary.AddLibraryItem,TRUE
+NoCryptoAdmin,-6,ContentLibrary.AddSubscription,TRUE
+NoCryptoAdmin,-6,ContentLibrary.CheckInTemplate,TRUE
+NoCryptoAdmin,-6,ContentLibrary.CheckOutTemplate,TRUE
+NoCryptoAdmin,-6,ContentLibrary.CreateLocalLibrary,TRUE
+NoCryptoAdmin,-6,ContentLibrary.CreateSubscribedLibrary,TRUE
+NoCryptoAdmin,-6,ContentLibrary.DeleteCertFromTrustStore,TRUE
+NoCryptoAdmin,-6,ContentLibrary.DeleteLibraryItem,TRUE
+NoCryptoAdmin,-6,ContentLibrary.DeleteLocalLibrary,TRUE
+NoCryptoAdmin,-6,ContentLibrary.DeleteSubscribedLibrary,TRUE
+NoCryptoAdmin,-6,ContentLibrary.DeleteSubscription,TRUE
+NoCryptoAdmin,-6,ContentLibrary.DownloadSession,TRUE
+NoCryptoAdmin,-6,ContentLibrary.EvictLibraryItem,TRUE
+NoCryptoAdmin,-6,ContentLibrary.EvictSubscribedLibrary,TRUE
+NoCryptoAdmin,-6,ContentLibrary.GetConfiguration,TRUE
+NoCryptoAdmin,-6,ContentLibrary.ImportStorage,TRUE
+NoCryptoAdmin,-6,ContentLibrary.ManageClusterRegistryResource,TRUE
+NoCryptoAdmin,-6,ContentLibrary.ManageRegistry,TRUE
+NoCryptoAdmin,-6,ContentLibrary.ManageRegistryProject,TRUE
+NoCryptoAdmin,-6,ContentLibrary.ProbeSubscription,TRUE
+NoCryptoAdmin,-6,ContentLibrary.PublishLibrary,TRUE
+NoCryptoAdmin,-6,ContentLibrary.PublishLibraryItem,TRUE
+NoCryptoAdmin,-6,ContentLibrary.ReadStorage,TRUE
+NoCryptoAdmin,-6,ContentLibrary.SyncLibrary,TRUE
+NoCryptoAdmin,-6,ContentLibrary.SyncLibraryItem,TRUE
+NoCryptoAdmin,-6,ContentLibrary.TypeIntrospection,TRUE
+NoCryptoAdmin,-6,ContentLibrary.UpdateConfiguration,TRUE
+NoCryptoAdmin,-6,ContentLibrary.UpdateLibrary,TRUE
+NoCryptoAdmin,-6,ContentLibrary.UpdateLibraryItem,TRUE
+NoCryptoAdmin,-6,ContentLibrary.UpdateLocalLibrary,TRUE
+NoCryptoAdmin,-6,ContentLibrary.UpdateSession,TRUE
+NoCryptoAdmin,-6,ContentLibrary.UpdateSubscribedLibrary,TRUE
+NoCryptoAdmin,-6,ContentLibrary.UpdateSubscription,TRUE
+NoCryptoAdmin,-6,DVPortgroup.Create,TRUE
+NoCryptoAdmin,-6,DVPortgroup.Delete,TRUE
+NoCryptoAdmin,-6,DVPortgroup.Ipfix,TRUE
+NoCryptoAdmin,-6,DVPortgroup.Modify,TRUE
+NoCryptoAdmin,-6,DVPortgroup.PolicyOp,TRUE
+NoCryptoAdmin,-6,DVPortgroup.ScopeOp,TRUE
+NoCryptoAdmin,-6,DVSwitch.Create,TRUE
+NoCryptoAdmin,-6,DVSwitch.Delete,TRUE
+NoCryptoAdmin,-6,DVSwitch.HostOp,TRUE
+NoCryptoAdmin,-6,DVSwitch.Ipfix,TRUE
+NoCryptoAdmin,-6,DVSwitch.Modify,TRUE
+NoCryptoAdmin,-6,DVSwitch.Move,TRUE
+NoCryptoAdmin,-6,DVSwitch.PolicyOp,TRUE
+NoCryptoAdmin,-6,DVSwitch.PortConfig,TRUE
+NoCryptoAdmin,-6,DVSwitch.PortSetting,TRUE
+NoCryptoAdmin,-6,DVSwitch.ResourceManagement,TRUE
+NoCryptoAdmin,-6,DVSwitch.Vspan,TRUE
+NoCryptoAdmin,-6,Datacenter.Create,TRUE
+NoCryptoAdmin,-6,Datacenter.Delete,TRUE
+NoCryptoAdmin,-6,Datacenter.IpPoolConfig,TRUE
+NoCryptoAdmin,-6,Datacenter.IpPoolQueryAllocations,TRUE
+NoCryptoAdmin,-6,Datacenter.IpPoolReleaseIp,TRUE
+NoCryptoAdmin,-6,Datacenter.Move,TRUE
+NoCryptoAdmin,-6,Datacenter.Reconfigure,TRUE
+NoCryptoAdmin,-6,Datacenter.Rename,TRUE
+NoCryptoAdmin,-6,Datacenter.UpdateCarbonInfo,TRUE
+NoCryptoAdmin,-6,Datastore.AllocateSpace,TRUE
+NoCryptoAdmin,-6,Datastore.Browse,TRUE
+NoCryptoAdmin,-6,Datastore.Config,TRUE
+NoCryptoAdmin,-6,Datastore.ConfigIOManagement,TRUE
+NoCryptoAdmin,-6,Datastore.Delete,TRUE
+NoCryptoAdmin,-6,Datastore.DeleteFile,TRUE
+NoCryptoAdmin,-6,Datastore.FileManagement,TRUE
+NoCryptoAdmin,-6,Datastore.Move,TRUE
+NoCryptoAdmin,-6,Datastore.Rename,TRUE
+NoCryptoAdmin,-6,Datastore.UpdateVirtualMachineFiles,TRUE
+NoCryptoAdmin,-6,Datastore.UpdateVirtualMachineMetadata,TRUE
+NoCryptoAdmin,-6,DrProxy.Host.Configure,TRUE
+NoCryptoAdmin,-6,DrProxy.Host.ManageService,TRUE
+NoCryptoAdmin,-6,DrProxy.Host.View,TRUE
+NoCryptoAdmin,-6,DrProxy.License.Update,TRUE
+NoCryptoAdmin,-6,DrProxy.License.View,TRUE
+NoCryptoAdmin,-6,DrProxy.Progress.Control,TRUE
+NoCryptoAdmin,-6,DrProxy.Vm.Configure,TRUE
+NoCryptoAdmin,-6,EAM.Config,TRUE
+NoCryptoAdmin,-6,EAM.Modify,TRUE
+NoCryptoAdmin,-6,EAM.View,TRUE
+NoCryptoAdmin,-6,Extension.Register,TRUE
+NoCryptoAdmin,-6,Extension.Unregister,TRUE
+NoCryptoAdmin,-6,Extension.Update,TRUE
+NoCryptoAdmin,-6,ExternalStatsProvider.Register,TRUE
+NoCryptoAdmin,-6,ExternalStatsProvider.Unregister,TRUE
+NoCryptoAdmin,-6,ExternalStatsProvider.Update,TRUE
+NoCryptoAdmin,-6,Folder.Create,TRUE
+NoCryptoAdmin,-6,Folder.Delete,TRUE
+NoCryptoAdmin,-6,Folder.Move,TRUE
+NoCryptoAdmin,-6,Folder.Rename,TRUE
+NoCryptoAdmin,-6,Global.CancelTask,TRUE
+NoCryptoAdmin,-6,Global.CapacityPlanning,TRUE
+NoCryptoAdmin,-6,Global.DisableMethods,TRUE
+NoCryptoAdmin,-6,Global.EnableMethods,TRUE
+NoCryptoAdmin,-6,Global.GlobalTag,TRUE
+NoCryptoAdmin,-6,Global.Health,TRUE
+NoCryptoAdmin,-6,Global.Licenses,TRUE
+NoCryptoAdmin,-6,Global.LogEvent,TRUE
+NoCryptoAdmin,-6,Global.ManageCustomFields,TRUE
+NoCryptoAdmin,-6,Global.Proxy,TRUE
+NoCryptoAdmin,-6,Global.ScriptAction,TRUE
+NoCryptoAdmin,-6,Global.ServiceManagers,TRUE
+NoCryptoAdmin,-6,Global.SetCustomField,TRUE
+NoCryptoAdmin,-6,Global.Settings,TRUE
+NoCryptoAdmin,-6,Global.SystemTag,TRUE
+NoCryptoAdmin,-6,Global.VCServer,TRUE
+NoCryptoAdmin,-6,Global.com.vmware.vcops,TRUE
+NoCryptoAdmin,-6,Global.com.vmware.vcops.ContentAdmin,TRUE
+NoCryptoAdmin,-6,Global.com.vmware.vcops.GeneralUser-1,TRUE
+NoCryptoAdmin,-6,Global.com.vmware.vcops.GeneralUser-2,TRUE
+NoCryptoAdmin,-6,Global.com.vmware.vcops.GeneralUser-3,TRUE
+NoCryptoAdmin,-6,Global.com.vmware.vcops.GeneralUser-4,TRUE
+NoCryptoAdmin,-6,Global.com.vmware.vcops.PowerUserMinusRemediation,TRUE
+NoCryptoAdmin,-6,Global.com.vmware.vcopsAdmin,TRUE
+NoCryptoAdmin,-6,GuestDataPublisher.GetData,TRUE
+NoCryptoAdmin,-6,HLM.Create,TRUE
+NoCryptoAdmin,-6,HLM.Manage,TRUE
+NoCryptoAdmin,-6,HealthUpdateProvider.Register,TRUE
+NoCryptoAdmin,-6,HealthUpdateProvider.Unregister,TRUE
+NoCryptoAdmin,-6,HealthUpdateProvider.Update,TRUE
+NoCryptoAdmin,-6,Host.Cim.CimInteraction,TRUE
+NoCryptoAdmin,-6,Host.Config.AdvancedConfig,TRUE
+NoCryptoAdmin,-6,Host.Config.AuthenticationStore,TRUE
+NoCryptoAdmin,-6,Host.Config.AutoStart,TRUE
+NoCryptoAdmin,-6,Host.Config.Connection,TRUE
+NoCryptoAdmin,-6,Host.Config.DateTime,TRUE
+NoCryptoAdmin,-6,Host.Config.Firmware,TRUE
+NoCryptoAdmin,-6,Host.Config.GuestStore,TRUE
+NoCryptoAdmin,-6,Host.Config.HyperThreading,TRUE
+NoCryptoAdmin,-6,Host.Config.Image,TRUE
+NoCryptoAdmin,-6,Host.Config.Maintenance,TRUE
+NoCryptoAdmin,-6,Host.Config.Memory,TRUE
+NoCryptoAdmin,-6,Host.Config.NetService,TRUE
+NoCryptoAdmin,-6,Host.Config.Network,TRUE
+NoCryptoAdmin,-6,Host.Config.Nvdimm,TRUE
+NoCryptoAdmin,-6,Host.Config.Patch,TRUE
+NoCryptoAdmin,-6,Host.Config.PciPassthru,TRUE
+NoCryptoAdmin,-6,Host.Config.Power,TRUE
+NoCryptoAdmin,-6,Host.Config.ProductLocker,TRUE
+NoCryptoAdmin,-6,Host.Config.Quarantine,TRUE
+NoCryptoAdmin,-6,Host.Config.Resources,TRUE
+NoCryptoAdmin,-6,Host.Config.Settings,TRUE
+NoCryptoAdmin,-6,Host.Config.Snmp,TRUE
+NoCryptoAdmin,-6,Host.Config.Storage,TRUE
+NoCryptoAdmin,-6,Host.Config.SystemFirewallRuleSet,TRUE
+NoCryptoAdmin,-6,Host.Config.SystemManagement,TRUE
+NoCryptoAdmin,-6,Host.Entropy.Read,TRUE
+NoCryptoAdmin,-6,Host.Entropy.Write,TRUE
+NoCryptoAdmin,-6,Host.Hbr.HbrDaemonManagement,TRUE
+NoCryptoAdmin,-6,Host.Hbr.HbrManagement,TRUE
+NoCryptoAdmin,-6,Host.Inventory.CreateCluster,TRUE
+NoCryptoAdmin,-6,Host.Inventory.DeleteCluster,TRUE
+NoCryptoAdmin,-6,Host.Inventory.EditCluster,TRUE
+NoCryptoAdmin,-6,Host.Inventory.ManageClusterLifecyle,TRUE
+NoCryptoAdmin,-6,Host.Inventory.MoveCluster,TRUE
+NoCryptoAdmin,-6,Host.Inventory.MoveHost,TRUE
+NoCryptoAdmin,-6,Host.Inventory.RemoveHostFromCluster,TRUE
+NoCryptoAdmin,-6,Host.Inventory.RenameCluster,TRUE
+NoCryptoAdmin,-6,Host.Local.CreateVM,TRUE
+NoCryptoAdmin,-6,Host.Local.DeleteVM,TRUE
+NoCryptoAdmin,-6,Host.Local.InstallAgent,TRUE
+NoCryptoAdmin,-6,Host.Local.ReconfigVM,TRUE
+NoCryptoAdmin,-6,Host.Sgx.Register,TRUE
+NoCryptoAdmin,-6,Host.Stats.Query,TRUE
+NoCryptoAdmin,-6,Host.Tpm.Read,TRUE
+NoCryptoAdmin,-6,Host.Tpm.Unseal,TRUE
+NoCryptoAdmin,-6,ImageBuilder.Depot.Create,TRUE
+NoCryptoAdmin,-6,ImageBuilder.Depot.Delete,TRUE
+NoCryptoAdmin,-6,ImageBuilder.Profile.Create,TRUE
+NoCryptoAdmin,-6,ImageBuilder.Profile.Delete,TRUE
+NoCryptoAdmin,-6,ImageBuilder.Profile.Export,TRUE
+NoCryptoAdmin,-6,Infraprofile.Read,TRUE
+NoCryptoAdmin,-6,Infraprofile.Write,TRUE
+NoCryptoAdmin,-6,IntercomNamespace.Read,TRUE
+NoCryptoAdmin,-6,IntercomNamespace.Write,TRUE
+NoCryptoAdmin,-6,InventoryService.Tagging.AttachTag,TRUE
+NoCryptoAdmin,-6,InventoryService.Tagging.CreateCategory,TRUE
+NoCryptoAdmin,-6,InventoryService.Tagging.CreateTag,TRUE
+NoCryptoAdmin,-6,InventoryService.Tagging.DeleteCategory,TRUE
+NoCryptoAdmin,-6,InventoryService.Tagging.DeleteTag,TRUE
+NoCryptoAdmin,-6,InventoryService.Tagging.EditCategory,TRUE
+NoCryptoAdmin,-6,InventoryService.Tagging.EditTag,TRUE
+NoCryptoAdmin,-6,InventoryService.Tagging.ModifyUsedByForCategory,TRUE
+NoCryptoAdmin,-6,InventoryService.Tagging.ModifyUsedByForTag,TRUE
+NoCryptoAdmin,-6,InventoryService.Tagging.ObjectAttachable,TRUE
+NoCryptoAdmin,-6,Namespaces.Backup,TRUE
+NoCryptoAdmin,-6,Namespaces.Configure,TRUE
+NoCryptoAdmin,-6,Namespaces.ListAccess,TRUE
+NoCryptoAdmin,-6,Namespaces.Manage,TRUE
+NoCryptoAdmin,-6,Namespaces.ManageCapabilities,TRUE
+NoCryptoAdmin,-6,Namespaces.ManageDisks,TRUE
+NoCryptoAdmin,-6,Namespaces.SelfServiceManage,TRUE
+NoCryptoAdmin,-6,Namespaces.Upgrade,TRUE
+NoCryptoAdmin,-6,NetBackup.AddRemoveServer,TRUE
+NoCryptoAdmin,-6,NetBackup.VMRecovery,TRUE
+NoCryptoAdmin,-6,Network.Assign,TRUE
+NoCryptoAdmin,-6,Network.Config,TRUE
+NoCryptoAdmin,-6,Network.Delete,TRUE
+NoCryptoAdmin,-6,Network.Move,TRUE
+NoCryptoAdmin,-6,Nsx.Manage,TRUE
+NoCryptoAdmin,-6,Nsx.ModifyAll,TRUE
+NoCryptoAdmin,-6,Nsx.Read,TRUE
+NoCryptoAdmin,-6,Observability.Admin,TRUE
+NoCryptoAdmin,-6,Observability.StatsProvider.Manage,TRUE
+NoCryptoAdmin,-6,OvfManager.OvfConsumerAccess,TRUE
+NoCryptoAdmin,-6,PartnerRestDaemon.Read,TRUE
+NoCryptoAdmin,-6,PartnerRestDaemon.Write,TRUE
+NoCryptoAdmin,-6,Performance.ModifyIntervals,TRUE
+NoCryptoAdmin,-6,Plugin.Management,TRUE
+NoCryptoAdmin,-6,Profile.Clear,TRUE
+NoCryptoAdmin,-6,Profile.Create,TRUE
+NoCryptoAdmin,-6,Profile.Delete,TRUE
+NoCryptoAdmin,-6,Profile.Edit,TRUE
+NoCryptoAdmin,-6,Profile.Export,TRUE
+NoCryptoAdmin,-6,Profile.View,TRUE
+NoCryptoAdmin,-6,ReplicationService.Administer,TRUE
+NoCryptoAdmin,-6,Resource.ApplyRecommendation,TRUE
+NoCryptoAdmin,-6,Resource.AssignVAppToPool,TRUE
+NoCryptoAdmin,-6,Resource.AssignVMToPool,TRUE
+NoCryptoAdmin,-6,Resource.ColdMigrate,TRUE
+NoCryptoAdmin,-6,Resource.CreatePool,TRUE
+NoCryptoAdmin,-6,Resource.DeletePool,TRUE
+NoCryptoAdmin,-6,Resource.EditPool,TRUE
+NoCryptoAdmin,-6,Resource.HotMigrate,TRUE
+NoCryptoAdmin,-6,Resource.MovePool,TRUE
+NoCryptoAdmin,-6,Resource.QueryVMotion,TRUE
+NoCryptoAdmin,-6,Resource.RenamePool,TRUE
+NoCryptoAdmin,-6,ScheduledTask.Create,TRUE
+NoCryptoAdmin,-6,ScheduledTask.Delete,TRUE
+NoCryptoAdmin,-6,ScheduledTask.Edit,TRUE
+NoCryptoAdmin,-6,ScheduledTask.Run,TRUE
+NoCryptoAdmin,-6,ServiceAccount.Administer,TRUE
+NoCryptoAdmin,-6,ServiceAccount.ManageAccount,TRUE
+NoCryptoAdmin,-6,ServiceAccount.ManagePassword,TRUE
+NoCryptoAdmin,-6,Sessions.CollectPrivilegeChecks,TRUE
+NoCryptoAdmin,-6,Sessions.GlobalMessage,TRUE
+NoCryptoAdmin,-6,Sessions.ImpersonateUser,TRUE
+NoCryptoAdmin,-6,Sessions.TerminateSession,TRUE
+NoCryptoAdmin,-6,Sessions.ValidateSession,TRUE
+NoCryptoAdmin,-6,SettingsStore.Manage,TRUE
+NoCryptoAdmin,-6,StoragePod.Config,TRUE
+NoCryptoAdmin,-6,StorageProfile.Apply,TRUE
+NoCryptoAdmin,-6,StorageProfile.Update,TRUE
+NoCryptoAdmin,-6,StorageProfile.View,TRUE
+NoCryptoAdmin,-6,StorageViews.ConfigureService,TRUE
+NoCryptoAdmin,-6,StorageViews.View,TRUE
+NoCryptoAdmin,-6,SupervisorServices.Install,TRUE
+NoCryptoAdmin,-6,SupervisorServices.Manage,TRUE
+NoCryptoAdmin,-6,System.Anonymous,TRUE
+NoCryptoAdmin,-6,System.Read,TRUE
+NoCryptoAdmin,-6,System.View,TRUE
+NoCryptoAdmin,-6,Task.Create,TRUE
+NoCryptoAdmin,-6,Task.Update,TRUE
+NoCryptoAdmin,-6,Task.Update.Task.Update,TRUE
+NoCryptoAdmin,-6,TenantManager.Query,TRUE
+NoCryptoAdmin,-6,TenantManager.Update,TRUE
+NoCryptoAdmin,-6,TokenService.PersistableTokenExchange,TRUE
+NoCryptoAdmin,-6,Topology.Manage,TRUE
+NoCryptoAdmin,-6,TransferService.Manage,TRUE
+NoCryptoAdmin,-6,TransferService.Monitor,TRUE
+NoCryptoAdmin,-6,Trust.Administer,TRUE
+NoCryptoAdmin,-6,Trust.Manage,TRUE
+NoCryptoAdmin,-6,VApp.ApplicationConfig,TRUE
+NoCryptoAdmin,-6,VApp.AssignResourcePool,TRUE
+NoCryptoAdmin,-6,VApp.AssignVApp,TRUE
+NoCryptoAdmin,-6,VApp.AssignVM,TRUE
+NoCryptoAdmin,-6,VApp.Clone,TRUE
+NoCryptoAdmin,-6,VApp.Create,TRUE
+NoCryptoAdmin,-6,VApp.Delete,TRUE
+NoCryptoAdmin,-6,VApp.Export,TRUE
+NoCryptoAdmin,-6,VApp.ExtractOvfEnvironment,TRUE
+NoCryptoAdmin,-6,VApp.Import,TRUE
+NoCryptoAdmin,-6,VApp.InstanceConfig,TRUE
+NoCryptoAdmin,-6,VApp.ManagedByConfig,TRUE
+NoCryptoAdmin,-6,VApp.Move,TRUE
+NoCryptoAdmin,-6,VApp.PowerOff,TRUE
+NoCryptoAdmin,-6,VApp.PowerOn,TRUE
+NoCryptoAdmin,-6,VApp.PullFromUrls,TRUE
+NoCryptoAdmin,-6,VApp.Rename,TRUE
+NoCryptoAdmin,-6,VApp.ResourceConfig,TRUE
+NoCryptoAdmin,-6,VApp.Suspend,TRUE
+NoCryptoAdmin,-6,VApp.Unregister,TRUE
+NoCryptoAdmin,-6,VcIdentityProviders.Create,TRUE
+NoCryptoAdmin,-6,VcIdentityProviders.Manage,TRUE
+NoCryptoAdmin,-6,VcIdentityProviders.Read,TRUE
+NoCryptoAdmin,-6,VcIntegrity.Baseline.com.vmware.vcIntegrity.AssignBaselines,TRUE
+NoCryptoAdmin,-6,VcIntegrity.Baseline.com.vmware.vcIntegrity.ManageBaselines,TRUE
+NoCryptoAdmin,-6,VcIntegrity.ClusterConfiguration.Export,TRUE
+NoCryptoAdmin,-6,VcIntegrity.ClusterConfiguration.Modify,TRUE
+NoCryptoAdmin,-6,VcIntegrity.ClusterConfiguration.Remediate,TRUE
+NoCryptoAdmin,-6,VcIntegrity.ClusterConfiguration.View,TRUE
+NoCryptoAdmin,-6,VcIntegrity.FileUpload.com.vmware.vcIntegrity.ImportFile,TRUE
+NoCryptoAdmin,-6,VcIntegrity.General.com.vmware.vcIntegrity.Configure,TRUE
+NoCryptoAdmin,-6,VcIntegrity.HardwareCompatibility.Read,TRUE
+NoCryptoAdmin,-6,VcIntegrity.HardwareCompatibility.Write,TRUE
+NoCryptoAdmin,-6,VcIntegrity.Updates.com.vmware.vcIntegrity.Remediate,TRUE
+NoCryptoAdmin,-6,VcIntegrity.Updates.com.vmware.vcIntegrity.Scan,TRUE
+NoCryptoAdmin,-6,VcIntegrity.Updates.com.vmware.vcIntegrity.Stage,TRUE
+NoCryptoAdmin,-6,VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleDepots.Delete,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleGeneral.Read,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleGeneral.Write,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleHealth.Read,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleHealth.Write,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleSettings.Read,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleSettings.Write,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleSoftwareRemediation.Read,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleSoftwareRemediation.Write,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleSoftwareSpecification.Read,TRUE
+NoCryptoAdmin,-6,VcIntegrity.lifecycleSoftwareSpecification.Write,TRUE
+NoCryptoAdmin,-6,VcLifecycle.Upgrade,TRUE
+NoCryptoAdmin,-6,VcLifecycle.View,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.AddExistingDisk,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.AddNewDisk,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.AddRemoveDevice,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.AdvancedConfig,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.Annotation,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.CPUCount,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.ChangeTracking,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.DiskExtend,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.DiskLease,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.EditDevice,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.HostUSBDevice,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.ManagedBy,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.Memory,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.MksControl,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.QueryFTCompatibility,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.QueryUnownedFiles,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.RawDevice,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.ReloadFromPath,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.RemoveDisk,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.Rename,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.ResetGuestInfo,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.Resource,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.Settings,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.SwapPlacement,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.ToggleForkParent,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Config.UpgradeVirtualHardware,TRUE
+NoCryptoAdmin,-6,VirtualMachine.DataSets.DataSetCreate,TRUE
+NoCryptoAdmin,-6,VirtualMachine.DataSets.DataSetDelete,TRUE
+NoCryptoAdmin,-6,VirtualMachine.DataSets.DataSetEntryDelete,TRUE
+NoCryptoAdmin,-6,VirtualMachine.DataSets.DataSetEntryGet,TRUE
+NoCryptoAdmin,-6,VirtualMachine.DataSets.DataSetEntryList,TRUE
+NoCryptoAdmin,-6,VirtualMachine.DataSets.DataSetEntrySet,TRUE
+NoCryptoAdmin,-6,VirtualMachine.DataSets.DataSetGet,TRUE
+NoCryptoAdmin,-6,VirtualMachine.DataSets.DataSetList,TRUE
+NoCryptoAdmin,-6,VirtualMachine.DataSets.DataSetUpdate,TRUE
+NoCryptoAdmin,-6,VirtualMachine.DataSets.Export,TRUE
+NoCryptoAdmin,-6,VirtualMachine.GuestOperations.Execute,TRUE
+NoCryptoAdmin,-6,VirtualMachine.GuestOperations.Modify,TRUE
+NoCryptoAdmin,-6,VirtualMachine.GuestOperations.ModifyAliases,TRUE
+NoCryptoAdmin,-6,VirtualMachine.GuestOperations.Query,TRUE
+NoCryptoAdmin,-6,VirtualMachine.GuestOperations.QueryAliases,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Hbr.ConfigureReplication,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Hbr.MonitorReplication,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Hbr.ReplicaManagement,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.AnswerQuestion,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.Backup,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.ConsoleInteract,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.CreateScreenshot,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.CreateSecondary,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.DefragmentAllDisks,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.DeviceConnection,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.DisableSecondary,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.DnD,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.EnableSecondary,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.MakePrimary,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.Pause,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.PowerOff,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.PowerOn,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.PutUsbScanCodes,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.Record,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.Replay,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.Reset,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.SESparseMaintenance,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.SetCDMedia,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.SetFloppyMedia,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.Suspend,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.SuspendToMemory,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.TerminateFaultTolerantVM,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.ToolsInstall,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Interact.TurnOffFaultTolerance,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Inventory.Create,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Inventory.CreateFromExisting,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Inventory.Delete,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Inventory.Move,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Inventory.Register,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Inventory.Unregister,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Namespace.Event,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Namespace.EventNotify,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Namespace.Management,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Namespace.ModifyContent,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Namespace.Query,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Namespace.ReadContent,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.Clone,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.CloneTemplate,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.CreateTemplateFromVM,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.Customize,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.DeployTemplate,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.DiskRandomAccess,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.DiskRandomRead,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.FileRandomAccess,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.GetVmFiles,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.MarkAsTemplate,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.MarkAsVM,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.ModifyCustSpecs,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.PromoteDisks,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.PutVmFiles,TRUE
+NoCryptoAdmin,-6,VirtualMachine.Provisioning.ReadCustSpecs,TRUE
+NoCryptoAdmin,-6,VirtualMachine.State.CreateSnapshot,TRUE
+NoCryptoAdmin,-6,VirtualMachine.State.RemoveSnapshot,TRUE
+NoCryptoAdmin,-6,VirtualMachine.State.RenameSnapshot,TRUE
+NoCryptoAdmin,-6,VirtualMachine.State.RevertToSnapshot,TRUE
+NoCryptoAdmin,-6,VirtualMachineClasses.Manage,TRUE
+NoCryptoAdmin,-6,VmCam.Administer,TRUE
+NoCryptoAdmin,-6,Vsan.Cluster.ShallowRekey,TRUE
+NoCryptoAdmin,-6,Vsan.DataProtection.Management,TRUE
+NoCryptoAdmin,-6,Vsan.Xvc.UpdateClientInfo,TRUE
+NoCryptoAdmin,-6,Zone.Manage,TRUE
+NoCryptoAdmin,-6,Zone.ObjectAttachable,TRUE
+NoCryptoAdmin,-6,vSANStats.Access,TRUE
+NoCryptoAdmin,-6,vService.CreateDependency,TRUE
+NoCryptoAdmin,-6,vService.DestroyDependency,TRUE
+NoCryptoAdmin,-6,vService.ReconfigureDependency,TRUE
+NoCryptoAdmin,-6,vService.UpdateDependency,TRUE
+NoCryptoAdmin,-6,vSphereClient.UtilizeVerificationCode,TRUE
+NoCryptoAdmin,-6,vSphereDataProtection.Protection,TRUE
+NoCryptoAdmin,-6,vSphereDataProtection.Recovery,TRUE
+NoCryptoAdmin,-6,vStats.CollectAny,TRUE
+NoCryptoAdmin,-6,vStats.QueryAny,TRUE
+NoCryptoAdmin,-6,vStats.Settings,TRUE
+Anonymous,-4,System.Anonymous,TRUE
+View,-3,System.Anonymous,TRUE
+View,-3,System.View,TRUE
+ReadOnly,-2,System.Anonymous,TRUE
+ReadOnly,-2,System.Read,TRUE
+ReadOnly,-2,System.View,TRUE
+Admin,-1,Alarm.Acknowledge,TRUE
+Admin,-1,Alarm.Create,TRUE
+Admin,-1,Alarm.Delete,TRUE
+Admin,-1,Alarm.DisableActions,TRUE
+Admin,-1,Alarm.Edit,TRUE
+Admin,-1,Alarm.SetStatus,TRUE
+Admin,-1,Alarm.ToggleEnableOnEntity,TRUE
+Admin,-1,Authorization.ModifyPermissions,TRUE
+Admin,-1,Authorization.ModifyPrivileges,TRUE
+Admin,-1,Authorization.ModifyRoles,TRUE
+Admin,-1,Authorization.ModifyVTContainerMappings,TRUE
+Admin,-1,Authorization.ModifyVTContainers,TRUE
+Admin,-1,Authorization.ReassignRolePermissions,TRUE
+Admin,-1,AutoDeploy.Host.AssociateMachine,TRUE
+Admin,-1,AutoDeploy.Profile.Create,TRUE
+Admin,-1,AutoDeploy.Profile.Edit,TRUE
+Admin,-1,AutoDeploy.Rule.Create,TRUE
+Admin,-1,AutoDeploy.Rule.Delete,TRUE
+Admin,-1,AutoDeploy.Rule.Edit,TRUE
+Admin,-1,AutoDeploy.RuleSet.Activate,TRUE
+Admin,-1,AutoDeploy.RuleSet.Edit,TRUE
+Admin,-1,Certificate.Manage,TRUE
+Admin,-1,CertificateAuthority.Administer,TRUE
+Admin,-1,CertificateAuthority.Manage,TRUE
+Admin,-1,CertificateManagement.Administer,TRUE
+Admin,-1,CertificateManagement.Manage,TRUE
+Admin,-1,CertificateManagementSubscriptions.Delete,TRUE
+Admin,-1,Cns.Searchable,TRUE
+Admin,-1,ComputePolicy.Manage,TRUE
+Admin,-1,ContentLibrary.AddCertToTrustStore,TRUE
+Admin,-1,ContentLibrary.AddLibraryItem,TRUE
+Admin,-1,ContentLibrary.AddSubscription,TRUE
+Admin,-1,ContentLibrary.CheckInTemplate,TRUE
+Admin,-1,ContentLibrary.CheckOutTemplate,TRUE
+Admin,-1,ContentLibrary.CreateLocalLibrary,TRUE
+Admin,-1,ContentLibrary.CreateSubscribedLibrary,TRUE
+Admin,-1,ContentLibrary.DeleteCertFromTrustStore,TRUE
+Admin,-1,ContentLibrary.DeleteLibraryItem,TRUE
+Admin,-1,ContentLibrary.DeleteLocalLibrary,TRUE
+Admin,-1,ContentLibrary.DeleteSubscribedLibrary,TRUE
+Admin,-1,ContentLibrary.DeleteSubscription,TRUE
+Admin,-1,ContentLibrary.DownloadSession,TRUE
+Admin,-1,ContentLibrary.EvictLibraryItem,TRUE
+Admin,-1,ContentLibrary.EvictSubscribedLibrary,TRUE
+Admin,-1,ContentLibrary.GetConfiguration,TRUE
+Admin,-1,ContentLibrary.ImportStorage,TRUE
+Admin,-1,ContentLibrary.ManageClusterRegistryResource,TRUE
+Admin,-1,ContentLibrary.ManageRegistry,TRUE
+Admin,-1,ContentLibrary.ManageRegistryProject,TRUE
+Admin,-1,ContentLibrary.ProbeSubscription,TRUE
+Admin,-1,ContentLibrary.PublishLibrary,TRUE
+Admin,-1,ContentLibrary.PublishLibraryItem,TRUE
+Admin,-1,ContentLibrary.ReadStorage,TRUE
+Admin,-1,ContentLibrary.SyncLibrary,TRUE
+Admin,-1,ContentLibrary.SyncLibraryItem,TRUE
+Admin,-1,ContentLibrary.TypeIntrospection,TRUE
+Admin,-1,ContentLibrary.UpdateConfiguration,TRUE
+Admin,-1,ContentLibrary.UpdateLibrary,TRUE
+Admin,-1,ContentLibrary.UpdateLibraryItem,TRUE
+Admin,-1,ContentLibrary.UpdateLocalLibrary,TRUE
+Admin,-1,ContentLibrary.UpdateSession,TRUE
+Admin,-1,ContentLibrary.UpdateSubscribedLibrary,TRUE
+Admin,-1,ContentLibrary.UpdateSubscription,TRUE
+Admin,-1,Cryptographer.Access,TRUE
+Admin,-1,Cryptographer.AddDisk,TRUE
+Admin,-1,Cryptographer.Clone,TRUE
+Admin,-1,Cryptographer.Decrypt,TRUE
+Admin,-1,Cryptographer.Encrypt,TRUE
+Admin,-1,Cryptographer.EncryptNew,TRUE
+Admin,-1,Cryptographer.ManageEncryptionPolicy,TRUE
+Admin,-1,Cryptographer.ManageKeyServers,TRUE
+Admin,-1,Cryptographer.ManageKeys,TRUE
+Admin,-1,Cryptographer.Migrate,TRUE
+Admin,-1,Cryptographer.ReadKeyServersInfo,TRUE
+Admin,-1,Cryptographer.Recrypt,TRUE
+Admin,-1,Cryptographer.RegisterHost,TRUE
+Admin,-1,Cryptographer.RegisterVM,TRUE
+Admin,-1,DVPortgroup.Create,TRUE
+Admin,-1,DVPortgroup.Delete,TRUE
+Admin,-1,DVPortgroup.Ipfix,TRUE
+Admin,-1,DVPortgroup.Modify,TRUE
+Admin,-1,DVPortgroup.PolicyOp,TRUE
+Admin,-1,DVPortgroup.ScopeOp,TRUE
+Admin,-1,DVSwitch.Create,TRUE
+Admin,-1,DVSwitch.Delete,TRUE
+Admin,-1,DVSwitch.HostOp,TRUE
+Admin,-1,DVSwitch.Ipfix,TRUE
+Admin,-1,DVSwitch.Modify,TRUE
+Admin,-1,DVSwitch.Move,TRUE
+Admin,-1,DVSwitch.PolicyOp,TRUE
+Admin,-1,DVSwitch.PortConfig,TRUE
+Admin,-1,DVSwitch.PortSetting,TRUE
+Admin,-1,DVSwitch.ResourceManagement,TRUE
+Admin,-1,DVSwitch.Vspan,TRUE
+Admin,-1,Datacenter.Create,TRUE
+Admin,-1,Datacenter.Delete,TRUE
+Admin,-1,Datacenter.IpPoolConfig,TRUE
+Admin,-1,Datacenter.IpPoolQueryAllocations,TRUE
+Admin,-1,Datacenter.IpPoolReleaseIp,TRUE
+Admin,-1,Datacenter.Move,TRUE
+Admin,-1,Datacenter.Reconfigure,TRUE
+Admin,-1,Datacenter.Rename,TRUE
+Admin,-1,Datacenter.UpdateCarbonInfo,TRUE
+Admin,-1,Datastore.AllocateSpace,TRUE
+Admin,-1,Datastore.Browse,TRUE
+Admin,-1,Datastore.Config,TRUE
+Admin,-1,Datastore.ConfigIOManagement,TRUE
+Admin,-1,Datastore.Delete,TRUE
+Admin,-1,Datastore.DeleteFile,TRUE
+Admin,-1,Datastore.FileManagement,TRUE
+Admin,-1,Datastore.Move,TRUE
+Admin,-1,Datastore.Rename,TRUE
+Admin,-1,Datastore.UpdateVirtualMachineFiles,TRUE
+Admin,-1,Datastore.UpdateVirtualMachineMetadata,TRUE
+Admin,-1,DrProxy.Host.Configure,TRUE
+Admin,-1,DrProxy.Host.ManageService,TRUE
+Admin,-1,DrProxy.Host.View,TRUE
+Admin,-1,DrProxy.License.Update,TRUE
+Admin,-1,DrProxy.License.View,TRUE
+Admin,-1,DrProxy.Progress.Control,TRUE
+Admin,-1,DrProxy.Vm.Configure,TRUE
+Admin,-1,EAM.Config,TRUE
+Admin,-1,EAM.Modify,TRUE
+Admin,-1,EAM.View,TRUE
+Admin,-1,Extension.Register,TRUE
+Admin,-1,Extension.Unregister,TRUE
+Admin,-1,Extension.Update,TRUE
+Admin,-1,ExternalStatsProvider.Register,TRUE
+Admin,-1,ExternalStatsProvider.Unregister,TRUE
+Admin,-1,ExternalStatsProvider.Update,TRUE
+Admin,-1,Folder.Create,TRUE
+Admin,-1,Folder.Delete,TRUE
+Admin,-1,Folder.Move,TRUE
+Admin,-1,Folder.Rename,TRUE
+Admin,-1,Global.CancelTask,TRUE
+Admin,-1,Global.CapacityPlanning,TRUE
+Admin,-1,Global.Diagnostics,TRUE
+Admin,-1,Global.DisableMethods,TRUE
+Admin,-1,Global.EnableMethods,TRUE
+Admin,-1,Global.GlobalTag,TRUE
+Admin,-1,Global.Health,TRUE
+Admin,-1,Global.Licenses,TRUE
+Admin,-1,Global.LogEvent,TRUE
+Admin,-1,Global.ManageCustomFields,TRUE
+Admin,-1,Global.Proxy,TRUE
+Admin,-1,Global.ScriptAction,TRUE
+Admin,-1,Global.ServiceManagers,TRUE
+Admin,-1,Global.SetCustomField,TRUE
+Admin,-1,Global.Settings,TRUE
+Admin,-1,Global.SystemTag,TRUE
+Admin,-1,Global.VCServer,TRUE
+Admin,-1,Global.com.vmware.vcops,TRUE
+Admin,-1,Global.com.vmware.vcops.ContentAdmin,TRUE
+Admin,-1,Global.com.vmware.vcops.GeneralUser-1,TRUE
+Admin,-1,Global.com.vmware.vcops.GeneralUser-2,TRUE
+Admin,-1,Global.com.vmware.vcops.GeneralUser-3,TRUE
+Admin,-1,Global.com.vmware.vcops.GeneralUser-4,TRUE
+Admin,-1,Global.com.vmware.vcops.PowerUserMinusRemediation,TRUE
+Admin,-1,Global.com.vmware.vcopsAdmin,TRUE
+Admin,-1,GuestDataPublisher.GetData,TRUE
+Admin,-1,HLM.Create,TRUE
+Admin,-1,HLM.Manage,TRUE
+Admin,-1,HealthUpdateProvider.Register,TRUE
+Admin,-1,HealthUpdateProvider.Unregister,TRUE
+Admin,-1,HealthUpdateProvider.Update,TRUE
+Admin,-1,Host.Cim.CimInteraction,TRUE
+Admin,-1,Host.Config.AdvancedConfig,TRUE
+Admin,-1,Host.Config.AuthenticationStore,TRUE
+Admin,-1,Host.Config.AutoStart,TRUE
+Admin,-1,Host.Config.Connection,TRUE
+Admin,-1,Host.Config.DateTime,TRUE
+Admin,-1,Host.Config.Firmware,TRUE
+Admin,-1,Host.Config.GuestStore,TRUE
+Admin,-1,Host.Config.HyperThreading,TRUE
+Admin,-1,Host.Config.Image,TRUE
+Admin,-1,Host.Config.Maintenance,TRUE
+Admin,-1,Host.Config.Memory,TRUE
+Admin,-1,Host.Config.NetService,TRUE
+Admin,-1,Host.Config.Network,TRUE
+Admin,-1,Host.Config.Nvdimm,TRUE
+Admin,-1,Host.Config.Patch,TRUE
+Admin,-1,Host.Config.PciPassthru,TRUE
+Admin,-1,Host.Config.Power,TRUE
+Admin,-1,Host.Config.ProductLocker,TRUE
+Admin,-1,Host.Config.Quarantine,TRUE
+Admin,-1,Host.Config.Resources,TRUE
+Admin,-1,Host.Config.Settings,TRUE
+Admin,-1,Host.Config.Snmp,TRUE
+Admin,-1,Host.Config.Storage,TRUE
+Admin,-1,Host.Config.SystemFirewallRuleSet,TRUE
+Admin,-1,Host.Config.SystemManagement,TRUE
+Admin,-1,Host.Entropy.Read,TRUE
+Admin,-1,Host.Entropy.Write,TRUE
+Admin,-1,Host.Hbr.HbrDaemonManagement,TRUE
+Admin,-1,Host.Hbr.HbrManagement,TRUE
+Admin,-1,Host.Inventory.AddHostToCluster,TRUE
+Admin,-1,Host.Inventory.AddStandaloneHost,TRUE
+Admin,-1,Host.Inventory.CreateCluster,TRUE
+Admin,-1,Host.Inventory.DeleteCluster,TRUE
+Admin,-1,Host.Inventory.EditCluster,TRUE
+Admin,-1,Host.Inventory.ManageClusterLifecyle,TRUE
+Admin,-1,Host.Inventory.MoveCluster,TRUE
+Admin,-1,Host.Inventory.MoveHost,TRUE
+Admin,-1,Host.Inventory.RemoveHostFromCluster,TRUE
+Admin,-1,Host.Inventory.RenameCluster,TRUE
+Admin,-1,Host.Local.CreateVM,TRUE
+Admin,-1,Host.Local.DeleteVM,TRUE
+Admin,-1,Host.Local.InstallAgent,TRUE
+Admin,-1,Host.Local.ManageUserGroups,TRUE
+Admin,-1,Host.Local.ReconfigVM,TRUE
+Admin,-1,Host.Sgx.Register,TRUE
+Admin,-1,Host.Stats.Query,TRUE
+Admin,-1,Host.Tpm.Read,TRUE
+Admin,-1,Host.Tpm.Unseal,TRUE
+Admin,-1,ImageBuilder.Depot.Create,TRUE
+Admin,-1,ImageBuilder.Depot.Delete,TRUE
+Admin,-1,ImageBuilder.Profile.Create,TRUE
+Admin,-1,ImageBuilder.Profile.Delete,TRUE
+Admin,-1,ImageBuilder.Profile.Export,TRUE
+Admin,-1,Infraprofile.Read,TRUE
+Admin,-1,Infraprofile.Write,TRUE
+Admin,-1,IntercomNamespace.Read,TRUE
+Admin,-1,IntercomNamespace.Write,TRUE
+Admin,-1,InventoryService.Tagging.AttachTag,TRUE
+Admin,-1,InventoryService.Tagging.CreateCategory,TRUE
+Admin,-1,InventoryService.Tagging.CreateTag,TRUE
+Admin,-1,InventoryService.Tagging.DeleteCategory,TRUE
+Admin,-1,InventoryService.Tagging.DeleteTag,TRUE
+Admin,-1,InventoryService.Tagging.EditCategory,TRUE
+Admin,-1,InventoryService.Tagging.EditTag,TRUE
+Admin,-1,InventoryService.Tagging.ModifyUsedByForCategory,TRUE
+Admin,-1,InventoryService.Tagging.ModifyUsedByForTag,TRUE
+Admin,-1,InventoryService.Tagging.ObjectAttachable,TRUE
+Admin,-1,Namespaces.Backup,TRUE
+Admin,-1,Namespaces.Configure,TRUE
+Admin,-1,Namespaces.ListAccess,TRUE
+Admin,-1,Namespaces.Manage,TRUE
+Admin,-1,Namespaces.ManageCapabilities,TRUE
+Admin,-1,Namespaces.ManageDisks,TRUE
+Admin,-1,Namespaces.SelfServiceManage,TRUE
+Admin,-1,Namespaces.Upgrade,TRUE
+Admin,-1,NetBackup.AddRemoveServer,TRUE
+Admin,-1,NetBackup.VMRecovery,TRUE
+Admin,-1,Network.Assign,TRUE
+Admin,-1,Network.Config,TRUE
+Admin,-1,Network.Delete,TRUE
+Admin,-1,Network.Move,TRUE
+Admin,-1,Nsx.Manage,TRUE
+Admin,-1,Nsx.ModifyAll,TRUE
+Admin,-1,Nsx.Read,TRUE
+Admin,-1,Observability.Admin,TRUE
+Admin,-1,Observability.StatsProvider.Manage,TRUE
+Admin,-1,OvfManager.OvfConsumerAccess,TRUE
+Admin,-1,PartnerRestDaemon.Read,TRUE
+Admin,-1,PartnerRestDaemon.Write,TRUE
+Admin,-1,Performance.ModifyIntervals,TRUE
+Admin,-1,Plugin.Management,TRUE
+Admin,-1,Profile.Clear,TRUE
+Admin,-1,Profile.Create,TRUE
+Admin,-1,Profile.Delete,TRUE
+Admin,-1,Profile.Edit,TRUE
+Admin,-1,Profile.Export,TRUE
+Admin,-1,Profile.View,TRUE
+Admin,-1,ReplicationService.Administer,TRUE
+Admin,-1,Resource.ApplyRecommendation,TRUE
+Admin,-1,Resource.AssignVAppToPool,TRUE
+Admin,-1,Resource.AssignVMToPool,TRUE
+Admin,-1,Resource.ColdMigrate,TRUE
+Admin,-1,Resource.CreatePool,TRUE
+Admin,-1,Resource.DeletePool,TRUE
+Admin,-1,Resource.EditPool,TRUE
+Admin,-1,Resource.HotMigrate,TRUE
+Admin,-1,Resource.MovePool,TRUE
+Admin,-1,Resource.QueryVMotion,TRUE
+Admin,-1,Resource.RenamePool,TRUE
+Admin,-1,ScheduledTask.Create,TRUE
+Admin,-1,ScheduledTask.Delete,TRUE
+Admin,-1,ScheduledTask.Edit,TRUE
+Admin,-1,ScheduledTask.Run,TRUE
+Admin,-1,ServiceAccount.Administer,TRUE
+Admin,-1,ServiceAccount.ManageAccount,TRUE
+Admin,-1,ServiceAccount.ManagePassword,TRUE
+Admin,-1,Sessions.CollectPrivilegeChecks,TRUE
+Admin,-1,Sessions.GlobalMessage,TRUE
+Admin,-1,Sessions.ImpersonateUser,TRUE
+Admin,-1,Sessions.TerminateSession,TRUE
+Admin,-1,Sessions.ValidateSession,TRUE
+Admin,-1,SettingsStore.Manage,TRUE
+Admin,-1,StoragePod.Config,TRUE
+Admin,-1,StorageProfile.Apply,TRUE
+Admin,-1,StorageProfile.Update,TRUE
+Admin,-1,StorageProfile.View,TRUE
+Admin,-1,StorageViews.ConfigureService,TRUE
+Admin,-1,StorageViews.View,TRUE
+Admin,-1,SupervisorServices.Install,TRUE
+Admin,-1,SupervisorServices.Manage,TRUE
+Admin,-1,System.Anonymous,TRUE
+Admin,-1,System.Read,TRUE
+Admin,-1,System.View,TRUE
+Admin,-1,Task.Create,TRUE
+Admin,-1,Task.Update,TRUE
+Admin,-1,Task.Update.Task.Update,TRUE
+Admin,-1,TenantManager.Query,TRUE
+Admin,-1,TenantManager.Update,TRUE
+Admin,-1,TokenService.PersistableTokenExchange,TRUE
+Admin,-1,Topology.Manage,TRUE
+Admin,-1,TransferService.Manage,TRUE
+Admin,-1,TransferService.Monitor,TRUE
+Admin,-1,Trust.Administer,TRUE
+Admin,-1,Trust.Manage,TRUE
+Admin,-1,TrustedAdmin.ConfigureHostCertificates,TRUE
+Admin,-1,TrustedAdmin.ConfigureHostMetadata,TRUE
+Admin,-1,TrustedAdmin.ConfigureTokenConversionPolicy,TRUE
+Admin,-1,TrustedAdmin.ManageAttestingSSO,TRUE
+Admin,-1,TrustedAdmin.ManageKMSTrust,TRUE
+Admin,-1,TrustedAdmin.ManageTrustedHosts,TRUE
+Admin,-1,TrustedAdmin.ReadAttestingSSO,TRUE
+Admin,-1,TrustedAdmin.ReadKMSTrust,TRUE
+Admin,-1,TrustedAdmin.ReadStsInfo,TRUE
+Admin,-1,TrustedAdmin.ReadTrustedHosts,TRUE
+Admin,-1,TrustedAdmin.RetrieveHostMetadata,TRUE
+Admin,-1,TrustedAdmin.RetrieveTPMHostCertificates,TRUE
+Admin,-1,VApp.ApplicationConfig,TRUE
+Admin,-1,VApp.AssignResourcePool,TRUE
+Admin,-1,VApp.AssignVApp,TRUE
+Admin,-1,VApp.AssignVM,TRUE
+Admin,-1,VApp.Clone,TRUE
+Admin,-1,VApp.Create,TRUE
+Admin,-1,VApp.Delete,TRUE
+Admin,-1,VApp.Export,TRUE
+Admin,-1,VApp.ExtractOvfEnvironment,TRUE
+Admin,-1,VApp.Import,TRUE
+Admin,-1,VApp.InstanceConfig,TRUE
+Admin,-1,VApp.ManagedByConfig,TRUE
+Admin,-1,VApp.Move,TRUE
+Admin,-1,VApp.PowerOff,TRUE
+Admin,-1,VApp.PowerOn,TRUE
+Admin,-1,VApp.PullFromUrls,TRUE
+Admin,-1,VApp.Rename,TRUE
+Admin,-1,VApp.ResourceConfig,TRUE
+Admin,-1,VApp.Suspend,TRUE
+Admin,-1,VApp.Unregister,TRUE
+Admin,-1,VcIdentityProviders.Create,TRUE
+Admin,-1,VcIdentityProviders.Manage,TRUE
+Admin,-1,VcIdentityProviders.Read,TRUE
+Admin,-1,VcIntegrity.Baseline.com.vmware.vcIntegrity.AssignBaselines,TRUE
+Admin,-1,VcIntegrity.Baseline.com.vmware.vcIntegrity.ManageBaselines,TRUE
+Admin,-1,VcIntegrity.ClusterConfiguration.Export,TRUE
+Admin,-1,VcIntegrity.ClusterConfiguration.Modify,TRUE
+Admin,-1,VcIntegrity.ClusterConfiguration.Remediate,TRUE
+Admin,-1,VcIntegrity.ClusterConfiguration.View,TRUE
+Admin,-1,VcIntegrity.FileUpload.com.vmware.vcIntegrity.ImportFile,TRUE
+Admin,-1,VcIntegrity.General.com.vmware.vcIntegrity.Configure,TRUE
+Admin,-1,VcIntegrity.HardwareCompatibility.Read,TRUE
+Admin,-1,VcIntegrity.HardwareCompatibility.Write,TRUE
+Admin,-1,VcIntegrity.Updates.com.vmware.vcIntegrity.Remediate,TRUE
+Admin,-1,VcIntegrity.Updates.com.vmware.vcIntegrity.Scan,TRUE
+Admin,-1,VcIntegrity.Updates.com.vmware.vcIntegrity.Stage,TRUE
+Admin,-1,VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus,TRUE
+Admin,-1,VcIntegrity.lifecycleDepots.Delete,TRUE
+Admin,-1,VcIntegrity.lifecycleGeneral.Read,TRUE
+Admin,-1,VcIntegrity.lifecycleGeneral.Write,TRUE
+Admin,-1,VcIntegrity.lifecycleHealth.Read,TRUE
+Admin,-1,VcIntegrity.lifecycleHealth.Write,TRUE
+Admin,-1,VcIntegrity.lifecycleSettings.Read,TRUE
+Admin,-1,VcIntegrity.lifecycleSettings.Write,TRUE
+Admin,-1,VcIntegrity.lifecycleSoftwareRemediation.Read,TRUE
+Admin,-1,VcIntegrity.lifecycleSoftwareRemediation.Write,TRUE
+Admin,-1,VcIntegrity.lifecycleSoftwareSpecification.Read,TRUE
+Admin,-1,VcIntegrity.lifecycleSoftwareSpecification.Write,TRUE
+Admin,-1,VcLifecycle.Upgrade,TRUE
+Admin,-1,VcLifecycle.View,TRUE
+Admin,-1,VirtualMachine.Config.AddExistingDisk,TRUE
+Admin,-1,VirtualMachine.Config.AddNewDisk,TRUE
+Admin,-1,VirtualMachine.Config.AddRemoveDevice,TRUE
+Admin,-1,VirtualMachine.Config.AdvancedConfig,TRUE
+Admin,-1,VirtualMachine.Config.Annotation,TRUE
+Admin,-1,VirtualMachine.Config.CPUCount,TRUE
+Admin,-1,VirtualMachine.Config.ChangeTracking,TRUE
+Admin,-1,VirtualMachine.Config.DiskExtend,TRUE
+Admin,-1,VirtualMachine.Config.DiskLease,TRUE
+Admin,-1,VirtualMachine.Config.EditDevice,TRUE
+Admin,-1,VirtualMachine.Config.HostUSBDevice,TRUE
+Admin,-1,VirtualMachine.Config.ManagedBy,TRUE
+Admin,-1,VirtualMachine.Config.Memory,TRUE
+Admin,-1,VirtualMachine.Config.MksControl,TRUE
+Admin,-1,VirtualMachine.Config.QueryFTCompatibility,TRUE
+Admin,-1,VirtualMachine.Config.QueryUnownedFiles,TRUE
+Admin,-1,VirtualMachine.Config.RawDevice,TRUE
+Admin,-1,VirtualMachine.Config.ReloadFromPath,TRUE
+Admin,-1,VirtualMachine.Config.RemoveDisk,TRUE
+Admin,-1,VirtualMachine.Config.Rename,TRUE
+Admin,-1,VirtualMachine.Config.ResetGuestInfo,TRUE
+Admin,-1,VirtualMachine.Config.Resource,TRUE
+Admin,-1,VirtualMachine.Config.Settings,TRUE
+Admin,-1,VirtualMachine.Config.SwapPlacement,TRUE
+Admin,-1,VirtualMachine.Config.ToggleForkParent,TRUE
+Admin,-1,VirtualMachine.Config.UpgradeVirtualHardware,TRUE
+Admin,-1,VirtualMachine.DataSets.DataSetCreate,TRUE
+Admin,-1,VirtualMachine.DataSets.DataSetDelete,TRUE
+Admin,-1,VirtualMachine.DataSets.DataSetEntryDelete,TRUE
+Admin,-1,VirtualMachine.DataSets.DataSetEntryGet,TRUE
+Admin,-1,VirtualMachine.DataSets.DataSetEntryList,TRUE
+Admin,-1,VirtualMachine.DataSets.DataSetEntrySet,TRUE
+Admin,-1,VirtualMachine.DataSets.DataSetGet,TRUE
+Admin,-1,VirtualMachine.DataSets.DataSetList,TRUE
+Admin,-1,VirtualMachine.DataSets.DataSetUpdate,TRUE
+Admin,-1,VirtualMachine.DataSets.Export,TRUE
+Admin,-1,VirtualMachine.GuestOperations.Execute,TRUE
+Admin,-1,VirtualMachine.GuestOperations.Modify,TRUE
+Admin,-1,VirtualMachine.GuestOperations.ModifyAliases,TRUE
+Admin,-1,VirtualMachine.GuestOperations.Query,TRUE
+Admin,-1,VirtualMachine.GuestOperations.QueryAliases,TRUE
+Admin,-1,VirtualMachine.Hbr.ConfigureReplication,TRUE
+Admin,-1,VirtualMachine.Hbr.MonitorReplication,TRUE
+Admin,-1,VirtualMachine.Hbr.ReplicaManagement,TRUE
+Admin,-1,VirtualMachine.Interact.AnswerQuestion,TRUE
+Admin,-1,VirtualMachine.Interact.Backup,TRUE
+Admin,-1,VirtualMachine.Interact.ConsoleInteract,TRUE
+Admin,-1,VirtualMachine.Interact.CreateScreenshot,TRUE
+Admin,-1,VirtualMachine.Interact.CreateSecondary,TRUE
+Admin,-1,VirtualMachine.Interact.DefragmentAllDisks,TRUE
+Admin,-1,VirtualMachine.Interact.DeviceConnection,TRUE
+Admin,-1,VirtualMachine.Interact.DisableSecondary,TRUE
+Admin,-1,VirtualMachine.Interact.DnD,TRUE
+Admin,-1,VirtualMachine.Interact.EnableSecondary,TRUE
+Admin,-1,VirtualMachine.Interact.GuestControl,TRUE
+Admin,-1,VirtualMachine.Interact.MakePrimary,TRUE
+Admin,-1,VirtualMachine.Interact.Pause,TRUE
+Admin,-1,VirtualMachine.Interact.PowerOff,TRUE
+Admin,-1,VirtualMachine.Interact.PowerOn,TRUE
+Admin,-1,VirtualMachine.Interact.PutUsbScanCodes,TRUE
+Admin,-1,VirtualMachine.Interact.Record,TRUE
+Admin,-1,VirtualMachine.Interact.Replay,TRUE
+Admin,-1,VirtualMachine.Interact.Reset,TRUE
+Admin,-1,VirtualMachine.Interact.SESparseMaintenance,TRUE
+Admin,-1,VirtualMachine.Interact.SetCDMedia,TRUE
+Admin,-1,VirtualMachine.Interact.SetFloppyMedia,TRUE
+Admin,-1,VirtualMachine.Interact.Suspend,TRUE
+Admin,-1,VirtualMachine.Interact.SuspendToMemory,TRUE
+Admin,-1,VirtualMachine.Interact.TerminateFaultTolerantVM,TRUE
+Admin,-1,VirtualMachine.Interact.ToolsInstall,TRUE
+Admin,-1,VirtualMachine.Interact.TurnOffFaultTolerance,TRUE
+Admin,-1,VirtualMachine.Inventory.Create,TRUE
+Admin,-1,VirtualMachine.Inventory.CreateFromExisting,TRUE
+Admin,-1,VirtualMachine.Inventory.Delete,TRUE
+Admin,-1,VirtualMachine.Inventory.Move,TRUE
+Admin,-1,VirtualMachine.Inventory.Register,TRUE
+Admin,-1,VirtualMachine.Inventory.Unregister,TRUE
+Admin,-1,VirtualMachine.Namespace.Event,TRUE
+Admin,-1,VirtualMachine.Namespace.EventNotify,TRUE
+Admin,-1,VirtualMachine.Namespace.Management,TRUE
+Admin,-1,VirtualMachine.Namespace.ModifyContent,TRUE
+Admin,-1,VirtualMachine.Namespace.Query,TRUE
+Admin,-1,VirtualMachine.Namespace.ReadContent,TRUE
+Admin,-1,VirtualMachine.Provisioning.Clone,TRUE
+Admin,-1,VirtualMachine.Provisioning.CloneTemplate,TRUE
+Admin,-1,VirtualMachine.Provisioning.CreateTemplateFromVM,TRUE
+Admin,-1,VirtualMachine.Provisioning.Customize,TRUE
+Admin,-1,VirtualMachine.Provisioning.DeployTemplate,TRUE
+Admin,-1,VirtualMachine.Provisioning.DiskRandomAccess,TRUE
+Admin,-1,VirtualMachine.Provisioning.DiskRandomRead,TRUE
+Admin,-1,VirtualMachine.Provisioning.FileRandomAccess,TRUE
+Admin,-1,VirtualMachine.Provisioning.GetVmFiles,TRUE
+Admin,-1,VirtualMachine.Provisioning.MarkAsTemplate,TRUE
+Admin,-1,VirtualMachine.Provisioning.MarkAsVM,TRUE
+Admin,-1,VirtualMachine.Provisioning.ModifyCustSpecs,TRUE
+Admin,-1,VirtualMachine.Provisioning.PromoteDisks,TRUE
+Admin,-1,VirtualMachine.Provisioning.PutVmFiles,TRUE
+Admin,-1,VirtualMachine.Provisioning.ReadCustSpecs,TRUE
+Admin,-1,VirtualMachine.State.CreateSnapshot,TRUE
+Admin,-1,VirtualMachine.State.RemoveSnapshot,TRUE
+Admin,-1,VirtualMachine.State.RenameSnapshot,TRUE
+Admin,-1,VirtualMachine.State.RevertToSnapshot,TRUE
+Admin,-1,VirtualMachineClasses.Manage,TRUE
+Admin,-1,VmCam.Administer,TRUE
+Admin,-1,Vsan.Cluster.ShallowRekey,TRUE
+Admin,-1,Vsan.DataProtection.Management,TRUE
+Admin,-1,Vsan.Xvc.UpdateClientInfo,TRUE
+Admin,-1,Zone.Manage,TRUE
+Admin,-1,Zone.ObjectAttachable,TRUE
+Admin,-1,vSANStats.Access,TRUE
+Admin,-1,vService.CreateDependency,TRUE
+Admin,-1,vService.DestroyDependency,TRUE
+Admin,-1,vService.ReconfigureDependency,TRUE
+Admin,-1,vService.UpdateDependency,TRUE
+Admin,-1,vSphereClient.UtilizeVerificationCode,TRUE
+Admin,-1,vSphereDataProtection.Protection,TRUE
+Admin,-1,vSphereDataProtection.Recovery,TRUE
+Admin,-1,vStats.CollectAny,TRUE
+Admin,-1,vStats.QueryAny,TRUE
+Admin,-1,vStats.Settings,TRUE
+VirtualMachinePowerUser,4,Datastore.Browse,FALSE
+VirtualMachinePowerUser,4,Global.CancelTask,FALSE
+VirtualMachinePowerUser,4,InventoryService.Tagging.ObjectAttachable,FALSE
+VirtualMachinePowerUser,4,ScheduledTask.Create,FALSE
+VirtualMachinePowerUser,4,ScheduledTask.Delete,FALSE
+VirtualMachinePowerUser,4,ScheduledTask.Edit,FALSE
+VirtualMachinePowerUser,4,ScheduledTask.Run,FALSE
+VirtualMachinePowerUser,4,System.Anonymous,FALSE
+VirtualMachinePowerUser,4,System.Read,FALSE
+VirtualMachinePowerUser,4,System.View,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.AddExistingDisk,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.AddNewDisk,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.AddRemoveDevice,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.AdvancedConfig,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.CPUCount,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.DiskLease,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.EditDevice,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.Memory,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.RemoveDisk,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.Rename,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.ResetGuestInfo,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.Resource,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.Settings,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.AnswerQuestion,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.ConsoleInteract,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.DeviceConnection,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.GuestControl,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.PowerOff,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.PowerOn,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.Reset,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.SetCDMedia,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.SetFloppyMedia,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.Suspend,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.Interact.ToolsInstall,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.State.CreateSnapshot,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.State.RemoveSnapshot,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.State.RenameSnapshot,FALSE
+VirtualMachinePowerUser,4,VirtualMachine.State.RevertToSnapshot,FALSE
+VirtualMachineUser,5,Global.CancelTask,FALSE
+VirtualMachineUser,5,InventoryService.Tagging.ObjectAttachable,FALSE
+VirtualMachineUser,5,ScheduledTask.Create,FALSE
+VirtualMachineUser,5,ScheduledTask.Delete,FALSE
+VirtualMachineUser,5,ScheduledTask.Edit,FALSE
+VirtualMachineUser,5,ScheduledTask.Run,FALSE
+VirtualMachineUser,5,System.Anonymous,FALSE
+VirtualMachineUser,5,System.Read,FALSE
+VirtualMachineUser,5,System.View,FALSE
+VirtualMachineUser,5,VirtualMachine.Interact.AnswerQuestion,FALSE
+VirtualMachineUser,5,VirtualMachine.Interact.ConsoleInteract,FALSE
+VirtualMachineUser,5,VirtualMachine.Interact.DeviceConnection,FALSE
+VirtualMachineUser,5,VirtualMachine.Interact.PowerOff,FALSE
+VirtualMachineUser,5,VirtualMachine.Interact.PowerOn,FALSE
+VirtualMachineUser,5,VirtualMachine.Interact.Reset,FALSE
+VirtualMachineUser,5,VirtualMachine.Interact.SetCDMedia,FALSE
+VirtualMachineUser,5,VirtualMachine.Interact.SetFloppyMedia,FALSE
+VirtualMachineUser,5,VirtualMachine.Interact.Suspend,FALSE
+VirtualMachineUser,5,VirtualMachine.Interact.ToolsInstall,FALSE
+ResourcePoolAdministrator,6,Alarm.Create,FALSE
+ResourcePoolAdministrator,6,Alarm.Delete,FALSE
+ResourcePoolAdministrator,6,Alarm.Edit,FALSE
+ResourcePoolAdministrator,6,Authorization.ModifyPermissions,FALSE
+ResourcePoolAdministrator,6,Datastore.Browse,FALSE
+ResourcePoolAdministrator,6,Folder.Create,FALSE
+ResourcePoolAdministrator,6,Folder.Delete,FALSE
+ResourcePoolAdministrator,6,Folder.Move,FALSE
+ResourcePoolAdministrator,6,Folder.Rename,FALSE
+ResourcePoolAdministrator,6,Global.CancelTask,FALSE
+ResourcePoolAdministrator,6,Global.LogEvent,FALSE
+ResourcePoolAdministrator,6,Global.SetCustomField,FALSE
+ResourcePoolAdministrator,6,InventoryService.Tagging.ObjectAttachable,FALSE
+ResourcePoolAdministrator,6,Resource.AssignVMToPool,FALSE
+ResourcePoolAdministrator,6,Resource.ColdMigrate,FALSE
+ResourcePoolAdministrator,6,Resource.CreatePool,FALSE
+ResourcePoolAdministrator,6,Resource.DeletePool,FALSE
+ResourcePoolAdministrator,6,Resource.EditPool,FALSE
+ResourcePoolAdministrator,6,Resource.HotMigrate,FALSE
+ResourcePoolAdministrator,6,Resource.MovePool,FALSE
+ResourcePoolAdministrator,6,Resource.QueryVMotion,FALSE
+ResourcePoolAdministrator,6,Resource.RenamePool,FALSE
+ResourcePoolAdministrator,6,ScheduledTask.Create,FALSE
+ResourcePoolAdministrator,6,ScheduledTask.Delete,FALSE
+ResourcePoolAdministrator,6,ScheduledTask.Edit,FALSE
+ResourcePoolAdministrator,6,ScheduledTask.Run,FALSE
+ResourcePoolAdministrator,6,System.Anonymous,FALSE
+ResourcePoolAdministrator,6,System.Read,FALSE
+ResourcePoolAdministrator,6,System.View,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.AddExistingDisk,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.AddNewDisk,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.AddRemoveDevice,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.AdvancedConfig,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.CPUCount,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.DiskLease,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.EditDevice,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.Memory,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.RawDevice,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.RemoveDisk,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.Rename,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.ResetGuestInfo,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.Resource,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.Settings,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Interact.AnswerQuestion,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Interact.ConsoleInteract,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Interact.DeviceConnection,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Interact.PowerOff,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Interact.PowerOn,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Interact.Reset,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Interact.SetCDMedia,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Interact.SetFloppyMedia,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Interact.Suspend,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Interact.ToolsInstall,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Inventory.Create,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Inventory.CreateFromExisting,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Inventory.Delete,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Inventory.Move,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Inventory.Register,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Inventory.Unregister,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.Clone,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.CloneTemplate,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.CreateTemplateFromVM,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.Customize,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.DeployTemplate,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.DiskRandomAccess,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.DiskRandomRead,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.GetVmFiles,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.MarkAsTemplate,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.MarkAsVM,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.ModifyCustSpecs,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.PutVmFiles,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.Provisioning.ReadCustSpecs,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.State.CreateSnapshot,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.State.RemoveSnapshot,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.State.RenameSnapshot,FALSE
+ResourcePoolAdministrator,6,VirtualMachine.State.RevertToSnapshot,FALSE
+VMwareConsolidatedBackupUser,7,InventoryService.Tagging.ObjectAttachable,FALSE
+VMwareConsolidatedBackupUser,7,System.Anonymous,FALSE
+VMwareConsolidatedBackupUser,7,System.Read,FALSE
+VMwareConsolidatedBackupUser,7,System.View,FALSE
+VMwareConsolidatedBackupUser,7,VirtualMachine.Config.DiskLease,FALSE
+VMwareConsolidatedBackupUser,7,VirtualMachine.Provisioning.DiskRandomRead,FALSE
+VMwareConsolidatedBackupUser,7,VirtualMachine.Provisioning.GetVmFiles,FALSE
+VMwareConsolidatedBackupUser,7,VirtualMachine.State.CreateSnapshot,FALSE
+VMwareConsolidatedBackupUser,7,VirtualMachine.State.RemoveSnapshot,FALSE
+DatastoreConsumer,8,Datastore.AllocateSpace,FALSE
+DatastoreConsumer,8,InventoryService.Tagging.ObjectAttachable,FALSE
+DatastoreConsumer,8,System.Anonymous,FALSE
+DatastoreConsumer,8,System.Read,FALSE
+DatastoreConsumer,8,System.View,FALSE
+NetworkConsumer,9,InventoryService.Tagging.ObjectAttachable,FALSE
+NetworkConsumer,9,Network.Assign,FALSE
+NetworkConsumer,9,System.Anonymous,FALSE
+NetworkConsumer,9,System.Read,FALSE
+NetworkConsumer,9,System.View,FALSE
+VirtualMachineConsoleUser,10,InventoryService.Tagging.ObjectAttachable,FALSE
+VirtualMachineConsoleUser,10,System.Anonymous,FALSE
+VirtualMachineConsoleUser,10,System.Read,FALSE
+VirtualMachineConsoleUser,10,System.View,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Config.EditDevice,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Config.Settings,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Interact.AnswerQuestion,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Interact.ConsoleInteract,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Interact.DeviceConnection,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Interact.PowerOff,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Interact.PowerOn,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Interact.Reset,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Interact.SetCDMedia,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Interact.SetFloppyMedia,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Interact.Suspend,FALSE
+VirtualMachineConsoleUser,10,VirtualMachine.Interact.ToolsInstall,FALSE
+AutoUpdateUser,11,Global.LogEvent,FALSE
+AutoUpdateUser,11,InventoryService.Tagging.ObjectAttachable,FALSE
+AutoUpdateUser,11,System.Anonymous,FALSE
+AutoUpdateUser,11,System.Read,FALSE
+AutoUpdateUser,11,System.View,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,InventoryService.Tagging.AttachTag,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,InventoryService.Tagging.CreateCategory,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,InventoryService.Tagging.CreateTag,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,InventoryService.Tagging.DeleteCategory,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,InventoryService.Tagging.DeleteTag,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,InventoryService.Tagging.EditCategory,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,InventoryService.Tagging.EditTag,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,InventoryService.Tagging.ModifyUsedByForCategory,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,InventoryService.Tagging.ModifyUsedByForTag,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,InventoryService.Tagging.ObjectAttachable,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,System.Anonymous,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,System.Read,FALSE
+InventoryService.Tagging.TaggingAdmin,1001,System.View,FALSE
+SyncUsers,1002,CertificateManagement.Manage,FALSE
+SyncUsers,1002,HLM.Create,FALSE
+SyncUsers,1002,HLM.Manage,FALSE
+SyncUsers,1002,IntercomNamespace.Read,FALSE
+SyncUsers,1002,IntercomNamespace.Write,FALSE
+SyncUsers,1002,InventoryService.Tagging.AttachTag,FALSE
+SyncUsers,1002,InventoryService.Tagging.CreateCategory,FALSE
+SyncUsers,1002,InventoryService.Tagging.CreateTag,FALSE
+SyncUsers,1002,InventoryService.Tagging.DeleteCategory,FALSE
+SyncUsers,1002,InventoryService.Tagging.DeleteTag,FALSE
+SyncUsers,1002,InventoryService.Tagging.EditCategory,FALSE
+SyncUsers,1002,InventoryService.Tagging.EditTag,FALSE
+SyncUsers,1002,InventoryService.Tagging.ModifyUsedByForCategory,FALSE
+SyncUsers,1002,InventoryService.Tagging.ModifyUsedByForTag,FALSE
+SyncUsers,1002,ReplicationService.Administer,FALSE
+SyncUsers,1002,SettingsStore.Manage,FALSE
+SyncUsers,1002,System.Anonymous,FALSE
+SyncUsers,1002,System.Read,FALSE
+SyncUsers,1002,System.View,FALSE
+SyncUsers,1002,Trust.Manage,FALSE
+vSphere Client Solution User,1003,Extension.Register,FALSE
+vSphere Client Solution User,1003,Extension.Unregister,FALSE
+vSphere Client Solution User,1003,Extension.Update,FALSE
+vSphere Client Solution User,1003,Global.LogEvent,FALSE
+vSphere Client Solution User,1003,Global.Proxy,FALSE
+vSphere Client Solution User,1003,IntercomNamespace.Read,FALSE
+vSphere Client Solution User,1003,ServiceAccount.Administer,FALSE
+vSphere Client Solution User,1003,System.Anonymous,FALSE
+vSphere Client Solution User,1003,System.Read,FALSE
+vSphere Client Solution User,1003,System.View,FALSE
+vSphere Client Solution User,1003,Task.Create,FALSE
+vSphere Client Solution User,1003,Task.Update,FALSE
+vSphere Client Solution User,1003,VcIdentityProviders.Read,FALSE
+WorkloadStorageManagement,1004,Cns.Searchable,FALSE
+WorkloadStorageManagement,1004,Datastore.AllocateSpace,FALSE
+WorkloadStorageManagement,1004,Datastore.FileManagement,FALSE
+WorkloadStorageManagement,1004,EAM.Modify,FALSE
+WorkloadStorageManagement,1004,Host.Config.Storage,FALSE
+WorkloadStorageManagement,1004,Resource.AssignVMToPool,FALSE
+WorkloadStorageManagement,1004,Resource.ColdMigrate,FALSE
+WorkloadStorageManagement,1004,StorageProfile.View,FALSE
+WorkloadStorageManagement,1004,System.Anonymous,FALSE
+WorkloadStorageManagement,1004,System.Read,FALSE
+WorkloadStorageManagement,1004,System.View,FALSE
+WorkloadStorageManagement,1004,VirtualMachine.Config.AddExistingDisk,FALSE
+WorkloadStorageManagement,1004,VirtualMachine.Config.AddNewDisk,FALSE
+WorkloadStorageManagement,1004,VirtualMachine.Config.AddRemoveDevice,FALSE
+WorkloadStorageManagement,1004,VirtualMachine.Config.RemoveDisk,FALSE
+WorkloadStorageManagement,1004,VirtualMachine.Config.Settings,FALSE
+WorkloadStorageManagement,1004,VirtualMachine.Inventory.Create,FALSE
+WorkloadStorageManagement,1004,VirtualMachine.Inventory.Delete,FALSE
+vSphereKubernetesManager,1005,ContentLibrary.ManageClusterRegistryResource,FALSE
+vSphereKubernetesManager,1005,Cryptographer.AddDisk,FALSE
+vSphereKubernetesManager,1005,Cryptographer.Clone,FALSE
+vSphereKubernetesManager,1005,Cryptographer.Encrypt,FALSE
+vSphereKubernetesManager,1005,Cryptographer.EncryptNew,FALSE
+vSphereKubernetesManager,1005,Cryptographer.Migrate,FALSE
+vSphereKubernetesManager,1005,Cryptographer.Recrypt,FALSE
+vSphereKubernetesManager,1005,Datastore.AllocateSpace,FALSE
+vSphereKubernetesManager,1005,Resource.AssignVMToPool,FALSE
+vSphereKubernetesManager,1005,System.Anonymous,FALSE
+vSphereKubernetesManager,1005,System.Read,FALSE
+vSphereKubernetesManager,1005,System.View,FALSE
+vSphereKubernetesManager,1005,VirtualMachine.Config.AddNewDisk,FALSE
+vSphereKubernetesManager,1005,VirtualMachine.Config.AddRemoveDevice,FALSE
+vSphereKubernetesManager,1005,VirtualMachine.Config.EditDevice,FALSE
+vSphereKubernetesManager,1005,VirtualMachine.Interact.DeviceConnection,FALSE
+vSphereKubernetesManager,1005,VirtualMachine.Interact.PowerOff,FALSE
+vSphereKubernetesManager,1005,VirtualMachine.Interact.PowerOn,FALSE
+vSphereKubernetesManager,1005,VirtualMachine.Inventory.Create,FALSE
+vSphereKubernetesManager,1005,VirtualMachine.Inventory.Delete,FALSE
+com.vmware.Content.Registry.Admin,1006,ContentLibrary.ManageRegistry,FALSE
+com.vmware.Content.Registry.Admin,1006,ContentLibrary.ManageRegistryProject,FALSE
+com.vmware.Content.Registry.Admin,1006,System.Anonymous,FALSE
+com.vmware.Content.Registry.Admin,1006,System.Read,FALSE
+com.vmware.Content.Registry.Admin,1006,System.View,FALSE
+SupervisorServiceCluster,1007,Host.Inventory.EditCluster,FALSE
+SupervisorServiceCluster,1007,Namespaces.Configure,FALSE
+SupervisorServiceCluster,1007,System.Anonymous,FALSE
+SupervisorServiceCluster,1007,System.Read,FALSE
+SupervisorServiceCluster,1007,System.View,FALSE
+SupervisorServiceRootFolder,1008,StorageProfile.Update,FALSE
+SupervisorServiceRootFolder,1008,StorageProfile.View,FALSE
+SupervisorServiceRootFolder,1008,System.Anonymous,FALSE
+SupervisorServiceRootFolder,1008,System.Read,FALSE
+SupervisorServiceRootFolder,1008,System.View,FALSE
+SupervisorServiceGlobal,1009,CertificateAuthority.Manage,FALSE
+SupervisorServiceGlobal,1009,System.Anonymous,FALSE
+SupervisorServiceGlobal,1009,System.Read,FALSE
+SupervisorServiceGlobal,1009,System.View,FALSE
+VMOperatorController,1021,Datastore.AllocateSpace,FALSE
+VMOperatorController,1021,Folder.Create,FALSE
+VMOperatorController,1021,Folder.Delete,FALSE
+VMOperatorController,1021,InventoryService.Tagging.AttachTag,FALSE
+VMOperatorController,1021,InventoryService.Tagging.ObjectAttachable,FALSE
+VMOperatorController,1021,Network.Assign,FALSE
+VMOperatorController,1021,Resource.ApplyRecommendation,FALSE
+VMOperatorController,1021,Resource.AssignVAppToPool,FALSE
+VMOperatorController,1021,Resource.AssignVMToPool,FALSE
+VMOperatorController,1021,Resource.ColdMigrate,FALSE
+VMOperatorController,1021,Resource.CreatePool,FALSE
+VMOperatorController,1021,Resource.DeletePool,FALSE
+VMOperatorController,1021,Resource.EditPool,FALSE
+VMOperatorController,1021,Resource.HotMigrate,FALSE
+VMOperatorController,1021,Resource.MovePool,FALSE
+VMOperatorController,1021,Resource.QueryVMotion,FALSE
+VMOperatorController,1021,Resource.RenamePool,FALSE
+VMOperatorController,1021,System.Anonymous,FALSE
+VMOperatorController,1021,System.Read,FALSE
+VMOperatorController,1021,System.View,FALSE
+VMOperatorController,1021,VApp.ApplicationConfig,FALSE
+VMOperatorController,1021,VApp.AssignResourcePool,FALSE
+VMOperatorController,1021,VApp.AssignVApp,FALSE
+VMOperatorController,1021,VApp.AssignVM,FALSE
+VMOperatorController,1021,VApp.Clone,FALSE
+VMOperatorController,1021,VApp.Create,FALSE
+VMOperatorController,1021,VApp.Delete,FALSE
+VMOperatorController,1021,VApp.Export,FALSE
+VMOperatorController,1021,VApp.ExtractOvfEnvironment,FALSE
+VMOperatorController,1021,VApp.Import,FALSE
+VMOperatorController,1021,VApp.InstanceConfig,FALSE
+VMOperatorController,1021,VApp.ManagedByConfig,FALSE
+VMOperatorController,1021,VApp.Move,FALSE
+VMOperatorController,1021,VApp.PowerOff,FALSE
+VMOperatorController,1021,VApp.PowerOn,FALSE
+VMOperatorController,1021,VApp.Rename,FALSE
+VMOperatorController,1021,VApp.ResourceConfig,FALSE
+VMOperatorController,1021,VApp.Suspend,FALSE
+VMOperatorController,1021,VApp.Unregister,FALSE
+VMOperatorController,1021,VirtualMachine.Config.AddExistingDisk,FALSE
+VMOperatorController,1021,VirtualMachine.Config.AddNewDisk,FALSE
+VMOperatorController,1021,VirtualMachine.Config.AddRemoveDevice,FALSE
+VMOperatorController,1021,VirtualMachine.Config.AdvancedConfig,FALSE
+VMOperatorController,1021,VirtualMachine.Config.Annotation,FALSE
+VMOperatorController,1021,VirtualMachine.Config.CPUCount,FALSE
+VMOperatorController,1021,VirtualMachine.Config.ChangeTracking,FALSE
+VMOperatorController,1021,VirtualMachine.Config.DiskExtend,FALSE
+VMOperatorController,1021,VirtualMachine.Config.DiskLease,FALSE
+VMOperatorController,1021,VirtualMachine.Config.EditDevice,FALSE
+VMOperatorController,1021,VirtualMachine.Config.HostUSBDevice,FALSE
+VMOperatorController,1021,VirtualMachine.Config.ManagedBy,FALSE
+VMOperatorController,1021,VirtualMachine.Config.Memory,FALSE
+VMOperatorController,1021,VirtualMachine.Config.MksControl,FALSE
+VMOperatorController,1021,VirtualMachine.Config.QueryFTCompatibility,FALSE
+VMOperatorController,1021,VirtualMachine.Config.QueryUnownedFiles,FALSE
+VMOperatorController,1021,VirtualMachine.Config.RawDevice,FALSE
+VMOperatorController,1021,VirtualMachine.Config.ReloadFromPath,FALSE
+VMOperatorController,1021,VirtualMachine.Config.RemoveDisk,FALSE
+VMOperatorController,1021,VirtualMachine.Config.Rename,FALSE
+VMOperatorController,1021,VirtualMachine.Config.ResetGuestInfo,FALSE
+VMOperatorController,1021,VirtualMachine.Config.Resource,FALSE
+VMOperatorController,1021,VirtualMachine.Config.Settings,FALSE
+VMOperatorController,1021,VirtualMachine.Config.SwapPlacement,FALSE
+VMOperatorController,1021,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+VMOperatorController,1021,VirtualMachine.GuestOperations.Execute,FALSE
+VMOperatorController,1021,VirtualMachine.GuestOperations.Modify,FALSE
+VMOperatorController,1021,VirtualMachine.GuestOperations.ModifyAliases,FALSE
+VMOperatorController,1021,VirtualMachine.GuestOperations.Query,FALSE
+VMOperatorController,1021,VirtualMachine.GuestOperations.QueryAliases,FALSE
+VMOperatorController,1021,VirtualMachine.Hbr.ConfigureReplication,FALSE
+VMOperatorController,1021,VirtualMachine.Hbr.MonitorReplication,FALSE
+VMOperatorController,1021,VirtualMachine.Hbr.ReplicaManagement,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.AnswerQuestion,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.Backup,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.ConsoleInteract,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.CreateScreenshot,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.DefragmentAllDisks,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.DeviceConnection,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.DnD,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.EnableSecondary,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.GuestControl,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.Pause,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.PowerOff,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.PowerOn,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.PutUsbScanCodes,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.Record,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.Reset,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.SESparseMaintenance,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.SetCDMedia,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.SetFloppyMedia,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.Suspend,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.SuspendToMemory,FALSE
+VMOperatorController,1021,VirtualMachine.Interact.ToolsInstall,FALSE
+VMOperatorController,1021,VirtualMachine.Inventory.Create,FALSE
+VMOperatorController,1021,VirtualMachine.Inventory.CreateFromExisting,FALSE
+VMOperatorController,1021,VirtualMachine.Inventory.Delete,FALSE
+VMOperatorController,1021,VirtualMachine.Inventory.Move,FALSE
+VMOperatorController,1021,VirtualMachine.Inventory.Register,FALSE
+VMOperatorController,1021,VirtualMachine.Inventory.Unregister,FALSE
+VMOperatorController,1021,VirtualMachine.Namespace.Event,FALSE
+VMOperatorController,1021,VirtualMachine.Namespace.EventNotify,FALSE
+VMOperatorController,1021,VirtualMachine.Namespace.Management,FALSE
+VMOperatorController,1021,VirtualMachine.Namespace.ModifyContent,FALSE
+VMOperatorController,1021,VirtualMachine.Namespace.Query,FALSE
+VMOperatorController,1021,VirtualMachine.Namespace.ReadContent,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.Clone,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.CloneTemplate,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.CreateTemplateFromVM,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.Customize,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.DeployTemplate,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.DiskRandomAccess,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.DiskRandomRead,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.FileRandomAccess,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.GetVmFiles,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.MarkAsTemplate,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.MarkAsVM,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.ModifyCustSpecs,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.PromoteDisks,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.PutVmFiles,FALSE
+VMOperatorController,1021,VirtualMachine.Provisioning.ReadCustSpecs,FALSE
+VMOperatorController,1021,VirtualMachine.State.CreateSnapshot,FALSE
+VMOperatorController,1021,VirtualMachine.State.RemoveSnapshot,FALSE
+VMOperatorController,1021,VirtualMachine.State.RenameSnapshot,FALSE
+VMOperatorController,1021,VirtualMachine.State.RevertToSnapshot,FALSE
+VMOperatorControllerGlobal,1022,ContentLibrary.AddLibraryItem,FALSE
+VMOperatorControllerGlobal,1022,ContentLibrary.CheckOutTemplate,FALSE
+VMOperatorControllerGlobal,1022,ContentLibrary.DownloadSession,FALSE
+VMOperatorControllerGlobal,1022,ContentLibrary.SyncLibrary,FALSE
+VMOperatorControllerGlobal,1022,ContentLibrary.SyncLibraryItem,FALSE
+VMOperatorControllerGlobal,1022,ContentLibrary.UpdateLibraryItem,FALSE
+VMOperatorControllerGlobal,1022,InventoryService.Tagging.AttachTag,FALSE
+VMOperatorControllerGlobal,1022,InventoryService.Tagging.ObjectAttachable,FALSE
+VMOperatorControllerGlobal,1022,System.Anonymous,FALSE
+VMOperatorControllerGlobal,1022,System.Read,FALSE
+VMOperatorControllerGlobal,1022,System.View,FALSE
+NSOperatorController,1023,Namespaces.Configure,FALSE
+NSOperatorController,1023,System.Anonymous,FALSE
+NSOperatorController,1023,System.Read,FALSE
+NSOperatorController,1023,System.View,FALSE
+TopologysvcUser,1024,Global.LogEvent,FALSE
+TopologysvcUser,1024,System.Anonymous,FALSE
+TopologysvcUser,1024,System.Read,FALSE
+TopologysvcUser,1024,System.View,FALSE
+NetOperatorController,1025,Network.Assign,FALSE
+NetOperatorController,1025,System.Anonymous,FALSE
+NetOperatorController,1025,System.Read,FALSE
+NetOperatorController,1025,System.View,FALSE
+PodVmLifeCycleManager,1026,Cns.Searchable,FALSE
+PodVmLifeCycleManager,1026,Datastore.AllocateSpace,FALSE
+PodVmLifeCycleManager,1026,Datastore.FileManagement,FALSE
+PodVmLifeCycleManager,1026,EAM.Modify,FALSE
+PodVmLifeCycleManager,1026,Host.Config.Storage,FALSE
+PodVmLifeCycleManager,1026,Network.Assign,FALSE
+PodVmLifeCycleManager,1026,Resource.AssignVMToPool,FALSE
+PodVmLifeCycleManager,1026,Resource.ColdMigrate,FALSE
+PodVmLifeCycleManager,1026,StorageProfile.View,FALSE
+PodVmLifeCycleManager,1026,System.Anonymous,FALSE
+PodVmLifeCycleManager,1026,System.Read,FALSE
+PodVmLifeCycleManager,1026,System.View,FALSE
+PodVmLifeCycleManager,1026,VirtualMachine.Config.AddExistingDisk,FALSE
+PodVmLifeCycleManager,1026,VirtualMachine.Config.AddNewDisk,FALSE
+PodVmLifeCycleManager,1026,VirtualMachine.Config.AddRemoveDevice,FALSE
+PodVmLifeCycleManager,1026,VirtualMachine.Config.RemoveDisk,FALSE
+PodVmLifeCycleManager,1026,VirtualMachine.Config.Settings,FALSE
+PodVmLifeCycleManager,1026,VirtualMachine.Inventory.Create,FALSE
+PodVmLifeCycleManager,1026,VirtualMachine.Inventory.Delete,FALSE
+NamespacesQueryRole,1027,Namespaces.ListAccess,FALSE
+NamespacesQueryRole,1027,System.Anonymous,FALSE
+NamespacesQueryRole,1027,System.Read,FALSE
+NamespacesQueryRole,1027,System.View,FALSE
+CNS-SEARCH-AND-SPBM,1031,Cns.Searchable,FALSE
+CNS-SEARCH-AND-SPBM,1031,StorageProfile.View,FALSE
+CNS-SEARCH-AND-SPBM,1031,System.Anonymous,FALSE
+CNS-SEARCH-AND-SPBM,1031,System.Read,FALSE
+CNS-SEARCH-AND-SPBM,1031,System.View,FALSE
+CNS-HOST-CONFIG-STORAGE-AND-CNS-VM,1032,Host.Config.Storage,FALSE
+CNS-HOST-CONFIG-STORAGE-AND-CNS-VM,1032,Resource.ColdMigrate,FALSE
+CNS-HOST-CONFIG-STORAGE-AND-CNS-VM,1032,Resource.HotMigrate,FALSE
+CNS-HOST-CONFIG-STORAGE-AND-CNS-VM,1032,System.Anonymous,FALSE
+CNS-HOST-CONFIG-STORAGE-AND-CNS-VM,1032,System.Read,FALSE
+CNS-HOST-CONFIG-STORAGE-AND-CNS-VM,1032,System.View,FALSE
+CNS-HOST-CONFIG-STORAGE-AND-CNS-VM,1032,VirtualMachine.Config.AddExistingDisk,FALSE
+CNS-HOST-CONFIG-STORAGE-AND-CNS-VM,1032,VirtualMachine.Config.AddRemoveDevice,FALSE
+CNS-HOST-CONFIG-STORAGE-AND-CNS-VM,1032,VirtualMachine.Config.RemoveDisk,FALSE
+VMImageServiceGlobal,1033,ContentLibrary.AddLibraryItem,FALSE
+VMImageServiceGlobal,1033,ContentLibrary.DeleteLibraryItem,FALSE
+VMImageServiceGlobal,1033,ContentLibrary.UpdateSession,FALSE
+VMImageServiceGlobal,1033,System.Anonymous,FALSE
+VMImageServiceGlobal,1033,System.Read,FALSE
+VMImageServiceGlobal,1033,System.View,FALSE
+VsmSvcRole,1034,Extension.Update,FALSE
+VsmSvcRole,1034,Sessions.TerminateSession,FALSE
+VsmSvcRole,1034,System.Anonymous,FALSE
+VsmSvcRole,1034,System.Read,FALSE
+VsmSvcRole,1034,System.View,FALSE
+VsmSvcRole,1034,VApp.ApplicationConfig,FALSE
+CNS-Datastore,1090,Datastore.AllocateSpace,FALSE
+CNS-Datastore,1090,Datastore.FileManagement,FALSE
+CNS-Datastore,1090,System.Anonymous,FALSE
+CNS-Datastore,1090,System.Read,FALSE
+CNS-Datastore,1090,System.View,FALSE
+applmgmtSvcRole,2000,Extension.Update,FALSE
+applmgmtSvcRole,2000,System.Anonymous,FALSE
+applmgmtSvcRole,2000,System.Read,FALSE
+applmgmtSvcRole,2000,System.View,FALSE
+PerfchartsSvcRole,2020,System.Anonymous,FALSE
+PerfchartsSvcRole,2020,System.Read,FALSE
+PerfchartsSvcRole,2020,System.View,FALSE
+ObservabilityVapiSvcRole,2021,System.Anonymous,FALSE
+ObservabilityVapiSvcRole,2021,System.Read,FALSE
+ObservabilityVapiSvcRole,2021,System.View,FALSE
+Veeam Backup User,95372933,DVPortgroup.Create,FALSE
+Veeam Backup User,95372933,DVPortgroup.Delete,FALSE
+Veeam Backup User,95372933,Datastore.AllocateSpace,FALSE
+Veeam Backup User,95372933,Datastore.Browse,FALSE
+Veeam Backup User,95372933,Datastore.DeleteFile,FALSE
+Veeam Backup User,95372933,Datastore.FileManagement,FALSE
+Veeam Backup User,95372933,Folder.Create,FALSE
+Veeam Backup User,95372933,Folder.Delete,FALSE
+Veeam Backup User,95372933,Global.DisableMethods,FALSE
+Veeam Backup User,95372933,Global.EnableMethods,FALSE
+Veeam Backup User,95372933,Global.Licenses,FALSE
+Veeam Backup User,95372933,Global.LogEvent,FALSE
+Veeam Backup User,95372933,Global.ManageCustomFields,FALSE
+Veeam Backup User,95372933,Global.SetCustomField,FALSE
+Veeam Backup User,95372933,Host.Config.Network,FALSE
+Veeam Backup User,95372933,Host.Config.Storage,FALSE
+Veeam Backup User,95372933,InventoryService.Tagging.ObjectAttachable,FALSE
+Veeam Backup User,95372933,Network.Assign,FALSE
+Veeam Backup User,95372933,Network.Config,FALSE
+Veeam Backup User,95372933,Resource.AssignVMToPool,FALSE
+Veeam Backup User,95372933,Resource.ColdMigrate,FALSE
+Veeam Backup User,95372933,Resource.CreatePool,FALSE
+Veeam Backup User,95372933,Resource.DeletePool,FALSE
+Veeam Backup User,95372933,Resource.HotMigrate,FALSE
+Veeam Backup User,95372933,Resource.MovePool,FALSE
+Veeam Backup User,95372933,System.Anonymous,FALSE
+Veeam Backup User,95372933,System.Read,FALSE
+Veeam Backup User,95372933,System.View,FALSE
+Veeam Backup User,95372933,VApp.AssignResourcePool,FALSE
+Veeam Backup User,95372933,VApp.AssignVM,FALSE
+Veeam Backup User,95372933,VApp.Unregister,FALSE
+Veeam Backup User,95372933,VirtualMachine.Config.AddExistingDisk,FALSE
+Veeam Backup User,95372933,VirtualMachine.Config.AddNewDisk,FALSE
+Veeam Backup User,95372933,VirtualMachine.Config.AddRemoveDevice,FALSE
+Veeam Backup User,95372933,VirtualMachine.Config.AdvancedConfig,FALSE
+Veeam Backup User,95372933,VirtualMachine.Config.ChangeTracking,FALSE
+Veeam Backup User,95372933,VirtualMachine.Config.EditDevice,FALSE
+Veeam Backup User,95372933,VirtualMachine.Config.RemoveDisk,FALSE
+Veeam Backup User,95372933,VirtualMachine.Config.Rename,FALSE
+Veeam Backup User,95372933,VirtualMachine.Config.Resource,FALSE
+Veeam Backup User,95372933,VirtualMachine.Interact.DeviceConnection,FALSE
+Veeam Backup User,95372933,VirtualMachine.Interact.GuestControl,FALSE
+Veeam Backup User,95372933,VirtualMachine.Interact.PowerOff,FALSE
+Veeam Backup User,95372933,VirtualMachine.Interact.PowerOn,FALSE
+Veeam Backup User,95372933,VirtualMachine.Interact.Suspend,FALSE
+Veeam Backup User,95372933,VirtualMachine.Inventory.Delete,FALSE
+Veeam Backup User,95372933,VirtualMachine.Inventory.Register,FALSE
+Veeam Backup User,95372933,VirtualMachine.Inventory.Unregister,FALSE
+Veeam Backup User,95372933,VirtualMachine.Provisioning.DiskRandomAccess,FALSE
+Veeam Backup User,95372933,VirtualMachine.Provisioning.DiskRandomRead,FALSE
+Veeam Backup User,95372933,VirtualMachine.Provisioning.GetVmFiles,FALSE
+Veeam Backup User,95372933,VirtualMachine.Provisioning.PutVmFiles,FALSE
+Veeam Backup User,95372933,VirtualMachine.State.CreateSnapshot,FALSE
+Veeam Backup User,95372933,VirtualMachine.State.RemoveSnapshot,FALSE
+Veeam Backup User,95372933,VirtualMachine.State.RevertToSnapshot,FALSE
+vCLSAdmin,101786695,Cryptographer.Access,FALSE
+vCLSAdmin,101786695,Cryptographer.AddDisk,FALSE
+vCLSAdmin,101786695,Cryptographer.Clone,FALSE
+vCLSAdmin,101786695,Cryptographer.Decrypt,FALSE
+vCLSAdmin,101786695,Cryptographer.Encrypt,FALSE
+vCLSAdmin,101786695,Cryptographer.EncryptNew,FALSE
+vCLSAdmin,101786695,Cryptographer.ManageEncryptionPolicy,FALSE
+vCLSAdmin,101786695,Cryptographer.ManageKeyServers,FALSE
+vCLSAdmin,101786695,Cryptographer.ManageKeys,FALSE
+vCLSAdmin,101786695,Cryptographer.Migrate,FALSE
+vCLSAdmin,101786695,Cryptographer.ReadKeyServersInfo,FALSE
+vCLSAdmin,101786695,Cryptographer.Recrypt,FALSE
+vCLSAdmin,101786695,Cryptographer.RegisterHost,FALSE
+vCLSAdmin,101786695,Cryptographer.RegisterVM,FALSE
+vCLSAdmin,101786695,Global.Settings,FALSE
+vCLSAdmin,101786695,InventoryService.Tagging.ObjectAttachable,FALSE
+vCLSAdmin,101786695,Resource.ColdMigrate,FALSE
+vCLSAdmin,101786695,Resource.HotMigrate,FALSE
+vCLSAdmin,101786695,System.Anonymous,FALSE
+vCLSAdmin,101786695,System.Read,FALSE
+vCLSAdmin,101786695,System.View,FALSE
+vCLSAdmin,101786695,VirtualMachine.Config.Settings,FALSE
+vCLSAdmin,101786695,VirtualMachine.GuestOperations.Execute,FALSE
+vCLSAdmin,101786695,VirtualMachine.GuestOperations.Query,FALSE
+vCLSAdmin,101786695,VirtualMachine.Interact.ConsoleInteract,FALSE
+vCLSAdmin,101786695,VirtualMachine.Interact.PowerOff,FALSE
+Storage Management Power User,116610907,Global.CancelTask,FALSE
+Storage Management Power User,116610907,InventoryService.Tagging.ObjectAttachable,FALSE
+Storage Management Power User,116610907,ScheduledTask.Create,FALSE
+Storage Management Power User,116610907,ScheduledTask.Delete,FALSE
+Storage Management Power User,116610907,ScheduledTask.Edit,FALSE
+Storage Management Power User,116610907,ScheduledTask.Run,FALSE
+Storage Management Power User,116610907,System.Anonymous,FALSE
+Storage Management Power User,116610907,System.Read,FALSE
+Storage Management Power User,116610907,System.View,FALSE
+Storage Management Power User,116610907,VirtualMachine.Config.Annotation,FALSE
+Storage Management Power User,116610907,VirtualMachine.Interact.AnswerQuestion,FALSE
+Storage Management Power User,116610907,VirtualMachine.Interact.ConsoleInteract,FALSE
+Storage Management Power User,116610907,VirtualMachine.Interact.DeviceConnection,FALSE
+Storage Management Power User,116610907,VirtualMachine.Interact.PowerOff,FALSE
+Storage Management Power User,116610907,VirtualMachine.Interact.PowerOn,FALSE
+Storage Management Power User,116610907,VirtualMachine.Interact.Reset,FALSE
+Storage Management Power User,116610907,VirtualMachine.Interact.SetCDMedia,FALSE
+Storage Management Power User,116610907,VirtualMachine.Interact.Suspend,FALSE
+Storage Management Power User,116610907,VirtualMachine.Interact.ToolsInstall,FALSE
+Storage Management Power User,116610907,VirtualMachine.State.CreateSnapshot,FALSE
+Storage Management Power User,116610907,VirtualMachine.State.RemoveSnapshot,FALSE
+Storage Management Power User,116610907,VirtualMachine.State.RenameSnapshot,FALSE
+Storage Management Power User,116610907,VirtualMachine.State.RevertToSnapshot,FALSE
+Netscout nGeniusOne - Read-only,175328662,InventoryService.Tagging.ObjectAttachable,FALSE
+Netscout nGeniusOne - Read-only,175328662,System.Anonymous,FALSE
+Netscout nGeniusOne - Read-only,175328662,System.Read,FALSE
+Netscout nGeniusOne - Read-only,175328662,System.View,FALSE
+NsxAdministrator,236311924,Nsx.ModifyAll,FALSE
+NsxAdministrator,236311924,System.Anonymous,FALSE
+NsxAdministrator,236311924,System.Read,FALSE
+NsxAdministrator,236311924,System.View,FALSE
+CitrixKleber-PVS Account,304930117,Cryptographer.Access,FALSE
+CitrixKleber-PVS Account,304930117,Cryptographer.AddDisk,FALSE
+CitrixKleber-PVS Account,304930117,Cryptographer.Clone,FALSE
+CitrixKleber-PVS Account,304930117,Cryptographer.Decrypt,FALSE
+CitrixKleber-PVS Account,304930117,Cryptographer.Encrypt,FALSE
+CitrixKleber-PVS Account,304930117,Cryptographer.EncryptNew,FALSE
+CitrixKleber-PVS Account,304930117,Cryptographer.Migrate,FALSE
+CitrixKleber-PVS Account,304930117,Cryptographer.ReadKeyServersInfo,FALSE
+CitrixKleber-PVS Account,304930117,Cryptographer.RegisterVM,FALSE
+CitrixKleber-PVS Account,304930117,Datastore.AllocateSpace,FALSE
+CitrixKleber-PVS Account,304930117,Datastore.Browse,FALSE
+CitrixKleber-PVS Account,304930117,Datastore.FileManagement,FALSE
+CitrixKleber-PVS Account,304930117,Global.ManageCustomFields,FALSE
+CitrixKleber-PVS Account,304930117,Global.SetCustomField,FALSE
+CitrixKleber-PVS Account,304930117,InventoryService.Tagging.ObjectAttachable,FALSE
+CitrixKleber-PVS Account,304930117,Network.Assign,FALSE
+CitrixKleber-PVS Account,304930117,Resource.AssignVMToPool,FALSE
+CitrixKleber-PVS Account,304930117,System.Anonymous,FALSE
+CitrixKleber-PVS Account,304930117,System.Read,FALSE
+CitrixKleber-PVS Account,304930117,System.View,FALSE
+CitrixKleber-PVS Account,304930117,Task.Create,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Config.AddExistingDisk,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Config.AddNewDisk,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Config.AddRemoveDevice,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Config.AdvancedConfig,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Config.CPUCount,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Config.EditDevice,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Config.Memory,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Config.RemoveDisk,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Config.Resource,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Config.Settings,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Interact.ConsoleInteract,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Interact.PowerOff,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Interact.PowerOn,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Interact.Reset,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Interact.Suspend,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Inventory.Create,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Inventory.CreateFromExisting,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Inventory.Delete,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Inventory.Register,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Provisioning.Clone,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Provisioning.CloneTemplate,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Provisioning.DeployTemplate,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Provisioning.DiskRandomAccess,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Provisioning.DiskRandomRead,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Provisioning.GetVmFiles,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Provisioning.MarkAsTemplate,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Provisioning.MarkAsVM,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.Provisioning.PutVmFiles,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.State.CreateSnapshot,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.State.RemoveSnapshot,FALSE
+CitrixKleber-PVS Account,304930117,VirtualMachine.State.RevertToSnapshot,FALSE
+SupportAdmin,381222343,ContentLibrary.ReadStorage,FALSE
+SupportAdmin,381222343,Cryptographer.Access,FALSE
+SupportAdmin,381222343,Cryptographer.Encrypt,FALSE
+SupportAdmin,381222343,Cryptographer.EncryptNew,FALSE
+SupportAdmin,381222343,Cryptographer.Migrate,FALSE
+SupportAdmin,381222343,Cryptographer.ReadKeyServersInfo,FALSE
+SupportAdmin,381222343,Cryptographer.RegisterVM,FALSE
+SupportAdmin,381222343,Datastore.Browse,FALSE
+SupportAdmin,381222343,InventoryService.Tagging.ObjectAttachable,FALSE
+SupportAdmin,381222343,Network.Assign,FALSE
+SupportAdmin,381222343,System.Anonymous,FALSE
+SupportAdmin,381222343,System.Read,FALSE
+SupportAdmin,381222343,System.View,FALSE
+SupportAdmin,381222343,VirtualMachine.Config.AddRemoveDevice,FALSE
+SupportAdmin,381222343,VirtualMachine.Config.Annotation,FALSE
+SupportAdmin,381222343,VirtualMachine.Config.EditDevice,FALSE
+SupportAdmin,381222343,VirtualMachine.Config.MksControl,FALSE
+SupportAdmin,381222343,VirtualMachine.Config.Settings,FALSE
+SupportAdmin,381222343,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+SupportAdmin,381222343,VirtualMachine.Interact.AnswerQuestion,FALSE
+SupportAdmin,381222343,VirtualMachine.Interact.ConsoleInteract,FALSE
+SupportAdmin,381222343,VirtualMachine.Interact.DeviceConnection,FALSE
+SupportAdmin,381222343,VirtualMachine.Interact.PowerOff,FALSE
+SupportAdmin,381222343,VirtualMachine.Interact.PowerOn,FALSE
+SupportAdmin,381222343,VirtualMachine.Interact.Reset,FALSE
+SupportAdmin,381222343,VirtualMachine.Interact.SetCDMedia,FALSE
+SupportAdmin,381222343,VirtualMachine.Interact.ToolsInstall,FALSE
+SupportAdmin,381222343,VirtualMachine.Inventory.Move,FALSE
+MQ Administrators,489273232,InventoryService.Tagging.ObjectAttachable,FALSE
+MQ Administrators,489273232,Network.Assign,FALSE
+MQ Administrators,489273232,System.Anonymous,FALSE
+MQ Administrators,489273232,System.Read,FALSE
+MQ Administrators,489273232,System.View,FALSE
+MQ Administrators,489273232,VirtualMachine.Config.Annotation,FALSE
+MQ Administrators,489273232,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+MQ Administrators,489273232,VirtualMachine.Interact.AnswerQuestion,FALSE
+MQ Administrators,489273232,VirtualMachine.Interact.ConsoleInteract,FALSE
+MQ Administrators,489273232,VirtualMachine.Interact.DeviceConnection,FALSE
+MQ Administrators,489273232,VirtualMachine.Interact.PowerOff,FALSE
+MQ Administrators,489273232,VirtualMachine.Interact.PowerOn,FALSE
+MQ Administrators,489273232,VirtualMachine.Interact.Reset,FALSE
+MQ Administrators,489273232,VirtualMachine.Interact.SetCDMedia,FALSE
+MQ Administrators,489273232,VirtualMachine.Interact.ToolsInstall,FALSE
+NetBackup Service User,526150210,Cryptographer.Access,FALSE
+NetBackup Service User,526150210,Cryptographer.EncryptNew,FALSE
+NetBackup Service User,526150210,Cryptographer.Migrate,FALSE
+NetBackup Service User,526150210,Cryptographer.RegisterVM,FALSE
+NetBackup Service User,526150210,Datastore.AllocateSpace,FALSE
+NetBackup Service User,526150210,Datastore.Browse,FALSE
+NetBackup Service User,526150210,Datastore.Config,FALSE
+NetBackup Service User,526150210,Datastore.ConfigIOManagement,FALSE
+NetBackup Service User,526150210,Datastore.FileManagement,FALSE
+NetBackup Service User,526150210,Datastore.UpdateVirtualMachineFiles,FALSE
+NetBackup Service User,526150210,Datastore.UpdateVirtualMachineMetadata,FALSE
+NetBackup Service User,526150210,Extension.Register,FALSE
+NetBackup Service User,526150210,Extension.Unregister,FALSE
+NetBackup Service User,526150210,Extension.Update,FALSE
+NetBackup Service User,526150210,Global.CancelTask,FALSE
+NetBackup Service User,526150210,Global.DisableMethods,FALSE
+NetBackup Service User,526150210,Global.EnableMethods,FALSE
+NetBackup Service User,526150210,Global.GlobalTag,FALSE
+NetBackup Service User,526150210,Global.Licenses,FALSE
+NetBackup Service User,526150210,Global.LogEvent,FALSE
+NetBackup Service User,526150210,Global.ManageCustomFields,FALSE
+NetBackup Service User,526150210,Global.SetCustomField,FALSE
+NetBackup Service User,526150210,Global.Settings,FALSE
+NetBackup Service User,526150210,Host.Config.AdvancedConfig,FALSE
+NetBackup Service User,526150210,Host.Config.Storage,FALSE
+NetBackup Service User,526150210,InventoryService.Tagging.AttachTag,FALSE
+NetBackup Service User,526150210,InventoryService.Tagging.ObjectAttachable,FALSE
+NetBackup Service User,526150210,NetBackup.AddRemoveServer,FALSE
+NetBackup Service User,526150210,NetBackup.VMRecovery,FALSE
+NetBackup Service User,526150210,Network.Assign,FALSE
+NetBackup Service User,526150210,Resource.AssignVAppToPool,FALSE
+NetBackup Service User,526150210,Resource.AssignVMToPool,FALSE
+NetBackup Service User,526150210,ScheduledTask.Create,FALSE
+NetBackup Service User,526150210,ScheduledTask.Delete,FALSE
+NetBackup Service User,526150210,ScheduledTask.Edit,FALSE
+NetBackup Service User,526150210,ScheduledTask.Run,FALSE
+NetBackup Service User,526150210,StorageViews.ConfigureService,FALSE
+NetBackup Service User,526150210,StorageViews.View,FALSE
+NetBackup Service User,526150210,System.Anonymous,FALSE
+NetBackup Service User,526150210,System.Read,FALSE
+NetBackup Service User,526150210,System.View,FALSE
+NetBackup Service User,526150210,Task.Create,FALSE
+NetBackup Service User,526150210,Task.Update,FALSE
+NetBackup Service User,526150210,VApp.AssignResourcePool,FALSE
+NetBackup Service User,526150210,VApp.AssignVApp,FALSE
+NetBackup Service User,526150210,VApp.AssignVM,FALSE
+NetBackup Service User,526150210,VApp.Create,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.AddExistingDisk,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.AddNewDisk,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.AddRemoveDevice,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.AdvancedConfig,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.Annotation,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.ChangeTracking,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.DiskLease,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.EditDevice,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.RawDevice,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.RemoveDisk,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.Rename,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.Resource,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.Settings,FALSE
+NetBackup Service User,526150210,VirtualMachine.Config.SwapPlacement,FALSE
+NetBackup Service User,526150210,VirtualMachine.Interact.PowerOff,FALSE
+NetBackup Service User,526150210,VirtualMachine.Interact.PowerOn,FALSE
+NetBackup Service User,526150210,VirtualMachine.Inventory.Create,FALSE
+NetBackup Service User,526150210,VirtualMachine.Inventory.CreateFromExisting,FALSE
+NetBackup Service User,526150210,VirtualMachine.Inventory.Delete,FALSE
+NetBackup Service User,526150210,VirtualMachine.Inventory.Register,FALSE
+NetBackup Service User,526150210,VirtualMachine.Inventory.Unregister,FALSE
+NetBackup Service User,526150210,VirtualMachine.Provisioning.DiskRandomAccess,FALSE
+NetBackup Service User,526150210,VirtualMachine.Provisioning.DiskRandomRead,FALSE
+NetBackup Service User,526150210,VirtualMachine.Provisioning.GetVmFiles,FALSE
+NetBackup Service User,526150210,VirtualMachine.State.CreateSnapshot,FALSE
+NetBackup Service User,526150210,VirtualMachine.State.RemoveSnapshot,FALSE
+NetBackup Service User,526150210,VirtualMachine.State.RevertToSnapshot,FALSE
+Windows Server Team,808370868,ContentLibrary.ReadStorage,FALSE
+Windows Server Team,808370868,Cryptographer.Access,FALSE
+Windows Server Team,808370868,Cryptographer.Encrypt,FALSE
+Windows Server Team,808370868,Cryptographer.EncryptNew,FALSE
+Windows Server Team,808370868,Cryptographer.Migrate,FALSE
+Windows Server Team,808370868,Cryptographer.ReadKeyServersInfo,FALSE
+Windows Server Team,808370868,Cryptographer.RegisterVM,FALSE
+Windows Server Team,808370868,Datastore.Browse,FALSE
+Windows Server Team,808370868,InventoryService.Tagging.ObjectAttachable,FALSE
+Windows Server Team,808370868,Network.Assign,FALSE
+Windows Server Team,808370868,System.Anonymous,FALSE
+Windows Server Team,808370868,System.Read,FALSE
+Windows Server Team,808370868,System.View,FALSE
+Windows Server Team,808370868,VirtualMachine.Config.AddRemoveDevice,FALSE
+Windows Server Team,808370868,VirtualMachine.Config.Annotation,FALSE
+Windows Server Team,808370868,VirtualMachine.Config.EditDevice,FALSE
+Windows Server Team,808370868,VirtualMachine.Config.MksControl,FALSE
+Windows Server Team,808370868,VirtualMachine.Config.Settings,FALSE
+Windows Server Team,808370868,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Windows Server Team,808370868,VirtualMachine.Interact.AnswerQuestion,FALSE
+Windows Server Team,808370868,VirtualMachine.Interact.ConsoleInteract,FALSE
+Windows Server Team,808370868,VirtualMachine.Interact.DeviceConnection,FALSE
+Windows Server Team,808370868,VirtualMachine.Interact.PowerOff,FALSE
+Windows Server Team,808370868,VirtualMachine.Interact.PowerOn,FALSE
+Windows Server Team,808370868,VirtualMachine.Interact.Reset,FALSE
+Windows Server Team,808370868,VirtualMachine.Interact.SetCDMedia,FALSE
+Windows Server Team,808370868,VirtualMachine.Interact.ToolsInstall,FALSE
+Windows Server Team,808370868,VirtualMachine.Inventory.Move,FALSE
+Enterprise CS ELM Admins,883388383,ContentLibrary.ReadStorage,FALSE
+Enterprise CS ELM Admins,883388383,Datastore.Browse,FALSE
+Enterprise CS ELM Admins,883388383,InventoryService.Tagging.ObjectAttachable,FALSE
+Enterprise CS ELM Admins,883388383,Network.Assign,FALSE
+Enterprise CS ELM Admins,883388383,System.Anonymous,FALSE
+Enterprise CS ELM Admins,883388383,System.Read,FALSE
+Enterprise CS ELM Admins,883388383,System.View,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Config.Annotation,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Config.EditDevice,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Config.MksControl,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Config.Settings,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Interact.AnswerQuestion,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Interact.ConsoleInteract,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Interact.DeviceConnection,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Interact.PowerOff,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Interact.PowerOn,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Interact.Reset,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Interact.SetCDMedia,FALSE
+Enterprise CS ELM Admins,883388383,VirtualMachine.Interact.ToolsInstall,FALSE
+NetBackup Management,944937084,Datastore.AllocateSpace,FALSE
+NetBackup Management,944937084,Datastore.Browse,FALSE
+NetBackup Management,944937084,Datastore.Config,FALSE
+NetBackup Management,944937084,Datastore.ConfigIOManagement,FALSE
+NetBackup Management,944937084,Datastore.DeleteFile,FALSE
+NetBackup Management,944937084,Datastore.FileManagement,FALSE
+NetBackup Management,944937084,Datastore.UpdateVirtualMachineFiles,FALSE
+NetBackup Management,944937084,Datastore.UpdateVirtualMachineMetadata,FALSE
+NetBackup Management,944937084,Global.CancelTask,FALSE
+NetBackup Management,944937084,Global.DisableMethods,FALSE
+NetBackup Management,944937084,Global.EnableMethods,FALSE
+NetBackup Management,944937084,Global.GlobalTag,FALSE
+NetBackup Management,944937084,Global.Licenses,FALSE
+NetBackup Management,944937084,Global.LogEvent,FALSE
+NetBackup Management,944937084,Global.ManageCustomFields,FALSE
+NetBackup Management,944937084,Global.SetCustomField,FALSE
+NetBackup Management,944937084,Global.Settings,FALSE
+NetBackup Management,944937084,Host.Config.AdvancedConfig,FALSE
+NetBackup Management,944937084,Host.Config.Storage,FALSE
+NetBackup Management,944937084,InventoryService.Tagging.AttachTag,FALSE
+NetBackup Management,944937084,InventoryService.Tagging.CreateCategory,FALSE
+NetBackup Management,944937084,InventoryService.Tagging.CreateTag,FALSE
+NetBackup Management,944937084,InventoryService.Tagging.DeleteCategory,FALSE
+NetBackup Management,944937084,InventoryService.Tagging.DeleteTag,FALSE
+NetBackup Management,944937084,InventoryService.Tagging.EditCategory,FALSE
+NetBackup Management,944937084,InventoryService.Tagging.EditTag,FALSE
+NetBackup Management,944937084,InventoryService.Tagging.ObjectAttachable,FALSE
+NetBackup Management,944937084,Network.Assign,FALSE
+NetBackup Management,944937084,Resource.AssignVAppToPool,FALSE
+NetBackup Management,944937084,Resource.AssignVMToPool,FALSE
+NetBackup Management,944937084,ScheduledTask.Create,FALSE
+NetBackup Management,944937084,ScheduledTask.Delete,FALSE
+NetBackup Management,944937084,ScheduledTask.Edit,FALSE
+NetBackup Management,944937084,ScheduledTask.Run,FALSE
+NetBackup Management,944937084,StoragePod.Config,FALSE
+NetBackup Management,944937084,StorageViews.ConfigureService,FALSE
+NetBackup Management,944937084,StorageViews.View,FALSE
+NetBackup Management,944937084,System.Anonymous,FALSE
+NetBackup Management,944937084,System.Read,FALSE
+NetBackup Management,944937084,System.View,FALSE
+NetBackup Management,944937084,Task.Create,FALSE
+NetBackup Management,944937084,Task.Update,FALSE
+NetBackup Management,944937084,VApp.AssignResourcePool,FALSE
+NetBackup Management,944937084,VApp.AssignVApp,FALSE
+NetBackup Management,944937084,VApp.AssignVM,FALSE
+NetBackup Management,944937084,VApp.Create,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.AddExistingDisk,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.AddNewDisk,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.AddRemoveDevice,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.AdvancedConfig,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.Annotation,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.ChangeTracking,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.DiskLease,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.EditDevice,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.RawDevice,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.RemoveDisk,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.Rename,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.Resource,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.Settings,FALSE
+NetBackup Management,944937084,VirtualMachine.Config.SwapPlacement,FALSE
+NetBackup Management,944937084,VirtualMachine.Interact.AnswerQuestion,FALSE
+NetBackup Management,944937084,VirtualMachine.Interact.Backup,FALSE
+NetBackup Management,944937084,VirtualMachine.Interact.ConsoleInteract,FALSE
+NetBackup Management,944937084,VirtualMachine.Interact.PowerOff,FALSE
+NetBackup Management,944937084,VirtualMachine.Interact.PowerOn,FALSE
+NetBackup Management,944937084,VirtualMachine.Interact.Reset,FALSE
+NetBackup Management,944937084,VirtualMachine.Interact.SetCDMedia,FALSE
+NetBackup Management,944937084,VirtualMachine.Interact.Suspend,FALSE
+NetBackup Management,944937084,VirtualMachine.Interact.ToolsInstall,FALSE
+NetBackup Management,944937084,VirtualMachine.Inventory.Create,FALSE
+NetBackup Management,944937084,VirtualMachine.Inventory.CreateFromExisting,FALSE
+NetBackup Management,944937084,VirtualMachine.Inventory.Delete,FALSE
+NetBackup Management,944937084,VirtualMachine.Inventory.Register,FALSE
+NetBackup Management,944937084,VirtualMachine.Inventory.Unregister,FALSE
+NetBackup Management,944937084,VirtualMachine.Provisioning.DiskRandomAccess,FALSE
+NetBackup Management,944937084,VirtualMachine.Provisioning.DiskRandomRead,FALSE
+NetBackup Management,944937084,VirtualMachine.Provisioning.GetVmFiles,FALSE
+NetBackup Management,944937084,VirtualMachine.State.CreateSnapshot,FALSE
+NetBackup Management,944937084,VirtualMachine.State.RemoveSnapshot,FALSE
+NetBackup Management,944937084,VirtualMachine.State.RevertToSnapshot,FALSE
+Enterprise Imaging RF Handheld Team,949659633,InventoryService.Tagging.ObjectAttachable,FALSE
+Enterprise Imaging RF Handheld Team,949659633,Network.Assign,FALSE
+Enterprise Imaging RF Handheld Team,949659633,System.Anonymous,FALSE
+Enterprise Imaging RF Handheld Team,949659633,System.Read,FALSE
+Enterprise Imaging RF Handheld Team,949659633,System.View,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Config.Annotation,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Config.Settings,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Interact.AnswerQuestion,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Interact.ConsoleInteract,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Interact.DeviceConnection,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Interact.PowerOff,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Interact.PowerOn,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Interact.Reset,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Interact.SetCDMedia,FALSE
+Enterprise Imaging RF Handheld Team,949659633,VirtualMachine.Interact.ToolsInstall,FALSE
+Enterprise Citrix Server Admins,967015979,ContentLibrary.ReadStorage,FALSE
+Enterprise Citrix Server Admins,967015979,Cryptographer.Access,FALSE
+Enterprise Citrix Server Admins,967015979,Cryptographer.Migrate,FALSE
+Enterprise Citrix Server Admins,967015979,Cryptographer.ReadKeyServersInfo,FALSE
+Enterprise Citrix Server Admins,967015979,Datastore.Browse,FALSE
+Enterprise Citrix Server Admins,967015979,Datastore.FileManagement,FALSE
+Enterprise Citrix Server Admins,967015979,Global.CancelTask,FALSE
+Enterprise Citrix Server Admins,967015979,InventoryService.Tagging.ObjectAttachable,FALSE
+Enterprise Citrix Server Admins,967015979,ScheduledTask.Create,FALSE
+Enterprise Citrix Server Admins,967015979,ScheduledTask.Delete,FALSE
+Enterprise Citrix Server Admins,967015979,ScheduledTask.Edit,FALSE
+Enterprise Citrix Server Admins,967015979,ScheduledTask.Run,FALSE
+Enterprise Citrix Server Admins,967015979,System.Anonymous,FALSE
+Enterprise Citrix Server Admins,967015979,System.Read,FALSE
+Enterprise Citrix Server Admins,967015979,System.View,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.AddExistingDisk,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.AddNewDisk,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.AddRemoveDevice,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.AdvancedConfig,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.Annotation,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.CPUCount,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.ChangeTracking,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.DiskExtend,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.DiskLease,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.EditDevice,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.HostUSBDevice,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.ManagedBy,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.Memory,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.MksControl,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.QueryFTCompatibility,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.QueryUnownedFiles,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.RawDevice,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.ReloadFromPath,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.RemoveDisk,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.Rename,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.ResetGuestInfo,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.Resource,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.Settings,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.SwapPlacement,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.ToggleForkParent,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Interact.AnswerQuestion,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Interact.ConsoleInteract,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Interact.DeviceConnection,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Interact.PowerOff,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Interact.PowerOn,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Interact.Reset,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Interact.SetCDMedia,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Interact.Suspend,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.Interact.ToolsInstall,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.State.CreateSnapshot,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.State.RemoveSnapshot,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.State.RenameSnapshot,FALSE
+Enterprise Citrix Server Admins,967015979,VirtualMachine.State.RevertToSnapshot,FALSE
+Enterprise SCOM Team,1087442145,ContentLibrary.ReadStorage,FALSE
+Enterprise SCOM Team,1087442145,Datastore.Browse,FALSE
+Enterprise SCOM Team,1087442145,InventoryService.Tagging.ObjectAttachable,FALSE
+Enterprise SCOM Team,1087442145,Network.Assign,FALSE
+Enterprise SCOM Team,1087442145,System.Anonymous,FALSE
+Enterprise SCOM Team,1087442145,System.Read,FALSE
+Enterprise SCOM Team,1087442145,System.View,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Config.Annotation,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Config.EditDevice,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Config.MksControl,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Config.Settings,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Interact.AnswerQuestion,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Interact.ConsoleInteract,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Interact.DeviceConnection,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Interact.PowerOff,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Interact.PowerOn,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Interact.Reset,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Interact.SetCDMedia,FALSE
+Enterprise SCOM Team,1087442145,VirtualMachine.Interact.ToolsInstall,FALSE
+Enterprise VOC Server App Admins,1118078445,InventoryService.Tagging.ObjectAttachable,FALSE
+Enterprise VOC Server App Admins,1118078445,Network.Assign,FALSE
+Enterprise VOC Server App Admins,1118078445,System.Anonymous,FALSE
+Enterprise VOC Server App Admins,1118078445,System.Read,FALSE
+Enterprise VOC Server App Admins,1118078445,System.View,FALSE
+Enterprise VOC Server App Admins,1118078445,VirtualMachine.Config.Annotation,FALSE
+Enterprise VOC Server App Admins,1118078445,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Enterprise VOC Server App Admins,1118078445,VirtualMachine.Interact.AnswerQuestion,FALSE
+Enterprise VOC Server App Admins,1118078445,VirtualMachine.Interact.ConsoleInteract,FALSE
+Enterprise VOC Server App Admins,1118078445,VirtualMachine.Interact.DeviceConnection,FALSE
+Enterprise VOC Server App Admins,1118078445,VirtualMachine.Interact.PowerOff,FALSE
+Enterprise VOC Server App Admins,1118078445,VirtualMachine.Interact.PowerOn,FALSE
+Enterprise VOC Server App Admins,1118078445,VirtualMachine.Interact.Reset,FALSE
+Enterprise VOC Server App Admins,1118078445,VirtualMachine.Interact.SetCDMedia,FALSE
+Enterprise VOC Server App Admins,1118078445,VirtualMachine.Interact.ToolsInstall,FALSE
+Custom - Kleber vROps connection to vCenter - NCD,1414069857,InventoryService.Tagging.ObjectAttachable,FALSE
+Custom - Kleber vROps connection to vCenter - NCD,1414069857,System.Anonymous,FALSE
+Custom - Kleber vROps connection to vCenter - NCD,1414069857,System.Read,FALSE
+Custom - Kleber vROps connection to vCenter - NCD,1414069857,System.View,FALSE
+Custom - Kleber vROps connection to vCenter - NCD,1414069857,VirtualMachine.Namespace.Management,FALSE
+Custom - Kleber vROps connection to vCenter - NCD,1414069857,VirtualMachine.Namespace.ModifyContent,FALSE
+Custom - Kleber vROps connection to vCenter - NCD,1414069857,VirtualMachine.Namespace.Query,FALSE
+Custom - Kleber vROps connection to vCenter - NCD,1414069857,VirtualMachine.Namespace.ReadContent,FALSE
+Virtual Platform Admins,1563058086,Alarm.Acknowledge,FALSE
+Virtual Platform Admins,1563058086,Alarm.Create,FALSE
+Virtual Platform Admins,1563058086,Alarm.Delete,FALSE
+Virtual Platform Admins,1563058086,Alarm.DisableActions,FALSE
+Virtual Platform Admins,1563058086,Alarm.Edit,FALSE
+Virtual Platform Admins,1563058086,Alarm.SetStatus,FALSE
+Virtual Platform Admins,1563058086,Alarm.ToggleEnableOnEntity,FALSE
+Virtual Platform Admins,1563058086,Authorization.ModifyPermissions,FALSE
+Virtual Platform Admins,1563058086,Authorization.ModifyPrivileges,FALSE
+Virtual Platform Admins,1563058086,Authorization.ModifyRoles,FALSE
+Virtual Platform Admins,1563058086,Authorization.ModifyVTContainerMappings,FALSE
+Virtual Platform Admins,1563058086,Authorization.ModifyVTContainers,FALSE
+Virtual Platform Admins,1563058086,Authorization.ReassignRolePermissions,FALSE
+Virtual Platform Admins,1563058086,AutoDeploy.Host.AssociateMachine,FALSE
+Virtual Platform Admins,1563058086,AutoDeploy.Profile.Create,FALSE
+Virtual Platform Admins,1563058086,AutoDeploy.Profile.Edit,FALSE
+Virtual Platform Admins,1563058086,AutoDeploy.Rule.Create,FALSE
+Virtual Platform Admins,1563058086,AutoDeploy.Rule.Delete,FALSE
+Virtual Platform Admins,1563058086,AutoDeploy.Rule.Edit,FALSE
+Virtual Platform Admins,1563058086,AutoDeploy.RuleSet.Activate,FALSE
+Virtual Platform Admins,1563058086,AutoDeploy.RuleSet.Edit,FALSE
+Virtual Platform Admins,1563058086,Certificate.Manage,FALSE
+Virtual Platform Admins,1563058086,CertificateAuthority.Administer,FALSE
+Virtual Platform Admins,1563058086,CertificateAuthority.Manage,FALSE
+Virtual Platform Admins,1563058086,CertificateManagement.Administer,FALSE
+Virtual Platform Admins,1563058086,CertificateManagement.Manage,FALSE
+Virtual Platform Admins,1563058086,CertificateManagementSubscriptions.Delete,FALSE
+Virtual Platform Admins,1563058086,Cns.Searchable,FALSE
+Virtual Platform Admins,1563058086,ComputePolicy.Manage,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.AddCertToTrustStore,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.AddLibraryItem,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.AddSubscription,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.CheckInTemplate,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.CheckOutTemplate,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.CreateLocalLibrary,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.CreateSubscribedLibrary,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.DeleteCertFromTrustStore,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.DeleteLibraryItem,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.DeleteLocalLibrary,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.DeleteSubscribedLibrary,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.DeleteSubscription,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.DownloadSession,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.EvictLibraryItem,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.EvictSubscribedLibrary,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.GetConfiguration,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.ImportStorage,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.ManageClusterRegistryResource,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.ManageRegistry,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.ManageRegistryProject,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.ProbeSubscription,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.PublishLibrary,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.PublishLibraryItem,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.ReadStorage,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.SyncLibrary,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.SyncLibraryItem,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.TypeIntrospection,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.UpdateConfiguration,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.UpdateLibrary,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.UpdateLibraryItem,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.UpdateLocalLibrary,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.UpdateSession,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.UpdateSubscribedLibrary,FALSE
+Virtual Platform Admins,1563058086,ContentLibrary.UpdateSubscription,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.Access,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.AddDisk,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.Clone,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.Decrypt,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.Encrypt,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.EncryptNew,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.ManageEncryptionPolicy,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.ManageKeyServers,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.ManageKeys,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.Migrate,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.ReadKeyServersInfo,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.Recrypt,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.RegisterHost,FALSE
+Virtual Platform Admins,1563058086,Cryptographer.RegisterVM,FALSE
+Virtual Platform Admins,1563058086,DVPortgroup.Create,FALSE
+Virtual Platform Admins,1563058086,DVPortgroup.Delete,FALSE
+Virtual Platform Admins,1563058086,DVPortgroup.Ipfix,FALSE
+Virtual Platform Admins,1563058086,DVPortgroup.Modify,FALSE
+Virtual Platform Admins,1563058086,DVPortgroup.PolicyOp,FALSE
+Virtual Platform Admins,1563058086,DVPortgroup.ScopeOp,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.Create,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.Delete,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.HostOp,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.Ipfix,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.Modify,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.Move,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.PolicyOp,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.PortConfig,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.PortSetting,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.ResourceManagement,FALSE
+Virtual Platform Admins,1563058086,DVSwitch.Vspan,FALSE
+Virtual Platform Admins,1563058086,Datacenter.Create,FALSE
+Virtual Platform Admins,1563058086,Datacenter.Delete,FALSE
+Virtual Platform Admins,1563058086,Datacenter.IpPoolConfig,FALSE
+Virtual Platform Admins,1563058086,Datacenter.IpPoolQueryAllocations,FALSE
+Virtual Platform Admins,1563058086,Datacenter.IpPoolReleaseIp,FALSE
+Virtual Platform Admins,1563058086,Datacenter.Move,FALSE
+Virtual Platform Admins,1563058086,Datacenter.Reconfigure,FALSE
+Virtual Platform Admins,1563058086,Datacenter.Rename,FALSE
+Virtual Platform Admins,1563058086,Datacenter.UpdateCarbonInfo,FALSE
+Virtual Platform Admins,1563058086,Datastore.AllocateSpace,FALSE
+Virtual Platform Admins,1563058086,Datastore.Browse,FALSE
+Virtual Platform Admins,1563058086,Datastore.Config,FALSE
+Virtual Platform Admins,1563058086,Datastore.ConfigIOManagement,FALSE
+Virtual Platform Admins,1563058086,Datastore.Delete,FALSE
+Virtual Platform Admins,1563058086,Datastore.DeleteFile,FALSE
+Virtual Platform Admins,1563058086,Datastore.FileManagement,FALSE
+Virtual Platform Admins,1563058086,Datastore.Move,FALSE
+Virtual Platform Admins,1563058086,Datastore.Rename,FALSE
+Virtual Platform Admins,1563058086,Datastore.UpdateVirtualMachineFiles,FALSE
+Virtual Platform Admins,1563058086,Datastore.UpdateVirtualMachineMetadata,FALSE
+Virtual Platform Admins,1563058086,DrProxy.Host.Configure,FALSE
+Virtual Platform Admins,1563058086,DrProxy.Host.ManageService,FALSE
+Virtual Platform Admins,1563058086,DrProxy.Host.View,FALSE
+Virtual Platform Admins,1563058086,DrProxy.License.Update,FALSE
+Virtual Platform Admins,1563058086,DrProxy.License.View,FALSE
+Virtual Platform Admins,1563058086,DrProxy.Progress.Control,FALSE
+Virtual Platform Admins,1563058086,DrProxy.Vm.Configure,FALSE
+Virtual Platform Admins,1563058086,EAM.Config,FALSE
+Virtual Platform Admins,1563058086,EAM.Modify,FALSE
+Virtual Platform Admins,1563058086,EAM.View,FALSE
+Virtual Platform Admins,1563058086,Extension.Register,FALSE
+Virtual Platform Admins,1563058086,Extension.Unregister,FALSE
+Virtual Platform Admins,1563058086,Extension.Update,FALSE
+Virtual Platform Admins,1563058086,ExternalStatsProvider.Register,FALSE
+Virtual Platform Admins,1563058086,ExternalStatsProvider.Unregister,FALSE
+Virtual Platform Admins,1563058086,ExternalStatsProvider.Update,FALSE
+Virtual Platform Admins,1563058086,Folder.Create,FALSE
+Virtual Platform Admins,1563058086,Folder.Delete,FALSE
+Virtual Platform Admins,1563058086,Folder.Move,FALSE
+Virtual Platform Admins,1563058086,Folder.Rename,FALSE
+Virtual Platform Admins,1563058086,Global.CancelTask,FALSE
+Virtual Platform Admins,1563058086,Global.CapacityPlanning,FALSE
+Virtual Platform Admins,1563058086,Global.Diagnostics,FALSE
+Virtual Platform Admins,1563058086,Global.DisableMethods,FALSE
+Virtual Platform Admins,1563058086,Global.EnableMethods,FALSE
+Virtual Platform Admins,1563058086,Global.GlobalTag,FALSE
+Virtual Platform Admins,1563058086,Global.Health,FALSE
+Virtual Platform Admins,1563058086,Global.Licenses,FALSE
+Virtual Platform Admins,1563058086,Global.LogEvent,FALSE
+Virtual Platform Admins,1563058086,Global.ManageCustomFields,FALSE
+Virtual Platform Admins,1563058086,Global.Proxy,FALSE
+Virtual Platform Admins,1563058086,Global.ScriptAction,FALSE
+Virtual Platform Admins,1563058086,Global.ServiceManagers,FALSE
+Virtual Platform Admins,1563058086,Global.SetCustomField,FALSE
+Virtual Platform Admins,1563058086,Global.Settings,FALSE
+Virtual Platform Admins,1563058086,Global.SystemTag,FALSE
+Virtual Platform Admins,1563058086,Global.VCServer,FALSE
+Virtual Platform Admins,1563058086,Global.com.vmware.vcops,FALSE
+Virtual Platform Admins,1563058086,Global.com.vmware.vcops.ContentAdmin,FALSE
+Virtual Platform Admins,1563058086,Global.com.vmware.vcops.GeneralUser-1,FALSE
+Virtual Platform Admins,1563058086,Global.com.vmware.vcops.GeneralUser-2,FALSE
+Virtual Platform Admins,1563058086,Global.com.vmware.vcops.GeneralUser-3,FALSE
+Virtual Platform Admins,1563058086,Global.com.vmware.vcops.GeneralUser-4,FALSE
+Virtual Platform Admins,1563058086,Global.com.vmware.vcops.PowerUserMinusRemediation,FALSE
+Virtual Platform Admins,1563058086,Global.com.vmware.vcopsAdmin,FALSE
+Virtual Platform Admins,1563058086,GuestDataPublisher.GetData,FALSE
+Virtual Platform Admins,1563058086,HLM.Create,FALSE
+Virtual Platform Admins,1563058086,HLM.Manage,FALSE
+Virtual Platform Admins,1563058086,HealthUpdateProvider.Register,FALSE
+Virtual Platform Admins,1563058086,HealthUpdateProvider.Unregister,FALSE
+Virtual Platform Admins,1563058086,HealthUpdateProvider.Update,FALSE
+Virtual Platform Admins,1563058086,Host.Cim.CimInteraction,FALSE
+Virtual Platform Admins,1563058086,Host.Config.AdvancedConfig,FALSE
+Virtual Platform Admins,1563058086,Host.Config.AuthenticationStore,FALSE
+Virtual Platform Admins,1563058086,Host.Config.AutoStart,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Connection,FALSE
+Virtual Platform Admins,1563058086,Host.Config.DateTime,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Firmware,FALSE
+Virtual Platform Admins,1563058086,Host.Config.GuestStore,FALSE
+Virtual Platform Admins,1563058086,Host.Config.HyperThreading,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Image,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Maintenance,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Memory,FALSE
+Virtual Platform Admins,1563058086,Host.Config.NetService,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Network,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Nvdimm,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Patch,FALSE
+Virtual Platform Admins,1563058086,Host.Config.PciPassthru,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Power,FALSE
+Virtual Platform Admins,1563058086,Host.Config.ProductLocker,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Quarantine,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Resources,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Settings,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Snmp,FALSE
+Virtual Platform Admins,1563058086,Host.Config.Storage,FALSE
+Virtual Platform Admins,1563058086,Host.Config.SystemFirewallRuleSet,FALSE
+Virtual Platform Admins,1563058086,Host.Config.SystemManagement,FALSE
+Virtual Platform Admins,1563058086,Host.Entropy.Read,FALSE
+Virtual Platform Admins,1563058086,Host.Entropy.Write,FALSE
+Virtual Platform Admins,1563058086,Host.Hbr.HbrDaemonManagement,FALSE
+Virtual Platform Admins,1563058086,Host.Hbr.HbrManagement,FALSE
+Virtual Platform Admins,1563058086,Host.Inventory.AddHostToCluster,FALSE
+Virtual Platform Admins,1563058086,Host.Inventory.AddStandaloneHost,FALSE
+Virtual Platform Admins,1563058086,Host.Inventory.CreateCluster,FALSE
+Virtual Platform Admins,1563058086,Host.Inventory.DeleteCluster,FALSE
+Virtual Platform Admins,1563058086,Host.Inventory.EditCluster,FALSE
+Virtual Platform Admins,1563058086,Host.Inventory.ManageClusterLifecyle,FALSE
+Virtual Platform Admins,1563058086,Host.Inventory.MoveCluster,FALSE
+Virtual Platform Admins,1563058086,Host.Inventory.MoveHost,FALSE
+Virtual Platform Admins,1563058086,Host.Inventory.RemoveHostFromCluster,FALSE
+Virtual Platform Admins,1563058086,Host.Inventory.RenameCluster,FALSE
+Virtual Platform Admins,1563058086,Host.Local.CreateVM,FALSE
+Virtual Platform Admins,1563058086,Host.Local.DeleteVM,FALSE
+Virtual Platform Admins,1563058086,Host.Local.InstallAgent,FALSE
+Virtual Platform Admins,1563058086,Host.Local.ManageUserGroups,FALSE
+Virtual Platform Admins,1563058086,Host.Local.ReconfigVM,FALSE
+Virtual Platform Admins,1563058086,Host.Sgx.Register,FALSE
+Virtual Platform Admins,1563058086,Host.Stats.Query,FALSE
+Virtual Platform Admins,1563058086,Host.Tpm.Read,FALSE
+Virtual Platform Admins,1563058086,Host.Tpm.Unseal,FALSE
+Virtual Platform Admins,1563058086,ImageBuilder.Depot.Create,FALSE
+Virtual Platform Admins,1563058086,ImageBuilder.Depot.Delete,FALSE
+Virtual Platform Admins,1563058086,ImageBuilder.Profile.Create,FALSE
+Virtual Platform Admins,1563058086,ImageBuilder.Profile.Delete,FALSE
+Virtual Platform Admins,1563058086,ImageBuilder.Profile.Export,FALSE
+Virtual Platform Admins,1563058086,Infraprofile.Read,FALSE
+Virtual Platform Admins,1563058086,Infraprofile.Write,FALSE
+Virtual Platform Admins,1563058086,IntercomNamespace.Read,FALSE
+Virtual Platform Admins,1563058086,IntercomNamespace.Write,FALSE
+Virtual Platform Admins,1563058086,InventoryService.Tagging.AttachTag,FALSE
+Virtual Platform Admins,1563058086,InventoryService.Tagging.CreateCategory,FALSE
+Virtual Platform Admins,1563058086,InventoryService.Tagging.CreateTag,FALSE
+Virtual Platform Admins,1563058086,InventoryService.Tagging.DeleteCategory,FALSE
+Virtual Platform Admins,1563058086,InventoryService.Tagging.DeleteTag,FALSE
+Virtual Platform Admins,1563058086,InventoryService.Tagging.EditCategory,FALSE
+Virtual Platform Admins,1563058086,InventoryService.Tagging.EditTag,FALSE
+Virtual Platform Admins,1563058086,InventoryService.Tagging.ModifyUsedByForCategory,FALSE
+Virtual Platform Admins,1563058086,InventoryService.Tagging.ModifyUsedByForTag,FALSE
+Virtual Platform Admins,1563058086,InventoryService.Tagging.ObjectAttachable,FALSE
+Virtual Platform Admins,1563058086,Namespaces.Backup,FALSE
+Virtual Platform Admins,1563058086,Namespaces.Configure,FALSE
+Virtual Platform Admins,1563058086,Namespaces.ListAccess,FALSE
+Virtual Platform Admins,1563058086,Namespaces.Manage,FALSE
+Virtual Platform Admins,1563058086,Namespaces.ManageCapabilities,FALSE
+Virtual Platform Admins,1563058086,Namespaces.ManageDisks,FALSE
+Virtual Platform Admins,1563058086,Namespaces.SelfServiceManage,FALSE
+Virtual Platform Admins,1563058086,Namespaces.Upgrade,FALSE
+Virtual Platform Admins,1563058086,NetBackup.AddRemoveServer,FALSE
+Virtual Platform Admins,1563058086,NetBackup.VMRecovery,FALSE
+Virtual Platform Admins,1563058086,Network.Assign,FALSE
+Virtual Platform Admins,1563058086,Network.Config,FALSE
+Virtual Platform Admins,1563058086,Network.Delete,FALSE
+Virtual Platform Admins,1563058086,Network.Move,FALSE
+Virtual Platform Admins,1563058086,Nsx.Manage,FALSE
+Virtual Platform Admins,1563058086,Nsx.ModifyAll,FALSE
+Virtual Platform Admins,1563058086,Nsx.Read,FALSE
+Virtual Platform Admins,1563058086,Observability.Admin,FALSE
+Virtual Platform Admins,1563058086,Observability.StatsProvider.Manage,FALSE
+Virtual Platform Admins,1563058086,OvfManager.OvfConsumerAccess,FALSE
+Virtual Platform Admins,1563058086,PartnerRestDaemon.Read,FALSE
+Virtual Platform Admins,1563058086,PartnerRestDaemon.Write,FALSE
+Virtual Platform Admins,1563058086,Performance.ModifyIntervals,FALSE
+Virtual Platform Admins,1563058086,Plugin.Management,FALSE
+Virtual Platform Admins,1563058086,Profile.Clear,FALSE
+Virtual Platform Admins,1563058086,Profile.Create,FALSE
+Virtual Platform Admins,1563058086,Profile.Delete,FALSE
+Virtual Platform Admins,1563058086,Profile.Edit,FALSE
+Virtual Platform Admins,1563058086,Profile.Export,FALSE
+Virtual Platform Admins,1563058086,Profile.View,FALSE
+Virtual Platform Admins,1563058086,ReplicationService.Administer,FALSE
+Virtual Platform Admins,1563058086,Resource.ApplyRecommendation,FALSE
+Virtual Platform Admins,1563058086,Resource.AssignVAppToPool,FALSE
+Virtual Platform Admins,1563058086,Resource.AssignVMToPool,FALSE
+Virtual Platform Admins,1563058086,Resource.ColdMigrate,FALSE
+Virtual Platform Admins,1563058086,Resource.CreatePool,FALSE
+Virtual Platform Admins,1563058086,Resource.DeletePool,FALSE
+Virtual Platform Admins,1563058086,Resource.EditPool,FALSE
+Virtual Platform Admins,1563058086,Resource.HotMigrate,FALSE
+Virtual Platform Admins,1563058086,Resource.MovePool,FALSE
+Virtual Platform Admins,1563058086,Resource.QueryVMotion,FALSE
+Virtual Platform Admins,1563058086,Resource.RenamePool,FALSE
+Virtual Platform Admins,1563058086,ScheduledTask.Create,FALSE
+Virtual Platform Admins,1563058086,ScheduledTask.Delete,FALSE
+Virtual Platform Admins,1563058086,ScheduledTask.Edit,FALSE
+Virtual Platform Admins,1563058086,ScheduledTask.Run,FALSE
+Virtual Platform Admins,1563058086,ServiceAccount.Administer,FALSE
+Virtual Platform Admins,1563058086,ServiceAccount.ManageAccount,FALSE
+Virtual Platform Admins,1563058086,ServiceAccount.ManagePassword,FALSE
+Virtual Platform Admins,1563058086,Sessions.CollectPrivilegeChecks,FALSE
+Virtual Platform Admins,1563058086,Sessions.GlobalMessage,FALSE
+Virtual Platform Admins,1563058086,Sessions.ImpersonateUser,FALSE
+Virtual Platform Admins,1563058086,Sessions.TerminateSession,FALSE
+Virtual Platform Admins,1563058086,Sessions.ValidateSession,FALSE
+Virtual Platform Admins,1563058086,SettingsStore.Manage,FALSE
+Virtual Platform Admins,1563058086,StoragePod.Config,FALSE
+Virtual Platform Admins,1563058086,StorageProfile.Apply,FALSE
+Virtual Platform Admins,1563058086,StorageProfile.Update,FALSE
+Virtual Platform Admins,1563058086,StorageProfile.View,FALSE
+Virtual Platform Admins,1563058086,StorageViews.ConfigureService,FALSE
+Virtual Platform Admins,1563058086,StorageViews.View,FALSE
+Virtual Platform Admins,1563058086,SupervisorServices.Install,FALSE
+Virtual Platform Admins,1563058086,SupervisorServices.Manage,FALSE
+Virtual Platform Admins,1563058086,System.Anonymous,FALSE
+Virtual Platform Admins,1563058086,System.Read,FALSE
+Virtual Platform Admins,1563058086,System.View,FALSE
+Virtual Platform Admins,1563058086,Task.Create,FALSE
+Virtual Platform Admins,1563058086,Task.Update,FALSE
+Virtual Platform Admins,1563058086,Task.Update.Task.Update,FALSE
+Virtual Platform Admins,1563058086,TenantManager.Query,FALSE
+Virtual Platform Admins,1563058086,TenantManager.Update,FALSE
+Virtual Platform Admins,1563058086,TokenService.PersistableTokenExchange,FALSE
+Virtual Platform Admins,1563058086,Topology.Manage,FALSE
+Virtual Platform Admins,1563058086,TransferService.Manage,FALSE
+Virtual Platform Admins,1563058086,TransferService.Monitor,FALSE
+Virtual Platform Admins,1563058086,Trust.Administer,FALSE
+Virtual Platform Admins,1563058086,Trust.Manage,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.ConfigureHostCertificates,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.ConfigureHostMetadata,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.ConfigureTokenConversionPolicy,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.ManageAttestingSSO,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.ManageKMSTrust,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.ManageTrustedHosts,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.ReadAttestingSSO,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.ReadKMSTrust,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.ReadStsInfo,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.ReadTrustedHosts,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.RetrieveHostMetadata,FALSE
+Virtual Platform Admins,1563058086,TrustedAdmin.RetrieveTPMHostCertificates,FALSE
+Virtual Platform Admins,1563058086,VApp.ApplicationConfig,FALSE
+Virtual Platform Admins,1563058086,VApp.AssignResourcePool,FALSE
+Virtual Platform Admins,1563058086,VApp.AssignVApp,FALSE
+Virtual Platform Admins,1563058086,VApp.AssignVM,FALSE
+Virtual Platform Admins,1563058086,VApp.Clone,FALSE
+Virtual Platform Admins,1563058086,VApp.Create,FALSE
+Virtual Platform Admins,1563058086,VApp.Delete,FALSE
+Virtual Platform Admins,1563058086,VApp.Export,FALSE
+Virtual Platform Admins,1563058086,VApp.ExtractOvfEnvironment,FALSE
+Virtual Platform Admins,1563058086,VApp.Import,FALSE
+Virtual Platform Admins,1563058086,VApp.InstanceConfig,FALSE
+Virtual Platform Admins,1563058086,VApp.ManagedByConfig,FALSE
+Virtual Platform Admins,1563058086,VApp.Move,FALSE
+Virtual Platform Admins,1563058086,VApp.PowerOff,FALSE
+Virtual Platform Admins,1563058086,VApp.PowerOn,FALSE
+Virtual Platform Admins,1563058086,VApp.PullFromUrls,FALSE
+Virtual Platform Admins,1563058086,VApp.Rename,FALSE
+Virtual Platform Admins,1563058086,VApp.ResourceConfig,FALSE
+Virtual Platform Admins,1563058086,VApp.Suspend,FALSE
+Virtual Platform Admins,1563058086,VApp.Unregister,FALSE
+Virtual Platform Admins,1563058086,VcIdentityProviders.Create,FALSE
+Virtual Platform Admins,1563058086,VcIdentityProviders.Manage,FALSE
+Virtual Platform Admins,1563058086,VcIdentityProviders.Read,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.Baseline.com.vmware.vcIntegrity.AssignBaselines,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.Baseline.com.vmware.vcIntegrity.ManageBaselines,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.ClusterConfiguration.Export,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.ClusterConfiguration.Modify,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.ClusterConfiguration.Remediate,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.ClusterConfiguration.View,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.FileUpload.com.vmware.vcIntegrity.ImportFile,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.General.com.vmware.vcIntegrity.Configure,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.HardwareCompatibility.Read,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.HardwareCompatibility.Write,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.Updates.com.vmware.vcIntegrity.Remediate,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.Updates.com.vmware.vcIntegrity.Scan,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.Updates.com.vmware.vcIntegrity.Stage,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleDepots.Delete,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleGeneral.Read,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleGeneral.Write,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleHealth.Read,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleHealth.Write,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleSettings.Read,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleSettings.Write,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleSoftwareRemediation.Read,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleSoftwareRemediation.Write,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleSoftwareSpecification.Read,FALSE
+Virtual Platform Admins,1563058086,VcIntegrity.lifecycleSoftwareSpecification.Write,FALSE
+Virtual Platform Admins,1563058086,VcLifecycle.Upgrade,FALSE
+Virtual Platform Admins,1563058086,VcLifecycle.View,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.AddExistingDisk,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.AddNewDisk,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.AddRemoveDevice,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.AdvancedConfig,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.Annotation,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.CPUCount,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.ChangeTracking,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.DiskExtend,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.DiskLease,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.EditDevice,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.HostUSBDevice,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.ManagedBy,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.Memory,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.MksControl,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.QueryFTCompatibility,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.QueryUnownedFiles,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.RawDevice,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.ReloadFromPath,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.RemoveDisk,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.Rename,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.ResetGuestInfo,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.Resource,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.Settings,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.SwapPlacement,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.ToggleForkParent,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.DataSets.DataSetCreate,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.DataSets.DataSetDelete,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.DataSets.DataSetEntryDelete,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.DataSets.DataSetEntryGet,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.DataSets.DataSetEntryList,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.DataSets.DataSetEntrySet,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.DataSets.DataSetGet,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.DataSets.DataSetList,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.DataSets.DataSetUpdate,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.DataSets.Export,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.GuestOperations.Execute,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.GuestOperations.Modify,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.GuestOperations.ModifyAliases,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.GuestOperations.Query,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.GuestOperations.QueryAliases,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Hbr.ConfigureReplication,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Hbr.MonitorReplication,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Hbr.ReplicaManagement,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.AnswerQuestion,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.Backup,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.ConsoleInteract,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.CreateScreenshot,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.CreateSecondary,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.DefragmentAllDisks,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.DeviceConnection,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.DisableSecondary,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.DnD,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.EnableSecondary,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.GuestControl,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.MakePrimary,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.Pause,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.PowerOff,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.PowerOn,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.PutUsbScanCodes,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.Record,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.Replay,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.Reset,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.SESparseMaintenance,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.SetCDMedia,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.SetFloppyMedia,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.Suspend,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.SuspendToMemory,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.TerminateFaultTolerantVM,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.ToolsInstall,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Interact.TurnOffFaultTolerance,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Inventory.Create,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Inventory.CreateFromExisting,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Inventory.Delete,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Inventory.Move,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Inventory.Register,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Inventory.Unregister,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Namespace.Event,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Namespace.EventNotify,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Namespace.Management,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Namespace.ModifyContent,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Namespace.Query,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Namespace.ReadContent,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.Clone,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.CloneTemplate,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.CreateTemplateFromVM,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.Customize,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.DeployTemplate,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.DiskRandomAccess,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.DiskRandomRead,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.FileRandomAccess,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.GetVmFiles,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.MarkAsTemplate,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.MarkAsVM,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.ModifyCustSpecs,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.PromoteDisks,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.PutVmFiles,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.Provisioning.ReadCustSpecs,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.State.CreateSnapshot,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.State.RemoveSnapshot,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.State.RenameSnapshot,FALSE
+Virtual Platform Admins,1563058086,VirtualMachine.State.RevertToSnapshot,FALSE
+Virtual Platform Admins,1563058086,VirtualMachineClasses.Manage,FALSE
+Virtual Platform Admins,1563058086,VmCam.Administer,FALSE
+Virtual Platform Admins,1563058086,Vsan.Cluster.ShallowRekey,FALSE
+Virtual Platform Admins,1563058086,Vsan.DataProtection.Management,FALSE
+Virtual Platform Admins,1563058086,Vsan.Xvc.UpdateClientInfo,FALSE
+Virtual Platform Admins,1563058086,Zone.Manage,FALSE
+Virtual Platform Admins,1563058086,Zone.ObjectAttachable,FALSE
+Virtual Platform Admins,1563058086,vSANStats.Access,FALSE
+Virtual Platform Admins,1563058086,vService.CreateDependency,FALSE
+Virtual Platform Admins,1563058086,vService.DestroyDependency,FALSE
+Virtual Platform Admins,1563058086,vService.ReconfigureDependency,FALSE
+Virtual Platform Admins,1563058086,vService.UpdateDependency,FALSE
+Virtual Platform Admins,1563058086,vSphereClient.UtilizeVerificationCode,FALSE
+Virtual Platform Admins,1563058086,vSphereDataProtection.Protection,FALSE
+Virtual Platform Admins,1563058086,vSphereDataProtection.Recovery,FALSE
+Virtual Platform Admins,1563058086,vStats.CollectAny,FALSE
+Virtual Platform Admins,1563058086,vStats.QueryAny,FALSE
+Virtual Platform Admins,1563058086,vStats.Settings,FALSE
+NsxViAdministrator,1621313425,Nsx.Manage,FALSE
+NsxViAdministrator,1621313425,System.Anonymous,FALSE
+NsxViAdministrator,1621313425,System.Read,FALSE
+NsxViAdministrator,1621313425,System.View,FALSE
+Enterprise Exchange Team,1686142380,InventoryService.Tagging.ObjectAttachable,FALSE
+Enterprise Exchange Team,1686142380,Network.Assign,FALSE
+Enterprise Exchange Team,1686142380,System.Anonymous,FALSE
+Enterprise Exchange Team,1686142380,System.Read,FALSE
+Enterprise Exchange Team,1686142380,System.View,FALSE
+Enterprise Exchange Team,1686142380,VirtualMachine.Config.Annotation,FALSE
+Enterprise Exchange Team,1686142380,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Enterprise Exchange Team,1686142380,VirtualMachine.Interact.AnswerQuestion,FALSE
+Enterprise Exchange Team,1686142380,VirtualMachine.Interact.ConsoleInteract,FALSE
+Enterprise Exchange Team,1686142380,VirtualMachine.Interact.DeviceConnection,FALSE
+Enterprise Exchange Team,1686142380,VirtualMachine.Interact.PowerOff,FALSE
+Enterprise Exchange Team,1686142380,VirtualMachine.Interact.PowerOn,FALSE
+Enterprise Exchange Team,1686142380,VirtualMachine.Interact.Reset,FALSE
+Enterprise Exchange Team,1686142380,VirtualMachine.Interact.SetCDMedia,FALSE
+Enterprise Exchange Team,1686142380,VirtualMachine.Interact.ToolsInstall,FALSE
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+Enterprise ArcSight Admins,2018999901,Cryptographer.Access,FALSE
+Enterprise ArcSight Admins,2018999901,Cryptographer.Encrypt,FALSE
+Enterprise ArcSight Admins,2018999901,Cryptographer.EncryptNew,FALSE
+Enterprise ArcSight Admins,2018999901,Cryptographer.Migrate,FALSE
+Enterprise ArcSight Admins,2018999901,Cryptographer.RegisterVM,FALSE
+Enterprise ArcSight Admins,2018999901,InventoryService.Tagging.ObjectAttachable,FALSE
+Enterprise ArcSight Admins,2018999901,Network.Assign,FALSE
+Enterprise ArcSight Admins,2018999901,System.Anonymous,FALSE
+Enterprise ArcSight Admins,2018999901,System.Read,FALSE
+Enterprise ArcSight Admins,2018999901,System.View,FALSE
+Enterprise ArcSight Admins,2018999901,VirtualMachine.Config.Annotation,FALSE
+Enterprise ArcSight Admins,2018999901,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Enterprise ArcSight Admins,2018999901,VirtualMachine.Interact.AnswerQuestion,FALSE
+Enterprise ArcSight Admins,2018999901,VirtualMachine.Interact.ConsoleInteract,FALSE
+Enterprise ArcSight Admins,2018999901,VirtualMachine.Interact.DeviceConnection,FALSE
+Enterprise ArcSight Admins,2018999901,VirtualMachine.Interact.PowerOff,FALSE
+Enterprise ArcSight Admins,2018999901,VirtualMachine.Interact.PowerOn,FALSE
+Enterprise ArcSight Admins,2018999901,VirtualMachine.Interact.Reset,FALSE
+Enterprise ArcSight Admins,2018999901,VirtualMachine.Interact.SetCDMedia,FALSE
+Enterprise ArcSight Admins,2018999901,VirtualMachine.Interact.ToolsInstall,FALSE
+Enterprise AD Server Team,2038671465,Alarm.Acknowledge,FALSE
+Enterprise AD Server Team,2038671465,Cryptographer.Access,FALSE
+Enterprise AD Server Team,2038671465,Cryptographer.Encrypt,FALSE
+Enterprise AD Server Team,2038671465,Cryptographer.EncryptNew,FALSE
+Enterprise AD Server Team,2038671465,Cryptographer.Migrate,FALSE
+Enterprise AD Server Team,2038671465,Cryptographer.RegisterVM,FALSE
+Enterprise AD Server Team,2038671465,Folder.Move,FALSE
+Enterprise AD Server Team,2038671465,InventoryService.Tagging.AttachTag,FALSE
+Enterprise AD Server Team,2038671465,InventoryService.Tagging.ObjectAttachable,FALSE
+Enterprise AD Server Team,2038671465,Network.Assign,FALSE
+Enterprise AD Server Team,2038671465,System.Anonymous,FALSE
+Enterprise AD Server Team,2038671465,System.Read,FALSE
+Enterprise AD Server Team,2038671465,System.View,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Config.Annotation,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Config.UpgradeVirtualHardware,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.AnswerQuestion,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.ConsoleInteract,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.CreateScreenshot,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.CreateSecondary,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.DefragmentAllDisks,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.DeviceConnection,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.DisableSecondary,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.DnD,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.EnableSecondary,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.GuestControl,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.MakePrimary,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.Pause,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.PowerOff,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.PowerOn,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.PutUsbScanCodes,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.Record,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.Replay,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.Reset,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.SESparseMaintenance,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.SetCDMedia,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.Suspend,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.TerminateFaultTolerantVM,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.ToolsInstall,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Interact.TurnOffFaultTolerance,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Inventory.Move,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.Namespace.Event,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.State.CreateSnapshot,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.State.RemoveSnapshot,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.State.RenameSnapshot,FALSE
+Enterprise AD Server Team,2038671465,VirtualMachine.State.RevertToSnapshot,FALSE
+Enterprise AD Server Team,2038671465,vService.CreateDependency,FALSE
+Enterprise AD Server Team,2038671465,vService.UpdateDependency,FALSE
+,,,

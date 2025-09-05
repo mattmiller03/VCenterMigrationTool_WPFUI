@@ -1,0 +1,79 @@
+**********************
+PowerShell transcript start
+Start time: 20250904101804
+Username: DIR\DMM0090
+RunAs User: DIR\DMM0090
+Configuration Name: 
+Machine: DAYL6Y3K504 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll
+Process ID: 26684
+PSVersion: 7.5.2
+PSEdition: Core
+GitCommitId: 7.5.2
+OS: Microsoft Windows 10.0.26100
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250904_101804.txt
+[2025-09-04 10:18:04] [INFO   ] Transcript started: C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250904_101804.txt
+[2025-09-04 10:18:04] [SUCCESS] === VM Tags and Permissions Launcher v2.0 Started ===
+[2025-09-04 10:18:04] [INFO   ] Configuration Version: 2.1.0
+[2025-09-04 10:18:04] [INFO   ] PowerShell Version: 7.5.2
+[2025-09-04 10:18:04] [INFO   ] Machine: DAYL6Y3K504
+[2025-09-04 10:18:04] [INFO   ] User: DMM0090
+[2025-09-04 10:18:04] [INFO   ] Execution ID: 20250904_101804
+[2025-09-04 10:18:04] [INFO   ] Environment: KLEB
+[2025-09-04 10:18:04] [INFO   ] vCenter Server: klisv0pp251.dir.ad.dla.mil
+[2025-09-04 10:18:04] [INFO   ] SSO Domain: DLA-Kleber.local
+[2025-09-04 10:18:04] [INFO   ] App Permissions CSV: C:\Temp\Scripts\VMTags\Data\KLEB\AppTagPermissions_KLE.csv
+[2025-09-04 10:18:04] [INFO   ] OS Mapping CSV: C:\Temp\Scripts\VMTags\Data\KLEB\OS-Mappings_KLE.csv
+[2025-09-04 10:18:04] [INFO   ] Debug Logging: False
+[2025-09-04 10:18:04] [INFO   ] Dry Run Mode: False
+[2025-09-04 10:18:04] [INFO   ] Running comprehensive prerequisites check...
+[2025-09-04 10:18:04] [SUCCESS] PowerShell 7 path validated: C:\Program Files\PowerShell\7\pwsh.exe
+[2025-09-04 10:18:04] [SUCCESS] Main script path validated: C:\Temp\Scripts\VMTags\Scripts\set-VMtagPermissions_v1.2.ps1
+[2025-09-04 10:18:04] [SUCCESS] Working directory validated: C:\Temp\Scripts\VMTags
+[2025-09-04 10:18:04] [SUCCESS] Temp directory validated: C:\Temp\Scripts\VMTags\Temp
+[2025-09-04 10:18:05] [SUCCESS] Configuration paths validation completed
+[2025-09-04 10:18:05] [SUCCESS] Found VMware PowerCLI version: 13.3.0.24145083
+[2025-09-04 10:18:05] [SUCCESS] Network connectivity to vCenter confirmed
+[2025-09-04 10:18:05] [SUCCESS] App Permissions CSV found
+[2025-09-04 10:18:05] [SUCCESS] OS Mapping CSV found
+[2025-09-04 10:18:05] [SUCCESS] Prerequisites check passed
+[2025-09-04 10:18:05] [INFO   ] Collecting vCenter credentials...
+
+=== vCenter Authentication Required ===
+Environment: KLEB
+vCenter Server: klisv0pp251.dir.ad.dla.mil
+SSO Domain: DLA-Kleber.local
+
+[2025-09-04 10:18:14] [SUCCESS] Credentials collected for user: administrator@DLA-KLEBER.local
+[2025-09-04 10:18:14] [SUCCESS] Credential file created successfully
+[2025-09-04 10:18:14] [INFO   ] Starting main script execution...
+[2025-09-04 10:18:14] [INFO   ] Preparing to execute main script...
+PS>TerminatingError(Split-Path): "Cannot bind argument to parameter 'Path' because it is null."
+[2025-09-04 10:18:14] [ERROR  ] Failed to execute main script: Cannot bind argument to parameter 'Path' because it is null.
+
+=== EXECUTION SUMMARY ===
+Environment: KLEB
+vCenter Server: klisv0pp251.dir.ad.dla.mil
+Execution ID: 20250904_101804
+Execution Time: ERROR
+Exit Code: 1
+Launcher Log: C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250904_101804.txt
+Script Logs: C:\Temp\Scripts\VMTags\Logs\KLEB\VMTagsLauncher_20250904_101804.log
+Status: COMPLETED WITH WARNINGS
+
+Check the logs above for detailed execution results.
+[2025-09-04 10:18:14] [WARNING] === VM Tags and Permissions Launcher Completed with Issues ===
+
+Press any key to exit...
+[2025-09-04 10:24:42] [INFO   ] Checking for expired stored credentials...
+[2025-09-04 10:24:42] [INFO   ] No expired credentials found
+**********************
+PowerShell transcript end
+End time: 20250904102443
+**********************

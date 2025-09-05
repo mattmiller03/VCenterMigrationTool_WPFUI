@@ -1,0 +1,11 @@
+TagCategory,TagType,TagName,RoleName,SecurityGroupDomain,SecurityGroupName
+vCenter-Kleber-App-team,App-team,Exchange-admins,Enterprise Exchange Team,DLA-Kleber.local,Directory Services Exchange Team
+vCenter-Kleber-App-team,App-team,ACAS-Admins,ACAS-Admin-Team,DLA-Kleber.local,ACAS Administrators
+vCenter-Kleber-App-team,App-Team,Storage-Admins,NetBackup Management,DLA-Kleber.local,Storage and Backup Team
+vCenter-Kleber-App-team,App-Team,IO-Test-Center,Enterprise Test Center IO Admins,DLA-Kleber.local,Enterprise Test Center IO Admins
+vCenter-Kleber-App-team,App-Team,NTS-WAN-Admins,NTS WAN Management,DLA-Kleber.local,Enterprise - NTS WAN Management
+vCenter-Kleber-App-team,App-Team,SCOM-admins,SCOM Team,DLA-Kleber.local,Enterprise SCOM Team
+vCenter-Kleber-App-team,App-Team,Backup-admins,NetBackup Management,DLA-Kleber.local,NetBackup Management
+vCenter-Kleber-App-team,App-Team,Cert-Response,Database Administrators,DLA-Kleber.local,Database Administrators
+vCenter-Kleber-App-team,App-Team,Domain-Admins,DC Admin Team-temp,DLA-Kleber.local,Directory Services AD Team
+vCenter-Kleber-App-team,App-team,ArcSight-Admins,Enterprise ArcSight Admins,DLA-Kleber.local,Enterprise ArcSight Admins

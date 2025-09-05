@@ -1,0 +1,54 @@
+GuestOSPattern,TargetTagName,SecurityGroupName,RoleName,TagType,SecurityGroupDomain
+Microsoft Windows Server 2022.*,Windows-server,Windows Server Team,Windows Server Team,OS,DLA-Test-Dev.local
+Microsoft Windows Server 2019.*,Windows-server,Windows Server Team,Windows Server Team,OS,DLA-Test-Dev.local
+Microsoft Windows Server 2016.*,Windows-server,Windows Server Team,Windows Server Team,OS,DLA-Test-Dev.local
+Microsoft Windows Server 2012.*,Windows-server,Windows Server Team,Windows Server Team,OS,DLA-Test-Dev.local
+Microsoft Windows Server.*,Windows-server,Windows Server Team,Windows Server Team,OS,DLA-Test-Dev.local
+Microsoft Windows HPC Server.*,Windows-server,Windows Server Team,Windows Server Team,OS,DLA-Test-Dev.local
+Windows Server.*,Windows-server,Windows Server Team,Windows Server Team,OS,DLA-Test-Dev.local
+Microsoft Windows 11.*,Windows-client,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+Microsoft Windows 10.*,Windows-client,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+Microsoft Windows 8.*,Windows-client,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+Microsoft Windows 7.*,Windows-client,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+Microsoft Windows Vista.*,Windows-client,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+Microsoft Windows XP.*,Windows-client,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+Microsoft Windows.*,Windows-client,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+Red Hat Enterprise Linux 9.*,RHEL,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Red Hat Enterprise Linux 8.*,RHEL,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Red Hat Enterprise Linux 7.*,RHEL,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Red Hat Enterprise Linux 6.*,RHEL,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Red Hat Enterprise Linux.*,RHEL,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+CentOS Stream.*,CentOS,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+CentOS 8.*,CentOS,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+CentOS 7.*,CentOS,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+CentOS 6.*,CentOS,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+CentOS.*,CentOS,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Ubuntu Linux.*,Ubuntu,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Debian GNU/Linux 12.*,Debian,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Debian GNU/Linux 11.*,Debian,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Debian GNU/Linux 10.*,Debian,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Debian GNU/Linux.*,Debian,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+SUSE Linux Enterprise Server 15.*,SLES,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+SUSE Linux Enterprise Server 12.*,SLES,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+SUSE Linux Enterprise Server.*,SLES,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+SUSE Linux.*,SLES,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Oracle Linux.*,Oracle-Linux,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Fedora.*,Fedora,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Amazon Linux.*,Amazon-Linux,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+VMware Photon OS.*,Photon-OS,Virtual Platform Admins,Virtual Platform Admins,OS,DLA-Test-Dev.local
+Rocky Linux.*,Rocky-Linux,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+AlmaLinux.*,AlmaLinux,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Asianux.*,Linux-other,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Mandriva.*,Linux-other,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Turbolinux.*,Linux-other,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+.*Linux.*,Linux-other,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+VMware ESXi.*,ESXi,Virtual Platform Admins,Virtual Platform Admins,OS,DLA-Test-Dev.local
+Apple macOS 13.*,macOS,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+Apple macOS 12.*,macOS,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+Apple macOS 11.*,macOS,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+Apple Mac OS X.*,macOS,Windows Desktop Admins,Windows Desktop Admins,OS,DLA-Test-Dev.local
+FreeBSD.*,FreeBSD,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+Oracle Solaris.*,Solaris,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+SCO OpenServer.*,Other,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+NetWare.*,Other,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local
+OS/2.*,Other,Unix Server Admins,Unix Server Team,OS,DLA-Test-Dev.local

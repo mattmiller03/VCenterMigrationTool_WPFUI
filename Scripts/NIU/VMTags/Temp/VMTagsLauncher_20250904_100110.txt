@@ -1,0 +1,61 @@
+**********************
+PowerShell transcript start
+Start time: 20250904100110
+Username: DIR\DMM0090
+RunAs User: DIR\DMM0090
+Configuration Name: 
+Machine: DAYL6Y3K504 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll
+Process ID: 26684
+PSVersion: 7.5.2
+PSEdition: Core
+GitCommitId: 7.5.2
+OS: Microsoft Windows 10.0.26100
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250904_100110.txt
+[2025-09-04 10:01:10] [INFO   ] Transcript started: C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250904_100110.txt
+[2025-09-04 10:01:10] [SUCCESS] === VM Tags and Permissions Launcher v2.0 Started ===
+[2025-09-04 10:01:10] [INFO   ] Configuration Version: 2.1.0
+[2025-09-04 10:01:10] [INFO   ] PowerShell Version: 7.5.2
+[2025-09-04 10:01:10] [INFO   ] Machine: DAYL6Y3K504
+[2025-09-04 10:01:10] [INFO   ] User: DMM0090
+[2025-09-04 10:01:10] [INFO   ] Execution ID: 20250904_100110
+[2025-09-04 10:01:10] [INFO   ] Environment: KLEB
+[2025-09-04 10:01:10] [INFO   ] vCenter Server: klisv0pp251.dir.ad.dla.mil
+[2025-09-04 10:01:10] [INFO   ] SSO Domain: DLA-Kleber.local
+[2025-09-04 10:01:10] [INFO   ] App Permissions CSV: C:\Temp\Scripts\VMTags\Data\KLEB\AppTagPermissions_KLE.csv
+[2025-09-04 10:01:10] [INFO   ] OS Mapping CSV: C:\Temp\Scripts\VMTags\Data\KLEB\OS-Mappings_KLE.csv
+[2025-09-04 10:01:10] [INFO   ] Debug Logging: True
+[2025-09-04 10:01:10] [INFO   ] Dry Run Mode: True
+[2025-09-04 10:01:10] [INFO   ] Running comprehensive prerequisites check...
+[2025-09-04 10:01:10] [SUCCESS] App Permissions CSV found
+[2025-09-04 10:01:10] [SUCCESS] OS Mapping CSV found
+[2025-09-04 10:01:10] [SUCCESS] Prerequisites check passed
+[2025-09-04 10:01:11] [INFO   ] Starting main script execution...
+[2025-09-04 10:01:11] [INFO   ] Preparing to execute main script...
+[2025-09-04 10:01:11] [INFO   ] DRY RUN MODE: Would execute the following command:
+[2025-09-04 10:01:11] [INFO   ] C:\Program Files\PowerShell\7\pwsh.exe -File "C:\Temp\Scripts\VMTags\Scripts\set-VMtagPermissions_v1.2.ps1" -vCenterServer "klisv0pp251.dir.ad.dla.mil" -CredentialPath "" -AppPermissionsCsvPath "C:\Temp\Scripts\VMTags\Data\KLEB\AppTagPermissions_KLE.csv" -OsMappingCsvPath "C:\Temp\Scripts\VMTags\Data\KLEB\OS-Mappings_KLE.csv" -Environment KLEB -EnableScriptDebug -NoProfile -NonInteractive -Verbose
+
+=== EXECUTION SUMMARY ===
+Environment: KLEB
+vCenter Server: klisv0pp251.dir.ad.dla.mil
+Execution ID: 20250904_100110
+Execution Time: 00:00:00
+Exit Code: 0
+Launcher Log: C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250904_100110.txt
+Script Logs: C:\Temp\Scripts\VMTags\Logs\KLEB\VMTagsLauncher_20250904_100110.log
+Status: SUCCESS
+
+Check the logs above for detailed execution results.
+[2025-09-04 10:01:11] [SUCCESS] === VM Tags and Permissions Launcher Completed Successfully ===
+[2025-09-04 10:01:11] [INFO   ] Checking for expired stored credentials...
+[2025-09-04 10:01:11] [INFO   ] No expired credentials found
+**********************
+PowerShell transcript end
+End time: 20250904100111
+**********************

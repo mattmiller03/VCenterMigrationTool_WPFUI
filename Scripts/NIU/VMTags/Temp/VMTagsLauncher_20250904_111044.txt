@@ -1,0 +1,87 @@
+**********************
+PowerShell transcript start
+Start time: 20250904111044
+Username: DIR\DMM0090
+RunAs User: DIR\DMM0090
+Configuration Name: 
+Machine: DAYL6Y3K504 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll
+Process ID: 15356
+PSVersion: 7.5.2
+PSEdition: Core
+GitCommitId: 7.5.2
+OS: Microsoft Windows 10.0.26100
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250904_111044.txt
+[2025-09-04 11:10:44] [INFO   ] Transcript started: C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250904_111044.txt
+[2025-09-04 11:10:44] [SUCCESS] === VM Tags and Permissions Launcher v2.0 Started ===
+[2025-09-04 11:10:44] [INFO   ] Configuration Version: 2.1.0
+[2025-09-04 11:10:44] [INFO   ] PowerShell Version: 7.5.2
+[2025-09-04 11:10:44] [INFO   ] Machine: DAYL6Y3K504
+[2025-09-04 11:10:44] [INFO   ] User: DMM0090
+[2025-09-04 11:10:44] [INFO   ] Execution ID: 20250904_111044
+[2025-09-04 11:10:44] [INFO   ] Environment: KLEB
+[2025-09-04 11:10:44] [INFO   ] vCenter Server: klisv0pp251.dir.ad.dla.mil
+[2025-09-04 11:10:44] [INFO   ] SSO Domain: DLA-Kleber.local
+[2025-09-04 11:10:44] [INFO   ] App Permissions CSV: C:\Temp\Scripts\VMTags\Data\KLEB\AppTagPermissions_KLE.csv
+[2025-09-04 11:10:44] [INFO   ] OS Mapping CSV: C:\Temp\Scripts\VMTags\Data\KLEB\OS-Mappings_KLE.csv
+[2025-09-04 11:10:44] [INFO   ] Debug Logging: False
+[2025-09-04 11:10:44] [INFO   ] Dry Run Mode: False
+[2025-09-04 11:10:44] [INFO   ] Running comprehensive prerequisites check...
+[2025-09-04 11:10:44] [SUCCESS] PowerShell 7 path validated: C:\Program Files\PowerShell\7\pwsh.exe
+[2025-09-04 11:10:44] [SUCCESS] Main script path validated: C:\Temp\Scripts\VMTags\Scripts\set-VMtagPermissions_v1.2.ps1
+[2025-09-04 11:10:44] [SUCCESS] Working directory validated: C:\Temp\Scripts\VMTags
+[2025-09-04 11:10:44] [SUCCESS] Temp directory validated: C:\Temp\Scripts\VMTags\Temp
+[2025-09-04 11:10:44] [SUCCESS] Configuration paths validation completed
+[2025-09-04 11:10:44] [SUCCESS] Found VMware PowerCLI version: 13.3.0.24145083
+[2025-09-04 11:10:45] [SUCCESS] Network connectivity to vCenter confirmed
+[2025-09-04 11:10:45] [SUCCESS] App Permissions CSV found
+[2025-09-04 11:10:45] [SUCCESS] OS Mapping CSV found
+[2025-09-04 11:10:45] [SUCCESS] Prerequisites check passed
+[2025-09-04 11:10:45] [INFO   ] Collecting vCenter credentials...
+
+=== vCenter Authentication Required ===
+Environment: KLEB
+vCenter Server: klisv0pp251.dir.ad.dla.mil
+SSO Domain: DLA-Kleber.local
+
+[2025-09-04 11:10:59] [SUCCESS] Credentials collected for user: administrator@DLA-KLEBER.local
+[2025-09-04 11:10:59] [SUCCESS] Credential file created successfully
+[2025-09-04 11:10:59] [INFO   ] Starting main script execution...
+[2025-09-04 11:10:59] [INFO   ] Preparing to execute main script...
+[2025-09-04 11:10:59] [INFO   ] Selected working directory: C:\Temp\Scripts\VMTags
+[2025-09-04 11:10:59] [INFO   ] Starting PowerShell 7 execution...
+[2025-09-04 11:11:00] [INFO   ] Process started successfully with PID: 8628
+[2025-09-04 11:11:00] [INFO   ] Process completed with exit code: 1
+[2025-09-04 11:11:00] [INFO   ] Execution time: 00:00:01
+[2025-09-04 11:11:00] [INFO   ] Starting log cleanup in directory: C:\Temp\Scripts\VMTags\Logs\KLEB
+[2025-09-04 11:11:00] [INFO   ] Keeping most recent 5 log files
+[2025-09-04 11:11:00] [INFO   ] Found 6 total log file(s)
+[2025-09-04 11:11:01] [INFO   ] Log cleanup completed: No files removed
+[2025-09-04 11:11:01] [INFO   ] Log directory status: 6 files, 0.03 MB total
+
+=== EXECUTION SUMMARY ===
+Environment: KLEB
+vCenter Server: klisv0pp251.dir.ad.dla.mil
+Execution ID: 20250904_111044
+Execution Time: 00:00:01
+Exit Code: 1
+Launcher Log: C:\Temp\Scripts\VMTags\Temp\VMTagsLauncher_20250904_111044.txt
+Script Logs: C:\Temp\Scripts\VMTags\Logs\KLEB\VMTagsLauncher_20250904_111044.log
+Status: COMPLETED WITH WARNINGS
+
+Check the logs above for detailed execution results.
+[2025-09-04 11:11:01] [WARNING] === VM Tags and Permissions Launcher Completed with Issues ===
+
+Press any key to exit...
+[2025-09-04 11:30:17] [INFO   ] Checking for expired stored credentials...
+[2025-09-04 11:30:17] [INFO   ] No expired credentials found
+**********************
+PowerShell transcript end
+End time: 20250904113017
+**********************
