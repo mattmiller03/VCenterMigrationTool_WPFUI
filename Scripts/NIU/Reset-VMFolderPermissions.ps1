@@ -556,7 +556,7 @@ catch {
         else {
             Write-Host "Attempting to export partial backup before exit..." -ForegroundColor Yellow
         }
-        Export-PermissionBackup -PermissionsList $permissionsBackupList -FilePath $BackupPath
+        Export-PermissionBackup -PermissionsList $permissionsBackupList -FilePath $script:BackupPath
     }
     
     exit 1
