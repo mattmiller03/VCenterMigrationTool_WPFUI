@@ -56,6 +56,18 @@ param(
     [switch]$DryRun,
     
     [Parameter(Mandatory = $false)]
+    [string]$DatacenterName,
+    
+    [Parameter(Mandatory = $false)]
+    [string]$ClusterName,
+    
+    [Parameter(Mandatory = $false)]
+    [string]$FolderPath,
+    
+    [Parameter(Mandatory = $false)]
+    [bool]$IncludeSubfolders = $true,
+    
+    [Parameter(Mandatory = $false)]
     [string]$LogPath = ".\VMFolderPermissions_Reset_$(Get-Date -Format 'yyyyMMdd_HHmmss').log",
     
     [Parameter(Mandatory = $false)]
