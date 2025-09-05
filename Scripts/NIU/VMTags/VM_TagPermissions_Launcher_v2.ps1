@@ -1451,56 +1451,57 @@ function Start-MainScript {
             $script:CredentialPath = "DRYRUN_MODE"
         }
         
-        # Build PowerShell 7 arguments step by step
-        $ps7Arguments = @()
+        # Build PowerShell 7 arguments in correct order: PowerShell args first, then -File, then script args
+        $powershellArgs = @()
+        $scriptArgs = @()
         
-        # Add main script file
-        $ps7Arguments += '-File'
-        $ps7Arguments += "`"$($script:Config.DefaultPaths.MainScriptPath)`""
-        
-        # Add vCenter server
-        $ps7Arguments += '-vCenterServer'
-        $ps7Arguments += "`"$($vCenterServer)`""
-        
-        # Add credential path
-        $ps7Arguments += '-CredentialPath'
-        $ps7Arguments += "`"$($script:CredentialPath)`""
-        
-        # Add CSV paths
-        $ps7Arguments += '-AppPermissionsCsvPath'
-        $ps7Arguments += "`"$($appCsvPath)`""
-        
-        $ps7Arguments += '-OsMappingCsvPath'
-        $ps7Arguments += "`"$($osCsvPath)`""
-        
-        # Add environment
-        $ps7Arguments += '-Environment'
-        $ps7Arguments += $currentEnvironment
-        
-        # Add debug parameter if enabled
-        if ($script:Config.EnvironmentSettings -and $script:Config.EnvironmentSettings.EnableDebugLogging) {
-            $ps7Arguments += '-EnableScriptDebug'
-        }
-        
-        # Add standard PowerShell arguments
+        # Add standard PowerShell arguments BEFORE -File
         if ($script:Config.PowerShell7 -and $script:Config.PowerShell7.StandardArguments) {
             foreach ($arg in $script:Config.PowerShell7.StandardArguments) {
                 if (-not [string]::IsNullOrEmpty($arg)) {
-                    $ps7Arguments += $arg
+                    $powershellArgs += $arg
                 }
             }
         }
         
-        # Add debug arguments if debug is enabled
+        # Add debug arguments if enabled
         if (($script:Config.EnvironmentSettings -and $script:Config.EnvironmentSettings.EnableDebugLogging) -or $ForceDebug) {
             if ($script:Config.PowerShell7 -and $script:Config.PowerShell7.DebugArguments) {
                 foreach ($arg in $script:Config.PowerShell7.DebugArguments) {
                     if (-not [string]::IsNullOrEmpty($arg)) {
-                        $ps7Arguments += $arg
+                        $powershellArgs += $arg
                     }
                 }
             }
         }
+        
+        # Add -File and script path
+        $powershellArgs += '-File'
+        $powershellArgs += "`"$($script:Config.DefaultPaths.MainScriptPath)`""
+        
+        # Build script arguments
+        $scriptArgs += '-vCenterServer'
+        $scriptArgs += "`"$($vCenterServer)`""
+        
+        $scriptArgs += '-CredentialPath'
+        $scriptArgs += "`"$($script:CredentialPath)`""
+        
+        $scriptArgs += '-AppPermissionsCsvPath'
+        $scriptArgs += "`"$($appCsvPath)`""
+        
+        $scriptArgs += '-OsMappingCsvPath'
+        $scriptArgs += "`"$($osCsvPath)`""
+        
+        $scriptArgs += '-Environment'
+        $scriptArgs += $currentEnvironment
+        
+        # Add debug parameter if enabled
+        if ($script:Config.EnvironmentSettings -and $script:Config.EnvironmentSettings.EnableDebugLogging) {
+            $scriptArgs += '-EnableScriptDebug'
+        }
+        
+        # Combine all arguments
+        $ps7Arguments = $powershellArgs + $scriptArgs
         
         $commandLine = "$($script:Config.DefaultPaths.PowerShell7Path) $($ps7Arguments -join ' ')"
         Write-Log "Execution command: $($commandLine)" -Level Debug

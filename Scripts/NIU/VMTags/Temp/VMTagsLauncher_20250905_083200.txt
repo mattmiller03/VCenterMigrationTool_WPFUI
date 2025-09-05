@@ -1,0 +1,51 @@
+**********************
+PowerShell transcript start
+Start time: 20250905083200
+Username: DESKTOP-PC\mille
+RunAs User: DESKTOP-PC\mille
+Configuration Name: 
+Machine: DESKTOP-PC (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -ExecutionPolicy Bypass -File .\VM_TagPermissions_Launcher_v2.ps1 -Environment KLEB -SkipNetworkTests
+Process ID: 1796
+PSVersion: 7.5.2
+PSEdition: Core
+GitCommitId: 7.5.2
+OS: Microsoft Windows 10.0.26100
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Temp\VMTagsLauncher_20250905_083200.txt
+[2025-09-05 08:32:00] [INFO   ] Transcript started: C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Temp\VMTagsLauncher_20250905_083200.txt
+[2025-09-05 08:32:00] [SUCCESS] === VM Tags and Permissions Launcher v2.0 Started ===
+[2025-09-05 08:32:00] [INFO   ] Configuration Version: 2.1.0
+[2025-09-05 08:32:00] [INFO   ] PowerShell Version: 7.5.2
+[2025-09-05 08:32:00] [INFO   ] Machine: DESKTOP-PC
+[2025-09-05 08:32:00] [INFO   ] User: mille
+[2025-09-05 08:32:00] [INFO   ] Execution ID: 20250905_083200
+[2025-09-05 08:32:00] [INFO   ] Environment: KLEB
+[2025-09-05 08:32:00] [INFO   ] vCenter Server: klisv0pp251.dir.ad.dla.mil
+[2025-09-05 08:32:00] [INFO   ] SSO Domain: DLA-Kleber.local
+[2025-09-05 08:32:00] [INFO   ] App Permissions CSV: .\Data\KLEB\AppTagPermissions_KLE.csv
+[2025-09-05 08:32:00] [INFO   ] OS Mapping CSV: .\Data\KLEB\OS-Mappings_KLE.csv
+[2025-09-05 08:32:00] [INFO   ] Debug Logging: False
+[2025-09-05 08:32:00] [INFO   ] Dry Run Mode: False
+[2025-09-05 08:32:00] [INFO   ] Running comprehensive prerequisites check...
+[2025-09-05 08:32:00] [SUCCESS] PowerShell 7 path validated: C:\Program Files\PowerShell\7\pwsh.exe
+[2025-09-05 08:32:00] [SUCCESS] Main script path validated: C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Scripts\set-VMtagPermissions_v1.2.ps1
+[2025-09-05 08:32:00] [SUCCESS] Working directory validated: C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags
+[2025-09-05 08:32:00] [SUCCESS] Temp directory validated: C:\Users\mille\source\repos\VCenterMigrationTool\Scripts\NIU\VMTags\Temp
+[2025-09-05 08:32:00] [SUCCESS] Configuration paths validation completed
+[2025-09-05 08:32:00] [SUCCESS] Found VMware PowerCLI version: 13.3.0.24145083
+[2025-09-05 08:32:00] [SUCCESS] App Permissions CSV found
+[2025-09-05 08:32:00] [SUCCESS] OS Mapping CSV found
+[2025-09-05 08:32:00] [SUCCESS] Prerequisites check passed
+[2025-09-05 08:32:00] [INFO   ] Collecting vCenter credentials...
+
+=== vCenter Authentication Required ===
+Environment: KLEB
+vCenter Server: klisv0pp251.dir.ad.dla.mil
+SSO Domain: DLA-Kleber.local
+
